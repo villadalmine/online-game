@@ -31,6 +31,11 @@ async def lifespan(app: FastAPI):
     # Apply migrations on startup so schema changes take effect with no manual reset.
     # Run in a thread because Alembic's async env uses asyncio.run internally.
     await asyncio.to_thread(run_migrations)
+    print(
+        f"[online-game] DB={settings.db_backend} ({settings.safe_database_url}) · "
+        f"auto-tick={settings.auto_tick_seconds}s · migraciones aplicadas ✓",
+        flush=True,
+    )
     task = None
     if settings.auto_tick_seconds > 0:
         task = asyncio.create_task(_auto_tick_loop(settings.auto_tick_seconds))
@@ -49,7 +54,7 @@ app.include_router(api_router)
 
 @app.get("/health", tags=["meta"])
 async def health():
-    return {"status": "ok", "app": settings.app_name}
+    return {"status": "ok", "app": settings.app_name, "db": settings.db_backend}
 
 
 @app.get("/", include_in_schema=False)

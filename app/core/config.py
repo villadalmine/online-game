@@ -53,6 +53,21 @@ class Settings(BaseSettings):
     def is_sqlite(self) -> bool:
         return self.database_url.startswith("sqlite")
 
+    @property
+    def db_backend(self) -> str:
+        if self.is_sqlite:
+            return "sqlite"
+        if "postgres" in self.database_url:
+            return "postgres"
+        return "other"
+
+    @property
+    def safe_database_url(self) -> str:
+        """DB URL with any password redacted (safe to log/show)."""
+        import re
+
+        return re.sub(r"://([^:/@]+):[^@]+@", r"://\1:***@", self.database_url)
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -66,7 +66,9 @@ async def _grant_units(maker, username, units: dict[str, int]) -> None:
 async def test_health(client):
     r = await client.http.get("/health")
     assert r.status_code == 200
-    assert r.json()["status"] == "ok"
+    body = r.json()
+    assert body["status"] == "ok"
+    assert body["db"] in ("sqlite", "postgres", "other")  # which DB is in use
 
 
 async def test_register_login_and_duplicate(client):

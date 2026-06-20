@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-20 — Visibilidad de la DB en uso
+- Al arrancar, el server **loguea qué base usa** (`[online-game] DB=sqlite (...) · auto-tick=...`),
+  con la contraseña redactada. `/health` ahora devuelve `db` (sqlite/postgres) y la web muestra
+  un pill 🗄 en el header. Para que quede claro si estás en SQLite local o Postgres (Docker) y
+  no confundir partidas. e2e: `/health` expone `db`.
+
 ### 2026-06-20 — Tests de navegador (Playwright) con screenshots
 - `tests/browser/` maneja la web real en Chromium: registro → onboarding → construir →
   crear alianza (ve beneficios explicados) → guía; + verifica que la alianza NPC sale

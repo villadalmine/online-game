@@ -57,6 +57,7 @@
     <span id="who" class="pill">no logueado</span>
     <span id="energy" class="pill hidden"></span>
     <span id="unread" class="pill hidden"></span>
+    <span id="dbpill" class="pill" title="Base de datos en uso"></span>
     <span id="live" class="muted hidden">○</span>
     <button class="sec sm hidden" id="logout" onclick="logout()">salir</button>
   </div>
@@ -417,7 +418,9 @@ function startStream(){
     $("feed").prepend(d); refresh(); };
 }
 
+async function showDb(){ try{ const h=await (await fetch(API+"/health")).json(); $("dbpill").textContent="🗄 "+h.db; }catch{} }
 async function boot(){
+  showDb();
   const authed=!!token;
   if(!authed){ $("u").value=localStorage.getItem("lastuser")||""; }
   $("auth").classList.toggle("hidden",authed);
