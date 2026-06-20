@@ -116,6 +116,7 @@ tests/     energía, producción, contenido, flujo end-to-end
 
 ## Documentación
 
+- [`ROADMAP.md`](ROADMAP.md) — **dónde estamos**: hecho / próximo / backlog.
 - [`CHANGELOG.md`](CHANGELOG.md) — **registro de todo lo logrado**, por fecha.
 - [`docs/development.md`](docs/development.md) — **guía de desarrollo**: setup, mapa del
   código, cómo extender (razas/minerales/edificios/endpoints), migraciones, tests, deploy.
