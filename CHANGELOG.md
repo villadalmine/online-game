@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-20 — Tests de navegador (Playwright) con screenshots
+- `tests/browser/` maneja la web real en Chromium: registro → onboarding → construir →
+  crear alianza (ve beneficios explicados) → guía; + verifica que la alianza NPC sale
+  marcada "no unible". Guarda **screenshots** de cada pantalla en
+  `tests/browser/screenshots/` (gitignored). Corren con `make test-ui` (aparte de `make test`,
+  que los ignora porque necesitan navegador). Deps opcionales en el extra `ui`.
+
 ### 2026-06-20 — Web: alianzas más claras + CLAUDE.md
 - UI de alianzas reescrita para que se entienda: al crear, cada **tipo** muestra su
   descripción y **beneficios explicados** (no solo el nombre); estando en una alianza ves

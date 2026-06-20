@@ -211,6 +211,11 @@ Manejo de la DB:
 
 Corré uno solo: `.venv/bin/python -m pytest tests/test_flow.py -q`.
 
+- **Navegador** (`tests/browser/`, Playwright): manejan la web real en Chromium y guardan
+  screenshots. Corren aparte con `make test-ui` (necesitan navegador; `make test` los ignora
+  vía `--ignore=tests/browser`). El fixture `live_server` levanta el server real contra una
+  SQLite temporal. Útil para ver de verdad cómo queda la UI.
+
 ---
 
 ## 6. Deploy

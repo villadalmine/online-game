@@ -25,6 +25,10 @@ dev = [
     "fakeredis>=2.23",
     "ruff>=0.5",
 ]
+ui = [
+    "playwright>=1.44",
+    "pytest-playwright>=0.5",
+]
 
 [project.scripts]
 ogame-cli = "clients.cli.main:main"
@@ -50,6 +54,9 @@ ignore = ["B008"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# Browser (Playwright) tests live in tests/browser and run via `make test-ui`
+# (they need a browser). Keep them out of the default fast suite.
+addopts = "--ignore=tests/browser"
 filterwarnings = [
     # Tests use a short dev JWT secret; not a concern for the suite.
     "ignore::UserWarning",

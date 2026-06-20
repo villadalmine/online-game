@@ -80,6 +80,10 @@ cli: ## Pasa comandos al CLI: make cli ARGS="players"
 test: ## Corre toda la suite (unit + integración + e2e)
 	$(PY) -m pytest -q
 
+test-ui: ## Tests de navegador (Playwright) + screenshots en tests/browser/screenshots
+	$(PIP) install -q -e ".[ui]" && $(VENV)/bin/playwright install chromium
+	$(PY) -m pytest tests/browser -o addopts="" -p no:asyncio -q
+
 test-file: ## Corre un archivo: make test-file f=tests/test_npc.py
 	$(PY) -m pytest -q $(f)
 
