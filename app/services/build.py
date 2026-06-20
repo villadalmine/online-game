@@ -1,0 +1,72 @@
+"""Start construction: spend energy + minerals (resolved per-race), enqueue with a timer."""
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.content.registry import get_content
+from app.core.config import get_settings
+from app.models import Base_, Building, Player
+from app.services.economy import collect_mines, finalize_due_builds, player_stocks
+from app.services.energy import spend_energy
+
+
+class BuildError(Exception):
+    pass
+
+
+async def start_build(
+    session: AsyncSession,
+    player: Player,
+    base: Base_,
+    building_key: str,
+    target_mineral: str | None = None,
+) -> Building:
+    content = get_content()
+    settings = get_settings()
+    now = datetime.now(UTC)
+
+    spec = content.buildings.get(building_key)
+    if spec is None:
+        raise BuildError(f"Edificio desconocido: {building_key}")
+    if base.player_id != player.id:
+        raise BuildError("La base no pertenece al jugador.")
+
+    if spec["category"] == "mine":
+        if target_mineral is None:
+            raise BuildError("Una mina requiere 'target_mineral'.")
+        if target_mineral not in content.minerals:
+            raise BuildError(f"Mineral desconocido: {target_mineral}")
+
+    # Bring economy up to date before charging.
+    await finalize_due_builds(session, player, now)
+    await collect_mines(session, player, now)
+
+    # Charge energy (also applies regen).
+    if not spend_energy(
+        player, spec.get("energy_cost", 0), now, settings.energy_regen_per_hour, settings.energy_max
+    ):
+        raise BuildError("Energia insuficiente.")
+
+    # Charge minerals (role-based cost resolved to this race's minerals).
+    cost = content.building_cost_in_minerals(player.race_key, building_key)
+    stocks = await player_stocks(session, player.id)
+    for mineral, amount in cost.items():
+        if stocks.get(mineral, 0.0) < amount:
+            raise BuildError(f"Mineral insuficiente: {mineral} (necesita {amount:g}).")
+    if cost:
+        from app.services.economy import get_or_create_stock
+
+        for mineral, amount in cost.items():
+            stock = await get_or_create_stock(session, player.id, mineral)
+            stock.amount -= amount
+
+    building = Building(
+        base_id=base.id,
+        building_key=building_key,
+        status="building",
+        completes_at=now + timedelta(seconds=spec.get("build_seconds", 0)),
+        production_mineral=target_mineral if spec["category"] == "mine" else None,
+    )
+    session.add(building)
+    await session.flush()
+    return building

@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Online Galaxy War</title>
+<style>
+  :root{ color-scheme:dark; --bg:#0a0e1f; --card:#121a35; --card2:#0e1530; --line:#243056;
+         --txt:#e6e9f0; --mut:#8794b8; --blue:#2b5fff; --earth:#3b7dd8; --mars:#c1440e; --venus:#d9a441; }
+  *{ box-sizing:border-box; }
+  body{ font-family:system-ui,sans-serif; margin:0; background:
+        radial-gradient(1200px 600px at 80% -10%, #16204a 0%, transparent 60%), var(--bg); color:var(--txt); }
+  header{ padding:10px 16px; background:#0f1730cc; backdrop-filter:blur(6px); display:flex;
+          justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;
+          position:sticky; top:0; z-index:20; border-bottom:1px solid var(--line); }
+  h1{ font-size:17px; margin:0; }
+  main{ display:grid; grid-template-columns:330px 1fr 310px; gap:12px; padding:12px; align-items:start; }
+  @media (max-width:1100px){ main{ grid-template-columns:1fr; } }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px; margin-bottom:12px;
+         box-shadow:0 1px 0 #ffffff08 inset; }
+  .card h2{ font-size:12px; margin:0 0 11px; color:#9fb0e0; text-transform:uppercase; letter-spacing:.7px; }
+  button{ background:var(--blue); color:#fff; border:0; border-radius:8px; padding:8px 11px; cursor:pointer; font-size:13px; transition:.12s; }
+  button:hover{ filter:brightness(1.12); transform:translateY(-1px); }
+  button.sec{ background:#33406e; } button.sm{ padding:3px 9px; font-size:12px; } button.danger{ background:#b23b4e; }
+  input,select{ background:var(--card2); color:var(--txt); border:1px solid #33406e; border-radius:7px; padding:7px; font-size:13px; }
+  .row{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin:7px 0; }
+  .chip{ background:#243056; border-radius:18px; padding:3px 10px; font-size:12px; white-space:nowrap; }
+  .pill{ background:#243056; border-radius:18px; padding:3px 10px; font-size:12px; }
+  .muted{ color:var(--mut); font-size:12px; } .ok{ color:#7ee787; } .bad{ color:#ff8a8a; } .warn{ color:#f0c674; }
+  .bar{ height:9px; background:#0a0e1f; border:1px solid #33406e; border-radius:6px; overflow:hidden; }
+  .bar>div{ height:100%; background:linear-gradient(90deg,#2b5fff,#7ea2ff); transition:width .9s linear; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; } th,td{ text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); }
+  .item{ padding:7px 9px; margin:6px 0; background:var(--card2); border-radius:8px; font-size:13px; }
+  .item .top{ display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  .note{ border-left:3px solid var(--blue); padding:6px 9px; margin:6px 0; background:var(--card2); border-radius:6px;
+         font-size:13px; animation:fade .4s ease; } @keyframes fade{ from{opacity:0; transform:translateY(-4px);} }
+  #feed{ max-height:60vh; overflow:auto; } .hidden{ display:none; } label{ font-size:12px; color:#b9c3e6; }
+  /* galaxy map */
+  .galaxy{ display:flex; gap:14px; flex-wrap:wrap; }
+  .planet{ flex:1; min-width:170px; background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:12px; }
+  .planet .head{ display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+  .orb{ width:34px; height:34px; border-radius:50%; box-shadow:0 0 18px #0008 inset, 0 0 14px currentColor;
+        animation:spin 18s linear infinite; background-size:200% 200%; }
+  .orb.earth{ color:var(--earth); background:radial-gradient(circle at 30% 30%, #6fa8e6, var(--earth) 70%); }
+  .orb.mars{ color:var(--mars); background:radial-gradient(circle at 30% 30%, #e86a3a, var(--mars) 70%); }
+  .orb.venus{ color:var(--venus); background:radial-gradient(circle at 30% 30%, #f0d488, var(--venus) 70%); }
+  @keyframes spin{ to{ background-position:200% 0; } }
+  .base{ display:inline-block; padding:3px 8px; margin:3px 3px 0 0; border-radius:14px; background:#1b2547; font-size:12px; cursor:default; }
+  .base.enemy{ cursor:pointer; border:1px solid #3a4a7e; } .base.enemy:hover{ background:#2a3866; }
+  .base.me{ background:#2b5fff33; border:1px solid #2b5fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🪐 Online Galaxy War</h1>
+  <div class="row" id="hdr">
+    <span id="who" class="pill">no logueado</span>
+    <span id="energy" class="pill hidden"></span>
+    <span id="unread" class="pill hidden"></span>
+    <span id="live" class="muted hidden">○</span>
+    <button class="sec sm hidden" id="logout" onclick="logout()">salir</button>
+  </div>
+</header>
+
+<!-- AUTH -->
+<div id="auth" class="card" style="max-width:460px;margin:48px auto;">
+  <h2>Crear cuenta / Entrar</h2>
+  <p class="muted">¿Primera vez? Elegí usuario y contraseña y tocá <b>Registrar</b>
+     (no hay cuentas pre-creadas). Si ya tenés, <b>Entrar</b>.<br>
+     Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro
+     dispositivo, y está todo igual.</p>
+  <div class="row"><input id="u" placeholder="usuario (mín. 3)" style="flex:1" /></div>
+  <div class="row"><input id="p" type="password" placeholder="contraseña (mín. 6)" style="flex:1" /></div>
+  <div class="row">
+    <button onclick="register()">✅ Registrar y jugar</button>
+    <button class="sec" onclick="login()">Entrar</button>
+  </div>
+  <p id="autherr" class="muted"></p>
+</div>
+
+<!-- ONBOARD -->
+<div id="onboard" class="card hidden" style="max-width:560px;margin:48px auto;">
+  <h2>Elegir imperio</h2>
+  <div id="races"></div>
+  <div class="row">
+    <label>Planeta <select id="planet"></select></label>
+    <label>Raza <select id="race"></select></label>
+    <button onclick="onboard()">Comenzar 🚀</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<main id="game" class="hidden">
+  <!-- left -->
+  <div>
+    <div class="card">
+      <h2>Acciones</h2>
+      <div class="row">
+        <button onclick="build()">🏗 Construir</button>
+        <select id="building" onchange="renderCost()"></select>
+        <select id="mineral" class="hidden"></select>
+      </div>
+      <div id="buildcost" class="muted"></div>
+      <div class="row">
+        <button onclick="train()">👷 Entrenar</button>
+        <select id="unit" onchange="renderTrainCost()"></select>
+        <input id="qty" type="number" value="3" min="1" style="width:56px" oninput="renderTrainCost()" />
+      </div>
+      <div id="traincost" class="muted"></div>
+      <div class="row">
+        <button class="sec" onclick="expedition()">🌙 Expedición</button>
+        <select id="moon" onchange="renderExpInfo()"></select>
+      </div>
+      <div id="expinfo" class="muted"></div>
+      <div class="row">
+        <button class="sec" onclick="refresh()" title="Relee tu estado del servidor (como F5, pero sin recargar la página). Igual pasa solo cada 4s.">↻ Refrescar</button>
+      </div>
+      <p id="msg" class="muted"></p>
+      <p class="muted">El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.</p>
+    </div>
+
+    <div class="card">
+      <h2>⚔ Atacar</h2>
+      <div class="row">
+        base <input id="tbase" type="number" placeholder="id" style="width:64px" />
+        <input id="force" placeholder="tank:5,soldier:10" style="flex:1" />
+        <button class="danger" onclick="attack()">Lanzar flota</button>
+      </div>
+      <p class="muted">Tip: tocá una base enemiga en el mapa para elegir objetivo.</p>
+    </div>
+
+    <div class="card">
+      <h2>🔬 Investigación</h2>
+      <div id="research"></div>
+    </div>
+
+    <div class="card">
+      <h2>🤝 Alianzas</h2>
+      <div id="alliances"></div>
+    </div>
+  </div>
+
+  <!-- center -->
+  <div>
+    <div class="card">
+      <h2>🌌 Galaxia: Vía Láctea</h2>
+      <div id="map" class="galaxy"></div>
+    </div>
+    <div class="card">
+      <h2>Tu imperio</h2>
+      <div class="row"><span class="muted" style="width:58px">Energía</span>
+        <div class="bar" style="flex:1"><div id="ebar"></div></div><span id="etxt" class="muted"></span></div>
+      <div style="margin:9px 0"><span class="muted">Minerales</span><div id="minerals" class="row"></div></div>
+      <div style="margin:9px 0"><span class="muted">Unidades</span><div id="units" class="row"></div></div>
+      <div id="boons" class="row"></div>
+    </div>
+    <div class="card"><h2>Bases y edificios</h2><div id="bases"></div></div>
+    <div class="card"><h2>Colas y flotas</h2><div id="queues"></div></div>
+    <div class="card">
+      <h2>🏆 Ranking</h2>
+      <div class="row"><button class="sec sm" onclick="loadRanking()">cargar ranking</button></div>
+      <table id="ranking"></table>
+    </div>
+  </div>
+
+  <!-- right -->
+  <div>
+    <div class="card">
+      <h2>🔔 Notificaciones</h2>
+      <div class="row"><button class="sec sm" onclick="markRead()">marcar leídas</button>
+        <span id="streamstate" class="muted">—</span></div>
+      <div id="feed"></div>
+    </div>
+
+    <div class="card">
+      <h2>📖 Guía — ¿qué es cada cosa?</h2>
+      <div class="row"><button class="sec sm" onclick="toggleGuide()">mostrar / ocultar</button></div>
+      <div id="guide" class="hidden"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API="";
+let token=localStorage.getItem("token")||"";
+let catalog=null, es=null, state=null, players=[], alliances=[];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function api(path,method="GET",body){
+  const h={ "Content-Type":"application/json" }; if(token) h["Authorization"]="Bearer "+token;
+  const r=await fetch(API+path,{method,headers:h,body:body?JSON.stringify(body):undefined});
+  const t=await r.text(); let d; try{ d=JSON.parse(t); }catch{ d=t; }
+  if(!r.ok) throw new Error(fmtErr(d,t)); return d;
+}
+function fmtErr(d,t){ if(d&&Array.isArray(d.detail)) return d.detail.map(e=>(e.loc?e.loc.slice(-1)+": ":"")+(e.msg||JSON.stringify(e))).join("; "); return (d&&d.detail)||t||"error de red"; }
+function msg(t,ok=true){ const m=$("msg"); m.textContent=t; m.className=ok?"ok":"bad"; }
+
+// auth
+function authErr(t){ const e=$("autherr"); e.textContent=t; e.className="bad"; }
+function remember(){ localStorage.setItem("lastuser",$("u").value); }
+async function register(){ try{ const d=await api("/api/v1/auth/register","POST",cred()); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
+async function login(){ try{ const d=await api("/api/v1/auth/login","POST",cred()); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
+function cred(){ return { username:$("u").value, password:$("p").value }; }
+function setToken(t){ token=t; localStorage.setItem("token",t); }
+function logout(){ token=""; localStorage.removeItem("token"); if(es)es.close(); location.reload(); }
+
+// catalog
+const spec={ build:{}, unit:{}, moon:{} };
+function fill(id,pairs){ $(id).innerHTML=pairs.map(([v,t])=>`<option value="${v}">${esc(t)}</option>`).join(""); }
+async function loadCatalog(){
+  catalog=await api("/api/v1/catalog");
+  catalog.buildings.forEach(b=>spec.build[b.key]=b);
+  [...catalog.personnel,...catalog.heavy_units].forEach(u=>spec.unit[u.key]=u);
+  catalog.moons.forEach(m=>spec.moon[m.key]=m);
+  fill("planet",catalog.planets.map(p=>[p.key,p.name]));
+  fill("race",catalog.races.map(r=>[r.key,r.name]));
+  fill("building",catalog.buildings.filter(b=>b.key!=="headquarters").map(b=>[b.key,b.name]));
+  fill("mineral",catalog.minerals.map(m=>[m.key,m.name]));
+  fill("unit",[...catalog.personnel,...catalog.heavy_units].map(u=>[u.key,u.name]));
+  fill("moon",catalog.moons.map(m=>[m.key,m.name]));
+  $("races").innerHTML=catalog.races.map(r=>`<div class="item"><b>${esc(r.name)}</b> <span class="muted">${esc(r.description||"")}</span></div>`).join("");
+  renderCost(); renderTrainCost(); renderExpInfo();
+}
+// resolve a role-based cost ({structural:N}) to real minerals using the player's race
+function raceRoles(){ const r=(catalog.races||[]).find(x=>x.key===(state&&state.race_key)); return r?r.resource_roles:{}; }
+function resolveCost(roleCost){ const roles=raceRoles(); const out={}; for(const[role,amt]of Object.entries(roleCost||{})){ const m=roles[role]; if(m&&amt) out[m]=(out[m]||0)+amt; } return out; }
+function costStr(mc){ return Object.entries(mc).map(([m,a])=>`${m} ${Math.round(a)}`).join(", ")||"gratis"; }
+function affordText(mc, energyCost){
+  if(!state) return "";
+  const lacks=[];
+  for(const[m,a]of Object.entries(mc)){ if((state.stocks[m]||0)<a) lacks.push(`${m}`); }
+  if(energyCost && state.energy<energyCost) lacks.push("⚡energía");
+  return lacks.length? ` — <span class="bad">⚠ te falta: ${lacks.join(", ")}</span>` : ` — <span class="ok">✓ alcanza</span>`;
+}
+function renderCost(){ const b=spec.build[$("building").value]; if(!b) return; $("mineral").classList.toggle("hidden",b.category!=="mine");
+  const mc=resolveCost(b.cost); $("buildcost").innerHTML=`costo ${costStr(mc)} · ⚡${b.energy_cost} · ${b.build_seconds}s${affordText(mc,b.energy_cost)}`; }
+function renderTrainCost(){ const u=spec.unit[$("unit").value]; if(!u) return; const qty=Math.max(1,+$("qty").value||1);
+  const mc=resolveCost(u.cost); for(const k in mc) mc[k]*=qty; const e=(u.energy_cost||0)*qty;
+  const req=u.requires&&u.requires!=="headquarters"?` · requiere ${u.requires}`:"";
+  $("traincost").innerHTML=`x${qty}: ${costStr(mc)} · ⚡${e}${req}${affordText(mc,e)}`; }
+function renderExpInfo(){ const m=spec.moon[$("moon").value]; if(!m) return; const e=(m.expedition||{}).energy_cost||0;
+  const grants=Object.entries(m.grants||{}).map(([k,v])=>`${k}+${v}`).join(", ");
+  const req=(m.expedition||{}).requires_unit; const reach=(state&&state.galaxy_key)?"":"";
+  const lacks=[]; if(state&&state.energy<e) lacks.push("⚡energía"); if(req&&state&&(state.units[req]||0)<1) lacks.push(req);
+  const warn=lacks.length?` — <span class="bad">⚠ te falta: ${lacks.join(", ")}</span>`:` — <span class="ok">✓ listo</span>`;
+  $("expinfo").innerHTML=`⚡${e} · requiere ${req||"-"} · trae ${grants||"-"}${warn}${reach}`; }
+async function onboard(){ try{ await api("/api/v1/players/onboard","POST",{galaxy_key:"milky_way",planet_key:$("planet").value,race_key:$("race").value}); boot(); }catch(e){ alert(e.message);} }
+
+// actions
+const baseId=()=>(state&&state.bases[0])?state.bases[0].id:1;
+async function build(){ try{ const k=$("building").value; const b={building_key:k}; if(k==="mine")b.target_mineral=$("mineral").value; await api(`/api/v1/bases/${baseId()}/build`,"POST",b); msg("Construyendo "+k); refresh(); }catch(e){ msg(e.message,false);} }
+async function train(){ try{ await api(`/api/v1/bases/${baseId()}/train`,"POST",{unit_key:$("unit").value,quantity:+$("qty").value}); msg("Entrenando"); refresh(); }catch(e){ msg(e.message,false);} }
+async function attack(){ try{ const force={}; ($("force").value||"").split(",").forEach(p=>{const[k,v]=p.split(":"); if(k&&v)force[k.trim()]=+v;}); const d=await api("/api/v1/combat/attack","POST",{target_base_id:+$("tbase").value,force}); msg("Flota despachada, llega "+new Date(d.arrives_at).toLocaleTimeString()); refresh(); }catch(e){ msg(e.message,false);} }
+async function expedition(){ try{ await api("/api/v1/expeditions","POST",{moon_key:$("moon").value}); msg("Expedición lanzada"); refresh(); }catch(e){ msg(e.message,false);} }
+async function recall(id){ try{ await api(`/api/v1/combat/missions/${id}/recall`,"POST"); msg("Flota retirándose"); refresh(); }catch(e){ msg(e.message,false);} }
+async function doTick(){ try{ const d=await api("/api/v1/admin/tick","POST"); msg("Tick: NPC jugaron"); refresh(); }catch(e){ msg(e.message,false);} }
+async function markRead(){ await api("/api/v1/notifications/read","POST",{}); refresh(); }
+async function doResearch(k){ try{ await api("/api/v1/research","POST",{tech_key:k}); msg("Investigando "+k); refresh(); }catch(e){ msg(e.message,false);} }
+async function allianceCreate(){ try{ await api("/api/v1/alliances","POST",{name:$("aname").value,tag:$("atag").value}); msg("Alianza creada"); refresh(); }catch(e){ msg(e.message,false);} }
+async function allianceJoin(id){ try{ await api(`/api/v1/alliances/${id}/join`,"POST"); refresh(); }catch(e){ msg(e.message,false);} }
+async function allianceLeave(){ try{ await api("/api/v1/alliances/leave","POST"); refresh(); }catch(e){ msg(e.message,false);} }
+function toggleGuide(){ const g=$("guide"); g.classList.toggle("hidden"); if(!g.classList.contains("hidden")) renderGuide(); }
+function renderGuide(){
+  if(!catalog) return;
+  const mechanics = [
+    ["⚡ Energía","Se regenera por hora hasta un tope. Cada acción (construir, entrenar, atacar, investigar) cuesta energía."],
+    ["⛏ Minerales","Recursos para construir y producir. Cada raza usa minerales distintos; las minas los extraen con el tiempo según la abundancia del planeta."],
+    ["🏗 Edificios","Se construyen con minerales+energía y tardan. Minas producen; cuartel/fábrica/laboratorio habilitan unidades y ciencia; torreta defiende."],
+    ["👷 Unidades","Personajes (trabajador/militar/científico) y pesadas (tanque/barco/avión/transbordador). Requieren su edificio activo."],
+    ["🌙 Expediciones","Enviás un transbordador a una luna; vuelve con recursos premium y un boon temporal."],
+    ["⚔ Combate","Las flotas viajan (tarda según distancia), resuelven al llegar y vuelven con sobrevivientes+botín. Las torretas suman defensa."],
+    ["🔬 Investigación","Desbloquea bonus permanentes (producción/ataque/defensa). Requiere laboratorio."],
+    ["🤝 Alianzas","Jugadores agrupados que no se atacan entre sí. Las NPC forman su propia alianza."],
+  ];
+  const minerals = catalog.minerals.map(m=>`<div class="item"><b>${esc(m.name)}</b> <span class="muted">(real: ${esc(m.real||"-")})</span><br><span class="muted">${esc(m.description||"")}</span></div>`).join("");
+  $("guide").innerHTML =
+    mechanics.map(([t,d])=>`<div class="item"><b>${t}</b><br><span class="muted">${esc(d)}</span></div>`).join("")+
+    `<div class="muted" style="margin:8px 0 4px">Minerales (in-game ↔ real):</div>`+minerals;
+}
+async function loadRanking(){ try{ const r=await api("/api/v1/players/ranking");
+  $("ranking").innerHTML="<tr><th>#</th><th>jugador</th><th>raza</th><th>score</th></tr>"+
+    r.map(e=>`<tr><td>${e.rank}</td><td>${esc(e.username)}${e.is_npc?' 🤖':''}</td><td>${esc(e.race_key||'')}</td><td>${e.score}</td></tr>`).join(""); }catch(e){ msg(e.message,false);} }
+function prefill(id){ $("tbase").value=id; $("force").focus(); window.scrollTo({top:0,behavior:"smooth"}); }
+
+// progress bar from a total duration + completion timestamp
+function bar(total,when){ const rem=(new Date(when)-Date.now())/1000; const pct= total>0?Math.max(0,Math.min(100,100*(total-rem)/total)):0; return `<div class="bar"><div style="width:${pct}%"></div></div>`; }
+function cd(iso){ if(!iso)return "—"; const ms=new Date(iso)-Date.now(); if(ms<=0)return "ya"; const s=Math.ceil(ms/1000); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+
+// render
+async function refresh(){
+  try{ state=await api("/api/v1/players/me"); players=await api("/api/v1/players"); alliances=await api("/api/v1/alliances"); }catch{ return; }
+  $("who").textContent=state.username+(state.race_key?" · "+state.race_key:"");
+  $("energy").textContent="⚡ "+state.energy+"/"+state.energy_max;
+  $("unread").textContent="🔔 "+state.unread_notifications;
+  $("ebar").style.width=Math.min(100,100*state.energy/state.energy_max)+"%"; $("etxt").textContent=state.energy+"/"+state.energy_max;
+  $("minerals").innerHTML=Object.entries(state.stocks).map(([k,v])=>`<span class="chip">${esc(k)}: ${Math.round(v)}</span>`).join("")||'<span class="muted">—</span>';
+  $("units").innerHTML=Object.entries(state.units).filter(([,v])=>v>0).map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join("")||'<span class="muted">sin unidades</span>';
+  $("boons").innerHTML=(state.boons||[]).map(b=>`<span class="chip ok">boon ${esc(b.effect)} ×${b.magnitude}</span>`).join(" ");
+  $("bases").innerHTML=state.bases.map(b=>`<div style="margin-bottom:8px"><b>${esc(b.name)}</b> <span class="muted">#${b.id} · ${esc(b.planet_key)}</span>`+
+    b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
+      `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
+      (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
+  renderQueues(); renderMap(); renderResearch(); renderAlliances();
+  renderCost(); renderTrainCost(); renderExpInfo();
+}
+function renderResearch(){
+  if(!catalog||!state) return; const done=new Set(state.technologies||[]);
+  $("research").innerHTML=catalog.technologies.map(t=>{
+    const order=(state.research||[]).find(r=>r.tech_key===t.key);
+    let right;
+    if(done.has(t.key)) right='<span class="ok">✓ lista</span>';
+    else if(order) right=`<span class="warn">${cd(order.completes_at)}</span>`;
+    else right=`<button class="sm" onclick="doResearch('${t.key}')">investigar</button>`;
+    return `<div class="item"><div class="top"><span title="${esc(t.description||'')}">${esc(t.name)} <span class="muted">(${esc(t.effect)} ×${t.magnitude})</span></span>${right}</div>${order?bar(t.research_seconds,order.completes_at):""}</div>`;
+  }).join("");
+}
+function renderAlliances(){
+  if(!state) return;
+  if(state.alliance_id){
+    $("alliances").innerHTML=`<div class="item"><div class="top"><span>🤝 <b>${esc(state.alliance_name||"")}</b></span><button class="sm danger" onclick="allianceLeave()">salir</button></div></div>`;
+  } else {
+    const list=(alliances||[]).map(a=>`<div class="item"><div class="top"><span>[${esc(a.tag)}] ${esc(a.name)} <span class="muted">${a.member_count}👥</span></span><button class="sm" onclick="allianceJoin(${a.id})">unirse</button></div></div>`).join("")||'<span class="muted">no hay alianzas aún</span>';
+    $("alliances").innerHTML=`<div class="row"><input id="aname" placeholder="nombre" style="flex:1"><input id="atag" placeholder="tag" style="width:64px"><button class="sm" onclick="allianceCreate()">crear</button></div>`+list;
+  }
+}
+function renderQueues(){
+  if(!state) return; const q=[];
+  (state.training||[]).forEach(t=>{ const tot=((spec.unit[t.unit_key]||{}).train_seconds||0)*t.quantity;
+    q.push(`<div class="item"><div class="top"><span>🛠 ${t.quantity}× ${esc(t.unit_key)}</span><span class="warn">${cd(t.completes_at)}</span></div>${bar(tot,t.completes_at)}</div>`); });
+  (state.expeditions||[]).forEach(e=>{ const tot=((spec.moon[e.moon_key]||{}).expedition||{}).duration_seconds||0;
+    q.push(`<div class="item"><div class="top"><span>🌙 ${esc(e.moon_key)}</span><span class="warn">${cd(e.completes_at)}</span></div>${bar(tot,e.completes_at)}</div>`); });
+  (state.missions_outgoing||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span>🚀 → base ${m.target_base_id} ${esc(JSON.stringify(m.force))}</span>`+
+    `<span>${m.status==='outbound'?`<button class="sm danger" onclick="recall(${m.id})">↩ recall ${cd(m.arrives_at)}</button>`:`vuelve ${cd(m.returns_at)}`}</span></div></div>`));
+  (state.missions_incoming||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span class="bad">⚠ ataque entrante → base ${m.target_base_id}</span><span class="bad">${cd(m.arrives_at)}</span></div></div>`));
+  $("queues").innerHTML=q.join("")||'<span class="muted">nada en cola</span>';
+}
+function renderMap(){
+  if(!catalog||!state) return;
+  const byPlanet={}; catalog.planets.forEach(p=>byPlanet[p.key]={...p,bases:[]});
+  players.forEach(pl=>{ if(pl.planet_key&&byPlanet[pl.planet_key]) byPlanet[pl.planet_key].bases.push(pl); });
+  $("map").innerHTML=Object.values(byPlanet).map(p=>{
+    const bases=p.bases.map(b=>{ const me=b.id===state.id; const icon=me?'⭐':(b.is_npc?'🤖':'👤');
+      const cls=me?'me':(b.home_base_id?'enemy':''); const clk=(!me&&b.home_base_id)?`onclick="prefill(${b.home_base_id})"`:'';
+      return `<span class="base ${cls}" ${clk} title="base ${b.home_base_id??'-'}">${icon} ${esc(b.username)}${b.home_base_id?` <span class="muted">#${b.home_base_id}</span>`:''}</span>`;
+    }).join("");
+    return `<div class="planet"><div class="head"><div class="orb ${p.key}"></div><b>${esc(p.name)}</b></div><div>${bases||'<span class="muted">sin colonias</span>'}</div></div>`;
+  }).join("");
+}
+
+setInterval(()=>{ if(state) refresh(); },4000);              // pull state
+setInterval(()=>{ renderQueues(); renderMap(); },1000);     // smooth countdowns/bars
+
+// live notifications
+function startStream(){
+  if(es) es.close();
+  es=new EventSource(API+"/api/v1/notifications/stream?token="+encodeURIComponent(token)+"&interval=2");
+  es.onopen=()=>{ $("streamstate").textContent="● en vivo"; $("live").textContent="●"; $("live").className="ok"; };
+  es.onerror=()=>{ $("streamstate").textContent="○ reconectando…"; $("live").textContent="○"; $("live").className="muted"; };
+  es.onmessage=ev=>{ const n=JSON.parse(ev.data); const d=document.createElement("div"); d.className="note";
+    d.innerHTML=`<b>${esc(n.type)}</b> — ${esc(n.message)} <span class="muted">${new Date(n.created_at).toLocaleTimeString()}</span>`;
+    $("feed").prepend(d); refresh(); };
+}
+
+async function boot(){
+  const authed=!!token;
+  if(!authed){ $("u").value=localStorage.getItem("lastuser")||""; }
+  $("auth").classList.toggle("hidden",authed);
+  ["energy","unread","logout","live"].forEach(i=>$(i).classList.toggle("hidden",!authed));
+  if(!authed){ $("game").classList.add("hidden"); $("onboard").classList.add("hidden"); return; }
+  await loadCatalog();
+  let me; try{ me=await api("/api/v1/players/me"); }catch{ logout(); return; }
+  if(!me.race_key){ $("onboard").classList.remove("hidden"); $("game").classList.add("hidden"); return; }
+  $("onboard").classList.add("hidden"); $("game").classList.remove("hidden");
+  await refresh(); startStream();
+}
+boot();
+</script>
+</body>
+</html>

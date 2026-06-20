@@ -1,0 +1,58 @@
+# Units catalog. Costs use resource ROLES (resolved per-race), like buildings.
+# personnel = population roles; heavy = race-specific war machines.
+# requires = building (key) that must be ACTIVE in the base to train this unit.
+personnel:
+  - key: worker
+    name: "Trabajador"
+    description: "Aumenta produccion y construccion."
+    requires: headquarters
+    energy_cost: 2
+    train_seconds: 30
+    cost: { structural: 10, energetic: 5 }
+    stats: { attack: 0, defense: 1, hp: 5 }
+  - key: soldier
+    name: "Militar"
+    description: "Unidad de combate basica."
+    requires: barracks
+    energy_cost: 3
+    train_seconds: 45
+    cost: { structural: 15, energetic: 10 }
+    stats: { attack: 8, defense: 5, hp: 12 }
+  - key: scientist
+    name: "Cientifico"
+    description: "Acelera investigacion."
+    requires: research_lab
+    energy_cost: 3
+    train_seconds: 45
+    cost: { structural: 10, energetic: 15, advanced: 10 }
+    stats: { attack: 0, defense: 2, hp: 6 }
+
+heavy:
+  - key: tank
+    name: "Tanque"
+    requires: factory
+    energy_cost: 8
+    train_seconds: 120
+    cost: { structural: 80, energetic: 40, advanced: 20 }
+    stats: { attack: 30, defense: 25, hp: 60 }
+  - key: ship
+    name: "Barco"
+    requires: factory
+    energy_cost: 9
+    train_seconds: 140
+    cost: { structural: 100, energetic: 50 }
+    stats: { attack: 25, defense: 30, hp: 80 }
+  - key: aircraft
+    name: "Avion"
+    requires: factory
+    energy_cost: 10
+    train_seconds: 150
+    cost: { structural: 60, energetic: 60, advanced: 40 }
+    stats: { attack: 40, defense: 15, hp: 40 }
+  - key: shuttle
+    name: "Transbordador espacial"
+    requires: factory
+    energy_cost: 15
+    train_seconds: 240
+    cost: { structural: 120, energetic: 100, advanced: 80 }
+    stats: { attack: 20, defense: 20, hp: 100 }

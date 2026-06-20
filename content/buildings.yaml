@@ -1,0 +1,70 @@
+# Buildings. Costs are expressed in resource ROLES (resolved per-race) plus
+# a flat energy cost and a build time. category=mine buildings produce a mineral.
+buildings:
+  - key: headquarters
+    name: "Base central"
+    category: core
+    description: "Centro de mando. Punto de partida de cada jugador."
+    energy_cost: 0
+    build_seconds: 0
+    cost:
+      structural: 0
+  - key: mine
+    name: "Mina"
+    category: mine
+    description: "Extrae un mineral del planeta. Produccion lazy por timestamp."
+    energy_cost: 10
+    build_seconds: 60
+    base_output_per_hour: 60   # multiplied by planet abundance for the target mineral
+    cost:
+      structural: 100
+      energetic: 40
+  - key: power_plant
+    name: "Planta de energia"
+    category: energy
+    description: "Aumenta el tope/regen de energia."
+    energy_cost: 15
+    build_seconds: 120
+    cost:
+      structural: 120
+      energetic: 80
+  - key: barracks
+    name: "Cuartel"
+    category: military
+    description: "Entrena unidades militares."
+    energy_cost: 20
+    build_seconds: 180
+    cost:
+      structural: 150
+      energetic: 60
+      advanced: 30
+  - key: factory
+    name: "Taller / Fabrica"
+    category: heavy
+    description: "Produce unidades pesadas (tanques, barcos, aviones)."
+    energy_cost: 25
+    build_seconds: 240
+    cost:
+      structural: 200
+      energetic: 100
+      advanced: 60
+  - key: research_lab
+    name: "Laboratorio"
+    category: science
+    description: "Habilita investigacion y cientificos."
+    energy_cost: 20
+    build_seconds: 200
+    cost:
+      structural: 120
+      energetic: 120
+      advanced: 80
+  - key: turret
+    name: "Torreta defensiva"
+    category: defense
+    description: "Defiende la base: suma poder defensivo fijo en combate (sin unidades)."
+    energy_cost: 18
+    build_seconds: 150
+    defense_power: 40   # se suma a la defensa de la base al resolver un ataque
+    cost:
+      structural: 140
+      energetic: 60

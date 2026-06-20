@@ -1,0 +1,31 @@
+image:
+  repository: online-game
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+api:
+  replicas: 2
+  port: 8000
+
+worker:
+  # CronJob schedule for the periodic tick (build queues, mines, future combat/AI).
+  schedule: "*/5 * * * *"
+
+env:
+  ENVIRONMENT: production
+  JWT_SECRET: change-me
+  REDIS_ENABLED: "true"
+  ENERGY_REGEN_PER_HOUR: "10"
+  ENERGY_MAX: "240"
+  ENERGY_START: "60"
+
+postgres:
+  enabled: true
+  user: game
+  password: game
+  db: game
+  image: postgres:16-alpine
+
+redis:
+  enabled: true
+  image: redis:7-alpine

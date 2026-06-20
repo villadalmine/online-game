@@ -1,0 +1,40 @@
+# Tecnologías investigables. Requieren un laboratorio activo. Al completarse otorgan un
+# efecto permanente (multiplicador) que se aplica en los sistemas existentes:
+#   effect: production | attack | defense  (apila sobre bonus de raza y boons de dioses)
+technologies:
+  - key: mining_efficiency
+    name: "Mineria mejorada"
+    description: "+25% de produccion de minas."
+    requires: research_lab
+    energy_cost: 20
+    research_seconds: 300
+    cost: { structural: 200, energetic: 150 }
+    effect: production
+    magnitude: 1.25
+  - key: deep_core_mining
+    name: "Mineria de nucleo profundo"
+    description: "+25% de produccion adicional."
+    requires: research_lab
+    energy_cost: 30
+    research_seconds: 600
+    cost: { structural: 350, energetic: 250, advanced: 100 }
+    effect: production
+    magnitude: 1.25
+  - key: weapons
+    name: "Armamento avanzado"
+    description: "+30% de ataque de tus flotas."
+    requires: research_lab
+    energy_cost: 25
+    research_seconds: 480
+    cost: { structural: 250, energetic: 200, advanced: 80 }
+    effect: attack
+    magnitude: 1.30
+  - key: shields
+    name: "Escudos planetarios"
+    description: "+30% de defensa de tus bases."
+    requires: research_lab
+    energy_cost: 25
+    research_seconds: 480
+    cost: { structural: 250, energetic: 150, advanced: 80 }
+    effect: defense
+    magnitude: 1.30

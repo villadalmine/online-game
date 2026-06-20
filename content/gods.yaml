@@ -1,0 +1,63 @@
+# Gods live on moons and grant boons + premium resources via expeditions.
+# expedition: costo/tiempo/requisito. grants: recursos entregados al volver.
+# boon: buff temporal que se aplica en los sistemas existentes
+#   (effect: production | attack | defense). magnitude multiplica; duration en segundos.
+moons:
+  - key: luna
+    name: "Luna"
+    planet: earth
+    god: "Selene"
+    expedition:
+      energy_cost: 30
+      duration_seconds: 600
+      requires_unit: shuttle
+    grants:
+      helium3: 100
+      rare_earth: 50
+    boon:
+      effect: production
+      magnitude: 1.25
+      duration_seconds: 3600
+  - key: phobos
+    name: "Fobos"
+    planet: mars
+    god: "Fobos"
+    expedition:
+      energy_cost: 25
+      duration_seconds: 480
+      requires_unit: shuttle
+    grants:
+      water_ice: 120
+    boon:
+      effect: defense
+      magnitude: 1.20
+      duration_seconds: 3600
+  - key: deimos
+    name: "Deimos"
+    planet: mars
+    god: "Deimos"
+    expedition:
+      energy_cost: 25
+      duration_seconds: 480
+      requires_unit: shuttle
+    grants:
+      water_ice: 80
+    boon:
+      effect: production
+      magnitude: 1.15
+      duration_seconds: 3600
+  - key: zoozve
+    name: "Zoozve (cuasi-luna 2002 VE68)"
+    planet: venus
+    god: "Zoozve"
+    expedition:
+      energy_cost: 35
+      duration_seconds: 720
+      requires_unit: shuttle
+    grants:
+      titanium: 80
+      helium3: 60
+    boon:
+      effect: attack
+      magnitude: 1.25
+      duration_seconds: 1800

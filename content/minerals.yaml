@@ -1,0 +1,43 @@
+# In-game strategic resources mapped to real-world minerals/elements.
+# Change a value here to rebalance — no code changes required.
+minerals:
+  - key: iron
+    name: "Hierro (Fe)"
+    real: "Hierro / feldespato"
+    description: "Estructuras y unidades pesadas."
+  - key: silicon
+    name: "Silicio (Si)"
+    real: "Silicatos / cuarzo"
+    description: "Electrónica y ciencia."
+  - key: aluminum
+    name: "Aluminio (Al)"
+    real: "Plagioclasa / feldespato"
+    description: "Unidades ligeras y aviones."
+  - key: titanium
+    name: "Titanio (Ti)"
+    real: "Ilmenita (FeTiO3)"
+    description: "Unidades pesadas y espaciales."
+  - key: sulfur
+    name: "Azufre (S)"
+    real: "Jarosita / pirita / SO2"
+    description: "Combustible, quimica y armas."
+  - key: magnesium
+    name: "Magnesio (Mg)"
+    real: "Olivino / MgO"
+    description: "Aleaciones."
+  - key: basalt
+    name: "Roca basaltica"
+    real: "Basalto / piroxeno"
+    description: "Construccion basica."
+  - key: helium3
+    name: "Helio-3 (He-3)"
+    real: "Regolito lunar + ilmenita"
+    description: "Energia y motor espacial avanzado (endgame, lunas)."
+  - key: rare_earth
+    name: "Tierras raras (KREEP)"
+    real: "K, REE, P"
+    description: "Alta tecnologia (lunas)."
+  - key: water_ice
+    name: "Hielo de agua"
+    real: "Condrita carbonacea"
+    description: "Soporte vital y colonizacion (lunas de Marte)."

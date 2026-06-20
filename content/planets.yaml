@@ -1,0 +1,81 @@
+# Galaxies -> planets -> per-mineral abundance.
+# abundance is a base production multiplier for a mine of that mineral on that planet.
+galaxies:
+  - key: milky_way
+    name: "Via Lactea"
+    planets:
+      - key: earth
+        name: "Tierra"
+        description: "Mundo equilibrado, rico en hierro y aluminio."
+        abundance:
+          iron: 1.4
+          silicon: 1.3
+          aluminum: 1.4
+          titanium: 0.6
+          sulfur: 0.4
+          magnesium: 0.8
+          basalt: 0.9
+        moons: [luna]
+      - key: mars
+        name: "Marte"
+        description: "Mundo de oxido de hierro y azufre, duro y militarista."
+        abundance:
+          iron: 1.5
+          silicon: 1.0
+          aluminum: 0.7
+          titanium: 0.8
+          sulfur: 1.3
+          magnesium: 1.4
+          basalt: 1.2
+        moons: [phobos, deimos]
+      - key: venus
+        name: "Venus"
+        description: "Mundo volcanico de basalto y azufre, alta tecnologia."
+        abundance:
+          iron: 1.0
+          silicon: 1.1
+          aluminum: 0.9
+          titanium: 1.3
+          sulfur: 1.5
+          magnesium: 0.9
+          basalt: 1.5
+        moons: [zoozve]
+      - key: mercury
+        name: "Mercurio"
+        description: "Mundo abrasador, denso en hierro y silicio; sin lunas."
+        abundance:
+          iron: 1.6
+          silicon: 1.4
+          aluminum: 0.8
+          titanium: 1.0
+          sulfur: 0.6
+          magnesium: 0.7
+          basalt: 1.1
+        moons: []
+  - key: andromeda
+    name: "Andromeda"
+    planets:
+      - key: vega_prime
+        name: "Vega Prime"
+        description: "Mundo oceanico rico en titanio y aluminio."
+        abundance:
+          iron: 0.9
+          silicon: 1.2
+          aluminum: 1.5
+          titanium: 1.6
+          sulfur: 0.8
+          magnesium: 1.1
+          basalt: 0.9
+        moons: []
+      - key: nyx
+        name: "Nyx"
+        description: "Mundo sombrio y volcanico, abundante en azufre y basalto."
+        abundance:
+          iron: 1.1
+          silicon: 0.9
+          aluminum: 0.7
+          titanium: 1.2
+          sulfur: 1.6
+          magnesium: 1.0
+          basalt: 1.5
+        moons: []
