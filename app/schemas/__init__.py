@@ -142,12 +142,20 @@ class MarkReadRequest(BaseModel):
 class AllianceCreate(BaseModel):
     name: str = Field(min_length=3, max_length=60)
     tag: str = Field(min_length=1, max_length=8)
+    type: str = "full"
+
+
+class AllianceTransferRequest(BaseModel):
+    to_player_id: int
+    mineral: str
+    amount: float = Field(gt=0)
 
 
 class AllianceOut(BaseModel):
     id: int
     name: str
     tag: str
+    type: str
     leader_id: int
     member_count: int
 
@@ -202,4 +210,6 @@ class PlayerStateOut(BaseModel):
     research: list[ResearchOrderOut] = []
     alliance_id: int | None = None
     alliance_name: str | None = None
+    alliance_type: str | None = None
+    alliance_incoming: list[IncomingAttackOut] = []  # attacks on allies (shared_vision)
     unread_notifications: int = 0

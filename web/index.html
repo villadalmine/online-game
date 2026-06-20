@@ -257,9 +257,10 @@ async function recall(id){ try{ await api(`/api/v1/combat/missions/${id}/recall`
 async function doTick(){ try{ const d=await api("/api/v1/admin/tick","POST"); msg("Tick: NPC jugaron"); refresh(); }catch(e){ msg(e.message,false);} }
 async function markRead(){ await api("/api/v1/notifications/read","POST",{}); refresh(); }
 async function doResearch(k){ try{ await api("/api/v1/research","POST",{tech_key:k}); msg("Investigando "+k); refresh(); }catch(e){ msg(e.message,false);} }
-async function allianceCreate(){ try{ await api("/api/v1/alliances","POST",{name:$("aname").value,tag:$("atag").value}); msg("Alianza creada"); refresh(); }catch(e){ msg(e.message,false);} }
+async function allianceCreate(){ try{ await api("/api/v1/alliances","POST",{name:$("aname").value,tag:$("atag").value,type:$("atype").value}); msg("Alianza creada"); refresh(); }catch(e){ msg(e.message,false);} }
 async function allianceJoin(id){ try{ await api(`/api/v1/alliances/${id}/join`,"POST"); refresh(); }catch(e){ msg(e.message,false);} }
 async function allianceLeave(){ try{ await api("/api/v1/alliances/leave","POST"); refresh(); }catch(e){ msg(e.message,false);} }
+async function allianceTransfer(){ try{ await api("/api/v1/alliances/transfer","POST",{to_player_id:+$("trto").value,mineral:$("trmin").value,amount:+$("tramt").value}); msg("Minerales enviados"); refresh(); }catch(e){ msg(e.message,false);} }
 function toggleGuide(){ const g=$("guide"); g.classList.toggle("hidden"); if(!g.classList.contains("hidden")) renderGuide(); }
 function renderGuide(){
   if(!catalog) return;
@@ -315,13 +316,29 @@ function renderResearch(){
     return `<div class="item"><div class="top"><span title="${esc(t.description||'')}">${esc(t.name)} <span class="muted">(${esc(t.effect)} ×${t.magnitude})</span></span>${right}</div>${order?bar(t.research_seconds,order.completes_at):""}</div>`;
   }).join("");
 }
+function allianceType(key){ return (catalog.alliance_types||[]).find(t=>t.key===key)||{}; }
 function renderAlliances(){
-  if(!state) return;
+  if(!state||!catalog) return;
   if(state.alliance_id){
-    $("alliances").innerHTML=`<div class="item"><div class="top"><span>🤝 <b>${esc(state.alliance_name||"")}</b></span><button class="sm danger" onclick="allianceLeave()">salir</button></div></div>`;
+    const t=allianceType(state.alliance_type);
+    const benefits=(t.benefits||[]);
+    const benTxt=benefits.length?benefits.join(", "):"solo no-agresión";
+    let html=`<div class="item"><div class="top"><span>🤝 <b>${esc(state.alliance_name||"")}</b> <span class="muted">[${esc(state.alliance_type||"")}]</span></span><button class="sm danger" onclick="allianceLeave()">salir</button></div><div class="muted">beneficios: ${esc(benTxt)}</div></div>`;
+    if((state.alliance_incoming||[]).length)
+      html+=`<div class="item bad">⚠ aliados bajo ataque: ${state.alliance_incoming.map(m=>`base ${m.target_base_id} (${cd(m.arrives_at)})`).join(", ")}</div>`;
+    if(benefits.includes("trade")){
+      const allies=(players||[]).filter(p=>p.alliance_id===state.alliance_id && p.id!==state.id);
+      if(allies.length){
+        const allyOpts=allies.map(p=>`<option value="${p.id}">${esc(p.username)}</option>`).join("");
+        const minOpts=catalog.minerals.map(m=>`<option value="${m.key}">${esc(m.name)}</option>`).join("");
+        html+=`<div class="row"><span class="muted">comercio →</span><select id="trto">${allyOpts}</select><select id="trmin">${minOpts}</select><input id="tramt" type="number" value="100" style="width:64px"><button class="sm" onclick="allianceTransfer()">enviar</button></div>`;
+      }
+    }
+    $("alliances").innerHTML=html;
   } else {
-    const list=(alliances||[]).map(a=>`<div class="item"><div class="top"><span>[${esc(a.tag)}] ${esc(a.name)} <span class="muted">${a.member_count}👥</span></span><button class="sm" onclick="allianceJoin(${a.id})">unirse</button></div></div>`).join("")||'<span class="muted">no hay alianzas aún</span>';
-    $("alliances").innerHTML=`<div class="row"><input id="aname" placeholder="nombre" style="flex:1"><input id="atag" placeholder="tag" style="width:64px"><button class="sm" onclick="allianceCreate()">crear</button></div>`+list;
+    const typeOpts=(catalog.alliance_types||[]).map(t=>`<option value="${t.key}" title="${esc(t.description||'')}">${esc(t.name)}</option>`).join("");
+    const list=(alliances||[]).map(a=>`<div class="item"><div class="top"><span>[${esc(a.tag)}] ${esc(a.name)} <span class="muted">${esc(a.type)} · ${a.member_count}👥</span></span><button class="sm" onclick="allianceJoin(${a.id})">unirse</button></div></div>`).join("")||'<span class="muted">no hay alianzas aún</span>';
+    $("alliances").innerHTML=`<div class="row"><input id="aname" placeholder="nombre" style="flex:1"><input id="atag" placeholder="tag" style="width:60px"></div><div class="row"><select id="atype">${typeOpts}</select><button class="sm" onclick="allianceCreate()">crear</button></div>`+list;
   }
 }
 function renderQueues(){

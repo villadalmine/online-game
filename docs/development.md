@@ -126,6 +126,13 @@ solo en los sistemas existentes (producción/combate). No hace falta tocar Pytho
 `research_seconds`, `cost` (roles) y `effect` (`production|attack|defense`) + `magnitude`.
 El efecto se aplica solo vía `services/effects.py` (apila con boons). Sin tocar Python.
 
+### 4.3e Ajustar alianzas (tipos y beneficios)
+`content/alliances.yaml` → tipos con `benefits` (`shared_bonus`/`mutual_defense`/
+`shared_vision`/`trade`/`shared_unit_tech`) y, si incluye `shared_bonus`, sus multiplicadores.
+El `unit_perk` de cada raza (compartido por `shared_unit_tech`) está en `content/races.yaml`.
+Los multiplicadores se aplican en `services/effects.py`; la defensa mutua y el comercio en
+`services/alliances.py`. Sin tocar más Python.
+
 ### 4.4 Agregar un edificio
 `content/buildings.yaml` → `key`, `name`, `category`, `energy_cost`, `build_seconds`,
 y `cost` en **roles** (no minerales). El costo se traduce a minerales por raza

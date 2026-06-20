@@ -10,6 +10,7 @@ from app.schemas import (
     AllianceMemberOut,
     AllianceOut,
     AllianceRankingEntryOut,
+    AllianceTransferRequest,
 )
 from app.services.alliances import (
     AllianceError,
@@ -19,6 +20,7 @@ from app.services.alliances import (
     list_alliances,
     member_count,
     members,
+    transfer,
 )
 from app.services.scoring import player_score
 
@@ -44,7 +46,9 @@ async def alliance_ranking(
 
 
 def _out(a, count) -> AllianceOut:
-    return AllianceOut(id=a.id, name=a.name, tag=a.tag, leader_id=a.leader_id, member_count=count)
+    return AllianceOut(
+        id=a.id, name=a.name, tag=a.tag, type=a.type, leader_id=a.leader_id, member_count=count
+    )
 
 
 @router.get("", response_model=list[AllianceOut])
@@ -61,11 +65,26 @@ async def create(
     session: AsyncSession = Depends(get_session),
 ):
     try:
-        a = await create_alliance(session, player, body.name, body.tag)
+        a = await create_alliance(session, player, body.name, body.tag, body.type)
     except AllianceError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()
     return _out(a, await member_count(session, a.id))
+
+
+@router.post("/transfer")
+async def transfer_minerals(
+    body: AllianceTransferRequest,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Comercio: transferí minerales a un aliado (requiere beneficio 'trade')."""
+    try:
+        await transfer(session, player, body.to_player_id, body.mineral, body.amount)
+    except AllianceError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return {"transferred": body.amount, "mineral": body.mineral, "to": body.to_player_id}
 
 
 @router.post("/{alliance_id}/join", response_model=AllianceOut)
@@ -108,7 +127,7 @@ async def detail(
 
     a = await session.get(Alliance, alliance_id)
     return AllianceDetailOut(
-        id=a.id, name=a.name, tag=a.tag, leader_id=a.leader_id, member_count=len(ms),
+        id=a.id, name=a.name, tag=a.tag, type=a.type, leader_id=a.leader_id, member_count=len(ms),
         members=[
             AllianceMemberOut(id=m.id, username=m.username, race_key=m.race_key, is_npc=m.is_npc)
             for m in ms

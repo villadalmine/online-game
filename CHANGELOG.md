@@ -7,6 +7,32 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-20 — Web: UI de alianzas (tipo, beneficios, comercio, visión) + repo público
+- La web ahora deja **elegir el tipo de alianza** al crear, muestra sus **beneficios**, una
+  **alerta de visión compartida** (aliados bajo ataque) y un mini-form de **comercio** para
+  transferir minerales a un aliado (si el tipo lo permite). Sigue consumiendo solo la API.
+- **Fix (code-review)**: un humano ya no puede unirse a la alianza de las NPC (daba inmunidad
+  + beneficios); la alianza NPC se identifica por tener miembros NPC (no por nombre), evitando
+  que un humano la "capture" usando el mismo nombre.
+- Repo preparado para publicar: `LICENSE` (MIT), `.dockerignore`, `.gitignore` endurecido
+  (nunca sube `.env` ni `*.db`), README con 3 modos (full-local / LAN / online) y `make`
+  targets `run`/`run-lan`/`up`/`tunnel`.
+
+### 2026-06-20 — Alianzas con beneficios y tipos (data-driven)
+- **Tipos de alianza** en `content/alliances.yaml` (no-agresión / defensiva / plena), cada uno
+  habilita beneficios. Se elige al crear (`type`). La no-agresión aplica siempre.
+- **Beneficios**:
+  - `shared_bonus`: multiplicador compartido (prod/ataque/defensa) a todos los miembros.
+  - `shared_unit_tech`: cada raza de la alianza comparte su `unit_perk` (en `races.yaml`) →
+    p.ej. terran+marciano = +prod y +ataque para todos. Se aplica vía `services/effects.py`.
+  - `mutual_defense`: los aliados prestan 25% de su defensa cuando atacan a un miembro.
+  - `shared_vision`: ves los ataques entrantes sobre tus aliados (`/me.alliance_incoming`).
+  - `trade`: `POST /alliances/transfer` mueve minerales entre aliados.
+- `/me` expone `alliance_type`; el catálogo lista los tipos. CLI `alliance-create ... [tipo]`,
+  `alliance-transfer`. Migración Alembic (`alliances.type`).
+- Tests: 6 de servicio (bonus, unit-tech, defensa mutua, comercio) + 2 e2e (tipo+comercio,
+  visión compartida). Smoke en vivo: alianza plena terran+marciano → ataque/prod ×1.21.
+
 ### 2026-06-20 — DB auto-migra al arrancar + Guía in-game + sacar "Avanzar" del jugador
 - **Migraciones automáticas en el arranque** (`run_migrations()` vía `asyncio.to_thread`):
   el server aplica Alembic a head al iniciar → **ya no hace falta `make db-reset`** al cambiar

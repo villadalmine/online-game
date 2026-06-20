@@ -13,7 +13,8 @@ async def multiplier(
     session: AsyncSession, player_id: int, effect: str, now: datetime | None = None
 ) -> float:
     m = await boon_multiplier(session, player_id, effect, now)
-    # Local import avoids an economy<->research import cycle.
+    # Local imports avoid economy<->research and economy<->alliances import cycles.
+    from app.services.alliances import alliance_multiplier
     from app.services.research import researched_techs
 
     content = get_content()
@@ -21,4 +22,5 @@ async def multiplier(
         tech = content.technologies.get(key)
         if tech and tech.get("effect") == effect:
             m *= float(tech.get("magnitude", 1.0))
+    m *= await alliance_multiplier(session, player_id, effect)
     return m

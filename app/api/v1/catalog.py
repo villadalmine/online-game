@@ -20,6 +20,7 @@ def build_catalog() -> dict:
         "heavy_units": list(c.heavy.values()),
         "moons": list(c.moons.values()),
         "technologies": list(c.technologies.values()),
+        "alliance_types": list(c.alliance_types.values()),
     }
 
 

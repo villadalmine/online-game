@@ -208,6 +208,10 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
     flat_defense = sum(
         content.buildings[b.building_key].get("defense_power", 0) for b in bres.scalars()
     )
+    # Allies lend defense if the defender's alliance has mutual_defense.
+    from app.services.alliances import mutual_defense_flat
+
+    flat_defense += await mutual_defense_flat(session, defender)
     result = resolve_combat(force, defender_force, atk_mult, def_mult, flat_defense)
 
     # Defender unit losses.

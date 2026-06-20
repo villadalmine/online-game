@@ -189,6 +189,7 @@ class Alliance(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(60), unique=True, index=True)
     tag: Mapped[str] = mapped_column(String(8))
+    type: Mapped[str] = mapped_column(String(30), default="full")
     leader_id: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

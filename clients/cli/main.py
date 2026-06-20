@@ -17,9 +17,10 @@ Usage:
     ogame-cli ranking                           # tabla de posiciones
     ogame-cli research <tech_key>               # investigar tecnología
     ogame-cli alliances                         # listar alianzas
-    ogame-cli alliance-create <nombre> <tag>    # crear alianza
+    ogame-cli alliance-create <nombre> <tag> [tipo]  # crear (tipo: full|defensive|nonaggression)
     ogame-cli alliance-join <id>                # unirse
     ogame-cli alliance-leave                    # salir
+    ogame-cli alliance-transfer <to_id> <mineral> <cantidad>  # comercio entre aliados
     ogame-cli tick                              # avanzar el mundo ahora (turnos NPC)
     ogame-cli notifications                     # ver notificaciones
     ogame-cli read                              # marcar todas como leídas
@@ -134,12 +135,17 @@ def main() -> None:
         elif cmd == "alliance-ranking":
             _show(client.get("/api/v1/alliances/ranking", headers=_headers()))
         elif cmd == "alliance-create":
-            _show(client.post(
-                "/api/v1/alliances", headers=_headers(), json={"name": rest[0], "tag": rest[1]}))
+            body = {"name": rest[0], "tag": rest[1]}
+            if len(rest) > 2:
+                body["type"] = rest[2]
+            _show(client.post("/api/v1/alliances", headers=_headers(), json=body))
         elif cmd == "alliance-join":
             _show(client.post(f"/api/v1/alliances/{rest[0]}/join", headers=_headers()))
         elif cmd == "alliance-leave":
             _show(client.post("/api/v1/alliances/leave", headers=_headers()))
+        elif cmd == "alliance-transfer":
+            _show(client.post("/api/v1/alliances/transfer", headers=_headers(),
+                json={"to_player_id": int(rest[0]), "mineral": rest[1], "amount": float(rest[2])}))
         elif cmd == "tick":
             _show(client.post("/api/v1/admin/tick", headers=_headers()))
         elif cmd == "notifications":

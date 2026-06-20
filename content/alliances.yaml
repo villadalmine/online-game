@@ -1,0 +1,24 @@
+# Tipos de alianza (data-driven). La NO-AGRESION (no atacarse entre miembros) aplica
+# SIEMPRE a cualquier alianza. El tipo agrega beneficios extra:
+#   shared_bonus     -> multiplicador compartido (production/attack/defense) a todos
+#   mutual_defense   -> los aliados suman defensa cuando atacan a un miembro
+#   shared_vision    -> ves los ataques entrantes sobre cualquier aliado
+#   trade            -> transferir minerales entre aliados
+#   shared_unit_tech -> tus unidades ganan el "perk" de TODAS las razas de la alianza
+types:
+  - key: nonaggression
+    name: "Pacto de No-Agresion"
+    description: "Solo dejan de atacarse entre si."
+    benefits: []
+  - key: defensive
+    name: "Pacto Defensivo"
+    description: "No-agresion + defensa mutua + vision compartida."
+    benefits: [mutual_defense, shared_vision]
+  - key: full
+    name: "Alianza Plena"
+    description: "Todos los beneficios: bonus, defensa mutua, vision, comercio y tech de unidades."
+    benefits: [shared_bonus, mutual_defense, shared_vision, trade, shared_unit_tech]
+    shared_bonus:
+      production: 1.10
+      attack: 1.10
+      defense: 1.10

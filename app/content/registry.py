@@ -44,6 +44,9 @@ class GameContent:
         self.technologies: dict[str, dict] = {
             t["key"]: t for t in _load("technologies.yaml")["technologies"]
         }
+        self.alliance_types: dict[str, dict] = {
+            t["key"]: t for t in _load("alliances.yaml")["types"]
+        }
 
     def resolve_role(self, race_key: str, role: str) -> str | None:
         """Map an abstract resource role (structural/energetic/advanced) to a mineral key."""

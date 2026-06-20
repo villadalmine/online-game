@@ -17,6 +17,9 @@ races:
     bonuses:
       worker_train_speed: 1.25
       economy: 1.2
+    # perk de unidad: se comparte entre aliados con shared_unit_tech
+    unit_perk:
+      production: 1.10
   - key: martian
     name: "Marcianos"
     home_planet: mars
@@ -32,6 +35,8 @@ races:
     bonuses:
       military_attack: 1.25
       heavy_unit_cost: 0.9
+    unit_perk:
+      attack: 1.10
   - key: venusian
     name: "Venusianos"
     home_planet: venus
@@ -47,3 +52,5 @@ races:
     bonuses:
       research_speed: 1.3
       defense: 1.2
+    unit_perk:
+      defense: 1.10

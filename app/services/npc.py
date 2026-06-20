@@ -70,11 +70,18 @@ async def _ensure_npc_alliance(session: AsyncSession) -> None:
     npcs = list((await session.execute(select(Player).where(Player.is_npc.is_(True)))).scalars())
     if not npcs:
         return
-    alliance = (
-        await session.execute(select(Alliance).where(Alliance.name == NPC_ALLIANCE_NAME))
-    ).scalar_one_or_none()
+    # Identify the NPC alliance by "already has an NPC member" (robust against a human
+    # grabbing the name), not by name match.
+    existing = next((n.alliance_id for n in npcs if n.alliance_id is not None), None)
+    alliance = await session.get(Alliance, existing) if existing else None
     if alliance is None:
-        alliance = Alliance(name=NPC_ALLIANCE_NAME, tag=NPC_ALLIANCE_TAG, leader_id=npcs[0].id)
+        name = NPC_ALLIANCE_NAME
+        taken = (
+            await session.execute(select(Alliance).where(Alliance.name == name))
+        ).scalar_one_or_none()
+        if taken is not None:
+            name = f"{NPC_ALLIANCE_NAME} (IA)"
+        alliance = Alliance(name=name, tag=NPC_ALLIANCE_TAG, type="full", leader_id=npcs[0].id)
         session.add(alliance)
         await session.flush()
     for npc in npcs:

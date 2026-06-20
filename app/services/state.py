@@ -26,6 +26,8 @@ from app.schemas import (
     ResearchOrderOut,
     TrainingOrderOut,
 )
+from app.services.alliances import has_benefit
+from app.services.alliances import members as alliance_members
 from app.services.boons import active_boons
 from app.services.combat import process_missions
 from app.services.economy import collect_mines, finalize_due_builds, player_stocks
@@ -144,6 +146,25 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         for m in ires.scalars()
     ]
 
+    # Alliance: type + shared-vision alerts (attacks inbound on allies).
+    alliance = await session.get(Alliance, player.alliance_id) if player.alliance_id else None
+    ally_incoming: list[IncomingAttackOut] = []
+    if alliance and await has_benefit(session, player.id, "shared_vision"):
+        ally_ids = [m.id for m in await alliance_members(session, alliance.id) if m.id != player.id]
+        if ally_ids:
+            ares = await session.execute(
+                select(AttackMission).where(
+                    AttackMission.defender_id.in_(ally_ids),
+                    AttackMission.status == "outbound",
+                )
+            )
+            ally_incoming = [
+                IncomingAttackOut(
+                    id=m.id, target_base_id=m.target_base_id, arrives_at=m.arrives_at
+                )
+                for m in ares.scalars()
+            ]
+
     return PlayerStateOut(
         id=player.id,
         username=player.username,
@@ -166,9 +187,8 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
             for o in await in_progress(session, player.id)
         ],
         alliance_id=player.alliance_id,
-        alliance_name=(
-            (await session.get(Alliance, player.alliance_id)).name
-            if player.alliance_id else None
-        ),
+        alliance_name=alliance.name if alliance else None,
+        alliance_type=alliance.type if alliance else None,
+        alliance_incoming=ally_incoming,
         unread_notifications=await unread_count(session, player.id),
     )

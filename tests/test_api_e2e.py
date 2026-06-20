@@ -519,6 +519,57 @@ async def test_alliance_ranking(client):
     assert rows[0]["rank"] == 1
 
 
+async def test_alliance_type_and_trade(client):
+    h1 = await _register(client.http, "trader1")
+    await _onboard(client.http, h1, planet="earth", race="terran")
+    h2 = await _register(client.http, "trader2")
+    s2 = await _onboard(client.http, h2, planet="mars", race="martian")
+    r = await client.http.post(
+        "/api/v1/alliances", headers=h1, json={"name": "Mercaderes", "tag": "MRC", "type": "full"}
+    )
+    assert r.status_code == 201 and r.json()["type"] == "full"
+    aid = r.json()["id"]
+    await client.http.post(f"/api/v1/alliances/{aid}/join", headers=h2)
+
+    me1 = (await client.http.get("/api/v1/players/me", headers=h1)).json()
+    assert me1["alliance_type"] == "full"
+
+    # full alliances allow trade
+    rt = await client.http.post(
+        "/api/v1/alliances/transfer",
+        headers=h1,
+        json={"to_player_id": s2["id"], "mineral": "iron", "amount": 50},
+    )
+    assert rt.status_code == 200, rt.text
+    me2 = (await client.http.get("/api/v1/players/me", headers=h2)).json()
+    assert me2["stocks"].get("iron", 0) >= 50  # received the transfer
+
+
+async def test_shared_vision_shows_ally_incoming(client):
+    h1 = await _register(client.http, "watcher")
+    await _onboard(client.http, h1, planet="earth", race="terran")
+    h2 = await _register(client.http, "frontline")
+    s2 = await _onboard(client.http, h2, planet="mars", race="martian")
+    r = await client.http.post(
+        "/api/v1/alliances", headers=h1, json={"name": "Vigias", "tag": "VIG", "type": "defensive"}
+    )
+    aid = r.json()["id"]
+    await client.http.post(f"/api/v1/alliances/{aid}/join", headers=h2)
+
+    # a non-allied attacker hits frontline (h2)
+    ha = await _register(client.http, "raider")
+    await _onboard(client.http, ha, planet="venus", race="venusian")
+    await _grant_units(client.session_maker, "raider", {"tank": 3})
+    await client.http.post(
+        "/api/v1/combat/attack",
+        headers=ha,
+        json={"target_base_id": s2["bases"][0]["id"], "force": {"tank": 3}},
+    )
+    # the ally (h1) sees it via shared vision
+    me1 = (await client.http.get("/api/v1/players/me", headers=h1)).json()
+    assert len(me1["alliance_incoming"]) >= 1
+
+
 async def test_npcs_share_an_alliance(client):
     h = await _register(client.http, "observer")
     await _onboard(client.http, h)
@@ -531,6 +582,10 @@ async def test_npcs_share_an_alliance(client):
     players = (await client.http.get("/api/v1/players", headers=h)).json()
     npc_ids = {p["alliance_id"] for p in players if p["is_npc"]}
     assert npc_ids == {npc_alliance["id"]}
+
+    # a human cannot infiltrate the NPC alliance (would grant immunity + benefits)
+    rj = await client.http.post(f"/api/v1/alliances/{npc_alliance['id']}/join", headers=h)
+    assert rj.status_code == 400
 
 
 async def test_attack_self_rejected(client):
