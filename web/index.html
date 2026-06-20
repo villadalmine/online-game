@@ -316,30 +316,68 @@ function renderResearch(){
     return `<div class="item"><div class="top"><span title="${esc(t.description||'')}">${esc(t.name)} <span class="muted">(${esc(t.effect)} ×${t.magnitude})</span></span>${right}</div>${order?bar(t.research_seconds,order.completes_at):""}</div>`;
   }).join("");
 }
+const BENEFIT={
+  shared_bonus:"Bonus compartido: +producción/ataque/defensa para todos los miembros",
+  shared_unit_tech:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",
+  mutual_defense:"Defensa mutua: tus aliados ayudan a defender tu base",
+  shared_vision:"Visión compartida: ves los ataques que reciben tus aliados",
+  trade:"Comercio: transferir minerales entre aliados",
+};
 function allianceType(key){ return (catalog.alliance_types||[]).find(t=>t.key===key)||{}; }
+function benefitsHtml(keys){
+  if(!keys||!keys.length) return '<div class="muted">Solo no-agresión (no se atacan entre sí).</div>';
+  return keys.map(k=>`<div class="muted">• ${esc(BENEFIT[k]||k)}</div>`).join("");
+}
+function npcAllianceIds(){ return new Set((players||[]).filter(p=>p.is_npc&&p.alliance_id).map(p=>p.alliance_id)); }
+
 function renderAlliances(){
   if(!state||!catalog) return;
-  if(state.alliance_id){
-    const t=allianceType(state.alliance_type);
-    const benefits=(t.benefits||[]);
-    const benTxt=benefits.length?benefits.join(", "):"solo no-agresión";
-    let html=`<div class="item"><div class="top"><span>🤝 <b>${esc(state.alliance_name||"")}</b> <span class="muted">[${esc(state.alliance_type||"")}]</span></span><button class="sm danger" onclick="allianceLeave()">salir</button></div><div class="muted">beneficios: ${esc(benTxt)}</div></div>`;
-    if((state.alliance_incoming||[]).length)
-      html+=`<div class="item bad">⚠ aliados bajo ataque: ${state.alliance_incoming.map(m=>`base ${m.target_base_id} (${cd(m.arrives_at)})`).join(", ")}</div>`;
-    if(benefits.includes("trade")){
-      const allies=(players||[]).filter(p=>p.alliance_id===state.alliance_id && p.id!==state.id);
-      if(allies.length){
-        const allyOpts=allies.map(p=>`<option value="${p.id}">${esc(p.username)}</option>`).join("");
-        const minOpts=catalog.minerals.map(m=>`<option value="${m.key}">${esc(m.name)}</option>`).join("");
-        html+=`<div class="row"><span class="muted">comercio →</span><select id="trto">${allyOpts}</select><select id="trmin">${minOpts}</select><input id="tramt" type="number" value="100" style="width:64px"><button class="sm" onclick="allianceTransfer()">enviar</button></div>`;
-      }
+  if(state.alliance_id){ renderMyAlliance(); return; }
+  if(!document.getElementById("aname")) renderAllianceForm();   // no pisar lo que escribís
+  renderAllianceList();
+}
+function renderMyAlliance(){
+  const t=allianceType(state.alliance_type);
+  const members=(players||[]).filter(p=>p.alliance_id===state.alliance_id);
+  let html=`<div class="item"><div class="top"><span>🤝 <b>${esc(state.alliance_name||"")}</b> <span class="muted">tipo: ${esc(t.name||state.alliance_type||"")}</span></span><button class="sm danger" onclick="allianceLeave()">salir</button></div>`+
+    `<div style="margin-top:6px"><b class="muted">Beneficios:</b>${benefitsHtml(t.benefits)}</div>`+
+    `<div style="margin-top:6px"><b class="muted">Miembros (${members.length}):</b> ${members.map(m=>esc(m.username)+(m.is_npc?' 🤖':'')).join(", ")||"-"}</div></div>`;
+  if((state.alliance_incoming||[]).length)
+    html+=`<div class="item bad">⚠ aliados bajo ataque: ${state.alliance_incoming.map(m=>`base ${m.target_base_id} (${cd(m.arrives_at)})`).join(", ")}</div>`;
+  if((t.benefits||[]).includes("trade")){
+    const allies=members.filter(p=>p.id!==state.id);
+    if(allies.length){
+      const allyOpts=allies.map(p=>`<option value="${p.id}">${esc(p.username)}</option>`).join("");
+      const minOpts=catalog.minerals.map(m=>`<option value="${m.key}">${esc(m.name)}</option>`).join("");
+      html+=`<div class="item"><b class="muted">Comercio</b><div class="row">enviar <select id="trmin">${minOpts}</select><input id="tramt" type="number" value="100" style="width:64px"> a <select id="trto">${allyOpts}</select><button class="sm" onclick="allianceTransfer()">enviar</button></div></div>`;
     }
-    $("alliances").innerHTML=html;
   } else {
-    const typeOpts=(catalog.alliance_types||[]).map(t=>`<option value="${t.key}" title="${esc(t.description||'')}">${esc(t.name)}</option>`).join("");
-    const list=(alliances||[]).map(a=>`<div class="item"><div class="top"><span>[${esc(a.tag)}] ${esc(a.name)} <span class="muted">${esc(a.type)} · ${a.member_count}👥</span></span><button class="sm" onclick="allianceJoin(${a.id})">unirse</button></div></div>`).join("")||'<span class="muted">no hay alianzas aún</span>';
-    $("alliances").innerHTML=`<div class="row"><input id="aname" placeholder="nombre" style="flex:1"><input id="atag" placeholder="tag" style="width:60px"></div><div class="row"><select id="atype">${typeOpts}</select><button class="sm" onclick="allianceCreate()">crear</button></div>`+list;
+    html+=`<div class="muted">Este tipo no permite comercio.</div>`;
   }
+  $("alliances").innerHTML=html;
+}
+function renderAllianceForm(){
+  const typeOpts=(catalog.alliance_types||[]).map(t=>`<option value="${t.key}">${esc(t.name)}</option>`).join("");
+  $("alliances").innerHTML=
+    `<div class="muted">Creá una alianza: elegí un tipo (define qué beneficios da) o unite a una de abajo.</div>`+
+    `<div class="row"><input id="aname" placeholder="nombre (mín 3)" style="flex:1"><input id="atag" placeholder="tag" style="width:60px"></div>`+
+    `<div class="row"><select id="atype" onchange="renderTypeHelp()">${typeOpts}</select><button class="sm" onclick="allianceCreate()">crear</button></div>`+
+    `<div id="atypehelp"></div>`+
+    `<div style="margin-top:8px"><b class="muted">Alianzas existentes</b></div><div id="ally-list"></div>`;
+  renderTypeHelp();
+}
+function renderTypeHelp(){
+  const t=allianceType(($("atype")||{}).value); if(!$("atypehelp")) return;
+  $("atypehelp").innerHTML=`<div class="muted">${esc(t.description||"")}</div>`+benefitsHtml(t.benefits);
+}
+function renderAllianceList(){
+  if(!$("ally-list")) return;
+  const npcIds=npcAllianceIds();
+  $("ally-list").innerHTML=(alliances||[]).map(a=>{
+    const isNpc=npcIds.has(a.id);
+    const right=isNpc?'<span class="muted">🤖 NPC (no unible)</span>':`<button class="sm" onclick="allianceJoin(${a.id})">unirse</button>`;
+    return `<div class="item"><div class="top"><span>[${esc(a.tag)}] ${esc(a.name)} <span class="muted">${esc((allianceType(a.type).name)||a.type)} · ${a.member_count}👥</span></span>${right}</div></div>`;
+  }).join("")||'<span class="muted">no hay alianzas aún</span>';
 }
 function renderQueues(){
   if(!state) return; const q=[];

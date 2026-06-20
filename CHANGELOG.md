@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-20 — Web: alianzas más claras + CLAUDE.md
+- UI de alianzas reescrita para que se entienda: al crear, cada **tipo** muestra su
+  descripción y **beneficios explicados** (no solo el nombre); estando en una alianza ves
+  **miembros, beneficios en lenguaje claro, alertas y comercio**; las alianzas de **NPC**
+  salen marcadas y **sin botón de unirse** (con el motivo). El formulario ya no se borra solo.
+- `CLAUDE.md` agregado (guía de arquitectura/comandos para el repo).
+- e2e: el catálogo expone `alliance_types` con `benefits`+`description` (lo que la web muestra).
+
 ### 2026-06-20 — Web: UI de alianzas (tipo, beneficios, comercio, visión) + repo público
 - La web ahora deja **elegir el tipo de alianza** al crear, muestra sus **beneficios**, una
   **alerta de visión compartida** (aliados bajo ataque) y un mini-form de **comercio** para

@@ -101,6 +101,10 @@ async def test_catalog(client):
     body = r.json()
     assert {"earth", "mars", "venus"} <= {p["key"] for p in body["planets"]}
     assert {x["key"] for x in body["races"]} == {"terran", "martian", "venusian"}
+    # alliance types carry name + benefits + description so the web can explain them
+    atypes = {t["key"]: t for t in body["alliance_types"]}
+    assert {"nonaggression", "defensive", "full"} <= set(atypes)
+    assert "trade" in atypes["full"]["benefits"] and atypes["full"]["description"]
     assert any(b["key"] == "mine" for b in body["buildings"])
 
 
