@@ -65,6 +65,25 @@ make tunnel         # crea una URL pública temporal (cloudflared) para comparti
 
 `make help` lista todos los targets. `make demo` corre el flujo completo solo (humo).
 
+## Publicar tu propia copia (GitHub)
+
+Con [GitHub CLI](https://cli.github.com/) logueado (`gh auth login`):
+
+```bash
+make publish REPO=mi-juego      # crea el repo público y sube todo
+```
+
+Otra persona lo replica en su Linux así (probado en Python 3.12 y 3.13):
+
+```bash
+git clone https://github.com/<tu-usuario>/mi-juego.git
+cd mi-juego
+make install && make run        # http://localhost:8099/  → Registrar y jugar
+```
+
+Requisitos: **Python 3.12+** (con `venv`) o **Docker**. No hace falta `.env`: arranca con
+valores por defecto (SQLite local, la DB se crea/migra sola).
+
 **Jugar en el navegador:** abrí **http://localhost:8099/** (cliente web incluido).
 OpenAPI interactivo en http://localhost:8099/docs
 

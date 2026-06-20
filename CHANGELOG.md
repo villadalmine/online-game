@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-20 — Replicable y publicable (probado en Linux)
+- `make publish REPO=nombre` crea el repo público en GitHub y sube todo (vía `gh`).
+- `make run`/`run-lan` ahora prenden el auto-tick por defecto (`AUTOTICK=15`), así una copia
+  recién clonada tiene mundo vivo sin tocar `.env`.
+- README con flujo de publicar + replicar (clonar → `make install` → `make run`).
+- **Verificado en Linux** (clean-room): clon fresco desde GitHub → install → server arranca,
+  DB migra sola, registro 201, web sirve, 86 tests verdes; sin `.env` (defaults).
+
 ### 2026-06-20 — Visibilidad de la DB en uso
 - Al arrancar, el server **loguea qué base usa** (`[online-game] DB=sqlite (...) · auto-tick=...`),
   con la contraseña redactada. `/health` ahora devuelve `db` (sqlite/postgres) y la web muestra

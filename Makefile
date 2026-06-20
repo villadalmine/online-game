@@ -6,6 +6,8 @@
 
 PORT      ?= 8099
 NPC_BRAIN ?= rules
+AUTOTICK  ?= 15
+REPO      ?= online-game
 VENV      := .venv
 PY        := $(VENV)/bin/python
 PIP       := $(VENV)/bin/pip
@@ -18,8 +20,8 @@ DB_URL    ?= sqlite+aiosqlite:///./game.db
 JWT       ?= dev-secret-key-at-least-32-bytes-long!!
 
 .DEFAULT_GOAL := help
-.PHONY: help venv install update run run-llm demo demo-llm stop health cli \
-        test test-file lint fmt check \
+.PHONY: help venv install update run run-lan run-llm tunnel demo demo-llm stop health cli \
+        test test-ui test-file lint fmt check publish \
         migrate migration downgrade db-current db-history db-reset \
         up down logs ps build-image helm-template helm-install helm-uninstall \
         clean clean-all
@@ -45,13 +47,13 @@ update: ## Reinstala dependencias (tras cambiar pyproject)
 
 ## Correr — 3 modos
 run: ## Modo FULL-LOCAL: solo tu PC (SQLite, 127.0.0.1:PORT)
-	DATABASE_URL=$(DB_URL) JWT_SECRET=$(JWT) NPC_BRAIN=$(NPC_BRAIN) \
+	DATABASE_URL=$(DB_URL) JWT_SECRET=$(JWT) NPC_BRAIN=$(NPC_BRAIN) AUTO_TICK_SECONDS=$(AUTOTICK) \
 		$(UVICORN) app.main:app --reload --port $(PORT)
 
 run-lan: ## Modo LAN: otros en tu red entran por tu IP (0.0.0.0:PORT)
 	@ip=$$(hostname -I 2>/dev/null | awk '{print $$1}'); \
 		echo "Compartí esta URL en tu red local:  http://$$ip:$(PORT)/"
-	DATABASE_URL=$(DB_URL) JWT_SECRET=$(JWT) NPC_BRAIN=$(NPC_BRAIN) \
+	DATABASE_URL=$(DB_URL) JWT_SECRET=$(JWT) NPC_BRAIN=$(NPC_BRAIN) AUTO_TICK_SECONDS=$(AUTOTICK) \
 		$(UVICORN) app.main:app --host 0.0.0.0 --port $(PORT)
 
 run-llm: ## Como 'run' pero NPCs con OpenRouter (NPC_BRAIN=llm)
@@ -142,6 +144,14 @@ helm-install: ## Instala en el cluster k8s actual
 
 helm-uninstall: ## Desinstala del cluster
 	helm uninstall galaxy
+
+## Publicar
+publish: ## Crea el repo en GitHub y sube todo (requiere gh logueado): make publish REPO=nombre
+	@command -v gh >/dev/null || { echo "Instalá GitHub CLI (gh) y corré 'gh auth login': https://cli.github.com/"; exit 1; }
+	@git rev-parse --is-inside-work-tree >/dev/null 2>&1 || git init -b main
+	@git add -A && git -c user.name="$$(git config user.name || echo dev)" commit -m "Initial commit" 2>/dev/null || true
+	gh repo create $(REPO) --public --source=. --remote=origin --push \
+		--description "Juego de estrategia espacial API-first por turnos (full-local / LAN / online)"
 
 ## Limpieza
 clean: ## Borra DBs locales y caches
