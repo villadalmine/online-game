@@ -84,6 +84,26 @@ make install && make run        # http://localhost:8099/  → Registrar y jugar
 Requisitos: **Python 3.12+** (con `venv`) o **Docker**. No hace falta `.env`: arranca con
 valores por defecto (SQLite local, la DB se crea/migra sola).
 
+## Deploy en Kubernetes (k3s / Raspberry Pi / ARM)
+
+La CI (GitHub Actions) construye una imagen **multi-arch (amd64+arm64)** y la publica en
+`ghcr.io/<usuario>/online-game`. Pasos:
+
+1. Pusheá a `main` → el workflow `build-image` publica la imagen. Hacé **público** el paquete
+   en GitHub (Packages → online-game → visibility public), o creá un `imagePullSecret`.
+2. Instalá con Helm (el token de OpenRouter va por `--set`, nunca al repo):
+   ```bash
+   helm install galaxy deploy/helm \
+     --set env.JWT_SECRET="un-secreto-fuerte-de-32+-bytes" \
+     --set npc.brain=llm --set openrouter.apiKey="sk-or-..."
+   ```
+   (sin esos `--set` de NPC, las NPC usan reglas y no hace falta token.)
+3. Exponé la API: `kubectl port-forward svc/galaxy-api 8099:80` y entrá a `http://localhost:8099/`,
+   o agregá un Ingress.
+
+El chart trae: API (Deployment+Service), worker (CronJob del tick), Postgres y Redis,
+initContainer de migraciones y Secret para el token de OpenRouter.
+
 **Jugar en el navegador:** abrí **http://localhost:8099/** (cliente web incluido).
 OpenAPI interactivo en http://localhost:8099/docs
 

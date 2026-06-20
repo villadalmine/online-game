@@ -1,7 +1,15 @@
 image:
-  repository: online-game
-  tag: "0.1.0"
-  pullPolicy: IfNotPresent
+  # La CI publica una imagen multi-arch (amd64+arm64) en GHCR. Para un cluster local
+  # (kind/minikube) podés override con --set image.repository=online-game image.tag=0.1.0
+  repository: ghcr.io/villadalmine/online-game
+  tag: "latest"
+  pullPolicy: Always
+
+# Si el paquete de GHCR es privado, creá un secret y referencialo:
+#   kubectl create secret docker-registry ghcr --docker-server=ghcr.io \
+#     --docker-username=USER --docker-password=GH_TOKEN
+# imagePullSecrets: [ghcr]
+imagePullSecrets: []
 
 api:
   replicas: 2
@@ -15,9 +23,19 @@ env:
   ENVIRONMENT: production
   JWT_SECRET: change-me
   REDIS_ENABLED: "true"
+  AUTO_TICK_SECONDS: "0"        # 0 = usar el CronJob (multi-réplica); >0 corre tick in-process
   ENERGY_REGEN_PER_HOUR: "10"
   ENERGY_MAX: "240"
   ENERGY_START: "60"
+
+# NPCs con IA. Para usar LLM: brain=llm y poné el token (no lo commitees: usá --set o
+# un values-local.yaml gitignored). Si apiKey está vacío, NPC_BRAIN cae a reglas igual.
+npc:
+  brain: "rules"               # rules | llm
+openrouter:
+  apiKey: ""                   # ej: helm install ... --set openrouter.apiKey=sk-or-...
+  baseUrl: "https://openrouter.ai/api/v1"
+  model: "google/gemma-4-31b-it:free"
 
 postgres:
   enabled: true

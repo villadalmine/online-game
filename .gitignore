@@ -10,3 +10,4 @@ venv/
 dist/
 build/
 tests/browser/screenshots/
+deploy/helm/values-local.yaml

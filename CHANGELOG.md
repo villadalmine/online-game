@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-20 — Deploy en k8s: OpenRouter en el chart + imagen multi-arch por CI
+- Helm chart: soporte de **OpenRouter** (token como `Secret` vía `--set openrouter.apiKey`,
+  no se commitea; si está vacío las NPC usan reglas), `npc.brain`, `AUTO_TICK_SECONDS`, y
+  `imagePullSecrets` opcional. Imagen por defecto desde **GHCR**.
+- CI: workflow `build-image` que construye **multi-arch (amd64+arm64)** y publica en GHCR
+  (para clusters Raspberry Pi/k3s sin builder local) + workflow `ci` (ruff + pytest).
+- `deploy/helm/values-local.example.yaml` (gitignored `values-local.yaml`) para el token local.
+- README con pasos de deploy en k3s/ARM. `helm lint` ok; render validado con token+pull-secret.
+- Nota: el deploy real (`helm install`) corre una vez que la CI publica la imagen ARM (esta
+  máquina no tiene builder de contenedores).
+
 ### 2026-06-20 — Replicable y publicable (probado en Linux)
 - `make publish REPO=nombre` crea el repo público en GitHub y sube todo (vía `gh`).
 - `make run`/`run-lan` ahora prenden el auto-tick por defecto (`AUTOTICK=15`), así una copia

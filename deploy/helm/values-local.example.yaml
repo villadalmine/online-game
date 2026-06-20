@@ -1,0 +1,10 @@
+# Copialo a values-local.yaml (gitignored) y poné tu token. Luego:
+#   helm install galaxy deploy/helm -f deploy/helm/values-local.yaml
+# o sin archivo:
+#   helm install galaxy deploy/helm --set npc.brain=llm --set openrouter.apiKey=sk-or-...
+env:
+  JWT_SECRET: "cambia-esto-por-uno-fuerte-de-32+-bytes"
+npc:
+  brain: "llm"
+openrouter:
+  apiKey: "sk-or-v1-tu-token-aca"

@@ -9,6 +9,7 @@ spec:
     spec:
       template:
         spec:
+{{ include "online-game.imagePullSecrets" . | indent 10 }}
           restartPolicy: Never
           containers:
             - name: tick
