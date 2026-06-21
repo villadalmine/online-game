@@ -4,13 +4,14 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
-# Install deps first for layer caching.
+# The package (setuptools) needs its source dirs present to build, so copy the code
+# that makes up the package BEFORE installing.
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .
-
-# App code + data-driven content + migrations.
 COPY app ./app
 COPY clients ./clients
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .
+
+# Data-driven content + migrations + web (not part of the package; loaded by path).
 COPY content ./content
 COPY migrations ./migrations
 COPY web ./web

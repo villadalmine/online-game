@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-20 — Fix Dockerfile (build de imagen)
+- El Dockerfile hacía `pip install .` con solo `pyproject.toml` copiado → fallaba
+  (`package directory 'app' does not exist`). Ahora copia `app/` y `clients/` antes de instalar.
+  Lo detectó el build real con **Kaniko** en el cluster (el path de Docker no estaba cubierto
+  por los tests, que usan `pip install -e` con el código completo).
+
 ### 2026-06-20 — Deploy en k8s: OpenRouter en el chart + imagen multi-arch por CI
 - Helm chart: soporte de **OpenRouter** (token como `Secret` vía `--set openrouter.apiKey`,
   no se commitea; si está vacío las NPC usan reglas), `npc.brain`, `AUTO_TICK_SECONDS`, y
