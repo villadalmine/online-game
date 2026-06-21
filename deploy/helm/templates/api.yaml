@@ -13,6 +13,10 @@ spec:
         app: {{ .Release.Name }}-api
     spec:
 {{ include "online-game.imagePullSecrets" . | indent 6 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       initContainers:
         # Apply DB migrations before serving. Retries (pod restart) until Postgres
         # is reachable — robust with the in-chart Postgres.

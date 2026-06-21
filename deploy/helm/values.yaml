@@ -11,6 +11,10 @@ image:
 # imagePullSecrets: [ghcr]
 imagePullSecrets: []
 
+# Restringí los pods de la app a una arquitectura si la imagen no es multi-arch.
+# Ej (cluster mixto / imagen arm64 de Kaniko): --set nodeSelector."kubernetes\.io/arch"=arm64
+nodeSelector: {}
+
 api:
   replicas: 2
   port: 8000
