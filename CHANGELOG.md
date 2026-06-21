@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-20 — Desplegado en k3s (ARM64) ✅
+- Imagen construida con **Kaniko** in-cluster desde el repo público → `registry.registry:5000`,
+  arquitectura ARM64. Helm chart desplegado en namespace `online-game` (API + Postgres + Redis +
+  initContainer de migraciones). Verificado: `/health` `db=postgres`, register/onboard OK, web sirve.
+- Chart: **`nodeSelector` configurable** (cluster mixto / imagen single-arch). Aprendizajes del
+  deploy real: pods en el nodo amd64 daban `exec format error` (→ fijar arch), y un nodo no
+  resolvía el registry interno (→ fijar a un nodo bueno o arreglar `registries.yaml`).
+
 ### 2026-06-20 — Fix Dockerfile (build de imagen)
 - El Dockerfile hacía `pip install .` con solo `pyproject.toml` copiado → fallaba
   (`package directory 'app' does not exist`). Ahora copia `app/` y `clients/` antes de instalar.
