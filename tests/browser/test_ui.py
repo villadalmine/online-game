@@ -142,6 +142,28 @@ def test_planet_detail_modal(page: Page, live_server, shots):
     expect(modal).to_be_hidden()
 
 
+def test_world_events_ui(page: Page, live_server, shots):
+    """The world events card shows the alliance you just formed."""
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(live_server + "/")
+    user = "ui_" + uuid.uuid4().hex[:6]
+    page.locator("#u").fill(user)
+    page.locator("#p").fill("secret123")
+    page.click("button:has-text('Registrar')")
+    page.select_option("#planet", "earth")
+    page.select_option("#race", "terran")
+    page.click("button:has-text('Comenzar')")
+    expect(page.locator("#game")).to_be_visible()
+
+    page.locator("#aname").fill("Vigías del Mundo")
+    page.locator("#atag").fill("VDM")
+    page.click("button:has-text('crear')")
+
+    # refresh() polls /world/events every 4s; the new alliance should appear.
+    expect(page.locator("#world")).to_contain_text("Vigías del Mundo", timeout=10000)
+    _shot(page, shots / "09-world.png")
+
+
 def test_alliance_chat_ui(page: Page, live_server, shots):
     """After creating an alliance, the chat card appears and a posted message shows up."""
     page.set_viewport_size({"width": 1280, "height": 900})

@@ -11,6 +11,7 @@ from app.api.v1 import (
     notifications,
     players,
     research,
+    world,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -24,3 +25,4 @@ api_router.include_router(research.router, prefix="/research", tags=["research"]
 api_router.include_router(alliances.router, prefix="/alliances", tags=["alliances"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(world.router, prefix="/world", tags=["world"])

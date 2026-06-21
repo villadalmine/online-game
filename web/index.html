@@ -215,6 +215,11 @@
     </div>
 
     <div class="card">
+      <h2>🌍 Eventos del mundo</h2>
+      <div id="world" style="max-height:34vh;overflow:auto"></div>
+    </div>
+
+    <div class="card">
       <h2>📖 Guía — ¿qué es cada cosa?</h2>
       <div class="row"><button class="sec sm" onclick="toggleGuide()">mostrar / ocultar</button></div>
       <div id="guide" class="hidden"></div>
@@ -349,7 +354,7 @@ async function refresh(){
     b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
-  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat();
+  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld();
   renderCost(); renderTrainCost(); renderExpInfo();
 }
 function renderResearch(){
@@ -459,6 +464,14 @@ function renderMap(){
     }).join("");
     return `<div class="galaxy-group ${here?'':'dim'}"><div class="gname">🌌 ${esc(g.name)}${here?' · estás acá':''}</div><div class="galaxy">${cards}</div></div>`;
   }).join("");
+}
+
+// world events — public feed of battles + alliances formed
+async function loadWorld(){
+  let ev; try{ ev=await api("/api/v1/world/events"); }catch{ return; }
+  $("world").innerHTML=ev.map(e=>`<div class="item"><div class="top"><span>${esc(e.message)}</span>`+
+    `<span class="muted">${new Date(e.created_at).toLocaleTimeString()}</span></div></div>`).join("")
+    ||'<span class="muted">todavía no pasó nada en la galaxia</span>';
 }
 
 // alliance chat — its own card so the input survives the 4s refresh

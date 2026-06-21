@@ -454,6 +454,40 @@ async def test_ranking(client):
     assert rows[0]["rank"] == 1
 
 
+# ---- world events -----------------------------------------------------------
+
+async def test_world_events_feed(client):
+    # Forming an alliance and resolving a battle both surface in the public feed.
+    ha = await _register(client.http, "warlord")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "victim")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    await client.http.post(
+        "/api/v1/alliances", headers=ha, json={"name": "Conquistadores", "tag": "CNQ"}
+    )
+
+    await _grant_units(client.session_maker, "warlord", {"tank": 5})
+    await client.http.post(
+        "/api/v1/combat/attack",
+        headers=ha,
+        json={"target_base_id": dstate["bases"][0]["id"], "force": {"tank": 5}},
+    )
+    await _fast_forward_arrivals(client.session_maker)
+    await client.http.post("/api/v1/admin/tick", headers=ha)
+
+    feed = (await client.http.get("/api/v1/world/events", headers=hd)).json()
+    msgs = " ".join(e["message"] for e in feed)
+    assert "Conquistadores" in msgs           # alliance event
+    assert "warlord" in msgs and "victim" in msgs  # battle event with both players
+    types = {e["type"] for e in feed}
+    assert {"battle", "alliance"} <= types
+
+
+async def test_world_events_requires_auth(client):
+    r = await client.http.get("/api/v1/world/events")
+    assert r.status_code == 401
+
+
 # ---- alliances --------------------------------------------------------------
 
 async def test_alliance_create_join_and_list(client):

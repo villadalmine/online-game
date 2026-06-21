@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-21 — Eventos del mundo
+- Nuevo endpoint `GET /api/v1/world/events`: feed público de la galaxia (batallas resueltas
+  con nombres + resultado, y alianzas formadas), ordenado del más nuevo al más viejo. Sin
+  modelo nuevo: se deriva de `CombatLog` + `Alliance` (servicio `app/services/world.py`).
+- Web: tarjeta **🌍 Eventos del mundo** en la columna derecha, refrescada cada 4s.
+- e2e: el feed muestra la alianza formada y la batalla (ambos jugadores + tipos battle/alliance)
+  + caso de error (sin auth → 401) + test de navegador. Screenshot `09-world.png`.
+
 ### 2026-06-21 — Chat de alianza
 - Nuevo modelo `AllianceMessage` (+ migración) y servicio `post_message`/`list_messages`
   (solo miembros). Endpoints `POST /api/v1/alliances/messages` y `GET .../messages`

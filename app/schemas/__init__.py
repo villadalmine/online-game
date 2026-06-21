@@ -151,6 +151,12 @@ class AllianceTransferRequest(BaseModel):
     amount: float = Field(gt=0)
 
 
+class WorldEventOut(BaseModel):
+    type: str
+    message: str
+    created_at: datetime
+
+
 class AllianceMessageCreate(BaseModel):
     body: str = Field(min_length=1, max_length=500)
 
