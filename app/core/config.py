@@ -44,10 +44,33 @@ class Settings(BaseSettings):
 
     # NPC (AI-controlled races)
     npc_enabled: bool = True
-    npc_brain: str = "rules"  # "rules" (default) | "llm" (OpenRouter, optional)
+    npc_brain: str = "rules"  # "rules" (default) | "llm" (any OpenAI-compatible server)
+
+    # LLM provider — any OpenAI-compatible endpoint: OpenRouter, LiteLLM, Ollama, vLLM…
+    # Set LLM_* to point anywhere; if unset, falls back to the OPENROUTER_* values below
+    # (back-compat). For Ollama: LLM_BASE_URL=http://host:11434/v1, LLM_MODEL=llama3.1,
+    # LLM_API_KEY=ollama (ignored). For LiteLLM: its proxy URL + master key.
+    llm_api_key: str = ""
+    llm_base_url: str = ""
+    llm_model: str = ""
+    llm_json_mode: bool = True  # ask for response_format=json_object (LiteLLM/Ollama/OpenAI)
+
+    # Legacy OpenRouter knobs (still honored as defaults for the LLM_* above).
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_model: str = "google/gemma-4-31b-it:free"
+
+    @property
+    def llm_key(self) -> str:
+        return self.llm_api_key or self.openrouter_api_key
+
+    @property
+    def llm_url(self) -> str:
+        return self.llm_base_url or self.openrouter_base_url
+
+    @property
+    def llm_model_name(self) -> str:
+        return self.llm_model or self.openrouter_model
 
     @property
     def is_sqlite(self) -> bool:

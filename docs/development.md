@@ -146,14 +146,19 @@ automáticamente (`registry.py:building_cost_in_minerals`).
 ### 4.5b NPCs y su cerebro de IA
 - Los NPC son `Player` con `is_npc=True`, uno por raza (`services/npc.py:ensure_npcs`).
 - Cerebro por reglas (default): editá las prioridades en `RuleBasedBrain.act`.
-- Cerebro LLM (opcional): poné `NPC_BRAIN=llm` + `OPENROUTER_API_KEY` en `.env`. Usa
-  `OPENROUTER_MODEL` (default `google/gemma-4-31b-it:free`). Ante cualquier error cae a
-  reglas, así el tick nunca depende de la red.
+- Cerebro LLM (opcional): poné `NPC_BRAIN=llm` y apuntá a **cualquier server
+  OpenAI-compatible** con `LLM_BASE_URL` / `LLM_MODEL` / `LLM_API_KEY` (si no, se usan los
+  `OPENROUTER_*` por compat). Ante cualquier error cae a reglas, así el tick nunca depende de
+  la red. `LLM_JSON_MODE=true` (default) pide `response_format=json_object` → respuestas
+  parse-safe; apagalo si tu server no lo soporta.
+  - **OpenRouter**: `LLM_BASE_URL=https://openrouter.ai/api/v1` · `LLM_MODEL=google/gemma-4-31b-it:free` · `LLM_API_KEY=sk-or-...`
+  - **Ollama (GPU local)**: `LLM_BASE_URL=http://localhost:11434/v1` · `LLM_MODEL=llama3.1:8b` · `LLM_API_KEY=ollama` (lo ignora)
+  - **LiteLLM (router)**: `LLM_BASE_URL=http://litellm:4000/v1` · `LLM_MODEL=<tu model name>` · `LLM_API_KEY=<master key>`
 - **Personalidad** por raza: editá `personality` en `content/races.yaml` (se inyecta en el
   prompt → las NPC juegan en personaje). **Memoria** corta: `Player.npc_memory` (últimas 8
   acciones) + `recent_battles`, incluidos en el `state` para continuidad.
-- Para cambiar de proveedor: reemplazá `_openrouter_decide` (misma firma `state -> action`).
-  El `state` y el `dispatch_action` son agnósticos del proveedor.
+- El `state` y el `dispatch_action` son agnósticos del proveedor; `_llm_decide` (firma
+  `state -> action`) es inyectable para testear sin red (`LlmBrain(decide=...)`).
 
 ### 4.5c Features con Redis (cache / rate-limit)
 - `app/core/redis.py`: `get_redis` (dependency, devuelve cliente o None) + `cached_json`
@@ -254,7 +259,7 @@ Corré uno solo: `.venv/bin/python -m pytest tests/test_flow.py -q`.
   (`production`/`attack`/`defense`) que se aplica en producción/combate. Todo en `gods.yaml`.
 
 - ✅ Razas NPC con IA (`services/npc.py`). Cerebro enchufable: `RuleBasedBrain` (default)
-  y `LlmBrain` (OpenRouter, `NPC_BRAIN=llm`) con fallback a reglas. Toman 1 acción/tick
+  y `LlmBrain` (cualquier server OpenAI-compatible, `NPC_BRAIN=llm`) con fallback a reglas. Toman 1 acción/tick
   vía los mismos servicios. `POST /admin/tick` para avanzar el mundo; `GET /players`
   scoreboard. Modelo free `google/gemma-4-31b-it:free`.
 

@@ -2,8 +2,10 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
+from app.core.config import Settings
 from app.core.security import hash_password
 from app.models import AttackMission, Base_, Building, Player
+from app.services import npc as npc_mod
 from app.services.npc import (
     LlmBrain,
     RuleBasedBrain,
@@ -13,6 +15,11 @@ from app.services.npc import (
     run_npc_turn,
 )
 from app.services.onboarding import onboard_player
+
+
+def _settings(**kw) -> Settings:
+    # _env_file=None so the local .env can't leak into the assertion.
+    return Settings(_env_file=None, **kw)
 
 
 async def _npc(session, race="npc_martian") -> Player:
@@ -160,3 +167,64 @@ async def test_llm_brain_falls_back_to_rules_on_error(session):
     desc = await LlmBrain(decide=boom).act(session, npc)
     await session.commit()
     assert desc and "mine" in desc  # rules took over
+
+
+def test_llm_settings_prefer_llm_then_fall_back_to_openrouter():
+    # Explicit LLM_* wins (point at Ollama/LiteLLM/anything OpenAI-compatible).
+    s = _settings(llm_base_url="http://ollama:11434/v1", llm_model="llama3.1", llm_api_key="x")
+    assert s.llm_url == "http://ollama:11434/v1"
+    assert s.llm_model_name == "llama3.1"
+    assert s.llm_key == "x"
+    # With LLM_* unset, the legacy OPENROUTER_* values are used (back-compat).
+    s2 = _settings(
+        openrouter_base_url="https://openrouter.ai/api/v1",
+        openrouter_model="m",
+        openrouter_api_key="k",
+    )
+    assert s2.llm_url == "https://openrouter.ai/api/v1"
+    assert s2.llm_model_name == "m"
+    assert s2.llm_key == "k"
+
+
+async def test_llm_decide_posts_to_configured_endpoint_with_json_mode(monkeypatch):
+    captured = {}
+
+    class FakeResp:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"choices": [{"message": {"content": '{"action":"none"}'}}]}
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, headers=None, json=None):
+            captured.update(url=url, headers=headers, json=json)
+            return FakeResp()
+
+    monkeypatch.setattr(npc_mod.httpx, "AsyncClient", FakeClient)
+    monkeypatch.setattr(
+        npc_mod,
+        "get_settings",
+        lambda: _settings(
+            npc_brain="llm",
+            llm_base_url="http://ollama:11434/v1",
+            llm_model="llama3.1",
+            llm_api_key="secret",
+        ),
+    )
+
+    action = await npc_mod._llm_decide({"personality": "rudo"})
+    assert action == {"action": "none"}
+    assert captured["url"] == "http://ollama:11434/v1/chat/completions"
+    assert captured["json"]["model"] == "llama3.1"
+    assert captured["json"]["response_format"] == {"type": "json_object"}
+    assert captured["headers"]["Authorization"] == "Bearer secret"

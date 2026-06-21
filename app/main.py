@@ -31,9 +31,12 @@ async def lifespan(app: FastAPI):
     # Apply migrations on startup so schema changes take effect with no manual reset.
     # Run in a thread because Alembic's async env uses asyncio.run internally.
     await asyncio.to_thread(run_migrations)
+    brain = settings.npc_brain
+    if brain == "llm":
+        brain = f"llm@{settings.llm_url} ({settings.llm_model_name})"
     print(
         f"[online-game] DB={settings.db_backend} ({settings.safe_database_url}) · "
-        f"auto-tick={settings.auto_tick_seconds}s · migraciones aplicadas ✓",
+        f"auto-tick={settings.auto_tick_seconds}s · npc={brain} · migraciones aplicadas ✓",
         flush=True,
     )
     task = None

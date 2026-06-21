@@ -7,6 +7,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-21 — NPCs LLM: proveedor agnóstico (OpenRouter/LiteLLM/Ollama) + JSON mode
+- El cerebro LLM ahora habla con **cualquier endpoint OpenAI-compatible** vía `LLM_BASE_URL` /
+  `LLM_MODEL` / `LLM_API_KEY` (con fallback a los `OPENROUTER_*` para no romper configs viejas).
+  Permite apuntar a **Ollama** (modelo local/GPU), **LiteLLM** (router) o **vLLM** sin tocar código.
+- `_openrouter_decide` → `_llm_decide`; usa propiedades resueltas `settings.llm_url/llm_model_name/llm_key`.
+- **JSON mode**: pide `response_format=json_object` (`LLM_JSON_MODE=true`, default) → respuestas
+  parse-safe; configurable por si el server no lo soporta.
+- Log de arranque muestra el proveedor/modelo cuando `NPC_BRAIN=llm`.
+- Tests de servicio: resolución de settings (LLM_* gana, fallback a OPENROUTER_*) y que
+  `_llm_decide` postea al endpoint configurado con JSON mode (sin red). Docs (.env.example,
+  CLAUDE.md, development.md) con recetas para OpenRouter/Ollama/LiteLLM.
+
 ### 2026-06-21 — Web: sonidos de eventos
 - Beeps con WebAudio (sin archivos de audio) al llegar notificaciones por SSE; tono distinto
   por tipo (ataque/ reporte/ expedición). Toggle 🔊/🔇 en el header, preferencia persistida en

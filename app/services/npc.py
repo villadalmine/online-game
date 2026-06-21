@@ -433,8 +433,12 @@ def _extract_json(text: str) -> dict:
     return json.loads(match.group(0) if match else text)
 
 
-async def _openrouter_decide(state: dict) -> dict:
-    """Call OpenRouter and return the chosen action dict."""
+async def _llm_decide(state: dict) -> dict:
+    """Call the configured OpenAI-compatible LLM and return the chosen action dict.
+
+    Works with OpenRouter, LiteLLM, Ollama or vLLM — they all speak the same
+    /chat/completions schema; only LLM_BASE_URL/LLM_MODEL/LLM_API_KEY change.
+    """
     settings = get_settings()
     personality = state.get("personality", "")
     system = (
@@ -452,22 +456,26 @@ async def _openrouter_decide(state: dict) -> dict:
         '{"action":"expedition","moon_key":"<key>"}, '
         'or {"action":"none"}.'
     )
+    payload = {
+        "model": settings.llm_model_name,
+        "temperature": 0,
+        "max_tokens": 120,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": json.dumps(state)},
+        ],
+    }
+    if settings.llm_json_mode:
+        # Honored by OpenAI/LiteLLM/Ollama/vLLM; makes the reply parse-safe.
+        payload["response_format"] = {"type": "json_object"}
     async with httpx.AsyncClient(timeout=20) as client:
         resp = await client.post(
-            f"{settings.openrouter_base_url}/chat/completions",
+            f"{settings.llm_url}/chat/completions",
             headers={
-                "Authorization": f"Bearer {settings.openrouter_api_key}",
-                "X-Title": "online-game-npc",
+                "Authorization": f"Bearer {settings.llm_key}",
+                "X-Title": "online-game-npc",  # ignored by non-OpenRouter servers
             },
-            json={
-                "model": settings.openrouter_model,
-                "temperature": 0,
-                "max_tokens": 120,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": json.dumps(state)},
-                ],
-            },
+            json=payload,
         )
         resp.raise_for_status()
         content = resp.json()["choices"][0]["message"]["content"]
@@ -475,18 +483,19 @@ async def _openrouter_decide(state: dict) -> dict:
 
 
 class LlmBrain:
-    """Optional OpenRouter-backed brain. Falls back to rules on ANY failure (no key,
-    network error, rate limit, bad JSON, infeasible action) so a tick never breaks.
+    """Optional LLM-backed brain over any OpenAI-compatible server (OpenRouter, LiteLLM,
+    Ollama, vLLM). Falls back to rules on ANY failure (no key/url, network error, rate
+    limit, bad JSON, infeasible action) so a tick never breaks.
 
-    `decide` is injectable for testing (defaults to the real OpenRouter call)."""
+    `decide` is injectable for testing (defaults to the real LLM call)."""
 
     def __init__(self, decide=None) -> None:
-        self._decide = decide or _openrouter_decide
+        self._decide = decide or _llm_decide
         self._fallback = RuleBasedBrain()
 
     async def act(self, session: AsyncSession, player: Player) -> str | None:
         settings = get_settings()
-        if not settings.openrouter_api_key and self._decide is _openrouter_decide:
+        if not settings.llm_key and self._decide is _llm_decide:
             return await self._fallback.act(session, player)
         player_id = player.id  # capture before any rollback expires the instance
         try:

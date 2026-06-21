@@ -19,7 +19,9 @@ make help             # lista todos los targets
 
 - Correr un test: `.venv/bin/python -m pytest tests/test_combat.py -q` (o `... -k nombre`).
 - El cliente web se sirve en `/`; el CLI es `.venv/bin/ogame-cli` (usá `API_URL` para el puerto).
-- Modelo/LLM de NPCs: `NPC_BRAIN=rules` (default) o `llm` (OpenRouter, key en `.env`).
+- Modelo/LLM de NPCs: `NPC_BRAIN=rules` (default) o `llm`. El brain LLM habla con cualquier
+  endpoint **OpenAI-compatible** (OpenRouter, LiteLLM, Ollama, vLLM) vía `LLM_BASE_URL`/
+  `LLM_MODEL`/`LLM_API_KEY` (si no, cae a los `OPENROUTER_*`). Siempre con fallback a reglas.
 
 ## Principios (no romper)
 
@@ -54,7 +56,8 @@ Conceptos centrales:
   `process_missions` resuelve al llegar y devuelve sobrevivientes+botín. `resolve_combat()`
   es puro/determinista.
 - **NPCs**: `app/services/npc.py` con cerebro enchufable (`RuleBasedBrain` determinista por
-  defecto; `LlmBrain` por OpenRouter con fallback a reglas). Las NPC comparten una alianza.
+  defecto; `LlmBrain` sobre cualquier server OpenAI-compatible con fallback a reglas). Las NPC
+  comparten una alianza.
 
 ## Base de datos / migraciones
 
