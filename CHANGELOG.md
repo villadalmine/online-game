@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-21 — Chat de alianza
+- Nuevo modelo `AllianceMessage` (+ migración) y servicio `post_message`/`list_messages`
+  (solo miembros). Endpoints `POST /api/v1/alliances/messages` y `GET .../messages`
+  (declarados antes de `/{alliance_id}` para no chocar con el path param).
+- Web: tarjeta **💬 Chat de alianza** (aparece al estar en una alianza); feed con autoscroll,
+  marca tus mensajes "(vos)", input que sobrevive al refresh de 4s (card propia).
+- e2e: chat entre dos miembros (orden viejos→nuevos, resuelve `sender_username`) + caso de
+  error (sin alianza no podés leer ni postear) + test de navegador. Screenshot `08-chat.png`.
+
 ### 2026-06-21 — Web: detalle de planeta (modal)
 - Click en un planeta del mapa → modal con **abundancia mineral** (barras por mineral, ricos en
   verde / pobres en ámbar, con el multiplicador de minas), **lunas** y **colonias** del planeta

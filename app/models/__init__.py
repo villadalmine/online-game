@@ -194,6 +194,20 @@ class Alliance(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class AllianceMessage(Base):
+    """A chat message posted to an alliance, visible only to its members."""
+
+    __tablename__ = "alliance_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    alliance_id: Mapped[int] = mapped_column(
+        ForeignKey("alliances.id", ondelete="CASCADE"), index=True
+    )
+    sender_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"))
+    body: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class PlayerTech(Base):
     """A technology a player has finished researching (grants a permanent effect)."""
 

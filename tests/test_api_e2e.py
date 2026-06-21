@@ -476,6 +476,46 @@ async def test_alliance_create_join_and_list(client):
     assert any(a["id"] == aid and a["member_count"] == 2 for a in listing)
 
 
+async def test_alliance_chat(client):
+    # Two members of the same alliance can chat and both read the thread, oldest-first.
+    h1 = await _register(client.http, "talker")
+    await _onboard(client.http, h1)
+    aid = (
+        await client.http.post(
+            "/api/v1/alliances", headers=h1, json={"name": "Charlatanes", "tag": "CHAT"}
+        )
+    ).json()["id"]
+    h2 = await _register(client.http, "listener")
+    await _onboard(client.http, h2)
+    await client.http.post(f"/api/v1/alliances/{aid}/join", headers=h2)
+
+    r = await client.http.post(
+        "/api/v1/alliances/messages", headers=h1, json={"body": "hola aliados"}
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["sender_username"] == "talker"
+    await client.http.post(
+        "/api/v1/alliances/messages", headers=h2, json={"body": "buenas!"}
+    )
+
+    thread = (await client.http.get("/api/v1/alliances/messages", headers=h2)).json()
+    assert [m["body"] for m in thread] == ["hola aliados", "buenas!"]
+    assert thread[0]["sender_username"] == "talker"
+
+
+async def test_alliance_chat_requires_membership(client):
+    # A player without an alliance can neither read nor post.
+    h = await _register(client.http, "outsider")
+    await _onboard(client.http, h)
+    r = await client.http.get("/api/v1/alliances/messages", headers=h)
+    assert r.status_code == 400
+    assert "alianza" in r.json()["detail"].lower()
+    rp = await client.http.post(
+        "/api/v1/alliances/messages", headers=h, json={"body": "déjenme entrar"}
+    )
+    assert rp.status_code == 400
+
+
 async def test_cannot_attack_an_ally(client):
     h1 = await _register(client.http, "ally1")
     await _onboard(client.http, h1, planet="mars", race="martian")

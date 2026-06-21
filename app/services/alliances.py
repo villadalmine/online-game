@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import get_content
-from app.models import Alliance, Player
+from app.models import Alliance, AllianceMessage, Player
 
 
 class AllianceError(Exception):
@@ -158,3 +158,31 @@ async def list_alliances(session: AsyncSession) -> list[tuple[Alliance, int]]:
 async def members(session: AsyncSession, alliance_id: int) -> list[Player]:
     res = await session.execute(select(Player).where(Player.alliance_id == alliance_id))
     return list(res.scalars())
+
+
+async def post_message(session: AsyncSession, player: Player, body: str) -> AllianceMessage:
+    """Post a chat message to the player's alliance (members only)."""
+    if player.alliance_id is None:
+        raise AllianceError("No estas en ninguna alianza.")
+    body = body.strip()
+    if not (1 <= len(body) <= 500):
+        raise AllianceError("Mensaje vacio o demasiado largo (max 500).")
+    msg = AllianceMessage(alliance_id=player.alliance_id, sender_id=player.id, body=body)
+    session.add(msg)
+    await session.flush()
+    return msg
+
+
+async def list_messages(
+    session: AsyncSession, player: Player, limit: int = 50
+) -> list[AllianceMessage]:
+    """The latest messages of the player's alliance, oldest-first (members only)."""
+    if player.alliance_id is None:
+        raise AllianceError("No estas en ninguna alianza.")
+    res = await session.execute(
+        select(AllianceMessage)
+        .where(AllianceMessage.alliance_id == player.alliance_id)
+        .order_by(AllianceMessage.id.desc())
+        .limit(limit)
+    )
+    return list(reversed(res.scalars().all()))

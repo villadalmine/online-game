@@ -151,6 +151,18 @@ class AllianceTransferRequest(BaseModel):
     amount: float = Field(gt=0)
 
 
+class AllianceMessageCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=500)
+
+
+class AllianceMessageOut(BaseModel):
+    id: int
+    sender_id: int
+    sender_username: str
+    body: str
+    created_at: datetime
+
+
 class AllianceOut(BaseModel):
     id: int
     name: str

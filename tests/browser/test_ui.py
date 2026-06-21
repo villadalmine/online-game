@@ -142,6 +142,33 @@ def test_planet_detail_modal(page: Page, live_server, shots):
     expect(modal).to_be_hidden()
 
 
+def test_alliance_chat_ui(page: Page, live_server, shots):
+    """After creating an alliance, the chat card appears and a posted message shows up."""
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(live_server + "/")
+    user = "ui_" + uuid.uuid4().hex[:6]
+    page.locator("#u").fill(user)
+    page.locator("#p").fill("secret123")
+    page.click("button:has-text('Registrar')")
+    page.select_option("#planet", "earth")
+    page.select_option("#race", "terran")
+    page.click("button:has-text('Comenzar')")
+    expect(page.locator("#game")).to_be_visible()
+
+    page.locator("#aname").fill("Tertulia")
+    page.locator("#atag").fill("TER")
+    page.select_option("#atype", "full")
+    page.click("button:has-text('crear')")
+
+    # The chat card shows up once you're in an alliance.
+    expect(page.locator("#chatcard")).to_be_visible(timeout=10000)
+    page.locator("#chatmsg").fill("hola galaxia")
+    page.click("#chatcard button:has-text('enviar')")
+    expect(page.locator("#chatfeed")).to_contain_text("hola galaxia")
+    expect(page.locator("#chatfeed")).to_contain_text("(vos)")
+    _shot(page, shots / "08-chat.png")
+
+
 def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
     page.goto(live_server + "/")
     user = "ui_" + uuid.uuid4().hex[:6]

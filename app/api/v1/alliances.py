@@ -8,6 +8,8 @@ from app.schemas import (
     AllianceCreate,
     AllianceDetailOut,
     AllianceMemberOut,
+    AllianceMessageCreate,
+    AllianceMessageOut,
     AllianceOut,
     AllianceRankingEntryOut,
     AllianceTransferRequest,
@@ -18,8 +20,10 @@ from app.services.alliances import (
     join_alliance,
     leave_alliance,
     list_alliances,
+    list_messages,
     member_count,
     members,
+    post_message,
     transfer,
 )
 from app.services.scoring import player_score
@@ -85,6 +89,50 @@ async def transfer_minerals(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()
     return {"transferred": body.amount, "mineral": body.mineral, "to": body.to_player_id}
+
+
+@router.get("/messages", response_model=list[AllianceMessageOut])
+async def get_messages(
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Chat de tu alianza (solo miembros), más viejos primero."""
+    try:
+        msgs = await list_messages(session, player)
+    except AllianceError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    names = {m.id: m.username for m in await members(session, player.alliance_id)}
+    return [
+        AllianceMessageOut(
+            id=m.id,
+            sender_id=m.sender_id,
+            sender_username=names.get(m.sender_id, "?"),
+            body=m.body,
+            created_at=m.created_at,
+        )
+        for m in msgs
+    ]
+
+
+@router.post("/messages", response_model=AllianceMessageOut, status_code=status.HTTP_201_CREATED)
+async def send_message(
+    body: AllianceMessageCreate,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Postear un mensaje al chat de tu alianza."""
+    try:
+        msg = await post_message(session, player, body.body)
+    except AllianceError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return AllianceMessageOut(
+        id=msg.id,
+        sender_id=msg.sender_id,
+        sender_username=player.username,
+        body=msg.body,
+        created_at=msg.created_at,
+    )
 
 
 @router.post("/{alliance_id}/join", response_model=AllianceOut)

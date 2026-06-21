@@ -166,6 +166,16 @@
       <h2>🤝 Alianzas</h2>
       <div id="alliances"></div>
     </div>
+
+    <div class="card hidden" id="chatcard">
+      <h2>💬 Chat de alianza</h2>
+      <div id="chatfeed" style="max-height:32vh;overflow:auto"></div>
+      <div class="row">
+        <input id="chatmsg" placeholder="mensaje…" maxlength="500" style="flex:1"
+               onkeydown="if(event.key==='Enter')sendAllyMsg()" />
+        <button class="sm" onclick="sendAllyMsg()">enviar</button>
+      </div>
+    </div>
   </div>
 
   <!-- center -->
@@ -339,7 +349,7 @@ async function refresh(){
     b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
-  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances();
+  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat();
   renderCost(); renderTrainCost(); renderExpInfo();
 }
 function renderResearch(){
@@ -451,6 +461,27 @@ function renderMap(){
   }).join("");
 }
 
+// alliance chat — its own card so the input survives the 4s refresh
+let allyMsgs=[];
+async function loadAllyChat(){
+  if(!state||!state.alliance_id){ $("chatcard").classList.add("hidden"); allyMsgs=[]; return; }
+  $("chatcard").classList.remove("hidden");
+  try{ allyMsgs=await api("/api/v1/alliances/messages"); }catch{ return; }
+  renderAllyChat();
+}
+function renderAllyChat(){
+  const f=$("chatfeed"); if(!f) return; const atBottom=f.scrollHeight-f.scrollTop-f.clientHeight<40;
+  f.innerHTML=allyMsgs.map(m=>{ const me=m.sender_id===(state&&state.id);
+    return `<div class="item"><div class="top"><b class="${me?'ok':''}">${esc(m.sender_username)}${me?' (vos)':''}</b>`+
+      `<span class="muted">${new Date(m.created_at).toLocaleTimeString()}</span></div>${esc(m.body)}</div>`;
+  }).join("")||'<span class="muted">sin mensajes — escribí el primero</span>';
+  if(atBottom) f.scrollTop=f.scrollHeight;
+}
+async function sendAllyMsg(){
+  const i=$("chatmsg"); const b=(i.value||"").trim(); if(!b) return;
+  try{ await api("/api/v1/alliances/messages","POST",{body:b}); i.value=""; await loadAllyChat();
+       const f=$("chatfeed"); if(f) f.scrollTop=f.scrollHeight; }catch(e){ msg(e.message,false); }
+}
 function mineralName(key){ const m=(catalog&&catalog.minerals||[]).find(x=>x.key===key); return m?m.name:key; }
 function moonName(key){ return (spec.moon[key]||{}).name||key; }
 function openPlanet(key){
