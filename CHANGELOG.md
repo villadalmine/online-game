@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-21 — Web: sonidos de eventos
+- Beeps con WebAudio (sin archivos de audio) al llegar notificaciones por SSE; tono distinto
+  por tipo (ataque/ reporte/ expedición). Toggle 🔊/🔇 en el header, preferencia persistida en
+  `localStorage`; el `AudioContext` se crea/reanuda con el gesto del usuario.
+- e2e de navegador: el toggle cambia el ícono, persiste la preferencia y expone `playBeep`.
+
 ### 2026-06-21 — Eventos del mundo
 - Nuevo endpoint `GET /api/v1/world/events`: feed público de la galaxia (batallas resueltas
   con nombres + resultado, y alianzas formadas), ordenado del más nuevo al más viejo. Sin

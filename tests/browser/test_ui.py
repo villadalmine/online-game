@@ -142,6 +142,23 @@ def test_planet_detail_modal(page: Page, live_server, shots):
     expect(modal).to_be_hidden()
 
 
+def test_sound_toggle(page: Page, live_server):
+    """The sound toggle flips the icon, persists the preference, and exposes playBeep."""
+    page.goto(live_server + "/")
+    btn = page.locator("#sound")
+    expect(btn).to_be_visible()
+    expect(btn).to_have_text("🔊")
+    assert page.evaluate("typeof playBeep") == "function"
+
+    btn.click()  # mute
+    expect(btn).to_have_text("🔇")
+    assert page.evaluate("localStorage.getItem('sound')") == "off"
+
+    btn.click()  # unmute
+    expect(btn).to_have_text("🔊")
+    assert page.evaluate("localStorage.getItem('sound')") == "on"
+
+
 def test_world_events_ui(page: Page, live_server, shots):
     """The world events card shows the alliance you just formed."""
     page.set_viewport_size({"width": 1280, "height": 900})

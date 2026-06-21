@@ -51,8 +51,8 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
 - Combate que use `hp` de unidades; daño por rondas.
 - Chat / mensajes de alianza; eventos del mundo; misiones.
 - Más galaxias/planetas y minerales premium con usos reales (He-3, hielo).
-- Web: sonidos.
-  (✅ naves viajando, mapa por galaxia, detalle de planeta, chat de alianza, eventos del mundo.)
+- (✅ Web pulida: naves viajando, mapa por galaxia, detalle de planeta, chat de alianza,
+  eventos del mundo, sonidos.)
 
 ## ⚠️ Deuda técnica
 

@@ -86,6 +86,7 @@
     <span id="unread" class="pill hidden"></span>
     <span id="dbpill" class="pill" title="Base de datos en uso"></span>
     <span id="live" class="muted hidden">○</span>
+    <button class="sec sm" id="sound" onclick="toggleSound()" title="Sonido de eventos">🔊</button>
     <button class="sec sm hidden" id="logout" onclick="logout()">salir</button>
   </div>
 </header>
@@ -466,6 +467,27 @@ function renderMap(){
   }).join("");
 }
 
+// sound: short WebAudio beeps for events (no asset files). Persisted mute toggle.
+let soundOn=localStorage.getItem("sound")!=="off", _ac=null;
+function _ctx(){ if(!_ac){ const C=window.AudioContext||window.webkitAudioContext; if(C)_ac=new C(); }
+  if(_ac&&_ac.state==="suspended") _ac.resume(); return _ac; }
+function playBeep(kind){
+  if(!soundOn) return; const ac=_ctx(); if(!ac) return;
+  const tones={attack:[220,0.18],report:[440,0.12],expedition:[660,0.1]};
+  const [freq,dur]=tones[kind]||[520,0.08];
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.type="sine"; o.frequency.value=freq; g.gain.value=0.06;
+  o.connect(g); g.connect(ac.destination); const t=ac.currentTime;
+  g.gain.setValueAtTime(0.06,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.start(t); o.stop(t+dur);
+}
+function toggleSound(){ soundOn=!soundOn; localStorage.setItem("sound",soundOn?"on":"off");
+  $("sound").textContent=soundOn?"🔊":"🔇"; if(soundOn) playBeep(); }
+function soundForType(type){ const t=(type||"").toLowerCase();
+  if(t.includes("attack")||t.includes("ataque")) return "attack";
+  if(t.includes("report")||t.includes("batalla")||t.includes("combat")) return "report";
+  if(t.includes("exped")) return "expedition"; return "default"; }
+
 // world events — public feed of battles + alliances formed
 async function loadWorld(){
   let ev; try{ ev=await api("/api/v1/world/events"); }catch{ return; }
@@ -566,14 +588,14 @@ function startStream(){
   es=new EventSource(API+"/api/v1/notifications/stream?token="+encodeURIComponent(token)+"&interval=2");
   es.onopen=()=>{ $("streamstate").textContent="● en vivo"; $("live").textContent="●"; $("live").className="ok"; };
   es.onerror=()=>{ $("streamstate").textContent="○ reconectando…"; $("live").textContent="○"; $("live").className="muted"; };
-  es.onmessage=ev=>{ const n=JSON.parse(ev.data); const d=document.createElement("div"); d.className="note";
+  es.onmessage=ev=>{ const n=JSON.parse(ev.data); playBeep(soundForType(n.type)); const d=document.createElement("div"); d.className="note";
     d.innerHTML=`<b>${esc(n.type)}</b> — ${esc(n.message)} <span class="muted">${new Date(n.created_at).toLocaleTimeString()}</span>`;
     $("feed").prepend(d); refresh(); };
 }
 
 async function showDb(){ try{ const h=await (await fetch(API+"/health")).json(); $("dbpill").textContent="🗄 "+h.db; }catch{} }
 async function boot(){
-  showDb();
+  showDb(); $("sound").textContent=soundOn?"🔊":"🔇";
   const authed=!!token;
   if(!authed){ $("u").value=localStorage.getItem("lastuser")||""; }
   $("auth").classList.toggle("hidden",authed);
