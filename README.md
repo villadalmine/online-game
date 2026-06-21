@@ -67,13 +67,32 @@ make tunnel         # crea una URL pública temporal (cloudflared) para comparti
 
 ## Publicar tu propia copia (GitHub)
 
-Con [GitHub CLI](https://cli.github.com/) logueado (`gh auth login`):
+### Opción A — un comando (recomendado)
+Con [GitHub CLI](https://cli.github.com/) instalado y logueado (`gh auth login`):
 
 ```bash
-make publish REPO=mi-juego      # crea el repo público y sube todo
+make publish REPO=mi-juego      # crea el repo PÚBLICO en tu cuenta y sube todo
 ```
 
-Otra persona lo replica en su Linux así (probado en Python 3.12 y 3.13):
+### Opción B — manual (git + gh)
+```bash
+git init -b main
+git add -A
+git commit -m "primer commit"
+gh repo create mi-juego --public --source=. --remote=origin --push
+```
+
+### Opción C — repo ya creado en la web
+Creás `mi-juego` vacío en github.com y después:
+```bash
+git remote add origin https://github.com/<tu-usuario>/mi-juego.git
+git push -u origin main
+```
+
+> El `.gitignore` ya evita subir `.env` (tokens) y `*.db`. Nunca commitees secretos.
+
+### Cómo lo corre otra persona (replicar en su PC)
+Probado en Linux (Python 3.12 y 3.13):
 
 ```bash
 git clone https://github.com/<tu-usuario>/mi-juego.git
@@ -81,8 +100,8 @@ cd mi-juego
 make install && make run        # http://localhost:8099/  → Registrar y jugar
 ```
 
-Requisitos: **Python 3.12+** (con `venv`) o **Docker**. No hace falta `.env`: arranca con
-valores por defecto (SQLite local, la DB se crea/migra sola).
+Requisitos: **Python 3.12+** (con `venv`) o **Docker** (`make up`). No hace falta `.env`:
+arranca con valores por defecto (SQLite local; la DB se crea/migra sola).
 
 ## Deploy en Kubernetes (k3s / Raspberry Pi / ARM)
 
