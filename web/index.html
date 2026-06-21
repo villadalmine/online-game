@@ -63,6 +63,18 @@
   .transit .ship{ position:absolute; top:50%; transform:translate(-50%,-50%); font-size:14px; transition:left .9s linear; filter:drop-shadow(0 0 5px currentColor); }
   .transit.out .ship{ color:#7ea2ff; } .transit.ret .ship{ color:#7ee787; }
   .transit.exp .ship{ color:#f0c674; } .transit.inc .ship{ color:#ff8a8a; } .transit.inc .track{ border-color:#b23b4e; }
+  .planet .head{ cursor:pointer; border-radius:8px; padding:2px; } .planet .head:hover{ background:#ffffff10; }
+  /* planet detail modal */
+  .modal{ position:fixed; inset:0; background:#040713cc; backdrop-filter:blur(3px); z-index:50;
+          display:flex; align-items:center; justify-content:center; padding:16px; }
+  .modal .box{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px;
+               width:min(560px,100%); max-height:88vh; overflow:auto; box-shadow:0 18px 60px #000a; }
+  .modal.hidden{ display:none; }   /* gana a .modal{display:flex} cuando está oculto */
+  .modal .x{ float:right; background:#33406e; }
+  .ab{ display:grid; grid-template-columns:90px 1fr 42px; gap:8px; align-items:center; margin:5px 0; font-size:12px; }
+  .ab .b{ height:10px; background:#0a0e1f; border:1px solid #33406e; border-radius:6px; overflow:hidden; }
+  .ab .b>div{ height:100%; }
+  .ab.rich .b>div{ background:linear-gradient(90deg,#2b8a3e,#7ee787); } .ab.poor .b>div{ background:linear-gradient(90deg,#8a5a2b,#d9a441); }
 </style>
 </head>
 <body>
@@ -199,6 +211,11 @@
     </div>
   </div>
 </main>
+
+<!-- PLANET DETAIL -->
+<div id="pmodal" class="modal hidden" onclick="if(event.target===this)closePlanet()">
+  <div class="box"><button class="x sm" onclick="closePlanet()">✕</button><div id="pbody"></div></div>
+</div>
 
 <script>
 const API="";
@@ -428,11 +445,37 @@ function renderMap(){
         const cls=me?'me':(b.home_base_id?'enemy':''); const clk=(!me&&b.home_base_id)?`onclick="prefill(${b.home_base_id})"`:'';
         return `<span class="base ${cls}" ${clk} title="base ${b.home_base_id??'-'}">${icon} ${esc(b.username)}${b.home_base_id?` <span class="muted">#${b.home_base_id}</span>`:''}</span>`;
       }).join("");
-      return `<div class="planet"><div class="head"><div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><b>${esc(p.name)}</b></div><div>${bases||'<span class="muted">sin colonias</span>'}</div></div>`;
+      return `<div class="planet"><div class="head" onclick="openPlanet('${p.key}')" title="ver detalle"><div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><b>${esc(p.name)}</b></div><div>${bases||'<span class="muted">sin colonias</span>'}</div></div>`;
     }).join("");
     return `<div class="galaxy-group ${here?'':'dim'}"><div class="gname">🌌 ${esc(g.name)}${here?' · estás acá':''}</div><div class="galaxy">${cards}</div></div>`;
   }).join("");
 }
+
+function mineralName(key){ const m=(catalog&&catalog.minerals||[]).find(x=>x.key===key); return m?m.name:key; }
+function moonName(key){ return (spec.moon[key]||{}).name||key; }
+function openPlanet(key){
+  const p=(catalog.planets||[]).find(x=>x.key===key); if(!p) return;
+  const colonies=(players||[]).filter(pl=>pl.planet_key===key);
+  const ab=Object.entries(p.abundance||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const rich=v>=1; const pct=Math.min(100,v/1.6*100);
+    return `<div class="ab ${rich?'rich':'poor'}"><span>${esc(mineralName(k))}</span>`+
+      `<span class="b"><div style="width:${pct.toFixed(0)}%"></div></span><span class="muted">×${v}</span></div>`;
+  }).join("");
+  const moons=(p.moons||[]).map(m=>`<span class="chip">🌙 ${esc(moonName(m))}</span>`).join(" ")||'<span class="muted">sin lunas</span>';
+  const cols=colonies.map(c=>{ const me=c.id===state.id; const icon=me?'⭐':(c.is_npc?'🤖':'👤');
+    const clk=(!me&&c.home_base_id)?`<button class="sm" onclick="closePlanet();prefill(${c.home_base_id})">⚔ atacar</button>`:'';
+    return `<div class="item"><div class="top"><span>${icon} ${esc(c.username)}${c.home_base_id?` <span class="muted">#${c.home_base_id}</span>`:''}</span>${clk}</div></div>`;
+  }).join("")||'<span class="muted">sin colonias todavía</span>';
+  $("pbody").innerHTML=`<div class="head" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">`+
+    `<div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><h2 style="margin:0;font-size:16px">${esc(p.name)}</h2></div>`+
+    `<p class="muted">${esc(p.description||"")}</p>`+
+    `<h2>Abundancia mineral <span class="muted">(multiplicador de minas)</span></h2>${ab||'<span class="muted">—</span>'}`+
+    `<h2 style="margin-top:12px">Lunas</h2><div class="row">${moons}</div>`+
+    `<h2 style="margin-top:12px">Colonias (${colonies.length})</h2>${cols}`;
+  $("pmodal").classList.remove("hidden");
+}
+function closePlanet(){ $("pmodal").classList.add("hidden"); }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape")closePlanet(); });
 
 // "naves viajando": animate every in-flight fleet (attacks out/back, expeditions, inbound).
 const _seen={};  // fallback progress when we can't derive the leg duration from the API

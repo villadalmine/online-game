@@ -112,6 +112,36 @@ def test_fleets_in_transit_render_as_traveling_ships(page: Page, live_server, sh
     assert "ship" not in empty
 
 
+def test_planet_detail_modal(page: Page, live_server, shots):
+    """Clicking a planet on the map opens a detail modal with its mineral abundance,
+    moons and colonies; Escape/✕ closes it."""
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(live_server + "/")
+    user = "ui_" + uuid.uuid4().hex[:6]
+    page.locator("#u").fill(user)
+    page.locator("#p").fill("secret123")
+    page.click("button:has-text('Registrar')")
+    page.select_option("#planet", "mars")
+    page.select_option("#race", "martian")
+    page.click("button:has-text('Comenzar')")
+    expect(page.locator("#game")).to_be_visible()
+
+    # Open Earth's detail (it has the Luna moon and iron-rich abundance).
+    page.click(".planet .head:has-text('Tierra')")
+    modal = page.locator("#pmodal")
+    expect(modal).to_be_visible()
+    expect(modal).to_contain_text("Abundancia mineral")
+    expect(modal).to_contain_text("Hierro")     # mineral name resolved from catalog
+    expect(modal).to_contain_text("Lunas")
+    expect(modal).to_contain_text("Luna")       # Earth's moon
+    expect(modal).to_contain_text("Colonias")
+    _shot(page, shots / "07-planet.png")
+
+    # Close with the ✕ button.
+    page.click("#pmodal .x")
+    expect(modal).to_be_hidden()
+
+
 def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
     page.goto(live_server + "/")
     user = "ui_" + uuid.uuid4().hex[:6]

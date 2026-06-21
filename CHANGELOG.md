@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-21 — Web: detalle de planeta (modal)
+- Click en un planeta del mapa → modal con **abundancia mineral** (barras por mineral, ricos en
+  verde / pobres en ámbar, con el multiplicador de minas), **lunas** y **colonias** del planeta
+  (con acceso directo a "⚔ atacar" enemigos). Cierra con ✕ o Escape. Todo data-driven desde
+  `catalog` (sin backend nuevo).
+- e2e de navegador: abre el detalle de la Tierra y verifica abundancia/lunas/colonias y el
+  cierre. Screenshot `07-planet.png`.
+- Fix CSS: `.modal.hidden` para que el overlay oculto no tape la pantalla (bloqueaba clicks).
+
 ### 2026-06-21 — Web: naves viajando + mapa por galaxia
 - **Flotas en tránsito** ("naves viajando"): nueva sección en el mapa que dibuja cada flota en
   vuelo como una nave que se desplaza por su trayecto, con ETA en vivo:
