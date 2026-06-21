@@ -110,18 +110,28 @@ La CI (GitHub Actions) construye una imagen **multi-arch (amd64+arm64)** y la pu
 
 1. Pusheá a `main` → el workflow `build-image` publica la imagen. Hacé **público** el paquete
    en GitHub (Packages → online-game → visibility public), o creá un `imagePullSecret`.
-2. Instalá con Helm (el token de OpenRouter va por `--set`, nunca al repo):
+2. Instalá con Helm (los tokens van por `--set`, nunca al repo):
    ```bash
    helm install galaxy deploy/helm \
      --set env.JWT_SECRET="un-secreto-fuerte-de-32+-bytes" \
      --set npc.brain=llm --set openrouter.apiKey="sk-or-..."
    ```
    (sin esos `--set` de NPC, las NPC usan reglas y no hace falta token.)
+
+   **NPCs con LLM — agnóstico del proveedor.** El chart no levanta ningún LLM: apuntás la app
+   a **cualquier endpoint OpenAI-compatible** (OpenRouter, LiteLLM, Ollama, vLLM) con `llm.*`:
+   ```bash
+   # Ollama/LiteLLM que ya corras en el cluster (o afuera):
+   helm install galaxy deploy/helm --set npc.brain=llm \
+     --set llm.baseUrl=http://ollama.ollama:11434/v1 \
+     --set llm.model=llama3.1:8b --set llm.apiKey=ollama
+   ```
+   Si dejás `llm.*` vacío, usa los `openrouter.*` (compat). El token va a un Secret.
 3. Exponé la API: `kubectl port-forward svc/galaxy-api 8099:80` y entrá a `http://localhost:8099/`,
    o agregá un Ingress.
 
 El chart trae: API (Deployment+Service), worker (CronJob del tick), Postgres y Redis,
-initContainer de migraciones y Secret para el token de OpenRouter.
+initContainer de migraciones y Secret para los tokens del LLM.
 
 **Jugar en el navegador:** abrí **http://localhost:8099/** (cliente web incluido).
 OpenAPI interactivo en http://localhost:8099/docs

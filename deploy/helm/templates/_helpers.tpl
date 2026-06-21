@@ -22,6 +22,25 @@ imagePullSecrets:
   value: {{ include "online-game.redisUrl" . | quote }}
 - name: NPC_BRAIN
   value: {{ .Values.npc.brain | quote }}
+{{- if .Values.llm.baseUrl }}
+- name: LLM_BASE_URL
+  value: {{ .Values.llm.baseUrl | quote }}
+{{- end }}
+{{- if .Values.llm.model }}
+- name: LLM_MODEL
+  value: {{ .Values.llm.model | quote }}
+{{- end }}
+{{- if .Values.llm.jsonMode }}
+- name: LLM_JSON_MODE
+  value: {{ .Values.llm.jsonMode | quote }}
+{{- end }}
+{{- if .Values.llm.apiKey }}
+- name: LLM_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Release.Name }}-secrets
+      key: LLM_API_KEY
+{{- end }}
 - name: OPENROUTER_BASE_URL
   value: {{ .Values.openrouter.baseUrl | quote }}
 - name: OPENROUTER_MODEL

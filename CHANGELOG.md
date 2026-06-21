@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-21 — Helm: LLM agnóstico del proveedor
+- El chart ahora expone `llm.baseUrl` / `llm.model` / `llm.apiKey` / `llm.jsonMode` y los pasa
+  como `LLM_*` a la API y al worker (la key vía Secret). Permite apuntar las NPC a cualquier
+  endpoint OpenAI-compatible (OpenRouter, LiteLLM, Ollama, vLLM) **sin que el chart levante
+  ningún LLM** — eso queda en tu infra. `openrouter.*` sigue como fallback/compat.
+- `secret.yaml` crea el Secret si hay `llm.apiKey` y/o `openrouter.apiKey`. README +
+  `values-local.example.yaml` actualizados. Verificado con `helm lint` + `helm template`.
+
 ### 2026-06-21 — NPCs LLM: proveedor agnóstico (OpenRouter/LiteLLM/Ollama) + JSON mode
 - El cerebro LLM ahora habla con **cualquier endpoint OpenAI-compatible** vía `LLM_BASE_URL` /
   `LLM_MODEL` / `LLM_API_KEY` (con fallback a los `OPENROUTER_*` para no romper configs viejas).

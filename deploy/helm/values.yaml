@@ -39,10 +39,21 @@ env:
   ENERGY_MAX: "240"
   ENERGY_START: "60"
 
-# NPCs con IA. Para usar LLM: brain=llm y poné el token (no lo commitees: usá --set o
-# un values-local.yaml gitignored). Si apiKey está vacío, NPC_BRAIN cae a reglas igual.
+# NPCs con IA. Para usar LLM: brain=llm. El chart es agnóstico del proveedor: apuntá a
+# CUALQUIER endpoint OpenAI-compatible (OpenRouter, LiteLLM, Ollama, vLLM) con llm.*.
+# El chart NO levanta ningún LLM: vos corrés Ollama/LiteLLM donde quieras y le pasás la URL.
+# Si llm.apiKey está vacío y no hay openrouter.apiKey, NPC_BRAIN cae a reglas igual.
 npc:
   brain: "rules"               # rules | llm
+
+# llm.* tiene prioridad; si lo dejás vacío, se usan los openrouter.* de abajo (compat).
+llm:
+  baseUrl: ""                  # ej http://litellm.litellm:4000/v1  ·  http://ollama.ollama:11434/v1
+  model: ""                    # ej llama3.1:8b
+  apiKey: ""                   # va a un Secret; para Ollama poné cualquier cosa (lo ignora)
+  jsonMode: "true"             # response_format=json_object (apagá si tu server no lo soporta)
+
+# Legacy / fallback. El token nunca al repo: usá --set o un values-local.yaml gitignored.
 openrouter:
   apiKey: ""                   # ej: helm install ... --set openrouter.apiKey=sk-or-...
   baseUrl: "https://openrouter.ai/api/v1"

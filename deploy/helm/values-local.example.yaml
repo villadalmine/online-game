@@ -1,10 +1,19 @@
-# Copialo a values-local.yaml (gitignored) y poné tu token. Luego:
+# Copialo a values-local.yaml (gitignored) y poné tus valores. Luego:
 #   helm install galaxy deploy/helm -f deploy/helm/values-local.yaml
-# o sin archivo:
-#   helm install galaxy deploy/helm --set npc.brain=llm --set openrouter.apiKey=sk-or-...
 env:
   JWT_SECRET: "cambia-esto-por-uno-fuerte-de-32+-bytes"
 npc:
   brain: "llm"
-openrouter:
-  apiKey: "sk-or-v1-tu-token-aca"
+
+# Agnóstico del proveedor: apuntá a cualquier endpoint OpenAI-compatible.
+# El chart NO levanta el LLM; vos corrés Ollama/LiteLLM donde quieras.
+llm:
+  # Ollama (modelo local/GPU) corriendo en el cluster:
+  baseUrl: "http://ollama.ollama:11434/v1"
+  model: "llama3.1:8b"
+  apiKey: "ollama"            # Ollama lo ignora; LiteLLM usa su master key
+  jsonMode: "true"
+
+# Alternativa (o fallback si dejás llm.* vacío): OpenRouter.
+# openrouter:
+#   apiKey: "sk-or-v1-tu-token-aca"
