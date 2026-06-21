@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-21 — NPCs: estrategia (taunts + rivalidad + few-shot)
+- **Taunts in-character**: cuando una NPC ataca a un **humano** le manda una notificación con
+  una frase de su raza (al despachar, y otra al ganar/perder). Data-driven: `taunts.{attack,
+  win,lose}` por raza en `content/races.yaml`. No-op en humano→x y NPC↔NPC. Llega por el feed
+  de notificaciones + SSE + sonido, sin tocar el front.
+- **Rivalidad dinámica**: entre las bases que claramente puede vencer, la NPC (rule brain)
+  prioriza al **humano con más score** (las NPC se coordinan contra el líder); si no hay
+  humano batible, pega a la base más débil. El `state` del LLM ahora marca `enemies[].is_human`
+  y el prompt instruye lo mismo.
+- **Few-shot** en el prompt LLM (formato + prioridades) para decisiones más consistentes.
+- Tests de servicio: taunt al humano atacado, y que el rule brain ataca al humano líder
+  cuando hay varios batibles. Sin dependencias nuevas (Python + YAML).
+
 ### 2026-06-21 — Helm: LLM agnóstico del proveedor
 - El chart ahora expone `llm.baseUrl` / `llm.model` / `llm.apiKey` / `llm.jsonMode` y los pasa
   como `LLM_*` a la API y al worker (la key vía Secret). Permite apuntar las NPC a cualquier

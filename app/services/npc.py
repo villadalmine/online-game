@@ -25,6 +25,7 @@ from app.services.economy import player_stocks
 from app.services.energy import compute_energy
 from app.services.expedition import start_expedition
 from app.services.onboarding import onboard_player
+from app.services.scoring import player_score
 from app.services.state import advance
 from app.services.training import player_units, start_training
 
@@ -247,18 +248,28 @@ class RuleBasedBrain:
             await start_training(session, player, base, "soldier", SOLDIER_BATCH)
             return f"train soldier x{SOLDIER_BATCH}"
 
-        # 5) Attack the WEAKEST reachable base, only if we clearly outgun its defense.
+        # 5) Attack: among the bases we clearly outgun, coordinate against the strongest
+        #    HUMAN rival (NPCs gang up on the leading player); else hit the weakest base.
         army = {k: units[k] for k in ("soldier", "tank") if units.get(k)}
         my_power = _force_attack_power(army)
         if my_power > 0 and energy >= get_settings().attack_energy_cost:
-            targets = await _enemy_bases(session, player)
-            scored = [(await _base_defense_estimate(session, b), b) for b in targets]
-            scored.sort(key=lambda x: x[0])
-            if scored:
-                defense, target = scored[0]
+            beatable = []
+            for b in await _enemy_bases(session, player):
+                defense = await _base_defense_estimate(session, b)
                 if my_power > defense * ATTACK_POWER_MARGIN:  # don't trade evenly
-                    await start_attack(session, player, target.id, army)
-                    return f"attack base {target.id}"
+                    owner = await session.get(Player, b.player_id)
+                    beatable.append((defense, owner, b))
+            if beatable:
+                humans = [t for t in beatable if not t[1].is_npc]
+                if humans:
+                    scored = [(await player_score(session, o), b) for (_d, o, b) in humans]
+                    scored.sort(key=lambda x: x[0], reverse=True)  # strongest rival first
+                    target = scored[0][1]
+                else:
+                    beatable.sort(key=lambda x: x[0])  # weakest reachable base
+                    target = beatable[0][2]
+                await start_attack(session, player, target.id, army)
+                return f"attack base {target.id}"
 
         # 6) Economy/boon: send a shuttle expedition if possible.
         if units.get("shuttle", 0) >= 1:
@@ -346,9 +357,11 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
     }
     enemies = []
     for b in await _enemy_bases(session, player):
+        owner = await session.get(Player, b.player_id)
         enemies.append(
             {
                 "target_base_id": b.id,
+                "is_human": not owner.is_npc,
                 "units": await player_units(session, b.player_id),
                 "defense_estimate": round(await _base_defense_estimate(session, b), 1),
             }
@@ -445,8 +458,9 @@ async def _llm_decide(state: dict) -> dict:
         "You are an AI playing a turn-based space strategy game as an NPC race. "
         f"Stay in character: {personality} "
         "Use recent_actions/recent_battles for continuity and react to incoming_attacks "
-        "(build a turret to defend, or recall a fleet from my_missions). Attack the enemy "
-        "with the lowest defense_estimate, and only if your force clearly outguns it. "
+        "(build a turret to defend, or recall a fleet from my_missions). Only attack an enemy "
+        "your force clearly outguns; among those, prefer a human rival (enemies[].is_human=true) "
+        "over an NPC, to gang up on the leading player. "
         "Given your state, choose exactly ONE affordable action consistent with your personality. "
         'Respond with ONLY JSON, one of: '
         '{"action":"build","building":"<key>","mineral":"<key|null>"} (mineral only for a mine), '
@@ -454,7 +468,14 @@ async def _llm_decide(state: dict) -> dict:
         '{"action":"attack","target_base_id":<int>,"force":{"soldier":<int>,"tank":<int>}}, '
         '{"action":"recall","mission_id":<int>}, '
         '{"action":"expedition","moon_key":"<key>"}, '
-        'or {"action":"none"}.'
+        'or {"action":"none"}. '
+        # Few-shot: shape the kind of decisions we want (format + priorities).
+        'Examples: no mine yet and minerals available -> '
+        '{"action":"build","building":"mine","mineral":"iron"}. '
+        'incoming_attacks present and a fleet in my_missions -> '
+        '{"action":"recall","mission_id":12}. '
+        'a beatable enemy with is_human=true -> '
+        '{"action":"attack","target_base_id":7,"force":{"tank":5}}.'
     )
     payload = {
         "model": settings.llm_model_name,

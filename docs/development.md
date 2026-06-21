@@ -157,6 +157,11 @@ automáticamente (`registry.py:building_cost_in_minerals`).
 - **Personalidad** por raza: editá `personality` en `content/races.yaml` (se inyecta en el
   prompt → las NPC juegan en personaje). **Memoria** corta: `Player.npc_memory` (últimas 8
   acciones) + `recent_battles`, incluidos en el `state` para continuidad.
+- **Taunts**: `taunts.{attack,win,lose}` por raza en `races.yaml`; la NPC le manda una frase al
+  **humano** que ataca/derrota (`combat.py:_npc_taunt`, notificación `npc_taunt`). Agregá líneas
+  editando el YAML.
+- **Rivalidad**: entre bases batibles, el `RuleBasedBrain` prioriza al humano con más score
+  (las NPC se coordinan contra el líder); el LLM recibe `enemies[].is_human` y la misma guía.
 - El `state` y el `dispatch_action` son agnósticos del proveedor; `_llm_decide` (firma
   `state -> action`) es inyectable para testear sin red (`LlmBrain(decide=...)`).
 

@@ -43,7 +43,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
 1. **Bot de Telegram** — otro cliente sobre la misma API (jugar y recibir notificaciones desde
    Telegram). Cierra la premisa multi-cliente.
 2. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
-3. **Mejorar NPCs LLM** — modelo mejor que el free / few-shot; alianzas dinámicas entre NPCs.
+
+(✅ NPCs LLM mejorados: proveedor agnóstico OpenAI-compatible en app + Helm — OpenRouter/
+LiteLLM/Ollama/vLLM —, JSON mode, few-shot, taunts in-character y rivalidad coordinada
+contra el humano líder.)
 
 ## 💡 Backlog / ideas
 

@@ -7,6 +7,7 @@ on distance. `process_missions()` resolves battles on arrival and returns surviv
 loot home — driven by the tick and by lazy `state.advance`.
 """
 import json
+import random
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
@@ -33,6 +34,24 @@ from app.services.training import (
 
 class CombatError(Exception):
     pass
+
+
+async def _npc_taunt(session: AsyncSession, attacker: Player, defender: Player, kind: str) -> None:
+    """In-character chatter: an NPC taunts the HUMAN it fights (attack/win/lose).
+    No-op for human attackers or NPC-vs-NPC, so it's invisible to the rest of the game."""
+    if not attacker.is_npc or defender.is_npc:
+        return
+    race = get_content().races.get(attacker.race_key, {})
+    lines = (race.get("taunts") or {}).get(kind) or []
+    if not lines:
+        return
+    await notify(
+        session,
+        defender.id,
+        "npc_taunt",
+        f"{race.get('name', attacker.username)}: «{random.choice(lines)}»",
+        {"from": attacker.username, "race": attacker.race_key, "kind": kind},
+    )
 
 
 @dataclass
@@ -175,6 +194,7 @@ async def start_attack(
         f"Ataque entrante a tu base {target_base_id}",
         {"target_base_id": target_base_id, "arrives_at": mission.arrives_at.isoformat()},
     )
+    await _npc_taunt(session, attacker, defender, "attack")
     return mission
 
 
@@ -264,6 +284,10 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
         "attacked",
         f"Te atacaron (base {mission.target_base_id}): {result.outcome}",
         {"outcome": result.outcome, "your_losses": result.defender_losses, "looted": loot},
+    )
+    # NPC follow-up taunt to the human, by result.
+    await _npc_taunt(
+        session, attacker, defender, "win" if result.outcome == "attacker" else "lose"
     )
 
     mission.details = json.dumps({"outcome": result.outcome, "survivors": survivors, "loot": loot})

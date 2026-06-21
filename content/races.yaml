@@ -20,6 +20,17 @@ races:
     # perk de unidad: se comparte entre aliados con shared_unit_tech
     unit_perk:
       production: 1.10
+    # frases in-character que las NPC mandan al humano que atacan (data-driven)
+    taunts:
+      attack:
+        - "La diplomacia fallo; ahora hablan nuestras flotas."
+        - "Esto es estrictamente negocios."
+      win:
+        - "Un pesimo negocio para ti."
+        - "La logistica siempre gana."
+      lose:
+        - "Tomamos nota. La cuenta sigue abierta."
+        - "Retirada tactica, no derrota."
   - key: martian
     name: "Marcianos"
     home_planet: mars
@@ -37,6 +48,16 @@ races:
       heavy_unit_cost: 0.9
     unit_perk:
       attack: 1.10
+    taunts:
+      attack:
+        - "Tu base ardera bajo dos soles!"
+        - "Marte no pide permiso!"
+      win:
+        - "Polvo rojo sobre tus ruinas!"
+        - "Debil, como esperabamos!"
+      lose:
+        - "Volveremos con el doble!"
+        - "Una batalla, no la guerra."
   - key: venusian
     name: "Venusianos"
     home_planet: venus
@@ -54,3 +75,13 @@ races:
       defense: 1.2
     unit_perk:
       defense: 1.10
+    taunts:
+      attack:
+        - "Calculamos tu derrota con tres decimales."
+        - "Superioridad tecnica en aproximacion."
+      win:
+        - "Resultado dentro del margen previsto."
+        - "La ciencia no improvisa."
+      lose:
+        - "Anomalia registrada. Recalibrando."
+        - "Un error de calculo; no se repetira."

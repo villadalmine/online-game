@@ -228,3 +228,70 @@ async def test_llm_decide_posts_to_configured_endpoint_with_json_mode(monkeypatc
     assert captured["json"]["model"] == "llama3.1"
     assert captured["json"]["response_format"] == {"type": "json_object"}
     assert captured["headers"]["Authorization"] == "Bearer secret"
+
+
+async def test_npc_taunts_human_on_attack(session):
+    # An NPC attacking a human sends an in-character taunt notification.
+    from app.content.registry import get_content
+    from app.models import Notification
+    from app.services.combat import start_attack
+    from app.services.training import get_or_create_unit_stock
+
+    await ensure_npcs(session)
+    npc = await _npc(session, "npc_martian")
+    human = Player(username="prey", password_hash=hash_password("secret123"))
+    session.add(human)
+    await session.flush()
+    await onboard_player(session, human, "milky_way", "earth", "terran")
+    (await get_or_create_unit_stock(session, npc.id, "tank")).quantity = 5
+    await session.commit()
+
+    base = await _base_of(session, human)
+    await start_attack(session, npc, base.id, {"tank": 3})
+    await session.commit()
+
+    res = await session.execute(
+        select(Notification).where(
+            Notification.player_id == human.id, Notification.type == "npc_taunt"
+        )
+    )
+    taunts = list(res.scalars())
+    assert taunts, "el humano debería recibir un taunt del NPC"
+    lines = get_content().races["martian"]["taunts"]["attack"]
+    assert any(any(line in n.message for line in lines) for n in taunts)
+
+
+async def test_rule_brain_ganks_the_leading_human(session):
+    # With several beatable humans, NPCs coordinate on the highest-scoring one (rivalry).
+    from app.models import ResourceStock
+    from app.services.economy import get_or_create_stock
+    from app.services.training import get_or_create_unit_stock
+
+    await ensure_npcs(session)
+
+    async def add_human(name, planet):
+        h = Player(username=name, password_hash=hash_password("secret123"))
+        session.add(h)
+        await session.flush()
+        await onboard_player(session, h, "milky_way", planet, "terran")
+        return h
+
+    await add_human("weak_human", "earth")
+    leader = await add_human("leader_human", "mercury")
+    # Raise the leader's score without adding any defense.
+    (await get_or_create_stock(session, leader.id, "iron")).amount += 100000
+
+    npc = await _npc(session, "npc_martian")
+    npc.energy = 999
+    # Strip the NPC's minerals so build/train are unaffordable -> it reaches the attack step.
+    for st in (
+        await session.execute(select(ResourceStock).where(ResourceStock.player_id == npc.id))
+    ).scalars():
+        st.amount = 0
+    (await get_or_create_unit_stock(session, npc.id, "tank")).quantity = 50
+    await session.commit()
+
+    npc = await _npc(session, "npc_martian")
+    action = await RuleBasedBrain().act(session, npc)
+    leader_base = await _base_of(session, leader)
+    assert action == f"attack base {leader_base.id}"
