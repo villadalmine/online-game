@@ -48,6 +48,21 @@
   .base{ display:inline-block; padding:3px 8px; margin:3px 3px 0 0; border-radius:14px; background:#1b2547; font-size:12px; cursor:default; }
   .base.enemy{ cursor:pointer; border:1px solid #3a4a7e; } .base.enemy:hover{ background:#2a3866; }
   .base.me{ background:#2b5fff33; border:1px solid #2b5fff; }
+  .orb.mercury{ color:#b8b0a0; background:radial-gradient(circle at 30% 30%, #d8d0c0, #8a8275 70%); }
+  .orb.vega_prime{ color:#3fb6c9; background:radial-gradient(circle at 30% 30%, #7fe6f0, #1f8aa0 70%); }
+  .orb.nyx{ color:#8a5cd0; background:radial-gradient(circle at 30% 30%, #b98ce6, #4a2a80 70%); }
+  .orb.def{ color:#6a7aa8; background:radial-gradient(circle at 30% 30%, #9aa8d0, #3a4a7e 70%); }
+  /* galaxy grouping */
+  .galaxy-group{ margin-bottom:14px; } .galaxy-group:last-child{ margin-bottom:0; }
+  .galaxy-group .gname{ font-size:11px; color:#9fb0e0; letter-spacing:.6px; text-transform:uppercase; margin:0 0 8px; }
+  .galaxy-group.dim{ opacity:.5; }
+  /* fleets in transit ("naves viajando") */
+  .transit{ margin:10px 0; } .transit .ends{ display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12px; margin-bottom:4px; }
+  .transit .track{ position:relative; height:16px; border-radius:9px; background:#0a0e1f; border:1px solid var(--line); overflow:hidden; }
+  .transit .track::before{ content:""; position:absolute; left:8px; right:8px; top:50%; border-top:2px dashed #33406e; }
+  .transit .ship{ position:absolute; top:50%; transform:translate(-50%,-50%); font-size:14px; transition:left .9s linear; filter:drop-shadow(0 0 5px currentColor); }
+  .transit.out .ship{ color:#7ea2ff; } .transit.ret .ship{ color:#7ee787; }
+  .transit.exp .ship{ color:#f0c674; } .transit.inc .ship{ color:#ff8a8a; } .transit.inc .track{ border-color:#b23b4e; }
 </style>
 </head>
 <body>
@@ -144,8 +159,12 @@
   <!-- center -->
   <div>
     <div class="card">
-      <h2>🌌 Galaxia: Vía Láctea</h2>
-      <div id="map" class="galaxy"></div>
+      <h2>🌌 Galaxias</h2>
+      <div id="map"></div>
+    </div>
+    <div class="card">
+      <h2>🚀 Flotas en tránsito</h2>
+      <div id="transits"></div>
     </div>
     <div class="card">
       <h2>Tu imperio</h2>
@@ -303,7 +322,7 @@ async function refresh(){
     b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
-  renderQueues(); renderMap(); renderResearch(); renderAlliances();
+  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances();
   renderCost(); renderTrainCost(); renderExpInfo();
 }
 function renderResearch(){
@@ -391,21 +410,68 @@ function renderQueues(){
   (state.missions_incoming||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span class="bad">⚠ ataque entrante → base ${m.target_base_id}</span><span class="bad">${cd(m.arrives_at)}</span></div></div>`));
   $("queues").innerHTML=q.join("")||'<span class="muted">nada en cola</span>';
 }
+const ORB=new Set(["earth","mars","venus","mercury","vega_prime","nyx"]);
+const clamp01=x=>Math.max(0,Math.min(1,x));
+function planetName(key){ const p=(catalog&&catalog.planets||[]).find(x=>x.key===key); return p?p.name:(key||"?"); }
+function planetOfBase(baseId){ const pl=(players||[]).find(p=>p.home_base_id===baseId); return pl?pl.planet_key:null; }
+
 function renderMap(){
   if(!catalog||!state) return;
-  const byPlanet={}; catalog.planets.forEach(p=>byPlanet[p.key]={...p,bases:[]});
+  const byPlanet={}; (catalog.planets||[]).forEach(p=>byPlanet[p.key]={...p,bases:[]});
   players.forEach(pl=>{ if(pl.planet_key&&byPlanet[pl.planet_key]) byPlanet[pl.planet_key].bases.push(pl); });
-  $("map").innerHTML=Object.values(byPlanet).map(p=>{
-    const bases=p.bases.map(b=>{ const me=b.id===state.id; const icon=me?'⭐':(b.is_npc?'🤖':'👤');
-      const cls=me?'me':(b.home_base_id?'enemy':''); const clk=(!me&&b.home_base_id)?`onclick="prefill(${b.home_base_id})"`:'';
-      return `<span class="base ${cls}" ${clk} title="base ${b.home_base_id??'-'}">${icon} ${esc(b.username)}${b.home_base_id?` <span class="muted">#${b.home_base_id}</span>`:''}</span>`;
+  const galaxies=(catalog.galaxies&&catalog.galaxies.length)?catalog.galaxies:[{key:"",name:"",planets:catalog.planets}];
+  $("map").innerHTML=galaxies.map(g=>{
+    const here=(g.planets||[]).some(p=>p.key===state.planet_key);
+    const cards=(g.planets||[]).map(gp=>{
+      const p=byPlanet[gp.key]||{...gp,bases:[]};
+      const bases=(p.bases||[]).map(b=>{ const me=b.id===state.id; const icon=me?'⭐':(b.is_npc?'🤖':'👤');
+        const cls=me?'me':(b.home_base_id?'enemy':''); const clk=(!me&&b.home_base_id)?`onclick="prefill(${b.home_base_id})"`:'';
+        return `<span class="base ${cls}" ${clk} title="base ${b.home_base_id??'-'}">${icon} ${esc(b.username)}${b.home_base_id?` <span class="muted">#${b.home_base_id}</span>`:''}</span>`;
+      }).join("");
+      return `<div class="planet"><div class="head"><div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><b>${esc(p.name)}</b></div><div>${bases||'<span class="muted">sin colonias</span>'}</div></div>`;
     }).join("");
-    return `<div class="planet"><div class="head"><div class="orb ${p.key}"></div><b>${esc(p.name)}</b></div><div>${bases||'<span class="muted">sin colonias</span>'}</div></div>`;
+    return `<div class="galaxy-group ${here?'':'dim'}"><div class="gname">🌌 ${esc(g.name)}${here?' · estás acá':''}</div><div class="galaxy">${cards}</div></div>`;
   }).join("");
 }
 
+// "naves viajando": animate every in-flight fleet (attacks out/back, expeditions, inbound).
+const _seen={};  // fallback progress when we can't derive the leg duration from the API
+function seenProg(key,etaIso){ const eta=new Date(etaIso).getTime(), now=Date.now();
+  if(!_seen[key]||_seen[key].eta!==eta) _seen[key]={t0:now,eta}; const s=_seen[key];
+  return (now-s.t0)/Math.max(1000,s.eta-s.t0); }
+function transitRow(kind,icon,from,to,prog,eta){
+  return `<div class="transit ${kind}"><div class="ends"><span>${esc(from)}</span>`+
+    `<span class="muted">⏱ ${cd(eta)}</span><span>${esc(to)}</span></div>`+
+    `<div class="track"><span class="ship" style="left:${(clamp01(prog)*100).toFixed(1)}%">${icon}</span></div></div>`;
+}
+function renderTransits(){
+  if(!state){ return; } const me=planetName(state.planet_key), now=Date.now(), rows=[];
+  (state.missions_outgoing||[]).forEach(m=>{
+    const dest=planetOfBase(m.target_base_id); const dn=dest?planetName(dest):("base "+m.target_base_id);
+    const arr=new Date(m.arrives_at).getTime(), ret=m.returns_at?new Date(m.returns_at).getTime():null;
+    if(m.status==='outbound'){
+      // one-way leg = returns_at - arrives_at, so departure = arrives_at - leg
+      const prog=ret?(now-(arr-(ret-arr)))/(ret-arr):seenProg('o'+m.id,m.arrives_at);
+      rows.push(transitRow('out','🚀',me,dn,prog,m.arrives_at));
+    }else{
+      const prog=ret?(now-arr)/(ret-arr):seenProg('r'+m.id,m.returns_at||m.arrives_at);
+      rows.push(transitRow('ret','↩',dn,me,prog,m.returns_at||m.arrives_at));
+    }
+  });
+  (state.expeditions||[]).forEach(e=>{
+    const dur=(((spec.moon[e.moon_key]||{}).expedition)||{}).duration_seconds;
+    const comp=new Date(e.completes_at).getTime();
+    const prog=dur?1-(comp-now)/1000/dur:seenProg('e'+e.id,e.completes_at);
+    rows.push(transitRow('exp','🛰',me,'🌙 '+((spec.moon[e.moon_key]||{}).name||e.moon_key),prog,e.completes_at));
+  });
+  (state.missions_incoming||[]).forEach(m=>{
+    rows.push(transitRow('inc','☄','???',me+' #'+m.target_base_id,seenProg('i'+m.id,m.arrives_at),m.arrives_at));
+  });
+  $("transits").innerHTML=rows.join("")||'<span class="muted">sin flotas en vuelo</span>';
+}
+
 setInterval(()=>{ if(state) refresh(); },4000);              // pull state
-setInterval(()=>{ renderQueues(); renderMap(); },1000);     // smooth countdowns/bars
+setInterval(()=>{ renderQueues(); renderMap(); renderTransits(); },1000); // smooth countdowns/bars/ships
 
 // live notifications
 function startStream(){

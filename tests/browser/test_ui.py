@@ -62,6 +62,56 @@ def test_full_play_through_ui(page: Page, live_server, shots):
     _shot(page, shots / "05-guide.png")
 
 
+def test_fleets_in_transit_render_as_traveling_ships(page: Page, live_server, shots):
+    """The galaxy map shows in-flight fleets as animated ships. We inject the exact
+    state shape the API returns (AttackMissionOut + expeditions + incoming) and assert
+    the UI draws a traveling ship per leg, positioned along its track."""
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(live_server + "/")
+    user = "ui_" + uuid.uuid4().hex[:6]
+    page.locator("#u").fill(user)
+    page.locator("#p").fill("secret123")
+    page.click("button:has-text('Registrar')")
+    page.select_option("#planet", "mars")
+    page.select_option("#race", "martian")
+    page.click("button:has-text('Comenzar')")
+    expect(page.locator("#game")).to_be_visible()
+
+    # Happy path: inject fleets and render synchronously (return HTML before the
+    # 1s/4s pollers overwrite state), so the assertion can't race the timers.
+    html = page.evaluate(
+        """() => {
+            const arr = new Date(Date.now()+30000).toISOString();   // arrives in 30s
+            const ret = new Date(Date.now()+90000).toISOString();   // leg = 60s -> 50% done
+            players.push({id:999, username:'Enemigo', race_key:'terran',
+                          planet_key:'venus', is_npc:true, home_base_id:42, alliance_id:null});
+            state.missions_outgoing = [{id:1, target_base_id:42, force:{tank:3},
+                                        status:'outbound', arrives_at:arr, returns_at:ret}];
+            state.expeditions = [{id:1, moon_key:'phobos',
+                                  completes_at:new Date(Date.now()+60000).toISOString()}];
+            state.missions_incoming = [{id:1, target_base_id:state.bases[0].id,
+                                        arrives_at:new Date(Date.now()+30000).toISOString()}];
+            renderTransits();
+            return document.getElementById('transits').innerHTML;
+        }"""
+    )
+    assert "🚀" in html        # outbound attack
+    assert "🛰" in html        # expedition
+    assert "☄" in html         # inbound attack
+    assert "Marte" in html and "Venus" in html  # origin -> destination resolved by planet
+    assert "left:50" in html   # ship sits mid-track (50% of the leg elapsed)
+    _shot(page, shots / "06-transit.png")
+
+    # Edge case: no fleets -> explicit empty state, no stray ship.
+    empty = page.evaluate(
+        "() => { state.missions_outgoing=[]; state.expeditions=[]; "
+        "state.missions_incoming=[]; renderTransits(); "
+        "return document.getElementById('transits').innerHTML; }"
+    )
+    assert "sin flotas en vuelo" in empty
+    assert "ship" not in empty
+
+
 def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
     page.goto(live_server + "/")
     user = "ui_" + uuid.uuid4().hex[:6]

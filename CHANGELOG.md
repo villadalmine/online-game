@@ -7,6 +7,23 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-21 — Web: naves viajando + mapa por galaxia
+- **Flotas en tránsito** ("naves viajando"): nueva sección en el mapa que dibuja cada flota en
+  vuelo como una nave que se desplaza por su trayecto, con ETA en vivo:
+  - 🚀 ataque saliente (origen → destino) · ↩ flota volviendo · 🛰 expedición a una luna ·
+    ☄ ataque entrante (fog of war: origen `???`).
+  - El progreso es exacto sin tocar el backend: para ataques deriva la duración de un tramo de
+    `returns_at − arrives_at`; para expediciones usa `duration_seconds` del catálogo; para
+    entrantes (solo `arrives_at`) hace fallback midiendo desde que se ve. La nave interpola
+    suave (`transition: left`) entre los samples de 1s.
+- **Mapa agrupado por galaxia**: usa `catalog.galaxies` (Vía Láctea + Andrómeda), resalta la
+  galaxia donde estás y atenúa el resto. Orbes con color para todos los planetas
+  (mercury/vega_prime/nyx) y fallback para nuevos.
+- e2e de navegador (`tests/browser/test_ui.py`): inyecta el shape real de la API
+  (`missions_outgoing`/`expeditions`/`missions_incoming`) y verifica que se renderiza una nave
+  por tramo, ubicada al 50% del trayecto, con origen→destino resueltos por planeta; + caso
+  vacío ("sin flotas en vuelo", sin naves sueltas). Screenshot `06-transit.png`.
+
 ### 2026-06-20 — make run mata el server viejo antes de arrancar
 - `make run`/`run-lan` hacen un `pkill` del uvicorn previo antes de levantar, para no quedar
   con **dos servers en el mismo puerto** (causa real de 500s al jugar local: el server viejo
