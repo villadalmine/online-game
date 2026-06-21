@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-20 — Expuesto vía Gateway API (Cilium)
+- Chart: `HTTPRoute` opcional (`--set gateway.enabled=true`, host/gateway configurables) para
+  exponer la API por un Gateway (ej. Cilium). Desplegado: el juego queda en
+  `http://online-game.cluster.home/`. Verificado end-to-end por el gateway (health/register/web).
+
 ### 2026-06-20 — Desplegado en k3s (ARM64) ✅
 - Imagen construida con **Kaniko** in-cluster desde el repo público → `registry.registry:5000`,
   arquitectura ARM64. Helm chart desplegado en namespace `online-game` (API + Postgres + Redis +

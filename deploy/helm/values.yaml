@@ -15,6 +15,13 @@ imagePullSecrets: []
 # Ej (cluster mixto / imagen arm64 de Kaniko): --set nodeSelector."kubernetes\.io/arch"=arm64
 nodeSelector: {}
 
+# Exponer vía Gateway API (ej. Cilium). Activá con --set gateway.enabled=true
+gateway:
+  enabled: false
+  host: online-game.cluster.home
+  name: cluster-gateway
+  namespace: gateway
+
 api:
   replicas: 2
   port: 8000
