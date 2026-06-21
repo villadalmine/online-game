@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-20 — make run mata el server viejo antes de arrancar
+- `make run`/`run-lan` hacen un `pkill` del uvicorn previo antes de levantar, para no quedar
+  con **dos servers en el mismo puerto** (causa real de 500s al jugar local: el server viejo
+  servía el 8099 con un `game.db` ya borrado/reseteado por debajo). Patrón `[u]vicorn` para que
+  `pkill` no se mate a sí mismo. `make stop` usa el mismo patrón.
+
 ### 2026-06-20 — Expuesto vía Gateway API (Cilium)
 - Chart: `HTTPRoute` opcional (`--set gateway.enabled=true`, host/gateway configurables) para
   exponer la API por un Gateway (ej. Cilium). Desplegado: el juego queda en

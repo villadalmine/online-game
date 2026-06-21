@@ -46,11 +46,14 @@ update: ## Reinstala dependencias (tras cambiar pyproject)
 	$(PIP) install -q -e ".[dev]"
 
 ## Correr — 3 modos
+# Nota: el patrón [u]vicorn evita que pkill se mate a sí mismo (su propia cmdline no matchea).
 run: ## Modo FULL-LOCAL: solo tu PC (SQLite, 127.0.0.1:PORT)
+	-@pkill -f "[u]vicorn app.main:app" 2>/dev/null; sleep 1
 	DATABASE_URL=$(DB_URL) JWT_SECRET=$(JWT) NPC_BRAIN=$(NPC_BRAIN) AUTO_TICK_SECONDS=$(AUTOTICK) \
 		$(UVICORN) app.main:app --reload --port $(PORT)
 
 run-lan: ## Modo LAN: otros en tu red entran por tu IP (0.0.0.0:PORT)
+	-@pkill -f "[u]vicorn app.main:app" 2>/dev/null; sleep 1
 	@ip=$$(hostname -I 2>/dev/null | awk '{print $$1}'); \
 		echo "Compartí esta URL en tu red local:  http://$$ip:$(PORT)/"
 	DATABASE_URL=$(DB_URL) JWT_SECRET=$(JWT) NPC_BRAIN=$(NPC_BRAIN) AUTO_TICK_SECONDS=$(AUTOTICK) \
@@ -70,7 +73,7 @@ demo-llm: ## Demo con NPCs por OpenRouter
 	PORT=$(PORT) NPC_BRAIN=llm bash scripts/demo.sh
 
 stop: ## Mata cualquier uvicorn de este proyecto
-	-pkill -f "uvicorn app.main:app" 2>/dev/null && echo "server detenido" || echo "no había server"
+	-@pkill -f "[u]vicorn app.main:app" 2>/dev/null && echo "server detenido" || echo "no había server"
 
 health: ## Chequea que el server responde en PORT
 	@curl -sf $(API_URL)/health && echo "" || echo "no responde en $(API_URL)"
