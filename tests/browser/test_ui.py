@@ -224,6 +224,39 @@ def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
     expect(page.locator("#ally-list")).to_contain_text("NPC (no unible)", timeout=15000)
 
 
+def test_panels_collapse_persist_and_expand(page: Page, live_server, shots):
+    """Clicking a panel title folds it to the header; the state survives a reload."""
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(live_server + "/")
+    user = "ui_" + uuid.uuid4().hex[:6]
+    page.locator("#u").fill(user)
+    page.locator("#p").fill("secret123")
+    page.click("button:has-text('Registrar')")
+    page.select_option("#planet", "earth")
+    page.select_option("#race", "terran")
+    page.click("button:has-text('Comenzar')")
+    expect(page.locator("#game")).to_be_visible()
+
+    world = page.locator("#world")
+    expect(world).to_be_visible()
+    page.click(".card[data-panel='mundo'] > h2")  # collapse
+    expect(world).to_be_hidden()
+    expect(page.locator(".card[data-panel='mundo'] > h2")).to_be_visible()  # title stays
+
+    page.reload()  # persistence: still collapsed after reload
+    expect(page.locator("#game")).to_be_visible()
+    expect(page.locator("#world")).to_be_hidden()
+    _shot(page, shots / "12-panels-collapsed.png")
+
+    page.click(".card[data-panel='mundo'] > h2")  # expand again
+    expect(page.locator("#world")).to_be_visible()
+
+    # "expand all" clears every collapsed panel
+    page.click(".card[data-panel='mundo'] > h2")  # collapse one again
+    page.click("#expandall")
+    expect(page.locator("#world")).to_be_visible()
+
+
 def test_advisor_card_gives_advice_and_suggestions(page: Page, live_server, shots):
     """The assistant card answers and renders an actionable suggestion. No LLM in tests, so
     this exercises the deterministic fallback (grounded on the dependency graph)."""

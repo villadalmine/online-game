@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 3: paneles de la web colapsables (front-only)
+- Cada card tiene un `data-panel` estable; un clic en su título lo **pliega a la cabecera**
+  (`.collapsed` oculta todo menos el `h2` por CSS, sin reestructurar el HTML). Caret ▾/▸.
+- Estado **persistido en `localStorage`** (`panels.collapsed`) → sobrevive recargas. Botones
+  globales **⊟ plegar todo / ⊞ expandir todo**.
+- Sin API ni backend (pura presentación, coherente con API-first). Diseño en
+  [docs/sdd-web-panels.md](docs/sdd-web-panels.md).
+- Test de navegador `test_panels_collapse_persist_and_expand` (colapsa, recarga, expande, todo).
+
 ### 2026-06-22 — Asistente: claridad hack vs. acción + mina del mineral nombrado
 - **Bug**: pedir "mina de silicio" no daba una sugerencia con el mineral, así que se construía
   con el mineral viejo del dropdown (p.ej. hierro). Ahora el asistente detecta el mineral

@@ -57,9 +57,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    docs ni a los SDDs. Idea: campos `name`/`description` localizables (`name_en`/`name_es` o
    `i18n:` por clave) + `Accept-Language` / preferencia del jugador; el front elige idioma.
    *(Pendiente de SDD antes de codear.)*
-3. **Paneles de la web colapsables/redimensionables** — poder achicar/ocultar cada card para
-   ganar espacio y ver solo lo que interesa (estado plegado persistido en `localStorage`; sin
-   backend). *(Pendiente de SDD antes de codear.)*
+3. ✅ **Paneles de la web colapsables** — cada card se pliega a su título (clic en la cabecera),
+   estado persistido en `localStorage`, botones plegar/expandir todo. Front-only.
+   [SDD](docs/sdd-web-panels.md) + test de navegador. *(Follow-up: columnas redimensionables /
+   reordenar por drag-and-drop — requiere su propio SDD.)*
 4. **Bot de Telegram** — otro cliente sobre la misma API (jugar y recibir notificaciones desde
    Telegram). Cierra la premisa multi-cliente.
 5. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.

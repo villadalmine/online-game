@@ -19,6 +19,11 @@
   .card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px; margin-bottom:12px;
          box-shadow:0 1px 0 #ffffff08 inset; }
   .card h2{ font-size:12px; margin:0 0 11px; color:#9fb0e0; text-transform:uppercase; letter-spacing:.7px; }
+  .card[data-panel] > h2{ cursor:pointer; user-select:none; }
+  .card[data-panel] > h2::before{ content:"▾ "; opacity:.55; font-size:10px; }
+  .card.collapsed > h2{ margin-bottom:0; }
+  .card.collapsed > h2::before{ content:"▸ "; }
+  .card.collapsed > *:not(h2){ display:none; }
   button{ background:var(--blue); color:#fff; border:0; border-radius:8px; padding:8px 11px; cursor:pointer; font-size:13px; transition:.12s; }
   button:hover{ filter:brightness(1.12); transform:translateY(-1px); }
   button.sec{ background:#33406e; } button.sm{ padding:3px 9px; font-size:12px; } button.danger{ background:#b23b4e; }
@@ -86,6 +91,8 @@
     <span id="unread" class="pill hidden"></span>
     <span id="dbpill" class="pill" title="Base de datos en uso"></span>
     <span id="live" class="muted hidden">○</span>
+    <button class="sec sm hidden" id="collapseall" onclick="collapseAllPanels(true)" title="Plegar todos los paneles">⊟</button>
+    <button class="sec sm hidden" id="expandall" onclick="collapseAllPanels(false)" title="Expandir todos los paneles">⊞</button>
     <button class="sec sm" id="sound" onclick="toggleSound()" title="Sonido de eventos">🔊</button>
     <button class="sec sm hidden" id="logout" onclick="logout()">salir</button>
   </div>
@@ -122,7 +129,7 @@
 <main id="game" class="hidden">
   <!-- left -->
   <div>
-    <div class="card">
+    <div class="card" data-panel="acciones">
       <h2>Acciones</h2>
       <div class="row">
         <button onclick="build()">🏗 Construir</button>
@@ -148,7 +155,7 @@
       <p class="muted">El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.</p>
     </div>
 
-    <div class="card">
+    <div class="card" data-panel="atacar">
       <h2>⚔ Atacar</h2>
       <div class="row">
         base <input id="tbase" type="number" placeholder="id" style="width:64px" />
@@ -158,17 +165,17 @@
       <p class="muted">Tip: tocá una base enemiga en el mapa para elegir objetivo.</p>
     </div>
 
-    <div class="card">
+    <div class="card" data-panel="investigacion">
       <h2>🔬 Investigación</h2>
       <div id="research"></div>
     </div>
 
-    <div class="card">
+    <div class="card" data-panel="alianzas">
       <h2>🤝 Alianzas</h2>
       <div id="alliances"></div>
     </div>
 
-    <div class="card hidden" id="chatcard">
+    <div class="card hidden" id="chatcard" data-panel="chat">
       <h2>💬 Chat de alianza</h2>
       <div id="chatfeed" style="max-height:32vh;overflow:auto"></div>
       <div class="row">
@@ -181,15 +188,15 @@
 
   <!-- center -->
   <div>
-    <div class="card">
+    <div class="card" data-panel="galaxias">
       <h2>🌌 Galaxias</h2>
       <div id="map"></div>
     </div>
-    <div class="card">
+    <div class="card" data-panel="transitos">
       <h2>🚀 Flotas en tránsito</h2>
       <div id="transits"></div>
     </div>
-    <div class="card">
+    <div class="card" data-panel="imperio">
       <h2>Tu imperio</h2>
       <div class="row"><span class="muted" style="width:58px">Energía</span>
         <div class="bar" style="flex:1"><div id="ebar"></div></div><span id="etxt" class="muted"></span></div>
@@ -197,9 +204,9 @@
       <div style="margin:9px 0"><span class="muted">Unidades</span><div id="units" class="row"></div></div>
       <div id="boons" class="row"></div>
     </div>
-    <div class="card"><h2>Bases y edificios</h2><div id="bases"></div></div>
-    <div class="card"><h2>Colas y flotas</h2><div id="queues"></div></div>
-    <div class="card">
+    <div class="card" data-panel="bases"><h2>Bases y edificios</h2><div id="bases"></div></div>
+    <div class="card" data-panel="colas"><h2>Colas y flotas</h2><div id="queues"></div></div>
+    <div class="card" data-panel="ranking">
       <h2>🏆 Ranking</h2>
       <div class="row"><button class="sec sm" onclick="loadRanking()">cargar ranking</button></div>
       <table id="ranking"></table>
@@ -208,19 +215,19 @@
 
   <!-- right -->
   <div>
-    <div class="card">
+    <div class="card" data-panel="notis">
       <h2>🔔 Notificaciones</h2>
       <div class="row"><button class="sec sm" onclick="markRead()">marcar leídas</button>
         <span id="streamstate" class="muted">—</span></div>
       <div id="feed"></div>
     </div>
 
-    <div class="card">
+    <div class="card" data-panel="mundo">
       <h2>🌍 Eventos del mundo</h2>
       <div id="world" style="max-height:34vh;overflow:auto"></div>
     </div>
 
-    <div class="card">
+    <div class="card" data-panel="asistente">
       <h2>🧠 Asistente AI</h2>
       <div class="row"><input id="advmsg" placeholder="¿qué construyo? me falta algo…"
         onkeydown="if(event.key==='Enter')askAdvisor()">
@@ -229,7 +236,7 @@
       <div id="advsugs" class="row"></div>
     </div>
 
-    <div class="card">
+    <div class="card" data-panel="guia">
       <h2>📖 Guía — ¿qué es cada cosa?</h2>
       <div class="row"><button class="sec sm" onclick="toggleGuide()">mostrar / ocultar</button></div>
       <div id="guide" class="hidden"></div>
@@ -365,6 +372,18 @@ async function allianceJoin(id){ try{ await api(`/api/v1/alliances/${id}/join`,"
 async function allianceLeave(){ try{ await api("/api/v1/alliances/leave","POST"); refresh(); }catch(e){ msg(e.message,false);} }
 async function allianceTransfer(){ try{ await api("/api/v1/alliances/transfer","POST",{to_player_id:+$("trto").value,mineral:$("trmin").value,amount:+$("tramt").value}); msg("Minerales enviados"); refresh(); }catch(e){ msg(e.message,false);} }
 function toggleGuide(){ const g=$("guide"); g.classList.toggle("hidden"); if(!g.classList.contains("hidden")) renderGuide(); }
+// collapsible panels: fold a card to its title; persisted in localStorage (front-only)
+const PANELS_KEY="panels.collapsed";
+const panelsSet=()=>new Set(JSON.parse(localStorage.getItem(PANELS_KEY)||"[]"));
+function savePanels(set){ localStorage.setItem(PANELS_KEY, JSON.stringify([...set])); }
+function applyPanels(){ const set=panelsSet();
+  document.querySelectorAll('.card[data-panel]').forEach(c=>c.classList.toggle('collapsed', set.has(c.dataset.panel))); }
+function togglePanel(card){ const set=panelsSet(); const id=card.dataset.panel;
+  card.classList.toggle('collapsed'); card.classList.contains('collapsed')?set.add(id):set.delete(id); savePanels(set); }
+function collapseAllPanels(collapse){ const set=new Set();
+  document.querySelectorAll('.card[data-panel]').forEach(c=>{ c.classList.toggle('collapsed',collapse); if(collapse)set.add(c.dataset.panel); });
+  savePanels(set); }
+document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-panel] > h2'); if(h) togglePanel(h.closest('.card')); });
 function renderGuide(){
   if(!catalog) return;
   const mechanics = [
@@ -647,13 +666,13 @@ async function boot(){
   const authed=!!token;
   if(!authed){ $("u").value=localStorage.getItem("lastuser")||""; }
   $("auth").classList.toggle("hidden",authed);
-  ["energy","unread","logout","live"].forEach(i=>$(i).classList.toggle("hidden",!authed));
+  ["energy","unread","logout","live","collapseall","expandall"].forEach(i=>$(i).classList.toggle("hidden",!authed));
   if(!authed){ $("game").classList.add("hidden"); $("onboard").classList.add("hidden"); return; }
   await loadCatalog();
   let me; try{ me=await api("/api/v1/players/me"); }catch{ logout(); return; }
   if(!me.race_key){ $("onboard").classList.remove("hidden"); $("game").classList.add("hidden"); return; }
   $("onboard").classList.add("hidden"); $("game").classList.remove("hidden");
-  await refresh(); startStream();
+  applyPanels(); await refresh(); startStream();
 }
 boot();
 </script>
