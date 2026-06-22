@@ -70,6 +70,14 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    📝 **[SDD listo](docs/sdd-auth-login.md)**. La entrega real de email se prueba en deploy.
 6. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
 
+### Escalado / producción (diseñado, pendiente de implementar)
+- 📝 **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: cuántos CCU aguanta,
+  HPA + resource requests, PgBouncer; el `run_tick` O(N) y el SSE son los cuellos a atacar.
+- 📝 **[SDD 8 — Límites de galaxia](docs/sdd-galaxy-limits.md)**: `GalaxyInstance` con `capacity`
+  por shard (gameplay + escala); tick e interacciones por instancia.
+- 📝 **[SDD 9 — LLM local en GPU](docs/sdd-local-gpu-llm.md)**: Ollama/LiteLLM en P4/Quadro,
+  concurrencia serial + fallback, qué modelo local usar para NPCs y asistente.
+
 (✅ NPCs LLM mejorados: proveedor agnóstico OpenAI-compatible en app + Helm — OpenRouter/
 LiteLLM/Ollama/vLLM —, JSON mode, few-shot, taunts in-character y rivalidad coordinada
 contra el humano líder.)

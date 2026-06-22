@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 7/8/9 (diseño): escalado, límites de galaxia y LLM local en GPU
+- **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: metodología para
+  estimar CCU, HPA + resource requests + PgBouncer; identifica los cuellos reales (el `run_tick`
+  O(N) global y el SSE que abre sesión DB por poll) y cómo atacarlos.
+- **[SDD 8 — Límites de galaxia](docs/sdd-galaxy-limits.md)**: `GalaxyInstance` con `capacity`
+  (shard del mundo) para que una partida no colapse; tick e interacciones por instancia —
+  también es la unidad de sharding del SDD 7.
+- **[SDD 9 — LLM local en GPU](docs/sdd-local-gpu-llm.md)**: servir NPCs/asistente desde GPU local
+  (Tesla P4 / Quadro Maxwell) con Ollama/LiteLLM; una GPU = serial (se encola, con fallback),
+  reserva por pod, y qué modelo local conviene (Qwen2.5 3–7B JSON/ES-EN). La app ya es agnóstica;
+  es operación + config.
+- Solo diseño; sin código. Implementación tras decisiones de deploy.
+
 ### 2026-06-22 — SDD 6 (diseño): login para producción (email + código OTP)
 - Diseño del login passwordless por **email + código** para abrir al público, **adaptando el
   patrón OTP de `bot-telegram`** (`src/otp.py`: CSPRNG, HMAC-SHA256 con salt, TTL, máx intentos,
