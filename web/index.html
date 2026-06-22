@@ -471,7 +471,7 @@ function cd(iso){ if(!iso)return "—"; const ms=new Date(iso)-Date.now(); if(ms
 // render
 async function refresh(){
   try{ state=await api("/api/v1/players/me"); players=await api("/api/v1/players"); alliances=await api("/api/v1/alliances"); }catch{ return; }
-  $("who").textContent=state.username+(state.race_key?" · "+state.race_key:"");
+  $("who").textContent=state.username+(state.race_key?" · "+state.race_key:"")+(state.galaxy_instance?" · "+state.galaxy_instance.name:"");
   $("energy").textContent="⚡ "+state.energy+"/"+state.energy_max;
   $("unread").textContent="🔔 "+state.unread_notifications;
   $("ebar").style.width=Math.min(100,100*state.energy/state.energy_max)+"%"; $("etxt").textContent=state.energy+"/"+state.energy_max;

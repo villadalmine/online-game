@@ -152,6 +152,9 @@ async def start_attack(
             raise CombatError("Ese jugador está bajo protección de novato.")
         if attacker.protected_until is not None and _aware(attacker.protected_until) > now:
             attacker.protected_until = None
+        # Galaxy instances (SDD 8): solo peleás dentro de tu galaxia (NPCs son ambientales).
+        if not attacker.is_npc and attacker.galaxy_instance_id != defender.galaxy_instance_id:
+            raise CombatError("Ese jugador está en otra galaxia.")
 
     force = {k: int(q) for k, q in force.items() if q and int(q) > 0}
     if not force:

@@ -102,8 +102,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
 ### Escalado / producción (diseñado, pendiente de implementar)
 - 📝 **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: cuántos CCU aguanta,
   HPA + resource requests, PgBouncer; el `run_tick` O(N) y el SSE son los cuellos a atacar.
-- 📝 **[SDD 8 — Límites de galaxia](docs/sdd-galaxy-limits.md)**: `GalaxyInstance` con `capacity`
-  por shard (gameplay + escala); tick e interacciones por instancia.
+- 🟢 **[SDD 8 — Límites de galaxia](docs/sdd-galaxy-limits.md)**: **v1 hecho** — `GalaxyInstance`
+  con `capacity` (overflow a nueva instancia); aislamiento humano↔humano (no atacás otra galaxia,
+  scoreboard filtrado), NPCs ambientales, `GET /galaxies`. Follow-up: NPCs/ranking/temporada por
+  instancia y tick por shard.
 - 📝 **[SDD 9 — LLM local en GPU](docs/sdd-local-gpu-llm.md)**: Ollama/LiteLLM en P4/Quadro,
   concurrencia serial + fallback, qué modelo local usar para NPCs y asistente.
 - 🟢 **[SDD 10 — Durabilidad / backup / restore](docs/sdd-durability-backup-restore.md)**:

@@ -50,6 +50,10 @@ class Player(Base):
     protected_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Galaxy instance / shard (SDD 8). null = global (NPCs) o legacy sin asignar.
+    galaxy_instance_id: Mapped[int | None] = mapped_column(
+        ForeignKey("galaxy_instances.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     alliance_id: Mapped[int | None] = mapped_column(
         ForeignKey("alliances.id", ondelete="SET NULL"), nullable=True, index=True
@@ -217,6 +221,22 @@ class AllianceMessage(Base):
     )
     sender_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"))
     body: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class GalaxyInstance(Base):
+    """Instancia jugable de una galaxia (shard, SDD 8): acota cuántos humanos comparten mundo.
+    `template_key` = la galaxia data-driven (milky_way…); al llenarse, los nuevos van a otra."""
+
+    __tablename__ = "galaxy_instances"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    template_key: Mapped[str] = mapped_column(String(50), index=True)
+    seq: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str] = mapped_column(String(80))
+    capacity: Mapped[int] = mapped_column(Integer)
+    player_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)  # open | full
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

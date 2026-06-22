@@ -40,6 +40,9 @@ async def onboard_player(
     # ataque a otro humano (opt-out). Los NPC no tienen protección.
     if not player.is_npc:
         player.protected_until = now + timedelta(hours=settings.newbie_protection_hours)
+        # Asigná una instancia de galaxia con cupo (SDD 8); si están llenas, crea otra.
+        from app.services.galaxies import assign_instance
+        await assign_instance(session, player, galaxy_key)
 
     base = Base_(player=player, planet_key=planet_key, name="Base central")
     session.add(base)

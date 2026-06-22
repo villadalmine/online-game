@@ -222,6 +222,17 @@ class PlayerSummaryOut(BaseModel):
     alliance_id: int | None = None
 
 
+# ---- SDD 8: galaxy instances ------------------------------------------------
+class GalaxyInstanceOut(BaseModel):
+    id: int
+    template_key: str
+    seq: int
+    name: str
+    capacity: int
+    player_count: int
+    status: str
+
+
 # ---- SDD 11: temporadas + Hall of Fame --------------------------------------
 class SeasonOut(BaseModel):
     id: int
@@ -272,6 +283,7 @@ class PlayerStateOut(BaseModel):
     unread_notifications: int = 0
     protected_until: datetime | None = None          # newbie protection (SDD 11)
     season: SeasonOut | None = None                  # temporada actual
+    galaxy_instance: GalaxyInstanceOut | None = None  # tu shard de galaxia (SDD 8)
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

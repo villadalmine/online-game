@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     season_hall_of_fame_top: int = 10     # cuántos entran al Hall of Fame al cerrar
     newbie_protection_hours: int = 48     # protección al crear el imperio
 
+    # Galaxy instances / shards (SDD 8): máx humanos por instancia de galaxia.
+    galaxy_capacity: int = 50
+
     # Passwordless login por email + código OTP (SDD 6). El login usuario+contraseña sigue
     # existiendo (dev/CLI/tests). En prod este es el camino para el público.
     otp_secret: str = "change-me-otp-secret"   # HMAC del código; fuerte en prod (Secret)

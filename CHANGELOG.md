@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 8 implementado (v1): límites de galaxia (shards con cupo)
+- **`GalaxyInstance`** (shard con `capacity`) + `Player.galaxy_instance_id`. El onboarding asigna
+  una instancia **abierta** del template elegido; al llenarse (`GALAXY_CAPACITY`, default 50) crea
+  una nueva. Los **NPC son ambientales** (sin instancia, atacables desde cualquier shard).
+- **Aislamiento humano↔humano**: no podés atacar a un jugador de **otra galaxia** y el scoreboard
+  (`GET /players`) se **filtra a tu instancia** (+ NPCs). `GET /galaxies` lista instancias con cupo;
+  `/players/me` expone `galaxy_instance`; el header de la web muestra tu galaxia.
+- Backfill perezoso para cuentas legacy. Migración aditiva (FK nombrada para SQLite).
+- Tests: `tests/test_galaxies.py` (5 servicio) + 2 e2e + 1 browser. **143 unit/e2e + 14 browser.**
+- Follow-ups: NPCs por instancia, ranking/temporada por instancia, tick por shard (SDD 7).
+
 ### 2026-06-22 — SDD 11 implementado (v1): temporadas + Hall of Fame + newbie protection
 - **Mundo persistente + temporadas**: modelo `Season` (abre/cierra en el tick), al cerrar toma
   foto del ranking → top-N al **`HallOfFame`** (persiste) y abre la siguiente; **el imperio no se
@@ -31,8 +42,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 - **SDD 13 — Rigor científico del contenido** (`docs/sdd-scientific-accuracy.md`): galaxias →
   sistemas → planetas → lunas reales (Sistema Solar + exosistemas del NASA Exoplanet Archive),
   propiedades físicas con fuentes, e instalaciones/naves ancladas a tecnología/física reales.
-- **SDD 8 — Límites de galaxia** (`docs/sdd-galaxy-limits.md`): `GalaxyInstance` con `capacity`
-  (shard del mundo); tick e interacciones por instancia. (Combo natural con 11+12.)
+- **SDD 8 — follow-ups**: NPCs por instancia, ranking/temporada por instancia, tick por shard.
+  (v1 ya implementado.)
 - **SDD 7 — Capacidad y autoscaling** (`docs/sdd-capacity-autoscaling.md`): HPA + resource requests
   + PgBouncer; atacar `run_tick` O(N) y SSE.
 - **SDD 9 — LLM local en GPU** (`docs/sdd-local-gpu-llm.md`): Ollama/LiteLLM en P4/Quadro,

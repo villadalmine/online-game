@@ -193,6 +193,20 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         unread_notifications=await unread_count(session, player.id),
         protected_until=player.protected_until,
         season=await _current_season_out(session),
+        galaxy_instance=await _galaxy_instance_out(session, player),
+    )
+
+
+async def _galaxy_instance_out(session, player):
+    from app.schemas import GalaxyInstanceOut
+    from app.services.galaxies import ensure_assigned
+
+    inst = await ensure_assigned(session, player)  # backfill perezoso para cuentas legacy
+    if inst is None:
+        return None
+    return GalaxyInstanceOut(
+        id=inst.id, template_key=inst.template_key, seq=inst.seq, name=inst.name,
+        capacity=inst.capacity, player_count=inst.player_count, status=inst.status,
     )
 
 

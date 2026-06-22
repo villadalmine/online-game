@@ -218,6 +218,53 @@ async def test_advisor_hack_grants_and_exhausts_daily_budget(client):
     assert r.status_code == 429, r.text
 
 
+# ---- galaxy instances / shards (SDD 8) --------------------------------------
+async def _move_to_new_instance(maker, username):
+    """Arrange: poné a un jugador en una instancia distinta (simula otra galaxia)."""
+    from app.models import GalaxyInstance
+
+    async with maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == username))).scalar_one()
+        inst = GalaxyInstance(
+            template_key="milky_way", seq=999, name="Otra #999",
+            capacity=50, player_count=1, status="open",
+        )
+        s.add(inst)
+        await s.flush()
+        p.galaxy_instance_id = inst.id
+        await s.commit()
+
+
+async def test_me_exposes_galaxy_instance_and_list_galaxies(client):
+    h = await _register(client.http, "galaxan")
+    await _onboard(client.http, h)
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["galaxy_instance"] and me["galaxy_instance"]["player_count"] >= 1
+    gx = (await client.http.get("/api/v1/galaxies", headers=h)).json()
+    assert any(g["id"] == me["galaxy_instance"]["id"] for g in gx)
+
+
+async def test_cannot_attack_other_galaxy_and_scoreboard_filtered(client):
+    ha = await _register(client.http, "shardA")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hb = await _register(client.http, "shardB")
+    sb = await _onboard(client.http, hb, planet="venus", race="venusian")
+    base_b = sb["bases"][0]["id"]
+
+    await _grant_units(client.session_maker, "shardA", {"tank": 3})
+    await _clear_protection(client.session_maker, "shardA", "shardB")
+    await _move_to_new_instance(client.session_maker, "shardB")  # otra galaxia
+
+    r = await client.http.post(
+        "/api/v1/combat/attack", headers=ha,
+        json={"target_base_id": base_b, "force": {"tank": 3}},
+    )
+    assert r.status_code == 400 and "galaxia" in r.text.lower()
+    # el scoreboard de A no muestra a B (otra instancia)
+    listed = (await client.http.get("/api/v1/players", headers=ha)).json()
+    assert all(p["username"] != "shardB" for p in listed)
+
+
 # ---- temporadas + Hall of Fame + newbie protection (SDD 11) -----------------
 async def test_seasons_endpoints_and_close(client):
     h = await _register(client.http, "seasonal")

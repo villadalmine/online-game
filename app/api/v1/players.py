@@ -32,12 +32,14 @@ async def ranking(
 
 @router.get("", response_model=list[PlayerSummaryOut])
 async def list_players(
-    _: Player = Depends(get_current_player), session: AsyncSession = Depends(get_session)
+    me: Player = Depends(get_current_player), session: AsyncSession = Depends(get_session)
 ):
-    """Scoreboard: all onboarded players (incl. NPCs) with a base to target."""
+    """Scoreboard: jugadores de TU galaxia (SDD 8) + NPCs (ambientales)."""
     res = await session.execute(select(Player).where(Player.race_key.is_not(None)))
     out: list[PlayerSummaryOut] = []
     for p in res.scalars():
+        if not p.is_npc and p.galaxy_instance_id != me.galaxy_instance_id:
+            continue  # otra galaxia: no la ves
         bres = await session.execute(select(Base_.id).where(Base_.player_id == p.id).limit(1))
         out.append(
             PlayerSummaryOut(

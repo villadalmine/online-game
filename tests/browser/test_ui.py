@@ -224,6 +224,21 @@ def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
     expect(page.locator("#ally-list")).to_contain_text("NPC (no unible)", timeout=15000)
 
 
+def test_header_shows_galaxy_instance(page: Page, live_server):
+    """El header muestra tu instancia de galaxia (SDD 8)."""
+    page.goto(live_server + "/")
+    user = "ui_" + uuid.uuid4().hex[:6]
+    page.locator("#u").fill(user)
+    page.locator("#p").fill("secret123")
+    page.click("button:has-text('Registrar')")
+    page.select_option("#planet", "earth")
+    page.select_option("#race", "terran")
+    page.click("button:has-text('Comenzar')")
+    expect(page.locator("#game")).to_be_visible()
+    # "Vía Láctea #1" (o el nombre localizado del template + seq)
+    expect(page.locator("#who")).to_contain_text("#", timeout=10000)
+
+
 def test_season_card_shows_current_and_protection(page: Page, live_server, shots):
     """La card de Temporada muestra la temporada activa y el escudo de novato (SDD 11)."""
     page.set_viewport_size({"width": 1280, "height": 900})

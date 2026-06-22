@@ -71,6 +71,25 @@ instancia.
 un ataque a un jugador de **otra** instancia → 4xx claro; `/players/me` reporta su instancia.
 **Migración**: test de que las tablas nuevas se crean (ya hay `tests/test_migrations.py`).
 
+## 5.bis Estado de implementación (2026-06-22) — v1 hecho
+- **Modelo** `GalaxyInstance` (`template_key`, `seq`, `name`, `capacity`, `player_count`, `status`)
+  + `Player.galaxy_instance_id` (+ migración aditiva, FK nombrada para SQLite).
+- **`app/services/galaxies.py`**: `assign_instance` (instancia abierta del template o crea otra al
+  llenarse → `status=full`), `instance_of`, `list_instances`, `ensure_assigned` (backfill perezoso
+  de cuentas legacy). Config `GALAXY_CAPACITY` (default 50).
+- **Onboarding** asigna instancia a los **humanos** (los NPC quedan sin instancia = **ambientales**).
+- **Aislamiento**: `combat.start_attack` **bloquea atacar a un humano de otra instancia** (NPCs
+  exentos); `GET /players` (scoreboard) **filtra a tu instancia** + NPCs.
+- **API**: `GET /galaxies` (instancias + cupo); `/players/me` expone `galaxy_instance`.
+- **Web**: el header muestra tu galaxia (`Vía Láctea #N`).
+- **Tests**: `tests/test_galaxies.py` (5 servicio: asignación/overflow, cross-instance, NPCs sin
+  instancia) + 2 e2e. 143 unit/e2e + 14 browser ✅.
+
+**Decisión v1**: NPCs **globales/ambientales** (sin instancia, atacables desde cualquier shard) en
+vez de un set por instancia → evita reescribir el sistema NPC. **Follow-ups**: NPCs por instancia;
+ranking/temporada por instancia (hoy temporada/HoF y `/players/ranking` son globales); tick por
+shard (paralelizable, SDD 7).
+
 ## 6. Riesgos / decisiones
 - **Migración de datos**: meter a todos los jugadores actuales en una instancia "génesis" por
   template; aditivo, sin pérdida.
