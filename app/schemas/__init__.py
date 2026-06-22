@@ -258,6 +258,48 @@ class HallOfFameEntryOut(BaseModel):
     awarded_at: datetime
 
 
+# ---- SDD 12: métricas + showcase público ------------------------------------
+class PlayerStatsOut(BaseModel):
+    battles_won: int = 0
+    battles_lost: int = 0
+    attacks_launched: int = 0
+    buildings_built: int = 0
+    units_trained: int = 0
+    research_completed: int = 0
+    expeditions_completed: int = 0
+    resources_mined: float = 0
+    resources_looted: float = 0
+    resources_lost: float = 0
+
+
+class PublicLeaderboardEntryOut(BaseModel):
+    rank: int
+    username: str
+    race_key: str | None = None
+    score: int
+
+
+class GlobalStatsOut(BaseModel):
+    players: int
+    empires: int
+    battles: int
+    minerals_mined: float
+    season: SeasonOut | None = None
+
+
+class PublicProfileOut(BaseModel):
+    username: str
+    race_key: str | None = None
+    planet_key: str | None = None
+    is_npc: bool = False
+    score: int
+    stats: PlayerStatsOut
+    seasons_played: int
+    best_rank: int | None = None
+    hof_count: int
+    season_history: list[HallOfFameEntryOut] = []
+
+
 class PlayerStateOut(BaseModel):
     id: int
     username: str

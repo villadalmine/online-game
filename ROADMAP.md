@@ -86,10 +86,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   **newbie protection** (escudo al empezar; atacar a un humano lo cancela). API `/seasons*` +
   card "📅 Temporada". Follow-up: `SeasonScore` acumulable, evento de cierre, ligar a galaxy
   instances (SDD 8). Monetización fuera de alcance.
-- 📝 **[SDD 12 — Métricas + historial + showcase público](docs/sdd-player-metrics-public.md)**:
-  contadores de por vida (`PlayerStats`: batallas, construido, entrenado, explorado, minado/gastado/
-  saqueado), **historial de temporadas** (HoF), endpoints **públicos** `/public/*` y **showcase en
-  la página de login** (leaderboard + stats del universo + perfiles). Depende del SDD 11.
+- 🟢 **[SDD 12 — Métricas + historial + showcase público](docs/sdd-player-metrics-public.md)**:
+  **v1 hecho** — `PlayerStats` de por vida (batallas/construido/entrenado/explorado/minado/saqueado),
+  historial de temporadas (HoF), endpoints públicos `/public/*` (sin auth, sin email) y **showcase
+  en el login**. Follow-up: cachear `/public/*` (SDD 7), `career_points`, backfill.
 - 📝 **[SDD 13 — Rigor científico del contenido](docs/sdd-scientific-accuracy.md)**: galaxias →
   **sistemas estelares** → planetas → lunas **reales** (Sistema Solar + Proxima/TRAPPIST-1 del NASA
   Exoplanet Archive; fuera los planetas ficticios de Andrómeda), propiedades físicas (gravedad,

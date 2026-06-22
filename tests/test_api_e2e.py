@@ -218,6 +218,32 @@ async def test_advisor_hack_grants_and_exhausts_daily_budget(client):
     assert r.status_code == 429, r.text
 
 
+# ---- métricas + showcase público (SDD 12) -----------------------------------
+async def test_public_endpoints_no_auth_and_no_email(client):
+    h = await _register(client.http, "famous")
+    await _onboard(client.http, h)
+    # ponele un email para verificar que NO se filtra en el perfil público
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "famous"))).scalar_one()
+        p.email = "private@b.com"
+        await s.commit()
+
+    # sin headers (público)
+    g = await client.http.get("/api/v1/public/stats")
+    assert g.status_code == 200 and g.json()["players"] >= 1
+
+    lb = await client.http.get("/api/v1/public/leaderboard")
+    assert lb.status_code == 200 and any(e["username"] == "famous" for e in lb.json())
+
+    prof = await client.http.get("/api/v1/public/players/famous")
+    assert prof.status_code == 200
+    assert prof.json()["username"] == "famous" and "battles_won" in prof.json()["stats"]
+    assert "private@b.com" not in prof.text and "email" not in prof.text
+
+    assert (await client.http.get("/api/v1/public/players/ghost")).status_code == 404
+    assert (await client.http.get("/api/v1/public/hall-of-fame")).status_code == 200
+
+
 # ---- galaxy instances / shards (SDD 8) --------------------------------------
 async def _move_to_new_instance(maker, username):
     """Arrange: poné a un jugador en una instancia distinta (simula otra galaxia)."""

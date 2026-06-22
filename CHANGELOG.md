@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 12 implementado (v1): métricas + historial + showcase público
+- **`PlayerStats`** (contadores de por vida) incrementados en los procesadores existentes:
+  batallas ganadas/perdidas, ataques, edificios, unidades, investigaciones, expediciones,
+  minerales minados/saqueados/perdidos. Historial de temporadas desde el `HallOfFame` (SDD 11).
+- **Endpoints públicos SIN auth** `/public/{stats,leaderboard,hall-of-fame,players/{username}}`:
+  solo agregados + username (**nunca email**); perfil 404 si no existe.
+- **Web**: showcase en la **página de login** (stats del universo + top-10), sin estar logueado.
+- `app/services/stats.py` (`bump`/`leaderboard`/`global_stats`/`player_profile`). Migración aditiva.
+- Tests: `tests/test_stats.py` (5) + 1 e2e (público/sin-email/404) + 1 browser. **149 unit/e2e +
+  15 browser verdes.** Cierra el combo 11+8+12. Follow-up: cachear `/public/*` (SDD 7), backfill.
+
 ### 2026-06-22 — SDD 8 implementado (v1): límites de galaxia (shards con cupo)
 - **`GalaxyInstance`** (shard con `capacity`) + `Player.galaxy_instance_id`. El onboarding asigna
   una instancia **abierta** del template elegido; al llenarse (`GALAXY_CAPACITY`, default 50) crea
@@ -37,8 +48,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 > Detalle y orden en [`ROADMAP.md`](ROADMAP.md). Cada uno entra con su test e2e + entrada acá.
 - **SDD 11 — follow-ups**: `SeasonScore` acumulable, evento del mundo al cerrar, ligar temporada a
   galaxy instances (SDD 8). (v1 ya implementado.)
-- **SDD 12 — Métricas + historial + showcase público** (`docs/sdd-player-metrics-public.md`):
-  `PlayerStats` de por vida, historial de temporadas, `/public/*` + showcase en el login. (Depende del 11.)
+- **SDD 12 — follow-ups**: cachear `/public/*` en Redis, `career_points` all-time, backfill de
+  contadores. (v1 ya implementado.)
 - **SDD 13 — Rigor científico del contenido** (`docs/sdd-scientific-accuracy.md`): galaxias →
   sistemas → planetas → lunas reales (Sistema Solar + exosistemas del NASA Exoplanet Archive),
   propiedades físicas con fuentes, e instalaciones/naves ancladas a tecnología/física reales.

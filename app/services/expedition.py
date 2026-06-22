@@ -63,6 +63,9 @@ async def finalize_due_expeditions(
             {"moon": order.moon_key, "grants": moon.get("grants", {}), "boon": moon.get("boon")},
         )
         finished += 1
+    if finished:
+        from app.services.stats import bump
+        await bump(session, player.id, expeditions_completed=finished)
     return finished
 
 

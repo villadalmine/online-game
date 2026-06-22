@@ -56,6 +56,9 @@ async def finalize_due_research(session, player, now: datetime | None = None) ->
                 f"Investigacion completada: {order.tech_key}", {"tech": order.tech_key},
             )
             done += 1
+    if done:
+        from app.services.stats import bump
+        await bump(session, player.id, research_completed=done)
     return done
 
 

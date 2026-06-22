@@ -68,6 +68,9 @@ async def finalize_due_builds(
                 {"building": b.building_key, "base_id": b.base_id},
             )
             count += 1
+    if count:
+        from app.services.stats import bump
+        await bump(session, player.id, buildings_built=count)
     return count
 
 
@@ -95,4 +98,8 @@ async def collect_mines(
         stock.amount += amount
         b.last_collected_at = now
         gained[b.production_mineral] = gained.get(b.production_mineral, 0.0) + amount
+    total = sum(gained.values())
+    if total > 0:
+        from app.services.stats import bump
+        await bump(session, player.id, resources_mined=total)
     return gained

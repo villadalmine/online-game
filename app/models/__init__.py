@@ -224,6 +224,26 @@ class AllianceMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class PlayerStats(Base):
+    """Contadores de por vida de un jugador (SDD 12), incrementados en los procesadores."""
+
+    __tablename__ = "player_stats"
+
+    player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), primary_key=True
+    )
+    battles_won: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    battles_lost: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    attacks_launched: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    buildings_built: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    units_trained: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    research_completed: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    expeditions_completed: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    resources_mined: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+    resources_looted: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+    resources_lost: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+
+
 class GalaxyInstance(Base):
     """Instancia jugable de una galaxia (shard, SDD 8): acota cuántos humanos comparten mundo.
     `template_key` = la galaxia data-driven (milky_way…); al llenarse, los nuevos van a otra."""

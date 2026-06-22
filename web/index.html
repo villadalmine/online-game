@@ -125,6 +125,12 @@
     <button onclick="verifyCode()">Entrar</button>
   </div>
   <p id="autherr" class="muted"></p>
+
+  <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+  <div id="showcase" class="muted">
+    <div id="universe"></div>
+    <table id="topboard"></table>
+  </div>
 </div>
 
 <!-- ONBOARD -->
@@ -300,6 +306,17 @@ async function requestCode(){ const email=$("otpemail").value.trim(); if(!email)
 async function verifyCode(){ const email=$("otpemail").value.trim(), code=$("otpcode").value.trim();
   try{ const d=await api("/api/v1/auth/verify-code","POST",{email,code}); setToken(d.access_token); boot(); }
   catch(e){ authErr(e.message); } }
+// showcase público de la página de login (SDD 12) — sin auth
+async function loadShowcase(){
+  try{ const g=await api("/api/v1/public/stats");
+    const s=g.season?` · ${esc(g.season.name)} (cierra en ${cdDays(g.season.ends_at)})`:"";
+    $("universe").innerHTML=`🌌 <b>${g.players}</b> jugadores · ${g.empires} imperios · ${g.battles} batallas · ${Math.round(g.minerals_mined)} minado${s}`;
+  }catch(e){}
+  try{ const lb=await api("/api/v1/public/leaderboard");
+    $("topboard").innerHTML = lb.length ? "<tr><th>#</th><th>jugador</th><th>score</th></tr>"+
+      lb.slice(0,10).map(e=>`<tr><td>${e.rank}</td><td>${esc(e.username)}</td><td>${e.score}</td></tr>`).join("") : "";
+  }catch(e){}
+}
 function setToken(t){ token=t; localStorage.setItem("token",t); }
 function logout(){ token=""; localStorage.removeItem("token"); if(es)es.close(); location.reload(); }
 
@@ -725,7 +742,7 @@ async function boot(){
   if(!authed){ $("u").value=localStorage.getItem("lastuser")||""; }
   $("auth").classList.toggle("hidden",authed);
   ["energy","unread","logout","live","collapseall","expandall"].forEach(i=>$(i).classList.toggle("hidden",!authed));
-  if(!authed){ $("game").classList.add("hidden"); $("onboard").classList.add("hidden"); return; }
+  if(!authed){ $("game").classList.add("hidden"); $("onboard").classList.add("hidden"); loadShowcase(); return; }
   await loadCatalog();
   let me; try{ me=await api("/api/v1/players/me"); }catch{ logout(); return; }
   if(!me.race_key){ $("onboard").classList.remove("hidden"); $("game").classList.add("hidden"); return; }

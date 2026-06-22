@@ -206,6 +206,8 @@ async def start_attack(
         {"target_base_id": target_base_id, "arrives_at": mission.arrives_at.isoformat()},
     )
     await _npc_taunt(session, attacker, defender, "attack")
+    from app.services.stats import bump as _bump
+    await _bump(session, attacker.id, attacks_launched=1)
     return mission
 
 
@@ -263,6 +265,16 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
                 continue
             (await get_or_create_stock(session, defender.id, mineral)).amount -= taken
             loot[mineral] = taken
+
+    # Lifetime stats (SDD 12).
+    from app.services.stats import bump as _bump
+
+    if result.outcome == "attacker":
+        await _bump(session, attacker.id, battles_won=1, resources_looted=sum(loot.values()))
+        await _bump(session, defender.id, battles_lost=1, resources_lost=sum(loot.values()))
+    else:
+        await _bump(session, attacker.id, battles_lost=1)
+        await _bump(session, defender.id, battles_won=1)
 
     session.add(
         CombatLog(

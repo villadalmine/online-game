@@ -75,6 +75,22 @@ auth**; `GET /public/players/{username}` 200 con stats y **sin email** en el pay
 inexistente → 404.
 **Browser**: la página de login muestra el leaderboard/stats públicos antes de entrar.
 
+## 6.bis Estado de implementación (2026-06-22) — v1 hecho
+- **Modelo** `PlayerStats` (contadores de por vida) + migración aditiva.
+- **`app/services/stats.py`**: `bump` (incrementa contadores), `leaderboard`, `global_stats`,
+  `season_history` (de `HallOfFame`, SDD 11), `player_profile`. Contadores cableados en los
+  procesadores existentes: combate (battles_won/lost, attacks_launched, resources_looted/lost),
+  build (buildings_built), train (units_trained), research (research_completed), expedición
+  (expeditions_completed), minería (resources_mined).
+- **Endpoints públicos SIN auth** `app/api/v1/public.py`: `GET /public/stats`, `/public/leaderboard`,
+  `/public/hall-of-fame`, `/public/players/{username}` — solo agregados + username, **sin email**.
+- **Web**: showcase en la página de **login** (stats del universo + top-10), pre-auth.
+- **Tests**: `tests/test_stats.py` (5 servicio) + 1 e2e (público, sin auth, sin email, 404) +
+  1 browser. 149 unit/e2e + 15 browser ✅.
+
+**Follow-ups**: cachear los `/public/*` en Redis (SDD 7); `career_points` all-time; backfill de
+contadores para cuentas previas (hoy arrancan en 0); ranking por instancia (SDD 8).
+
 ## 7. Riesgos / decisiones
 - **Exactitud de contadores**: incrementar en **un solo lugar** por evento (el procesador
   diferido) para no doblar; los reintentos/ticks deben ser idempotentes respecto del contador.

@@ -69,6 +69,9 @@ async def finalize_due_training(
                 {"unit": order.unit_key, "quantity": order.quantity},
             )
             delivered += order.quantity
+    if delivered:
+        from app.services.stats import bump
+        await bump(session, player.id, units_trained=delivered)
     return delivered
 
 

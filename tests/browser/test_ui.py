@@ -224,6 +224,12 @@ def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
     expect(page.locator("#ally-list")).to_contain_text("NPC (no unible)", timeout=15000)
 
 
+def test_login_page_public_showcase(page: Page, live_server):
+    """La página de login muestra stats públicas del universo sin estar logueado (SDD 12)."""
+    page.goto(live_server + "/")
+    expect(page.locator("#universe")).to_contain_text("jugadores", timeout=10000)
+
+
 def test_header_shows_galaxy_instance(page: Page, live_server):
     """El header muestra tu instancia de galaxia (SDD 8)."""
     page.goto(live_server + "/")
