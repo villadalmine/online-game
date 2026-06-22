@@ -29,6 +29,13 @@ consultas.
   vive fuera de este documento.)
 - No introduce dependencias nuevas. Python + el contenido YAML que ya existe.
 
+### Principio: todo por API (full-API)
+
+Todas las consultas del grafo (estático, análisis y **RAG/retrieve**) se exponen bajo
+`/api/v1`. Razón doble: (1) se prueba **end-to-end por HTTP** como el resto del juego, y (2) la
+**NPC AI LLM** y el **asistente** (SDD 2) consumen exactamente el mismo contrato que cualquier
+cliente — el conocimiento del juego es un servicio, no lógica embebida en un cliente.
+
 ## 2. Modelo del grafo
 
 El grafo es **paramétrico por raza y por planeta**, porque:
@@ -105,17 +112,24 @@ class BlockerReport(BaseModel):
 class GraphNode/GraphEdge:   # para el endpoint estático del catálogo
 ```
 
-### 3.3 Endpoint estático: `GET /api/v1/catalog/graph`
+### 3.3 Endpoints (full-API)
 
 ```
 GET /api/v1/catalog/graph?race=martian&planet=mars
 → { nodes:[...], edges:[...], minerals_local:[...], minerals_imported:[...] }
+
+GET /api/v1/catalog/graph/docs?race=martian&planet=mars
+→ { documents:[ {id,type,text,keywords}, ... ] }            # corpus RAG completo
+
+GET /api/v1/catalog/graph/search?race=martian&planet=mars&q=no+puedo+fabrica&k=6
+→ { query:"...", results:[ {id,type,text,score}, ... ] }    # RAG retrieve
 ```
 
-- Pensado para que **cualquier cliente** (web/CLI/Telegram) dibuje el árbol tecnológico y la
-  web muestre "para esto necesitás…". Estático por `(race,planet)` → **cacheable en Redis**
-  igual que `/catalog` (degradable si Redis no está).
-- Reusa `app/content/registry.py`; no toca la base de datos → no requiere auth de jugador.
+- Pensados para que **cualquier cliente** (web/CLI/Telegram) dibuje el árbol tecnológico, y para
+  que la **NPC/asistente LLM** recuperen contexto. Estáticos por `(race,planet)` → **cacheables
+  en Redis** igual que `/catalog` (degradable si Redis no está).
+- Reusan `app/content/registry.py`; no tocan la base de datos → no requieren auth de jugador.
+- Raza/planeta inexistentes → 404 claro.
 
 ### 3.4 `PlayerSnapshot` y el puente con el estado
 
@@ -163,6 +177,50 @@ consume.
 - *"Mi planeta no produce titanio."* → `mineral_sources("titanium")` sin `local_mine` →
   sugiere expedición a la luna que lo otorga o saqueo/comercio.
 
+## 5.bis RAG: el grafo como corpus recuperable (para la LLM)
+
+Pasarle el grafo entero a la LLM en cada turno es caro y ruidoso. En su lugar lo serializamos
+como un **corpus de documentos cortos** (uno por nodo/objetivo) y exponemos un **retrieve**: la
+LLM (NPC o asistente) recibe solo los *trozos relevantes* a la situación. Es un RAG ligero,
+**API-first y sin dependencias nuevas**.
+
+### Corpus: `graph_documents(race, planet)`
+
+Una lista de documentos derivados del grafo, cada uno autoexplicativo y mezcla de
+lenguaje-natural + datos:
+
+```jsonc
+{ "id": "tank", "type": "unit",
+  "text": "Tanque (unidad pesada). Requiere: factory activo. Cuesta: iron 80, silicon 40,
+           magnesium 20, energía 8. Lo desbloquea: factory. Stats: atk 30 / def 25 / hp 60.",
+  "keywords": ["tank","tanque","unit","heavy","factory","iron","silicon","magnesium"] }
+```
+
+Hay un doc por **mineral** (incl. cómo se consigue: local/expedición/loot/trade), por
+**edificio**, por **unidad**, por **tecnología** (efecto+magnitud) y por **efecto**. El corpus es
+estático por `(race, planet)` → cacheable igual que `/catalog`.
+
+### Recuperación: `retrieve(race, planet, query, k=6)`
+
+Devuelve los `k` documentos más relevantes a un `query` (la pregunta del jugador y/o las claves
+de objetivos en juego). **Estrategia por defecto: léxica, determinista y sin deps** — score por
+solapamiento de tokens normalizados + boost si el `id`/`name`/`keyword` aparece en el query
+(maneja sinónimos ES/EN básicos: "fábrica"↔factory, "tanque"↔tank, "hierro"↔iron…). Esto es
+trivial de testear y nunca depende de la red.
+
+**Backend de embeddings (opcional, mismo patrón que el brain LLM):** si el operador configura un
+endpoint de embeddings OpenAI-compatible (`LLM_BASE_URL/v1/embeddings`, p.ej. Ollama/vLLM), el
+retrieve puede rankear por similitud de vectores; ante cualquier fallo o falta de config **cae a
+la recuperación léxica**. Decisión consistente con "LLM con fallback a reglas": el juego funciona
+full-local sin instalar nada.
+
+### Cómo lo usan la NPC y el asistente
+
+- El **asistente** (SDD 2): `retrieve(query=mensaje_del_jugador + targets_bloqueados)` → arma un
+  contexto compacto (docs + `BlockerReport`) para el prompt, en lugar de volcar todo el grafo.
+- La **NPC AI LLM**: puede enriquecer su `state` con `retrieve(query="qué construir/entrenar
+  ahora")` para decidir mejor sin inflar el prompt. (Aditivo; el brain por reglas no lo necesita.)
+
 ## 6. Plan de tests (regla del proyecto)
 
 **Unit** (`tests/test_depgraph.py`, sin DB, puros):
@@ -175,9 +233,14 @@ consume.
 - `analyze` con stock insuficiente → blocker `mineral` con `need-have` exacto; con todo cubierto
   → `buildable=True`.
 
+- `retrieve(query="fábrica para tanques")` rankea primero los docs de `factory`/`tank`
+  (recuperación léxica con sinónimos ES/EN); `k` acota el resultado.
+
 **E2E HTTP** (`tests/test_api_e2e.py`):
 - `GET /catalog/graph?race=...&planet=...` 200 con `nodes`/`edges` no vacíos y coherentes con el
-  catálogo; caso de error: raza inexistente → 422/404.
+  catálogo; caso de error: raza inexistente → 404.
+- `GET /catalog/graph/docs` 200 con `documents` no vacío.
+- `GET /catalog/graph/search?q=...&k=...` 200 con `results` ordenados por `score` y `len ≤ k`.
 
 **CHANGELOG**: entrada al mergear.
 

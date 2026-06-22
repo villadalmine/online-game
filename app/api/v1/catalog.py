@@ -1,11 +1,20 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from redis.asyncio import Redis
 
 from app.content.registry import get_content
 from app.core.config import get_settings
 from app.core.redis import cached_json, get_redis
+from app.services import depgraph
 
 router = APIRouter()
+
+
+def _validate_race_planet(race: str, planet: str) -> None:
+    c = get_content()
+    if race not in c.races:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Raza desconocida: {race}")
+    if planet not in c.planets:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Planeta desconocido: {planet}")
 
 
 def build_catalog() -> dict:
@@ -30,3 +39,33 @@ async def catalog(redis: Redis | None = Depends(get_redis)):
 
     Static per deploy → cached in Redis when available (TTL configurable)."""
     return await cached_json(redis, "catalog:v1", get_settings().catalog_cache_ttl, build_catalog)
+
+
+@router.get("/graph")
+async def catalog_graph(race: str, planet: str, redis: Redis | None = Depends(get_redis)):
+    """Dependency graph (nodes/edges) for a (race, planet). Static → cacheable.
+
+    Lets any client draw the tech tree and the NPC/assistant LLM ground its reasoning."""
+    _validate_race_planet(race, planet)
+    return await cached_json(
+        redis, f"graph:{race}:{planet}", get_settings().catalog_cache_ttl,
+        lambda: depgraph.build_graph(race, planet),
+    )
+
+
+@router.get("/graph/docs")
+async def catalog_graph_docs(race: str, planet: str, redis: Redis | None = Depends(get_redis)):
+    """RAG corpus: the graph serialized as short retrievable documents."""
+    _validate_race_planet(race, planet)
+    return await cached_json(
+        redis, f"graphdocs:{race}:{planet}", get_settings().catalog_cache_ttl,
+        lambda: {"documents": depgraph.graph_documents(race, planet)},
+    )
+
+
+@router.get("/graph/search")
+async def catalog_graph_search(race: str, planet: str, q: str, k: int = 6):
+    """RAG retrieve: top-k graph documents most relevant to `q` (deterministic, no LLM)."""
+    _validate_race_planet(race, planet)
+    k = min(max(k, 1), 20)
+    return {"query": q, "results": depgraph.retrieve(race, planet, q, k)}

@@ -231,3 +231,31 @@ class PlayerStateOut(BaseModel):
     alliance_type: str | None = None
     alliance_incoming: list[IncomingAttackOut] = []  # attacks on allies (shared_vision)
     unread_notifications: int = 0
+
+
+# ---- SDD 1: dependency graph -------------------------------------------------
+class Cost(BaseModel):
+    minerals: dict[str, float] = {}
+    energy: float = 0.0
+
+
+class Source(BaseModel):
+    """How to obtain a mineral when your planet doesn't produce it."""
+    kind: str  # local_mine | expedition | loot | alliance_trade
+    detail: str
+    estimate_per_hour: float | None = None
+
+
+class Blocker(BaseModel):
+    kind: str  # mineral | energy | building | not_producible
+    key: str
+    have: float
+    need: float
+    sources: list[Source] = []
+
+
+class BlockerReport(BaseModel):
+    target: str
+    buildable: bool
+    blockers: list[Blocker] = []
+    prerequisites: list[str] = []  # buildings to have active first, topological order

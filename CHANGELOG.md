@@ -7,6 +7,24 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 1 implementado: grafo de dependencias + RAG (full-API)
+- **`app/services/depgraph.py`** (puro, sin DB/red): construye el grafo data-driven desde
+  `content/*.yaml` y expone consultas deterministas — `prerequisites`, `mineral_sources`
+  (mina local / expedición / loot / comercio; los minerales premium se marcan como
+  *importados* porque no están en la abundancia de ningún planeta), `analyze`/`BlockerReport`
+  (qué falta y **cuánto** — el `need-have` que consumirá el "hack" del SDD 2) y `build_graph`.
+- **RAG ligero, sin dependencias nuevas**: `graph_documents` serializa el grafo en documentos
+  cortos y `retrieve(query, k)` rankea los relevantes por score léxico **con sinónimos ES/EN**
+  (fábrica↔factory, tanque↔tank, hierro↔iron…). Pensado para que la NPC/asistente LLM reciban
+  solo los trozos útiles. (Backend de embeddings opcional con fallback léxico, igual patrón que
+  el brain LLM — diseñado en el SDD, no implementado aún.)
+- **Endpoints full-API** (sin auth, cacheables como `/catalog`): `GET /catalog/graph`,
+  `GET /catalog/graph/docs`, `GET /catalog/graph/search?q=&k=`. Raza/planeta inválidos → 404.
+- Schemas `Cost`/`Source`/`Blocker`/`BlockerReport` en `app/schemas`.
+- Tests: `tests/test_depgraph.py` (10 unit puros) + e2e `test_catalog_graph` y
+  `test_catalog_graph_docs_and_search`. SDD actualizado con la sección RAG y el principio
+  full-API. Próximo: SDD 2 (asistente) sobre esta base.
+
 ### 2026-06-22 — Fix web: "marcar leídas" ahora vacía el feed
 - El feed de 🔔 Notificaciones se renderiza desde la API (`GET /notifications?unread=true`) en
   cada `refresh()`; antes era un log de solo-escritura que el stream SSE iba acumulando en el

@@ -110,6 +110,34 @@ async def test_catalog(client):
     assert any(b["key"] == "mine" for b in body["buildings"])
 
 
+async def test_catalog_graph(client):
+    r = await client.http.get("/api/v1/catalog/graph?race=martian&planet=mars")
+    assert r.status_code == 200
+    g = r.json()
+    assert g["nodes"] and g["edges"]
+    assert "iron" in g["minerals_local"] and "helium3" in g["minerals_imported"]
+    # unknown race/planet -> clear 404
+    bad = await client.http.get("/api/v1/catalog/graph?race=nope&planet=mars")
+    assert bad.status_code == 404
+
+
+async def test_catalog_graph_docs_and_search(client):
+    docs = await client.http.get("/api/v1/catalog/graph/docs?race=martian&planet=mars")
+    assert docs.status_code == 200 and docs.json()["documents"]
+
+    # RAG retrieve: a Spanish query ranks the right nodes (synonyms map to EN keys).
+    s = await client.http.get(
+        "/api/v1/catalog/graph/search?race=martian&planet=mars&q=fabrica+para+tanques&k=3"
+    )
+    assert s.status_code == 200
+    res = s.json()["results"]
+    assert 0 < len(res) <= 3
+    ids = [d["id"] for d in res]
+    assert "factory" in ids or "tank" in ids
+    scores = [d["score"] for d in res]
+    assert scores == sorted(scores, reverse=True)
+
+
 # ---- onboarding / state -----------------------------------------------------
 
 async def test_onboard_and_me(client):

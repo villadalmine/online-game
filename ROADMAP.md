@@ -46,6 +46,11 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    fallback). Diseñado en dos SDDs:
    [grafo de dependencias](docs/sdd-dependency-graph.md) +
    [asistente](docs/sdd-ai-assistant.md).
+   - ✅ **SDD 1 hecho**: `depgraph.py` (grafo + análisis de bloqueos) y **RAG** (`graph_documents`
+     + `retrieve` léxico ES/EN), expuesto full-API (`/catalog/graph`, `/graph/docs`,
+     `/graph/search`). Con tests unit + e2e.
+   - 🔜 **SDD 2**: `advisor.py`, endpoints `/advisor/ask` y `/advisor/hack`, modelo
+     `AdvisorMessage`, contador 3/día en `Player`, card en la web.
 2. **i18n del juego (ES/EN)** — que **el juego** soporte español e inglés (contenido visible:
    nombres/descripciones de `content/*.yaml`, textos de la API y del cliente web). *No* aplica a
    docs ni a los SDDs. Idea: campos `name`/`description` localizables (`name_en`/`name_es` o
