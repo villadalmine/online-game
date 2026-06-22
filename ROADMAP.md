@@ -71,6 +71,12 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    entrega real de email + `OTP_SECRET` fuerte en deploy.
 6. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
 
+### Diseño de juego (diseñado, pendiente de implementar)
+- 📝 **[SDD 11 — Inicio y final del juego](docs/sdd-game-lifecycle.md)**: **híbrido** — mundo
+  persistente + **temporadas** (ranking, ganadores, Hall of Fame + insignias cosméticas que
+  persisten, **sin wipe**) + **newbie protection**. Inspirado en StarKingdoms (rondas/HoF) pero sin
+  el reset destructivo. Monetización fuera de alcance por ahora.
+
 ### Escalado / producción (diseñado, pendiente de implementar)
 - 📝 **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: cuántos CCU aguanta,
   HPA + resource requests, PgBouncer; el `run_tick` O(N) y el SSE son los cuellos a atacar.

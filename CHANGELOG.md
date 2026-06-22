@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 11 (diseño): inicio y final del juego (mundo persistente + temporadas)
+- Investigado StarKingdoms (rondas con inicio/fin, tick, newbie protection, ranking por networth,
+  Hall of Fame persistente, free-to-play + Premium cosmético ~US$2.33/mes — no pay-to-win).
+- Decisión del usuario: **híbrido** — mundo persistente + **temporadas** (clímax, ganadores,
+  **Hall of Fame + insignias cosméticas** que persisten, **sin wipe** del imperio) + **newbie
+  protection**. **Monetización: fuera de alcance por ahora.**
+- **[SDD 11](docs/sdd-game-lifecycle.md)**: modelo `Season`/`SeasonScore`/`HallOfFame` +
+  `Player.protected_until`, apertura/cierre de temporada en el tick, puntos de temporada (delta de
+  score + bonus), endpoints `/seasons*`, e interacción con galaxy instances (SDD 8). Solo diseño.
+
 ### 2026-06-22 — SDD 6 implementado: login passwordless por email + código OTP
 - **Passwordless (código siempre)**: `POST /auth/request-code` (respuesta uniforme anti-enumeración)
   + `POST /auth/verify-code` → JWT (signup = login: crea el `Player` si el email es nuevo). El JWT
