@@ -80,6 +80,14 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   contadores de por vida (`PlayerStats`: batallas, construido, entrenado, explorado, minado/gastado/
   saqueado), **historial de temporadas** (HoF), endpoints **públicos** `/public/*` y **showcase en
   la página de login** (leaderboard + stats del universo + perfiles). Depende del SDD 11.
+- 📝 **[SDD 13 — Rigor científico del contenido](docs/sdd-scientific-accuracy.md)**: galaxias →
+  **sistemas estelares** → planetas → lunas **reales** (Sistema Solar + Proxima/TRAPPIST-1 del NASA
+  Exoplanet Archive; fuera los planetas ficticios de Andrómeda), propiedades físicas (gravedad,
+  atmósfera, agua, insolación, temperatura) con **fuentes citadas**, e instalaciones/naves/unidades
+  ancladas a tecnología/física reales (ISRU, fusión, propulsión; aviones solo con atmósfera, barcos
+  solo con agua). Todo data-driven. Incluye **niveles de canon** (`real`/`speculative`/`fiction`)
+  para empezar chico e inventar lo "aún no descubierto", y **universos/spin-offs** (tipo *The
+  Expanse*) como packs de contenido seleccionables por partida — sin tocar código.
 
 ### Escalado / producción (diseñado, pendiente de implementar)
 - 📝 **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: cuántos CCU aguanta,

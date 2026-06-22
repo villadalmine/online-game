@@ -13,6 +13,9 @@ Registro de todo lo que vamos logrando. Formato basado en
   temporadas (Hall of Fame + insignias, sin wipe) + newbie protection.
 - **SDD 12 — Métricas + historial + showcase público** (`docs/sdd-player-metrics-public.md`):
   `PlayerStats` de por vida, historial de temporadas, `/public/*` + showcase en el login. (Depende del 11.)
+- **SDD 13 — Rigor científico del contenido** (`docs/sdd-scientific-accuracy.md`): galaxias →
+  sistemas → planetas → lunas reales (Sistema Solar + exosistemas del NASA Exoplanet Archive),
+  propiedades físicas con fuentes, e instalaciones/naves ancladas a tecnología/física reales.
 - **SDD 8 — Límites de galaxia** (`docs/sdd-galaxy-limits.md`): `GalaxyInstance` con `capacity`
   (shard del mundo); tick e interacciones por instancia. (Combo natural con 11+12.)
 - **SDD 7 — Capacidad y autoscaling** (`docs/sdd-capacity-autoscaling.md`): HPA + resource requests
@@ -24,6 +27,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 - **SDD 6 — Login (follow-ups)**: rate-limit por IP + entrega real de email + `OTP_SECRET` fuerte en deploy.
 - **Deploy online real**: exponer (túnel/cloud) con Postgres + secretos fuertes (decisiones del usuario).
 - **Backlog (sin SDD aún)**: tech `build_speed`, combate con `hp`/rondas, más galaxias/minerales premium.
+
+### 2026-06-22 — SDD 13 (diseño): rigor científico del contenido
+- **[SDD 13](docs/sdd-scientific-accuracy.md)**: hacer científicamente correctos galaxias, planetas,
+  lunas, materiales, instalaciones, naves y personal. Jerarquía real **Galaxia → sistema estelar →
+  planeta → luna** (Sistema Solar real + sistemas reales de la Vía Láctea: Proxima Centauri,
+  TRAPPIST-1 vía NASA Exoplanet Archive; se quitan los planetas ficticios de Andrómeda). Propiedades
+  físicas (gravedad, atmósfera, agua, insolación, temperatura) con **fuentes citadas**;
+  instalaciones/naves/unidades ancladas a tecnología/física reales (ISRU, fusión, propulsión) con
+  restricciones (aviones solo con atmósfera, barcos solo con agua). Todo **data-driven**, aditivo.
+  Incluye **niveles de canon** (`real`/`speculative`/`fiction`) para arrancar chico e ir inventando
+  lo "aún no descubierto", y **universos/spin-offs** (tipo *The Expanse*) como packs de contenido
+  seleccionables por partida — sin tocar código.
+- En cola, solo diseño.
 
 ### 2026-06-22 — SDD 12 (diseño): métricas, historial de temporadas y showcase público
 - **[SDD 12](docs/sdd-player-metrics-public.md)**: contadores de por vida por jugador
