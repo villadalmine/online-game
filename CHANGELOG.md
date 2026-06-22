@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 12 (diseño): métricas, historial de temporadas y showcase público
+- **[SDD 12](docs/sdd-player-metrics-public.md)**: contadores de por vida por jugador
+  (`PlayerStats`: batallas ganadas/perdidas, edificios, unidades, expediciones, minerales
+  minados/gastados/saqueados…) incrementados en los procesadores existentes; **historial de
+  temporadas** vía HoF (SDD 11); endpoints **públicos sin auth** `/public/{stats,leaderboard,
+  hall-of-fame,players/{username}}` (solo agregados, sin email) y **showcase en la página de
+  login** (leaderboard + stats del universo + perfiles). Cacheable (SDD 7). Depende del SDD 11.
+- En cola, solo diseño.
+
 ### 2026-06-22 — SDD 11 (diseño): inicio y final del juego (mundo persistente + temporadas)
 - Investigado StarKingdoms (rondas con inicio/fin, tick, newbie protection, ranking por networth,
   Hall of Fame persistente, free-to-play + Premium cosmético ~US$2.33/mes — no pay-to-win).

@@ -76,6 +76,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   persistente + **temporadas** (ranking, ganadores, Hall of Fame + insignias cosméticas que
   persisten, **sin wipe**) + **newbie protection**. Inspirado en StarKingdoms (rondas/HoF) pero sin
   el reset destructivo. Monetización fuera de alcance por ahora.
+- 📝 **[SDD 12 — Métricas + historial + showcase público](docs/sdd-player-metrics-public.md)**:
+  contadores de por vida (`PlayerStats`: batallas, construido, entrenado, explorado, minado/gastado/
+  saqueado), **historial de temporadas** (HoF), endpoints **públicos** `/public/*` y **showcase en
+  la página de login** (leaderboard + stats del universo + perfiles). Depende del SDD 11.
 
 ### Escalado / producción (diseñado, pendiente de implementar)
 - 📝 **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: cuántos CCU aguanta,
