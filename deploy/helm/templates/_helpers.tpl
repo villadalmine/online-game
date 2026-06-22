@@ -1,5 +1,9 @@
 {{- define "online-game.dbUrl" -}}
+{{- if .Values.postgres.externalUrl -}}
+{{ .Values.postgres.externalUrl }}
+{{- else -}}
 postgresql+asyncpg://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ .Release.Name }}-postgres:5432/{{ .Values.postgres.db }}
+{{- end -}}
 {{- end -}}
 
 {{- define "online-game.redisUrl" -}}

@@ -1,0 +1,57 @@
+{{- if and .Values.postgres.enabled .Values.backup.enabled }}
+# Backup lógico opt-in (SDD 10): pg_dump -Fc a un PVC, con retención por días. Es un punto de
+# partida (almacenamiento LOCAL en el cluster). Para prod seria: mandar el dump a object storage
+# offsite y cifrado, o usar WAL/PITR con un operador. Restore: ver docs/sdd-durability-backup-restore.md.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-backups
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.backup.storageClass }}
+  storageClassName: {{ .Values.backup.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.backup.size | quote }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-pg-backup
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-backup
+              image: {{ .Values.postgres.image }}
+              env:
+                - name: PGPASSWORD
+                  value: {{ .Values.postgres.password | quote }}
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -e
+                  ts=$(date -u +%Y%m%dT%H%M%SZ)
+                  out="/backups/{{ .Values.postgres.db }}-$ts.dump"
+                  echo "pg_dump -> $out"
+                  pg_dump -Fc -h {{ .Release.Name }}-postgres -U {{ .Values.postgres.user }} \
+                    -d {{ .Values.postgres.db }} -f "$out"
+                  echo "retención: borro dumps > {{ .Values.backup.retentionDays }} días"
+                  find /backups -name '*.dump' -mtime +{{ .Values.backup.retentionDays }} -delete
+                  ls -lh /backups
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: {{ .Release.Name }}-backups
+{{- end }}

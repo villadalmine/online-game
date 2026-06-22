@@ -1,9 +1,14 @@
 {{- if .Values.postgres.enabled }}
+# Postgres como StatefulSet con almacenamiento persistente (SDD 10). El PVC sobrevive a que el
+# pod muera/reprograme → NO se pierden datos. PGDATA en un subdir del volumen para evitar el
+# problema de `lost+found` en PVs nuevos. Para prod seria considerar un operador (CloudNativePG)
+# con PITR/réplicas: postgres.enabled=false + postgres.externalUrl.
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ .Release.Name }}-postgres
 spec:
+  serviceName: {{ .Release.Name }}-postgres
   replicas: 1
   selector:
     matchLabels:
@@ -23,8 +28,36 @@ spec:
               value: {{ .Values.postgres.password | quote }}
             - name: POSTGRES_DB
               value: {{ .Values.postgres.db | quote }}
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           ports:
             - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.user | quote }}]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      {{- if not .Values.postgres.persistence.enabled }}
+      volumes:
+        - name: data
+          emptyDir: {}
+      {{- end }}
+  {{- if .Values.postgres.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.postgres.persistence.storageClass }}
+        storageClassName: {{ .Values.postgres.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.postgres.persistence.size | quote }}
+  {{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -39,6 +72,7 @@ spec:
 {{- end }}
 {{- if .Values.redis.enabled }}
 ---
+# Redis es cache reconstruible (catálogo, rate-limit), no fuente de verdad → efímero está OK.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

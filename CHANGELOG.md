@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — Durabilidad: Postgres con PVC + backup (impl SDD 10)
+- **Fix de pérdida de datos**: el Postgres del chart pasó de `Deployment` **sin volumen** a
+  **`StatefulSet` con `volumeClaimTemplates` (PVC)** en `/var/lib/postgresql/data` (`PGDATA` en
+  subdir para evitar `lost+found`) + `readinessProbe` `pg_isready`. **El PVC sobrevive a que el pod
+  muera** → ya no se pierde la base. (`deploy/helm/templates/datastores.yaml`)
+- **Knobs** (`values.yaml`): `postgres.persistence.{enabled,size,storageClass}` (default on, 8Gi).
+  `persistence.enabled=false` → `emptyDir` (solo pruebas).
+- **Postgres externo**: `postgres.externalUrl` + `postgres.enabled=false` (managed/operador con
+  PITR); `dbUrl` lo honra (`_helpers.tpl`).
+- **Backup opt-in**: `backup.enabled` → CronJob `pg_dump -Fc` a un PVC con retención
+  (`postgres-backup-cronjob.yaml`). Offsite/cifrado y PITR quedan como follow-up.
+- Verificado con `helm lint` + `helm template` (persistente / emptyDir / DB externa / backup on).
+  SDD 10 actualizado con estado de implementación.
+
 ### 2026-06-22 — SDD 10 (diseño): durabilidad, backup y restore
 - **[SDD 10](docs/sdd-durability-backup-restore.md)**: cómo no perder datos si un pod muere.
   🔴 **Hallazgo bloqueante**: el Postgres del chart (`datastores.yaml`) corre como `Deployment`

@@ -88,6 +88,30 @@ Documentar y **probar** en `docs/RUNBOOK` (o sección del README de deploy):
 - **Backup/restore**: script de drill en `tests/ops/` (manual, no CI): dump → drop → restore →
   `test_migrations` + smoke. Cronometrar RTO.
 
+## 5.bis Estado de implementación (2026-06-22)
+
+**Hecho (este commit):**
+- 🟢 **Postgres con persistencia**: pasó de `Deployment` sin volumen a **`StatefulSet` con
+  `volumeClaimTemplates` (PVC)** montado en `/var/lib/postgresql/data`, con `PGDATA` en el subdir
+  `…/pgdata` (evita el problema de `lost+found` en PVs nuevos) + `readinessProbe` con `pg_isready`.
+  El **PVC sobrevive a que el pod muera/reprograme** → fin del data-loss. (`datastores.yaml`)
+- 🟢 **Knobs** (`values.yaml`): `postgres.persistence.{enabled,size,storageClass}`
+  (default `enabled:true`, `8Gi`, StorageClass default). `persistence.enabled=false` → `emptyDir`
+  (solo pruebas).
+- 🟢 **Postgres externo** (managed/operador): `postgres.externalUrl` + `postgres.enabled=false`;
+  `dbUrl` lo honra (`_helpers.tpl`). Camino recomendado para PITR/failover (CloudNativePG, etc.).
+- 🟢 **Backup opt-in**: `backup.enabled` → **CronJob `pg_dump -Fc`** a un **PVC** con **retención**
+  por días (`postgres-backup-cronjob.yaml`, `values.backup.*`, default off).
+- ✅ Verificado con `helm lint` + `helm template` en 4 escenarios (persistente / `emptyDir` / DB
+  externa / backup on).
+
+**Pendiente (follow-up, documentado):**
+- 🟡 Backup **offsite + cifrado** (hoy el dump queda en un PVC local del cluster) → subir a object
+  storage (S3/MinIO) con credenciales en Secret.
+- 🟡 **PITR / WAL archiving** y réplica/failover → vía operador (camino 3.1-B).
+- 🟡 **Runbook de restore** versionado + **restore drill** periódico cronometrado (RTO).
+- 🟡 `PersistentVolume` reclaim `Retain` (depende de la StorageClass del cluster).
+
 ## 6. Riesgos / decisiones
 - **Sin PVC = pérdida total**: es el riesgo #1; el resto del SDD no sirve sin esto.
 - **Un solo Postgres** (un escritor) = SPOF de escritura. Mitiga el operador (3.1-B) con
