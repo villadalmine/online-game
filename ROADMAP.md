@@ -71,6 +71,15 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    entrega real de email + `OTP_SECRET` fuerte en deploy.
 6. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
 
+### 🧭 Orden de implementación recomendado (de los SDDs en cola)
+1. **SDD 11 → 8 → 12** juntos: comparten el modelo de **ronda/instancia/temporada** (lifecycle +
+   galaxy instances + métricas/HoF públicas). Es el combo de mayor impacto jugable.
+2. **SDD 13** en paralelo, **incremental y data-only**: empezar por el **Sistema Solar real** y
+   sumar exosistemas / `speculative` / spin-offs cuando se quiera (no bloquea nada).
+3. **SDD 7 + 9** al preparar el **deploy real** (escalado/autoscaling + LLM local en GPU).
+4. **SDD 5 (Telegram)**: cuando haya `TELEGRAM_BOT_TOKEN`. **Follow-ups SDD 6/10** + **deploy**:
+   atados a publicar (secretos fuertes, email real, backup offsite/PITR, target de hosting).
+
 ### Diseño de juego (diseñado, pendiente de implementar)
 - 📝 **[SDD 11 — Inicio y final del juego](docs/sdd-game-lifecycle.md)**: **híbrido** — mundo
   persistente + **temporadas** (ranking, ganadores, Hall of Fame + insignias cosméticas que

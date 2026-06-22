@@ -27,6 +27,10 @@ Registro de todo lo que vamos logrando. Formato basado en
 - **SDD 6 — Login (follow-ups)**: rate-limit por IP + entrega real de email + `OTP_SECRET` fuerte en deploy.
 - **Deploy online real**: exponer (túnel/cloud) con Postgres + secretos fuertes (decisiones del usuario).
 - **Backlog (sin SDD aún)**: tech `build_speed`, combate con `hp`/rondas, más galaxias/minerales premium.
+- **Orden recomendado** (ver ROADMAP): **11 → 8 → 12** juntos (lifecycle + galaxy instances +
+  métricas/público, comparten modelo); **13** en paralelo, incremental y data-only (empezar por el
+  Sistema Solar real); **7 + 9** al armar el deploy; **5** cuando haya token; follow-ups 6/10 +
+  deploy atados a publicar.
 
 ### 2026-06-22 — SDD 13 (diseño): rigor científico del contenido
 - **[SDD 13](docs/sdd-scientific-accuracy.md)**: hacer científicamente correctos galaxias, planetas,
