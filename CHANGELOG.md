@@ -7,6 +7,22 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 6 implementado: login passwordless por email + código OTP
+- **Passwordless (código siempre)**: `POST /auth/request-code` (respuesta uniforme anti-enumeración)
+  + `POST /auth/verify-code` → JWT (signup = login: crea el `Player` si el email es nuevo). El JWT
+  mantiene la sesión, así que no pide código en cada visita.
+- **Servicio** `app/services/auth_otp.py` adaptando el patrón de `bot-telegram` a SQLAlchemy async:
+  CSPRNG (`secrets`), código guardado como **HMAC-SHA256(code, OTP_SECRET)** (nunca en claro), TTL,
+  máx intentos, **compare constant-time**, cooldown de reenvío. Modelo `EmailOtp` + `Player.email`
+  (migración aditiva).
+- **Mailer agnóstico sin deps** `app/services/mailer.py`: `console` (default, loguea el código —
+  dev/CI sin SMTP) / `smtp` (stdlib) / `resend` (httpx). Email del código **i18n** (ES/EN).
+- **Dev no se fuerza**: el login **usuario+contraseña** actual se mantiene (`/auth/login`,
+  `/auth/register`) para dev/CLI/tests/NPC.
+- **Web**: sección "Entrar con email (sin contraseña)" en la card de login.
+- Tests: `tests/test_auth_otp.py` (7) + 3 e2e (`request/verify`, uniforme/inválido, código malo)
+  + 1 browser. 128 unit/e2e + 12 browser verdes. SDD 6 actualizado con decisiones e impl.
+
 ### 2026-06-22 — Durabilidad: Postgres con PVC + backup (impl SDD 10)
 - **Fix de pérdida de datos**: el Postgres del chart pasó de `Deployment` **sin volumen** a
   **`StatefulSet` con `volumeClaimTemplates` (PVC)** en `/var/lib/postgresql/data` (`PGDATA` en

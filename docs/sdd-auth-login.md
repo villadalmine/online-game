@@ -113,6 +113,34 @@ cooldown/rate-limit → 429; el JWT abre `/players/me`.
 - **Enumeración/abuso**: mitigado con respuestas uniformes + rate-limit + TTL + intentos.
 - **Sin deps nuevas**: `smtplib`/`httpx`/`hmac`/`secrets` ya disponibles.
 
+## 6.bis Decisiones e implementación (2026-06-22)
+
+**Decisiones del usuario:**
+- **Modelo: passwordless (código siempre).** Cada login nuevo manda un código; el **JWT mantiene
+  la sesión** (`jwt_expire_minutes`, ~7 días) → no pide código en cada visita, solo cuando no hay
+  token válido (dispositivo nuevo, expirado, logout). No es "solo el primer login".
+- **Dev/testing: no se fuerza OTP.** Se mantiene el login **usuario+contraseña** (`/auth/login`,
+  `/auth/register`) para dev/CLI/tests/NPC, y `MAIL_BACKEND=console` loguea el código local (sin
+  SMTP). No se agregó "código fijo" (se descartó para no arrastrar un bypass a prod).
+
+**Implementado:**
+- `Player.email` (unique, nullable) + tabla `EmailOtp` (email PK) + migración aditiva.
+- `app/services/auth_otp.py`: `generate_code` (CSPRNG), `hash_code` (HMAC-SHA256 con `OTP_SECRET`),
+  `request_code` (uniforme + cooldown por `last_sent_at`), `verify_code` (TTL + intentos +
+  `compare_digest`; **signup = login**: crea el `Player` si el email es nuevo, con contraseña
+  inutilizable). Errores **uniformes 401** (anti-enumeración); email inválido → 422.
+- `app/services/mailer.py`: backends `console` (default) / `smtp` (stdlib) / `resend` (httpx),
+  validación anti CRLF. Email del código **i18n** (ES/EN por `?lang`/`Accept-Language`).
+- Endpoints `POST /auth/request-code`, `POST /auth/verify-code` (`app/api/v1/auth.py`).
+- Web: en la card de login, sección "Entrar con email (sin contraseña)" (pedir código → verificar).
+- Config (`OTP_SECRET`, `OTP_TTL_MINUTES`, `OTP_MAX_ATTEMPTS`, `OTP_RESEND_COOLDOWN_SECONDS`,
+  `MAIL_BACKEND`, `SMTP_*`, `RESEND_API_KEY`, `MAIL_FROM`).
+- Tests: `tests/test_auth_otp.py` (7 servicio) + 3 e2e + 1 browser.
+
+**Pendiente (follow-up):** rate-limit por IP (hoy hay cooldown por email); entrega real de email
+en deploy (SMTP/Resend); `OTP_SECRET` fuerte como Secret en Helm; vincular Telegram con código
+emitido por este flujo (SDD 5).
+
 ## 7. Checklist pre-publicación (gating)
 - [ ] `JWT_SECRET` y `OTP_SECRET` fuertes (Secret), no defaults.
 - [ ] `MAIL_BACKEND` real (smtp/resend) configurado y probado (smoke).

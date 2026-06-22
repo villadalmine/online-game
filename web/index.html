@@ -112,6 +112,18 @@
     <button onclick="register()">✅ Registrar y jugar</button>
     <button class="sec" onclick="login()">Entrar</button>
   </div>
+
+  <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+  <h2 style="margin-top:0">Entrar con email (sin contraseña)</h2>
+  <p class="muted">Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta.
+     Una vez dentro, quedás logueado en este dispositivo (no te pide código cada vez).</p>
+  <div class="row"><input id="otpemail" type="email" placeholder="tu@email.com" style="flex:1" />
+    <button class="sec" onclick="requestCode()">Enviar código</button></div>
+  <div class="row hidden" id="otpcoderow">
+    <input id="otpcode" inputmode="numeric" placeholder="código de 6 dígitos" style="flex:1"
+           onkeydown="if(event.key==='Enter')verifyCode()" />
+    <button onclick="verifyCode()">Entrar</button>
+  </div>
   <p id="autherr" class="muted"></p>
 </div>
 
@@ -273,6 +285,15 @@ function remember(){ localStorage.setItem("lastuser",$("u").value); }
 async function register(){ try{ const d=await api("/api/v1/auth/register","POST",cred()); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
 async function login(){ try{ const d=await api("/api/v1/auth/login","POST",cred()); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
 function cred(){ return { username:$("u").value, password:$("p").value }; }
+// passwordless: email + código OTP (SDD 6)
+async function requestCode(){ const email=$("otpemail").value.trim(); if(!email){ authErr("Poné tu email."); return; }
+  try{ await api("/api/v1/auth/request-code?lang="+lang,"POST",{email});
+    $("otpcoderow").classList.remove("hidden"); $("otpcode").focus();
+    authErr("Te mandamos un código a "+email+". Revisá tu correo (en dev, el log del server)."); }
+  catch(e){ authErr(e.message); } }
+async function verifyCode(){ const email=$("otpemail").value.trim(), code=$("otpcode").value.trim();
+  try{ const d=await api("/api/v1/auth/verify-code","POST",{email,code}); setToken(d.access_token); boot(); }
+  catch(e){ authErr(e.message); } }
 function setToken(t){ token=t; localStorage.setItem("token",t); }
 function logout(){ token=""; localStorage.removeItem("token"); if(es)es.close(); location.reload(); }
 

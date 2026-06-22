@@ -49,6 +49,23 @@ class Settings(BaseSettings):
     # Personal AI assistant (SDD 2): emergency "hack" budget per player per day.
     assistant_hacks_per_day: int = 3
 
+    # Passwordless login por email + código OTP (SDD 6). El login usuario+contraseña sigue
+    # existiendo (dev/CLI/tests). En prod este es el camino para el público.
+    otp_secret: str = "change-me-otp-secret"   # HMAC del código; fuerte en prod (Secret)
+    otp_ttl_minutes: int = 10
+    otp_max_attempts: int = 5
+    otp_resend_cooldown_seconds: int = 60
+    otp_length: int = 6
+    # Envío de email: console (default, loguea el código — dev/CI sin SMTP) | smtp | resend
+    mail_backend: str = "console"
+    mail_from: str = "Online Galaxy War <no-reply@localhost>"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = True
+    resend_api_key: str = ""
+
     # LLM provider — any OpenAI-compatible endpoint: OpenRouter, LiteLLM, Ollama, vLLM…
     # Set LLM_* to point anywhere; if unset, falls back to the OPENROUTER_* values below
     # (back-compat). For Ollama: LLM_BASE_URL=http://host:11434/v1, LLM_MODEL=llama3.1,

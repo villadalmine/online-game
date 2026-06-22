@@ -209,6 +209,44 @@ async def test_advisor_hack_grants_and_exhausts_daily_budget(client):
     assert r.status_code == 429, r.text
 
 
+# ---- passwordless login: email + código OTP (SDD 6) -------------------------
+async def test_otp_login_happy_path(client, monkeypatch):
+    from app.services import auth_otp
+
+    monkeypatch.setattr(auth_otp, "generate_code", lambda n: "424242")
+    r = await client.http.post("/api/v1/auth/request-code", json={"email": "otp@b.com"})
+    assert r.status_code == 200 and r.json()["sent"] is True
+
+    r = await client.http.post(
+        "/api/v1/auth/verify-code", json={"email": "otp@b.com", "code": "424242"}
+    )
+    assert r.status_code == 200, r.text
+    token = r.json()["access_token"]
+    # el JWT abre /players/me (cuenta creada en el verify)
+    me = await client.http.get("/api/v1/players/me", headers={"Authorization": f"Bearer {token}"})
+    assert me.status_code == 200
+
+
+async def test_otp_request_uniform_and_invalid_email(client):
+    # email con cuenta o sin cuenta: misma respuesta (anti-enumeración)
+    r = await client.http.post("/api/v1/auth/request-code", json={"email": "whoever@b.com"})
+    assert r.status_code == 200 and r.json()["sent"] is True
+    # email inválido -> 422
+    bad = await client.http.post("/api/v1/auth/request-code", json={"email": "nope"})
+    assert bad.status_code == 422
+
+
+async def test_otp_verify_wrong_code_401(client, monkeypatch):
+    from app.services import auth_otp
+
+    monkeypatch.setattr(auth_otp, "generate_code", lambda n: "111222")
+    await client.http.post("/api/v1/auth/request-code", json={"email": "otp2@b.com"})
+    r = await client.http.post(
+        "/api/v1/auth/verify-code", json={"email": "otp2@b.com", "code": "000000"}
+    )
+    assert r.status_code == 401
+
+
 # ---- onboarding / state -----------------------------------------------------
 
 async def test_onboard_and_me(client):

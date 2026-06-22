@@ -26,6 +26,8 @@ class Player(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     is_npc: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Passwordless login por email + código OTP (SDD 6). Nullable: cuentas legacy/NPC no tienen.
+    email: Mapped[str | None] = mapped_column(String(254), unique=True, index=True, nullable=True)
 
     # Set during onboarding
     galaxy_key: Mapped[str | None] = mapped_column(String(50), nullable=True)
@@ -211,6 +213,20 @@ class AllianceMessage(Base):
     )
     sender_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"))
     body: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class EmailOtp(Base):
+    """Código OTP pendiente por email (SDD 6). `email` PK ⇒ pedir uno nuevo reemplaza el anterior.
+    El código se guarda hasheado (HMAC), nunca en claro."""
+
+    __tablename__ = "email_otps"
+
+    email: Mapped[str] = mapped_column(String(254), primary_key=True)
+    code_hash: Mapped[str] = mapped_column(String(128))
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

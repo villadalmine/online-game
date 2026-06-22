@@ -224,6 +224,25 @@ def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
     expect(page.locator("#ally-list")).to_contain_text("NPC (no unible)", timeout=15000)
 
 
+def test_email_otp_request_and_verify(page: Page, live_server, shots):
+    """Passwordless por la UI: pedir código llama al server real (MAIL_BACKEND=console) y aparece
+    el campo de código; verificar con un código mal da error claro (sin crashear la UI)."""
+    page.goto(live_server + "/")
+    email = f"otp_{uuid.uuid4().hex[:6]}@b.com"
+
+    page.locator("#otpemail").fill(email)
+    page.click("button:has-text('Enviar código')")
+    # request-code real (200 uniforme) → aparece el input del código
+    expect(page.locator("#otpcoderow")).to_be_visible(timeout=10000)
+    expect(page.locator("#autherr")).to_contain_text(email)
+
+    page.locator("#otpcode").fill("000000")  # código incorrecto
+    page.click("#otpcoderow button:has-text('Entrar')")
+    expect(page.locator("#autherr")).to_be_visible()   # error mostrado, UI viva
+    expect(page.locator("#otpemail")).to_be_visible()
+    _shot(page, shots / "14-otp.png")
+
+
 def test_language_toggle_en_es(page: Page, live_server, shots):
     """🌐 toggles the game between ES and EN: panel titles + catalog content; persists."""
     page.set_viewport_size({"width": 1280, "height": 900})

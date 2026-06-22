@@ -18,6 +18,20 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+# ---- SDD 6: passwordless login (email + código OTP) -------------------------
+class RequestCodeRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+
+
+class RequestCodeResponse(BaseModel):
+    sent: bool = True
+
+
+class VerifyCodeRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    code: str = Field(min_length=4, max_length=12)
+
+
 class OnboardRequest(BaseModel):
     galaxy_key: str
     planet_key: str
