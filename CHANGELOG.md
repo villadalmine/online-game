@@ -7,6 +7,24 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 2 implementado: asistente AI personal + hack (full-API)
+- **`app/services/advisor.py`**: consejero por jugador que se apoya en el grafo (SDD 1) y en la
+  **misma LLM agnóstica que las NPC** (con **fallback determinista** a los blockers si no hay
+  LLM/falla). `ask()` usa **RAG `retrieve`** para enfocar la respuesta y devuelve prosa +
+  `BlockerReport` + `suggestions`. Las **suggestions se generan deterministas** del análisis
+  (siempre acciones válidas: build/train/research) — la LLM solo redacta.
+- **Hack de emergencia** `grant_hack()`: otorga el **faltante mínimo** (minerales/energía, nunca
+  unidades/ataques) para desbloquear un objetivo; **cap diario** (default 3) con **reset lazy en
+  `Player`** (`assistant_hacks_used`/`assistant_hacks_reset_at`, sin cron/Redis). 4º del día → 429;
+  objetivo ya construible → 400; emite notificación privada.
+- **LLM compartido**: se extrajo el transporte a **`app/services/llm.py`** (`llm_chat`), usado
+  por NPC y asistente (sin duplicar; tests del NPC siguen verdes).
+- **Endpoints**: `POST /players/me/advisor/ask`, `POST /players/me/advisor/hack`,
+  `GET /players/me/advisor/messages`. Modelo `AdvisorMessage` + migración Alembic aditiva.
+- **Web**: card "🧠 Asistente AI" (preguntar, sugerencias de un clic, botón de hack N/3).
+- Tests: `tests/test_advisor.py` (4 servicio) + 2 e2e (`ask`/`hack` con budget→429) + 1 browser.
+  SDD 2 actualizado (suggestions deterministas). 112 unit/e2e + 9 browser verdes.
+
 ### 2026-06-22 — SDD 1 implementado: grafo de dependencias + RAG (full-API)
 - **`app/services/depgraph.py`** (puro, sin DB/red): construye el grafo data-driven desde
   `content/*.yaml` y expone consultas deterministas — `prerequisites`, `mineral_sources`

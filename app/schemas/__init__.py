@@ -259,3 +259,39 @@ class BlockerReport(BaseModel):
     buildable: bool
     blockers: list[Blocker] = []
     prerequisites: list[str] = []  # buildings to have active first, topological order
+
+
+# ---- SDD 2: personal AI assistant -------------------------------------------
+class AdvisorAskRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class Suggestion(BaseModel):
+    action: str  # build | train | research | expedition (same shape NPCs dispatch)
+    label: str = ""
+    params: dict = {}
+
+
+class AdvisorReply(BaseModel):
+    reply: str
+    blockers: list[BlockerReport] = []
+    suggestions: list[Suggestion] = []
+    hack_available: bool = False
+    hacks_left: int = 0
+
+
+class AdvisorHackRequest(BaseModel):
+    target: str = Field(min_length=1, max_length=50)
+
+
+class AdvisorHackResult(BaseModel):
+    granted: dict[str, float] = {}
+    message: str
+    hacks_left: int
+
+
+class AdvisorMessageOut(BaseModel):
+    id: int
+    role: str
+    body: str
+    created_at: datetime

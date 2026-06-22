@@ -1,0 +1,42 @@
+"""Shared transport to any OpenAI-compatible chat endpoint (OpenRouter / LiteLLM / Ollama /
+vLLM). Used by the NPC brain and the personal assistant — they all speak the same
+`/chat/completions` schema; only LLM_BASE_URL/LLM_MODEL/LLM_API_KEY change.
+
+Raises on missing config or network error so callers can fall back (NPC -> rules, assistant ->
+deterministic blockers). One place to change the HTTP contract, used everywhere."""
+import httpx
+
+from app.core.config import get_settings
+
+
+async def llm_chat(
+    messages: list[dict],
+    *,
+    max_tokens: int = 400,
+    temperature: float = 0.0,
+    json_mode: bool = False,
+) -> str:
+    """POST messages to the configured LLM and return the assistant message content."""
+    settings = get_settings()
+    if not settings.llm_key:
+        raise RuntimeError("LLM no configurado (sin LLM_API_KEY/OPENROUTER_API_KEY)")
+    payload = {
+        "model": settings.llm_model_name,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "messages": messages,
+    }
+    if json_mode:
+        # Honored by OpenAI/LiteLLM/Ollama/vLLM; makes the reply parse-safe.
+        payload["response_format"] = {"type": "json_object"}
+    async with httpx.AsyncClient(timeout=20) as client:
+        resp = await client.post(
+            f"{settings.llm_url}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.llm_key}",
+                "X-Title": "online-game",  # ignored by non-OpenRouter servers
+            },
+            json=payload,
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"]

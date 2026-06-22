@@ -39,6 +39,12 @@ class Player(Base):
     # NPC short-term memory: JSON list of recent action descriptions (last N).
     npc_memory: Mapped[str] = mapped_column(Text, default="[]")
 
+    # Personal AI assistant: emergency "hack" budget, reset lazily once a day (SDD 2).
+    assistant_hacks_used: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    assistant_hacks_reset_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     alliance_id: Mapped[int | None] = mapped_column(
         ForeignKey("alliances.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -205,6 +211,20 @@ class AllianceMessage(Base):
     )
     sender_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"))
     body: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AdvisorMessage(Base):
+    """A turn in the player's conversation with their personal AI assistant (SDD 2)."""
+
+    __tablename__ = "advisor_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    role: Mapped[str] = mapped_column(String(20))  # user | assistant
+    body: Mapped[str] = mapped_column(String(2000))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 

@@ -49,15 +49,20 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    - ✅ **SDD 1 hecho**: `depgraph.py` (grafo + análisis de bloqueos) y **RAG** (`graph_documents`
      + `retrieve` léxico ES/EN), expuesto full-API (`/catalog/graph`, `/graph/docs`,
      `/graph/search`). Con tests unit + e2e.
-   - 🔜 **SDD 2**: `advisor.py`, endpoints `/advisor/ask` y `/advisor/hack`, modelo
-     `AdvisorMessage`, contador 3/día en `Player`, card en la web.
+   - ✅ **SDD 2 hecho**: `advisor.py` + `llm.py` (transporte LLM compartido), endpoints
+     `/players/me/advisor/{ask,hack,messages}`, modelo `AdvisorMessage`, hack 3/día (reset lazy),
+     card "🧠 Asistente AI" en la web. Con tests servicio + e2e + browser.
 2. **i18n del juego (ES/EN)** — que **el juego** soporte español e inglés (contenido visible:
    nombres/descripciones de `content/*.yaml`, textos de la API y del cliente web). *No* aplica a
    docs ni a los SDDs. Idea: campos `name`/`description` localizables (`name_en`/`name_es` o
    `i18n:` por clave) + `Accept-Language` / preferencia del jugador; el front elige idioma.
-3. **Bot de Telegram** — otro cliente sobre la misma API (jugar y recibir notificaciones desde
+   *(Pendiente de SDD antes de codear.)*
+3. **Paneles de la web colapsables/redimensionables** — poder achicar/ocultar cada card para
+   ganar espacio y ver solo lo que interesa (estado plegado persistido en `localStorage`; sin
+   backend). *(Pendiente de SDD antes de codear.)*
+4. **Bot de Telegram** — otro cliente sobre la misma API (jugar y recibir notificaciones desde
    Telegram). Cierra la premisa multi-cliente.
-4. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
+5. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
 
 (✅ NPCs LLM mejorados: proveedor agnóstico OpenAI-compatible en app + Helm — OpenRouter/
 LiteLLM/Ollama/vLLM —, JSON mode, few-shot, taunts in-character y rivalidad coordinada

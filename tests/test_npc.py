@@ -210,17 +210,18 @@ async def test_llm_decide_posts_to_configured_endpoint_with_json_mode(monkeypatc
             captured.update(url=url, headers=headers, json=json)
             return FakeResp()
 
-    monkeypatch.setattr(npc_mod.httpx, "AsyncClient", FakeClient)
-    monkeypatch.setattr(
-        npc_mod,
-        "get_settings",
-        lambda: _settings(
-            npc_brain="llm",
-            llm_base_url="http://ollama:11434/v1",
-            llm_model="llama3.1",
-            llm_api_key="secret",
-        ),
+    from app.services import llm as llm_mod
+
+    cfg = _settings(
+        npc_brain="llm",
+        llm_base_url="http://ollama:11434/v1",
+        llm_model="llama3.1",
+        llm_api_key="secret",
     )
+    # transport lives in app.services.llm now; the NPC builds the prompt and delegates.
+    monkeypatch.setattr(llm_mod.httpx, "AsyncClient", FakeClient)
+    monkeypatch.setattr(llm_mod, "get_settings", lambda: cfg)
+    monkeypatch.setattr(npc_mod, "get_settings", lambda: cfg)
 
     action = await npc_mod._llm_decide({"personality": "rudo"})
     assert action == {"action": "none"}

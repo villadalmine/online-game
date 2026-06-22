@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     admin,
+    advisor,
     alliances,
     auth,
     bases,
@@ -26,3 +27,4 @@ api_router.include_router(alliances.router, prefix="/alliances", tags=["alliance
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(world.router, prefix="/world", tags=["world"])
+api_router.include_router(advisor.router, prefix="/players/me/advisor", tags=["advisor"])

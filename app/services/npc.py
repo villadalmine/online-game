@@ -11,7 +11,6 @@ import re
 from datetime import UTC, datetime
 from typing import Protocol
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +23,7 @@ from app.services.combat import recall_mission, start_attack
 from app.services.economy import player_stocks
 from app.services.energy import compute_energy
 from app.services.expedition import start_expedition
+from app.services.llm import llm_chat
 from app.services.onboarding import onboard_player
 from app.services.scoring import player_score
 from app.services.state import advance
@@ -477,29 +477,14 @@ async def _llm_decide(state: dict) -> dict:
         'a beatable enemy with is_human=true -> '
         '{"action":"attack","target_base_id":7,"force":{"tank":5}}.'
     )
-    payload = {
-        "model": settings.llm_model_name,
-        "temperature": 0,
-        "max_tokens": 120,
-        "messages": [
+    content = await llm_chat(
+        [
             {"role": "system", "content": system},
             {"role": "user", "content": json.dumps(state)},
         ],
-    }
-    if settings.llm_json_mode:
-        # Honored by OpenAI/LiteLLM/Ollama/vLLM; makes the reply parse-safe.
-        payload["response_format"] = {"type": "json_object"}
-    async with httpx.AsyncClient(timeout=20) as client:
-        resp = await client.post(
-            f"{settings.llm_url}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {settings.llm_key}",
-                "X-Title": "online-game-npc",  # ignored by non-OpenRouter servers
-            },
-            json=payload,
-        )
-        resp.raise_for_status()
-        content = resp.json()["choices"][0]["message"]["content"]
+        max_tokens=120,
+        json_mode=settings.llm_json_mode,
+    )
     return _extract_json(content)
 
 

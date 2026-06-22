@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     npc_enabled: bool = True
     npc_brain: str = "rules"  # "rules" (default) | "llm" (any OpenAI-compatible server)
 
+    # Personal AI assistant (SDD 2): emergency "hack" budget per player per day.
+    assistant_hacks_per_day: int = 3
+
     # LLM provider — any OpenAI-compatible endpoint: OpenRouter, LiteLLM, Ollama, vLLM…
     # Set LLM_* to point anywhere; if unset, falls back to the OPENROUTER_* values below
     # (back-compat). For Ollama: LLM_BASE_URL=http://host:11434/v1, LLM_MODEL=llama3.1,

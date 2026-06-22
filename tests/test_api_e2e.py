@@ -138,6 +138,56 @@ async def test_catalog_graph_docs_and_search(client):
     assert scores == sorted(scores, reverse=True)
 
 
+# ---- personal AI assistant (SDD 2) ------------------------------------------
+async def _broke(client, player_id):
+    from app.models import ResourceStock
+
+    async with client.session_maker() as s:
+        for st in (
+            await s.execute(select(ResourceStock).where(ResourceStock.player_id == player_id))
+        ).scalars():
+            st.amount = 0.0
+        await s.commit()
+
+
+async def test_advisor_ask_returns_blockers(client):
+    h = await _register(client.http, "advisee")
+    state = await _onboard(client.http, h)
+    await _broke(client, state["id"])
+
+    r = await client.http.post(
+        "/api/v1/players/me/advisor/ask", headers=h, json={"message": "qué construyo ahora"}
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["reply"] and body["hacks_left"] == 3
+    assert body["blockers"]  # broke -> something is blocked
+    # asking without auth -> 401
+    assert (await client.http.post("/api/v1/players/me/advisor/ask",
+                                   json={"message": "hola"})).status_code == 401
+
+
+async def test_advisor_hack_grants_and_exhausts_daily_budget(client):
+    h = await _register(client.http, "hacker2")
+    state = await _onboard(client.http, h)
+
+    # spend the 3 daily hacks on three different blocked targets
+    for target in ("mine", "barracks", "research_lab"):
+        await _broke(client, state["id"])
+        r = await client.http.post(
+            "/api/v1/players/me/advisor/hack", headers=h, json={"target": target}
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["granted"]
+
+    # 4th hack today -> 429
+    await _broke(client, state["id"])
+    r = await client.http.post(
+        "/api/v1/players/me/advisor/hack", headers=h, json={"target": "factory"}
+    )
+    assert r.status_code == 429, r.text
+
+
 # ---- onboarding / state -----------------------------------------------------
 
 async def test_onboard_and_me(client):

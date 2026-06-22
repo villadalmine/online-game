@@ -89,10 +89,12 @@ Todas bajo `get_current_player`, prefijo `/api/v1/players/me/advisor`.
   "hack_available": true, "hacks_left": 1
 }
 ```
-- Flujo: `snapshot` → detectar objetivos relevantes (de los `build_options`/`train_options` +
-  lo que el jugador menciona) → `analyze` cada uno (SDD1) → armar **contexto compacto** (grafo +
-  estado + blockers + historial) → `llm_chat` → parsear `reply` + `suggestions` (lista de
-  acciones con el **mismo schema que `npc.dispatch_action`**) → devolver.
+- Flujo: `advance` → `snapshot` → objetivos relevantes vía **RAG `retrieve`** (lo que el
+  jugador menciona) + los no construidos → `analyze` cada uno (SDD1) → armar **contexto
+  compacto** (docs recuperados + estado + blockers + historial) → `llm_chat` para la **prosa**
+  (`reply`). **Las `suggestions` se generan deterministas del análisis** (no las inventa la LLM):
+  así son SIEMPRE acciones válidas (build/train/research) — la LLM solo redacta. Esto evita que
+  una alucinación produzca una acción inválida (decisión de implementación, jun-2026).
 - **Fallback sin LLM:** si `llm_chat` lanza o no hay key, se responde con un `reply` armado de
   los `blockers` deterministas ("Te falta X: tenés A/B; conseguilo con una mina de Y") y
   `suggestions` derivadas (la mina del mineral faltante, la expedición, etc.). El asistente

@@ -224,6 +224,29 @@ def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
     expect(page.locator("#ally-list")).to_contain_text("NPC (no unible)", timeout=15000)
 
 
+def test_advisor_card_gives_advice_and_suggestions(page: Page, live_server, shots):
+    """The assistant card answers and renders an actionable suggestion. No LLM in tests, so
+    this exercises the deterministic fallback (grounded on the dependency graph)."""
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(live_server + "/")
+    user = "ui_" + uuid.uuid4().hex[:6]
+    page.locator("#u").fill(user)
+    page.locator("#p").fill("secret123")
+    page.click("button:has-text('Registrar')")
+    page.select_option("#planet", "mars")
+    page.select_option("#race", "martian")
+    page.click("button:has-text('Comenzar')")
+    expect(page.locator("#game")).to_be_visible()
+
+    page.locator("#advmsg").fill("quiero tanques, ¿qué necesito?")
+    page.click("button:has-text('preguntar')")
+
+    # asking about tanks surfaces the factory you must build first, as a one-click suggestion.
+    expect(page.locator("#advsugs")).to_contain_text("Construir", timeout=10000)
+    expect(page.locator("#advreply")).not_to_contain_text("te aconsejo según el grafo")
+    _shot(page, shots / "11-advisor.png")
+
+
 def test_mark_read_clears_notifications_feed(page: Page, live_server, shots):
     """Bug fix: 'marcar leídas' must empty the feed (it used to leave stale items).
     The feed renders unread notifications from the API; mocking that endpoint keeps the
