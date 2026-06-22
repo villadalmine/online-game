@@ -1,16 +1,28 @@
 # Galaxies -> planets -> per-mineral abundance.
 # abundance is a base production multiplier for a mine of that mineral on that planet.
 # i18n: `name`/`description` are ES; `*_en` add English (SDD 4).
+# Rigor científico (SDD 13): cada planeta lleva propiedades físicas reales con `sources` y un
+# nivel de `canon` (real | speculative | fiction). Restricciones físicas data-driven las usan
+# (p.ej. aviones requieren atmósfera, barcos requieren agua líquida). Valores reales: NASA
+# Planetary Fact Sheets. Andrómeda es ficción/especulación (no hay exoplanetas catalogados ahí).
 galaxies:
   - key: milky_way
     name: "Via Lactea"
     name_en: "Milky Way"
+    canon: real
     planets:
       - key: earth
         name: "Tierra"
         name_en: "Earth"
         description: "Mundo equilibrado, rico en hierro y aluminio."
         description_en: "Balanced world, rich in iron and aluminum."
+        canon: real
+        gravity_g: 1.0
+        mean_temp_c: 15
+        atmosphere: thick
+        has_liquid_water: true
+        insolation: 1.0
+        sources: ["NASA Earth Fact Sheet"]
         abundance:
           iron: 1.4
           silicon: 1.3
@@ -25,6 +37,13 @@ galaxies:
         name_en: "Mars"
         description: "Mundo de oxido de hierro y azufre, duro y militarista."
         description_en: "World of iron oxide and sulfur, harsh and militaristic."
+        canon: real
+        gravity_g: 0.38
+        mean_temp_c: -63
+        atmosphere: thin
+        has_liquid_water: false
+        insolation: 0.43
+        sources: ["NASA Mars Fact Sheet"]
         abundance:
           iron: 1.5
           silicon: 1.0
@@ -39,6 +58,13 @@ galaxies:
         name_en: "Venus"
         description: "Mundo volcanico de basalto y azufre, alta tecnologia."
         description_en: "Volcanic world of basalt and sulfur, high technology."
+        canon: real
+        gravity_g: 0.9
+        mean_temp_c: 464
+        atmosphere: thick
+        has_liquid_water: false
+        insolation: 1.91
+        sources: ["NASA Venus Fact Sheet"]
         abundance:
           iron: 1.0
           silicon: 1.1
@@ -51,8 +77,15 @@ galaxies:
       - key: mercury
         name: "Mercurio"
         name_en: "Mercury"
-        description: "Mundo abrasador, denso en hierro y silicio; sin lunas."
-        description_en: "Scorching world, dense in iron and silicon; no moons."
+        description: "Mundo abrasador, denso en hierro y silicio; sin lunas ni atmosfera."
+        description_en: "Scorching world, dense in iron and silicon; no moons, no atmosphere."
+        canon: real
+        gravity_g: 0.38
+        mean_temp_c: 167
+        atmosphere: none
+        has_liquid_water: false
+        insolation: 6.67
+        sources: ["NASA Mercury Fact Sheet"]
         abundance:
           iron: 1.6
           silicon: 1.4
@@ -65,12 +98,21 @@ galaxies:
   - key: andromeda
     name: "Andromeda"
     name_en: "Andromeda"
+    # Ficción/especulación: no hay exoplanetas catalogados en Andrómeda. Reemplazable por
+    # sistemas reales de la Vía Láctea (Proxima, TRAPPIST-1) — ver SDD 13.
+    canon: fiction
     planets:
       - key: vega_prime
         name: "Vega Prime"
         name_en: "Vega Prime"
         description: "Mundo oceanico rico en titanio y aluminio."
         description_en: "Oceanic world rich in titanium and aluminum."
+        canon: fiction
+        gravity_g: 1.1
+        mean_temp_c: 8
+        atmosphere: thick
+        has_liquid_water: true
+        insolation: 1.0
         abundance:
           iron: 0.9
           silicon: 1.2
@@ -85,6 +127,12 @@ galaxies:
         name_en: "Nyx"
         description: "Mundo sombrio y volcanico, abundante en azufre y basalto."
         description_en: "Dark volcanic world, abundant in sulfur and basalt."
+        canon: fiction
+        gravity_g: 0.9
+        mean_temp_c: -20
+        atmosphere: thin
+        has_liquid_water: false
+        insolation: 0.7
         abundance:
           iron: 1.1
           silicon: 0.9

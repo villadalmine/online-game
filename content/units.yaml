@@ -47,6 +47,9 @@ heavy:
     name: "Barco"
     name_en: "Ship"
     requires: factory
+    # Rigor científico (SDD 13): un barco necesita un océano → solo en planetas con agua líquida.
+    requires_liquid_water: true
+    propulsion: naval
     energy_cost: 9
     train_seconds: 140
     cost: { structural: 100, energetic: 50 }
@@ -55,6 +58,9 @@ heavy:
     name: "Avion"
     name_en: "Aircraft"
     requires: factory
+    # Rigor científico (SDD 13): un avión necesita atmósfera para volar → no en el vacío.
+    requires_atmosphere: true
+    propulsion: jet
     energy_cost: 10
     train_seconds: 150
     cost: { structural: 60, energetic: 60, advanced: 40 }

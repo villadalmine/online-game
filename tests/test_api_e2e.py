@@ -140,6 +140,26 @@ async def test_catalog_i18n(client):
     assert names(r.json())["mine"] == "Mine"
 
 
+async def test_catalog_has_physical_fields_and_canon(client):
+    cat = (await client.http.get("/api/v1/catalog")).json()
+    planets = {p["key"]: p for p in cat["planets"]}
+    earth = planets["earth"]
+    assert earth["gravity_g"] == 1.0 and earth["canon"] == "real"
+    assert earth["atmosphere"] == "thick" and earth["has_liquid_water"] is True
+    assert planets["mercury"]["atmosphere"] == "none"
+
+
+async def test_ship_blocked_without_water(client):
+    h = await _register(client.http, "drysailor")
+    state = await _onboard(client.http, h, planet="mars", race="martian")  # Marte: sin agua
+    base = state["bases"][0]["id"]
+    await _add_active_building(client.session_maker, "drysailor", "factory")
+    r = await client.http.post(
+        f"/api/v1/bases/{base}/train", headers=h, json={"unit_key": "ship", "quantity": 1}
+    )
+    assert r.status_code == 400 and "agua" in r.text.lower()
+
+
 async def test_catalog_graph(client):
     r = await client.http.get("/api/v1/catalog/graph?race=martian&planet=mars")
     assert r.status_code == 200

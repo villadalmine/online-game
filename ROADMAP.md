@@ -90,14 +90,12 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   **v1 hecho** — `PlayerStats` de por vida (batallas/construido/entrenado/explorado/minado/saqueado),
   historial de temporadas (HoF), endpoints públicos `/public/*` (sin auth, sin email) y **showcase
   en el login**. Follow-up: cachear `/public/*` (SDD 7), `career_points`, backfill.
-- 📝 **[SDD 13 — Rigor científico del contenido](docs/sdd-scientific-accuracy.md)**: galaxias →
-  **sistemas estelares** → planetas → lunas **reales** (Sistema Solar + Proxima/TRAPPIST-1 del NASA
-  Exoplanet Archive; fuera los planetas ficticios de Andrómeda), propiedades físicas (gravedad,
-  atmósfera, agua, insolación, temperatura) con **fuentes citadas**, e instalaciones/naves/unidades
-  ancladas a tecnología/física reales (ISRU, fusión, propulsión; aviones solo con atmósfera, barcos
-  solo con agua). Todo data-driven. Incluye **niveles de canon** (`real`/`speculative`/`fiction`)
-  para empezar chico e inventar lo "aún no descubierto", y **universos/spin-offs** (tipo *The
-  Expanse*) como packs de contenido seleccionables por partida — sin tocar código.
+- 🟢 **[SDD 13 — Rigor científico del contenido](docs/sdd-scientific-accuracy.md)**: **v1 hecho** —
+  propiedades físicas reales por planeta (gravedad/atmósfera/agua/insolación/temperatura + `canon` +
+  `sources`, NASA Fact Sheets) en el catálogo + modal de planeta; **restricciones físicas** (aviones
+  requieren atmósfera, barcos requieren agua). Follow-up: jerarquía **sistema estelar** + exosistemas
+  reales (Proxima/TRAPPIST-1), nivel `speculative`, **universos/spin-offs** (tipo *The Expanse*),
+  multiplicadores físicos.
 
 ### Escalado / producción (diseñado, pendiente de implementar)
 - 📝 **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: cuántos CCU aguanta,

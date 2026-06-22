@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 13 implementado (v1): rigor científico del contenido
+- **Propiedades físicas reales** por planeta en `content/planets.yaml` (`gravity_g`, `mean_temp_c`,
+  `atmosphere`, `has_liquid_water`, `insolation`, `canon`, `sources` — NASA Fact Sheets). Sistema
+  Solar = `real`; Andrómeda = `fiction`. Expuesto por `/catalog` y en el modal de planeta.
+- **Restricciones físicas data-driven**: **aviones requieren atmósfera** (no en Mercurio) y
+  **barcos requieren agua líquida** (solo Tierra) — gateado en `start_training`. `propulsion`
+  descriptivo.
+- Tests: `tests/test_science.py` (2) + 2 e2e. **153 unit/e2e + 15 browser verdes.**
+- Follow-up: jerarquía sistema estelar + exosistemas reales (Proxima/TRAPPIST-1), nivel
+  `speculative`, universos/spin-offs, multiplicadores físicos.
+
 ### 2026-06-22 — SDD 12 implementado (v1): métricas + historial + showcase público
 - **`PlayerStats`** (contadores de por vida) incrementados en los procesadores existentes:
   batallas ganadas/perdidas, ataques, edificios, unidades, investigaciones, expediciones,
@@ -50,9 +61,8 @@ Registro de todo lo que vamos logrando. Formato basado en
   galaxy instances (SDD 8). (v1 ya implementado.)
 - **SDD 12 — follow-ups**: cachear `/public/*` en Redis, `career_points` all-time, backfill de
   contadores. (v1 ya implementado.)
-- **SDD 13 — Rigor científico del contenido** (`docs/sdd-scientific-accuracy.md`): galaxias →
-  sistemas → planetas → lunas reales (Sistema Solar + exosistemas del NASA Exoplanet Archive),
-  propiedades físicas con fuentes, e instalaciones/naves ancladas a tecnología/física reales.
+- **SDD 13 — follow-ups**: jerarquía sistema estelar + exosistemas reales (Proxima/TRAPPIST-1),
+  nivel `speculative`, universos/spin-offs, multiplicadores físicos. (v1 ya implementado.)
 - **SDD 8 — follow-ups**: NPCs por instancia, ranking/temporada por instancia, tick por shard.
   (v1 ya implementado.)
 - **SDD 7 — Capacidad y autoscaling** (`docs/sdd-capacity-autoscaling.md`): HPA + resource requests

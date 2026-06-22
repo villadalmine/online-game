@@ -134,6 +134,22 @@ Multiplicadores físicos opt-in (extender, no romper): `gravity_g` → costo/tie
 - **E2E**: `GET /catalog` expone los nuevos campos; un caso de error de gating.
 - **i18n** (SDD 4): `real_en` para los nuevos textos `real`.
 
+## 5.ter Estado de implementación (2026-06-22) — v1 (incremental, data-only)
+- **Propiedades físicas reales** en `content/planets.yaml` por planeta: `gravity_g`, `mean_temp_c`,
+  `atmosphere` (none/thin/thick), `has_liquid_water`, `insolation`, **`canon`** (real/fiction) y
+  `sources` (NASA Planetary Fact Sheets). Sistema Solar = `real`; Andrómeda marcada `fiction` (no
+  hay exoplanetas catalogados ahí). Expuesto por `GET /catalog` (y el modal de planeta lo muestra).
+- **Restricciones físicas data-driven** en `start_training` (SDD §3.6): `aircraft`
+  `requires_atmosphere` (no en el vacío → Mercurio no puede) y `ship` `requires_liquid_water`
+  (solo planetas con océano → Tierra). Campos `propulsion` descriptivos en esas unidades.
+- **Tests**: `tests/test_science.py` (2 servicio) + 2 e2e (catálogo con campos físicos; barco
+  bloqueado sin agua). 153 unit/e2e + 15 browser ✅.
+
+**Pendiente (follow-up, según §3 y §7)**: jerarquía **Galaxia → sistema estelar → planeta** y
+exosistemas reales (Proxima/TRAPPIST-1) en vez de Andrómeda ficticia; nivel `speculative` con
+`rationale`; **universos/spin-offs** (packs de contenido) seleccionables por partida; multiplicadores
+físicos (gravedad→costo, insolación→energía solar); `real`/`canon` en edificios/unidades restantes.
+
 ## 6. Riesgos / decisiones
 - **Realismo vs. jugabilidad**: las restricciones físicas deben sumar, no frustrar → gating
   configurable y abundancias balanceadas. Decisión: empezar con constraints **suaves** (penalización)

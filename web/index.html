@@ -679,6 +679,7 @@ function openPlanet(key){
   $("pbody").innerHTML=`<div class="head" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">`+
     `<div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><h2 style="margin:0;font-size:16px">${esc(p.name)}</h2></div>`+
     `<p class="muted">${esc(p.description||"")}</p>`+
+    (p.gravity_g!=null?`<p class="muted">🪐 gravedad ${p.gravity_g}g · 🌡 ${p.mean_temp_c}°C · atmósfera ${esc(p.atmosphere||"?")} · ${p.has_liquid_water?"💧 agua líquida":"sin agua"} · ☀ ${p.insolation}× ${p.canon&&p.canon!=="real"?`· <span class="warn">${esc(p.canon)}</span>`:""}</p>`:"")+
     `<h2>Abundancia mineral <span class="muted">(multiplicador de minas)</span></h2>${ab||'<span class="muted">—</span>'}`+
     `<h2 style="margin-top:12px">Lunas</h2><div class="row">${moons}</div>`+
     `<h2 style="margin-top:12px">Colonias (${colonies.length})</h2>${cols}`;

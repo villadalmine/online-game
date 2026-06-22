@@ -105,6 +105,13 @@ async def start_training(
     if required and not await _building_active(session, base.id, required):
         raise TrainingError(f"Requiere el edificio activo: {required}")
 
+    # Restricciones físicas del planeta (SDD 13): aviones necesitan atmósfera, barcos agua líquida.
+    planet = content.planets.get(player.planet_key, {})
+    if spec.get("requires_atmosphere") and planet.get("atmosphere", "none") == "none":
+        raise TrainingError(f"{unit_key} necesita atmósfera; {player.planet_key} no tiene.")
+    if spec.get("requires_liquid_water") and not planet.get("has_liquid_water", False):
+        raise TrainingError(f"{unit_key} necesita agua líquida; {player.planet_key} no tiene.")
+
     # Bring economy + queues up to date before charging.
     await finalize_due_builds(session, player, now)
     await collect_mines(session, player, now)
