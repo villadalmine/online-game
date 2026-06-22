@@ -152,6 +152,13 @@ Card nueva "🧠 Asistente" (como el chat de alianza, sobrevive al refresh): inp
 de mensajes, botones para cada `suggestion`, y un botón **"Hackear (N/3 hoy)"** que llama a
 `/hack` con confirmación. Sin lógica de juego en el front (API-first).
 
+**Claridad (jun-2026):** la card separa explícitamente **Acciones** ("gastan tus recursos":
+build/train/research) del **Hack** ("te *regala* el material/energía que falta; no construye,
+después tocá una acción"), con nombres legibles. Si nombrás un mineral ("mina de silicio"), el
+asistente ofrece una sugerencia que construye **esa** mina (lleva `target_mineral`), y al tocarla
+el form de build se **sincroniza** — así no se construye otro mineral por una selección vieja del
+dropdown.
+
 ## 6. Plan de tests (regla del proyecto)
 
 **Servicio** (`tests/test_advisor.py`):

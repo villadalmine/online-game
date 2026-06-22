@@ -46,6 +46,23 @@ async def test_ask_uses_llm_and_returns_blockers_and_suggestions(session, monkey
     assert reply.hacks_left == 3 and reply.hack_available is True
 
 
+async def test_ask_named_mineral_suggests_that_mine(session, monkeypatch):
+    # "quiero una mina de silicio" must suggest a SILICON mine (right mineral), not a generic
+    # one that inherits whatever the UI dropdown had selected.
+    p = await _player(session)  # martian on mars; silicon is locally minable on mars
+
+    async def fake_chat(messages, **kw):
+        return "Construí una mina de silicio."
+
+    monkeypatch.setattr(adv, "llm_chat", fake_chat)
+    reply = await adv.ask(session, p, "quiero una mina de silicio")
+    mine_sugs = [
+        s for s in reply.suggestions
+        if s.action == "build" and s.params.get("building") == "mine"
+    ]
+    assert any(s.params.get("mineral") == "silicon" for s in mine_sugs)
+
+
 async def test_ask_falls_back_without_llm(session, monkeypatch):
     p = await _player(session, name="nollm")
     await _strip_minerals(session, p.id)

@@ -238,11 +238,11 @@ def test_advisor_card_gives_advice_and_suggestions(page: Page, live_server, shot
     page.click("button:has-text('Comenzar')")
     expect(page.locator("#game")).to_be_visible()
 
-    page.locator("#advmsg").fill("quiero tanques, ¿qué necesito?")
+    page.locator("#advmsg").fill("quiero una mina de silicio")
     page.click("button:has-text('preguntar')")
 
-    # asking about tanks surfaces the factory you must build first, as a one-click suggestion.
-    expect(page.locator("#advsugs")).to_contain_text("Construir", timeout=10000)
+    # naming a mineral yields a one-click suggestion that builds THAT mine (not a stale one).
+    expect(page.locator("#advsugs")).to_contain_text("mina de silicon", timeout=10000)
     expect(page.locator("#advreply")).not_to_contain_text("te aconsejo según el grafo")
     _shot(page, shots / "11-advisor.png")
 

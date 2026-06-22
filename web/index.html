@@ -327,24 +327,35 @@ async function loadFeed(){
 }
 async function doResearch(k){ try{ await api("/api/v1/research","POST",{tech_key:k}); msg("Investigando "+k); refresh(); }catch(e){ msg(e.message,false);} }
 // personal AI assistant (advice + capped "hack")
+function gameName(key){ if(spec.build[key])return spec.build[key].name; if(spec.unit[key])return spec.unit[key].name;
+  const t=(catalog.technologies||[]).find(x=>x.key===key); if(t)return t.name; return mineralName(key); }
 async function askAdvisor(){
   const m=$("advmsg").value.trim(); if(!m) return;
   try{ const r=await api("/api/v1/players/me/advisor/ask","POST",{message:m});
     $("advreply").textContent=r.reply;
-    const sugs=(r.suggestions||[]).map(s=>
-      `<button class="sm" onclick='doSuggestion(${esc(JSON.stringify(s))})'>${esc(s.label||s.action)}</button>`);
-    const hacks=r.hacks_left;
-    const hackBtns=(r.hack_available?(r.blockers||[]).map(b=>b.target):[]).map(t=>
-      `<button class="sec sm" onclick="hackFor('${esc(t)}')">🔓 hackear ${esc(t)} (${hacks}/3)</button>`);
-    $("advsugs").innerHTML=[...sugs,...hackBtns].join(" ");
+    let html="";
+    if((r.suggestions||[]).length){
+      html+=`<div class="muted" style="margin-top:6px">Acciones (gastan tus recursos):</div><div class="row">`+
+        r.suggestions.map(s=>`<button class="sm" onclick='doSuggestion(${esc(JSON.stringify(s))})'>${esc(s.label||s.action)}</button>`).join(" ")+`</div>`;
+    }
+    if(r.hack_available){
+      const targets=[...new Set((r.blockers||[]).map(b=>b.target))];
+      html+=`<div class="muted" style="margin-top:8px">🔓 Hack (${r.hacks_left}/3 hoy) — te <b>regala</b> el material/energía que falta; no construye, después tocá una acción:</div><div class="row">`+
+        targets.map(t=>`<button class="sec sm" onclick="hackFor('${esc(t)}')">conseguir lo que falta para ${esc(gameName(t))}</button>`).join(" ")+`</div>`;
+    }
+    $("advsugs").innerHTML=html;
   }catch(e){ msg(e.message,false); }
 }
 async function doSuggestion(s){
   try{
-    if(s.action==="build"){ const b={building_key:s.params.building}; if(s.params.mineral)b.target_mineral=s.params.mineral;
-      await api(`/api/v1/bases/${baseId()}/build`,"POST",b); msg("Construyendo "+s.params.building); }
-    else if(s.action==="train"){ await api(`/api/v1/bases/${baseId()}/train`,"POST",{unit_key:s.params.unit,quantity:s.params.quantity||1}); msg("Entrenando "+s.params.unit); }
-    else if(s.action==="research"){ await api("/api/v1/research","POST",{tech_key:s.params.tech}); msg("Investigando "+s.params.tech); }
+    if(s.action==="build"){ const b={building_key:s.params.building};
+      // sync the build form so what you see matches what gets built (no stale mineral)
+      if($("building")){ $("building").value=s.params.building; renderCost(); }
+      if(s.params.mineral){ b.target_mineral=s.params.mineral; if($("mineral"))$("mineral").value=s.params.mineral; }
+      await api(`/api/v1/bases/${baseId()}/build`,"POST",b);
+      msg("Construyendo "+gameName(s.params.building)+(s.params.mineral?` (${gameName(s.params.mineral)})`:"")); }
+    else if(s.action==="train"){ await api(`/api/v1/bases/${baseId()}/train`,"POST",{unit_key:s.params.unit,quantity:s.params.quantity||1}); msg("Entrenando "+gameName(s.params.unit)); }
+    else if(s.action==="research"){ await api("/api/v1/research","POST",{tech_key:s.params.tech}); msg("Investigando "+gameName(s.params.tech)); }
     refresh();
   }catch(e){ msg(e.message,false); }
 }

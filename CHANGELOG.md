@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — Asistente: claridad hack vs. acción + mina del mineral nombrado
+- **Bug**: pedir "mina de silicio" no daba una sugerencia con el mineral, así que se construía
+  con el mineral viejo del dropdown (p.ej. hierro). Ahora el asistente detecta el mineral
+  nombrado (ES/EN) y ofrece **"Construir mina de <silicio>"** que lleva `target_mineral`; al
+  tocarla, el form de build se **sincroniza** (edificio+mineral) para que lo que ves sea lo que
+  se construye.
+- **UX**: la card separa **Acciones** (gastan recursos) del **Hack** (te *regala* el material/
+  energía que falta; no construye), con texto explicativo y nombres legibles — antes parecían dos
+  menús sueltos y no se entendía que el hack te da el material.
+- Test de servicio `test_ask_named_mineral_suggests_that_mine` + browser actualizado.
+
 ### 2026-06-22 — SDD 2 implementado: asistente AI personal + hack (full-API)
 - **`app/services/advisor.py`**: consejero por jugador que se apoya en el grafo (SDD 1) y en la
   **misma LLM agnóstica que las NPC** (con **fallback determinista** a los blockers si no hay

@@ -115,7 +115,15 @@ def _suggestion_for_target(target: str) -> Suggestion | None:
     return None
 
 
-def _suggestions(reports: list[BlockerReport], snap: depgraph.PlayerSnapshot) -> list[Suggestion]:
+def _mentioned_minerals(message: str) -> list[str]:
+    """Mineral keys the player named (ES/EN), e.g. 'mina de silicio' -> ['silicon']."""
+    toks = set(depgraph._tokens(message))
+    return [k for k in get_content().minerals if k in toks]
+
+
+def _suggestions(
+    reports: list[BlockerReport], snap: depgraph.PlayerSnapshot, message: str = ""
+) -> list[Suggestion]:
     out: list[Suggestion] = []
     seen: set[str] = set()
 
@@ -126,6 +134,14 @@ def _suggestions(reports: list[BlockerReport], snap: depgraph.PlayerSnapshot) ->
         if key not in seen:
             seen.add(key)
             out.append(s)
+
+    # explicit mineral intent: "quiero una mina de silicio" -> a mine of THAT mineral, so the
+    # one-click build carries the right mineral instead of inheriting the UI selector.
+    for mineral in _mentioned_minerals(message):
+        if mineral in snap.mines or not depgraph.mineral_is_local(snap.planet_key, mineral):
+            continue
+        add(Suggestion(action="build", label=f"Construir mina de {mineral}",
+                       params={"building": "mine", "mineral": mineral}))
 
     for rep in reports:
         if rep.buildable:
@@ -196,7 +212,7 @@ async def ask(session: AsyncSession, player: Player, message: str) -> AdvisorRep
     reports = [depgraph.analyze(snap, t) for t in targets]
 
     reply_text = await _llm_or_fallback(session, player, message, snap, hits, reports)
-    suggestions = _suggestions(reports, snap)
+    suggestions = _suggestions(reports, snap, message)
     left = hacks_left(player)
     hackable = ("mineral", "not_producible", "energy")
     can_hack = left > 0 and any(
