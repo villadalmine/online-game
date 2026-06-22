@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 5 (diseño): bot de Telegram
+- Diseño del bot como **cliente delgado** sobre `/api/v1`: long-poll con `httpx` (sin deps
+  nuevas), opt-in por `TELEGRAM_BOT_TOKEN`, comandos `/login /me /build /train /attack /research`,
+  push de notificaciones, tests con transporte mockeado. [docs/sdd-telegram-bot.md](docs/sdd-telegram-bot.md).
+- **Implementación bloqueada** hasta tener un token real (verificación end-to-end). Solo diseño.
+
 ### 2026-06-22 — SDD 4: i18n del juego (ES/EN)
 - **Contenido data-driven bilingüe**: cada item de `content/*.yaml` suma `name_en`/
   `description_en`/`real_en` (ES sigue siendo el default; si falta el `_en`, cae al ES).

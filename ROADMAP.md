@@ -61,7 +61,9 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    [SDD](docs/sdd-web-panels.md) + test de navegador. *(Follow-up: columnas redimensionables /
    reordenar por drag-and-drop — requiere su propio SDD.)*
 4. **Bot de Telegram** — otro cliente sobre la misma API (jugar y recibir notificaciones desde
-   Telegram). Cierra la premisa multi-cliente.
+   Telegram). Cierra la premisa multi-cliente. 📝 **[SDD listo](docs/sdd-telegram-bot.md)** (sin
+   deps: long-poll con `httpx`, opt-in por token). ⛔ **Implementación bloqueada**: necesita un
+   `TELEGRAM_BOT_TOKEN` real (de @BotFather) para verificar el smoke end-to-end.
 5. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
 
 (✅ NPCs LLM mejorados: proveedor agnóstico OpenAI-compatible en app + Helm — OpenRouter/
