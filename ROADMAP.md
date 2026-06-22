@@ -77,6 +77,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   por shard (gameplay + escala); tick e interacciones por instancia.
 - 📝 **[SDD 9 — LLM local en GPU](docs/sdd-local-gpu-llm.md)**: Ollama/LiteLLM en P4/Quadro,
   concurrencia serial + fallback, qué modelo local usar para NPCs y asistente.
+- 📝 **[SDD 10 — Durabilidad / backup / restore](docs/sdd-durability-backup-restore.md)**: 🔴 el
+  Postgres del chart **no tiene PVC** (pod muere = pérdida total) → fix con StatefulSet+PVC o
+  operador/managed; backups offsite (`pg_dump`/PITR) + runbook de restore probado. La app ya es
+  crash-safe (stateless + estado lazy + transacciones atómicas).
 
 (✅ NPCs LLM mejorados: proveedor agnóstico OpenAI-compatible en app + Helm — OpenRouter/
 LiteLLM/Ollama/vLLM —, JSON mode, few-shot, taunts in-character y rivalidad coordinada

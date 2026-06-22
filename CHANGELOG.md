@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 10 (diseño): durabilidad, backup y restore
+- **[SDD 10](docs/sdd-durability-backup-restore.md)**: cómo no perder datos si un pod muere.
+  🔴 **Hallazgo bloqueante**: el Postgres del chart (`datastores.yaml`) corre como `Deployment`
+  **sin PVC** → si el pod se reprograma, **se pierde toda la base**. Fix: `StatefulSet`+PVC (o
+  `postgres.enabled=false` + Postgres gestionado/operador con PITR). Backups offsite cifrados
+  (`pg_dump` CronJob + retención, o WAL/PITR) y **runbook de restore probado** (RPO/RTO).
+- Aclarado por qué la **app ya es crash-safe**: API stateless + estado lazy por timestamp
+  (se reconstruye al leer) + transacciones atómicas + Redis como cache reconstruible. La
+  durabilidad depende solo de Postgres. Solo diseño.
+
 ### 2026-06-22 — SDD 7/8/9 (diseño): escalado, límites de galaxia y LLM local en GPU
 - **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: metodología para
   estimar CCU, HPA + resource requests + PgBouncer; identifica los cuellos reales (el `run_tick`
