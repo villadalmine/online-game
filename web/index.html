@@ -91,6 +91,7 @@
     <span id="unread" class="pill hidden"></span>
     <span id="dbpill" class="pill" title="Base de datos en uso"></span>
     <span id="live" class="muted hidden">○</span>
+    <button class="sec sm" id="langtoggle" onclick="toggleLang()" title="Idioma / Language">🌐 ES</button>
     <button class="sec sm hidden" id="collapseall" onclick="collapseAllPanels(true)" title="Plegar todos los paneles">⊟</button>
     <button class="sec sm hidden" id="expandall" onclick="collapseAllPanels(false)" title="Expandir todos los paneles">⊞</button>
     <button class="sec sm" id="sound" onclick="toggleSound()" title="Sonido de eventos">🔊</button>
@@ -132,24 +133,24 @@
     <div class="card" data-panel="acciones">
       <h2>Acciones</h2>
       <div class="row">
-        <button onclick="build()">🏗 Construir</button>
+        <button onclick="build()" data-i18n="build">🏗 Construir</button>
         <select id="building" onchange="renderCost()"></select>
         <select id="mineral" class="hidden"></select>
       </div>
       <div id="buildcost" class="muted"></div>
       <div class="row">
-        <button onclick="train()">👷 Entrenar</button>
+        <button onclick="train()" data-i18n="train">👷 Entrenar</button>
         <select id="unit" onchange="renderTrainCost()"></select>
         <input id="qty" type="number" value="3" min="1" style="width:56px" oninput="renderTrainCost()" />
       </div>
       <div id="traincost" class="muted"></div>
       <div class="row">
-        <button class="sec" onclick="expedition()">🌙 Expedición</button>
+        <button class="sec" onclick="expedition()" data-i18n="expedition">🌙 Expedición</button>
         <select id="moon" onchange="renderExpInfo()"></select>
       </div>
       <div id="expinfo" class="muted"></div>
       <div class="row">
-        <button class="sec" onclick="refresh()" title="Relee tu estado del servidor (como F5, pero sin recargar la página). Igual pasa solo cada 4s.">↻ Refrescar</button>
+        <button class="sec" onclick="refresh()" data-i18n="refresh" title="Relee tu estado del servidor (como F5, pero sin recargar la página). Igual pasa solo cada 4s.">↻ Refrescar</button>
       </div>
       <p id="msg" class="muted"></p>
       <p class="muted">El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.</p>
@@ -160,7 +161,7 @@
       <div class="row">
         base <input id="tbase" type="number" placeholder="id" style="width:64px" />
         <input id="force" placeholder="tank:5,soldier:10" style="flex:1" />
-        <button class="danger" onclick="attack()">Lanzar flota</button>
+        <button class="danger" onclick="attack()" data-i18n="attack">Lanzar flota</button>
       </div>
       <p class="muted">Tip: tocá una base enemiga en el mapa para elegir objetivo.</p>
     </div>
@@ -208,7 +209,7 @@
     <div class="card" data-panel="colas"><h2>Colas y flotas</h2><div id="queues"></div></div>
     <div class="card" data-panel="ranking">
       <h2>🏆 Ranking</h2>
-      <div class="row"><button class="sec sm" onclick="loadRanking()">cargar ranking</button></div>
+      <div class="row"><button class="sec sm" onclick="loadRanking()" data-i18n="loadranking">cargar ranking</button></div>
       <table id="ranking"></table>
     </div>
   </div>
@@ -217,7 +218,7 @@
   <div>
     <div class="card" data-panel="notis">
       <h2>🔔 Notificaciones</h2>
-      <div class="row"><button class="sec sm" onclick="markRead()">marcar leídas</button>
+      <div class="row"><button class="sec sm" onclick="markRead()" data-i18n="markread">marcar leídas</button>
         <span id="streamstate" class="muted">—</span></div>
       <div id="feed"></div>
     </div>
@@ -229,16 +230,16 @@
 
     <div class="card" data-panel="asistente">
       <h2>🧠 Asistente AI</h2>
-      <div class="row"><input id="advmsg" placeholder="¿qué construyo? me falta algo…"
+      <div class="row"><input id="advmsg" placeholder="¿qué construyo? me falta algo…" data-i18n-ph="advmsg"
         onkeydown="if(event.key==='Enter')askAdvisor()">
-        <button class="sm" onclick="askAdvisor()">preguntar</button></div>
+        <button class="sm" onclick="askAdvisor()" data-i18n="ask">preguntar</button></div>
       <div id="advreply" class="muted" style="white-space:pre-line;margin:6px 0">Preguntá y te aconsejo según el grafo del juego.</div>
       <div id="advsugs" class="row"></div>
     </div>
 
     <div class="card" data-panel="guia">
       <h2>📖 Guía — ¿qué es cada cosa?</h2>
-      <div class="row"><button class="sec sm" onclick="toggleGuide()">mostrar / ocultar</button></div>
+      <div class="row"><button class="sec sm" onclick="toggleGuide()" data-i18n="guidetoggle">mostrar / ocultar</button></div>
       <div id="guide" class="hidden"></div>
     </div>
   </div>
@@ -252,6 +253,7 @@
 <script>
 const API="";
 let token=localStorage.getItem("token")||"";
+let lang=localStorage.getItem("lang")||"es";
 let catalog=null, es=null, state=null, players=[], alliances=[];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -278,7 +280,7 @@ function logout(){ token=""; localStorage.removeItem("token"); if(es)es.close();
 const spec={ build:{}, unit:{}, moon:{} };
 function fill(id,pairs){ $(id).innerHTML=pairs.map(([v,t])=>`<option value="${v}">${esc(t)}</option>`).join(""); }
 async function loadCatalog(){
-  catalog=await api("/api/v1/catalog");
+  catalog=await api("/api/v1/catalog?lang="+lang);
   catalog.buildings.forEach(b=>spec.build[b.key]=b);
   [...catalog.personnel,...catalog.heavy_units].forEach(u=>spec.unit[u.key]=u);
   catalog.moons.forEach(m=>spec.moon[m.key]=m);
@@ -384,6 +386,23 @@ function collapseAllPanels(collapse){ const set=new Set();
   document.querySelectorAll('.card[data-panel]').forEach(c=>{ c.classList.toggle('collapsed',collapse); if(collapse)set.add(c.dataset.panel); });
   savePanels(set); }
 document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-panel] > h2'); if(h) togglePanel(h.closest('.card')); });
+// i18n del chrome (ES/EN). El contenido del juego (nombres/descripciones) viene del catálogo ya
+// traducido; acá traducimos títulos de paneles y botones fijos. SDD docs/sdd-i18n.md
+const I18N={
+  es:{ panels:{acciones:"Acciones",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
+    ui:{build:"🏗 Construir",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking"},
+    ph:{advmsg:"¿qué construyo? me falta algo…"} },
+  en:{ panels:{acciones:"Actions",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
+    ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking"},
+    ph:{advmsg:"what should I build? I'm missing something…"} },
+};
+function applyI18n(){ const d=I18N[lang]||I18N.es;
+  document.querySelectorAll('.card[data-panel] > h2').forEach(h=>{ const t=d.panels[h.closest('.card').dataset.panel]; if(t)h.textContent=t; });
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ const t=d.ui[el.dataset.i18n]; if(t)el.textContent=t; });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const t=d.ph[el.dataset.i18nPh]; if(t)el.placeholder=t; });
+  $("langtoggle").textContent="🌐 "+lang.toUpperCase();
+}
+async function toggleLang(){ lang=(lang==="es")?"en":"es"; localStorage.setItem("lang",lang); applyI18n(); if(token){ await loadCatalog(); await refresh(); } }
 function renderGuide(){
   if(!catalog) return;
   const mechanics = [
@@ -662,7 +681,7 @@ function startStream(){
 
 async function showDb(){ try{ const h=await (await fetch(API+"/health")).json(); $("dbpill").textContent="🗄 "+h.db; }catch{} }
 async function boot(){
-  showDb(); $("sound").textContent=soundOn?"🔊":"🔇";
+  showDb(); $("sound").textContent=soundOn?"🔊":"🔇"; applyI18n();
   const authed=!!token;
   if(!authed){ $("u").value=localStorage.getItem("lastuser")||""; }
   $("auth").classList.toggle("hidden",authed);

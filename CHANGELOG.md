@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 4: i18n del juego (ES/EN)
+- **Contenido data-driven bilingüe**: cada item de `content/*.yaml` suma `name_en`/
+  `description_en`/`real_en` (ES sigue siendo el default; si falta el `_en`, cae al ES).
+  `personality`/`taunts` de las NPC quedan en su idioma (son model-facing, no UI).
+- **API**: `GET /catalog?lang=en|es` (gana sobre `Accept-Language`; default `es`); cache Redis
+  **por idioma** (`catalog:v1:<lang>`). Helpers puros `localize`/`localize_catalog`/`normalize_lang`
+  en el registry. Planetas anidados en `galaxies` también se localizan; las claves `*_en` se quitan
+  de la respuesta.
+- **Web**: toggle **🌐 ES/EN** (persistido en `localStorage`) que recarga el catálogo en el idioma
+  y traduce el chrome (títulos de panel vía `data-panel`, botones vía `data-i18n`, placeholder del
+  asistente). Cobertura parcial del chrome (resto de textos fijos = follow-up).
+- Tests: `tests/test_i18n.py` (unit) + e2e `test_catalog_i18n` + browser `test_language_toggle_en_es`.
+  Diseño en [docs/sdd-i18n.md](docs/sdd-i18n.md). Sin migraciones ni deps.
+
 ### 2026-06-22 — SDD 3: paneles de la web colapsables (front-only)
 - Cada card tiene un `data-panel` estable; un clic en su título lo **pliega a la cabecera**
   (`.collapsed` oculta todo menos el `h2` por CSS, sin reestructurar el HTML). Caret ▾/▸.

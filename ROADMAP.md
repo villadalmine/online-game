@@ -52,11 +52,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    - ✅ **SDD 2 hecho**: `advisor.py` + `llm.py` (transporte LLM compartido), endpoints
      `/players/me/advisor/{ask,hack,messages}`, modelo `AdvisorMessage`, hack 3/día (reset lazy),
      card "🧠 Asistente AI" en la web. Con tests servicio + e2e + browser.
-2. **i18n del juego (ES/EN)** — que **el juego** soporte español e inglés (contenido visible:
-   nombres/descripciones de `content/*.yaml`, textos de la API y del cliente web). *No* aplica a
-   docs ni a los SDDs. Idea: campos `name`/`description` localizables (`name_en`/`name_es` o
-   `i18n:` por clave) + `Accept-Language` / preferencia del jugador; el front elige idioma.
-   *(Pendiente de SDD antes de codear.)*
+2. ✅ **i18n del juego (ES/EN)** — contenido de `content/*.yaml` con `*_en` (ES default),
+   `GET /catalog?lang=` + `Accept-Language`, toggle 🌐 en la web (persistido) que traduce
+   contenido + chrome. [SDD](docs/sdd-i18n.md) + tests unit/e2e/browser. *(Follow-up: texto
+   dinámico del server —notis/combate/asistente— y resto del chrome fijo.)*
 3. ✅ **Paneles de la web colapsables** — cada card se pliega a su título (clic en la cabecera),
    estado persistido en `localStorage`, botones plegar/expandir todo. Front-only.
    [SDD](docs/sdd-web-panels.md) + test de navegador. *(Follow-up: columnas redimensionables /

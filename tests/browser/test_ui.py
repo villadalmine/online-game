@@ -224,6 +224,38 @@ def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
     expect(page.locator("#ally-list")).to_contain_text("NPC (no unible)", timeout=15000)
 
 
+def test_language_toggle_en_es(page: Page, live_server, shots):
+    """🌐 toggles the game between ES and EN: panel titles + catalog content; persists."""
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(live_server + "/")
+    user = "ui_" + uuid.uuid4().hex[:6]
+    page.locator("#u").fill(user)
+    page.locator("#p").fill("secret123")
+    page.click("button:has-text('Registrar')")
+    page.select_option("#planet", "earth")
+    page.select_option("#race", "terran")
+    page.click("button:has-text('Comenzar')")
+    expect(page.locator("#game")).to_be_visible()
+
+    # starts in Spanish
+    expect(page.locator(".card[data-panel='mundo'] > h2")).to_have_text("🌍 Eventos del mundo")
+
+    page.click("#langtoggle")  # -> EN
+    expect(page.locator("#langtoggle")).to_have_text("🌐 EN")
+    expect(page.locator(".card[data-panel='mundo'] > h2")).to_have_text("🌍 World events")
+    # catalog content switched too: the build select now has English option labels
+    expect(page.locator("#building")).to_contain_text("Mine")
+    _shot(page, shots / "13-lang-en.png")
+
+    page.reload()  # persists across reload
+    expect(page.locator("#game")).to_be_visible()
+    expect(page.locator("#langtoggle")).to_have_text("🌐 EN")
+    expect(page.locator(".card[data-panel='mundo'] > h2")).to_have_text("🌍 World events")
+
+    page.click("#langtoggle")  # back to ES
+    expect(page.locator(".card[data-panel='mundo'] > h2")).to_have_text("🌍 Eventos del mundo")
+
+
 def test_panels_collapse_persist_and_expand(page: Page, live_server, shots):
     """Clicking a panel title folds it to the header; the state survives a reload."""
     page.set_viewport_size({"width": 1280, "height": 900})

@@ -1,12 +1,16 @@
 # Galaxies -> planets -> per-mineral abundance.
 # abundance is a base production multiplier for a mine of that mineral on that planet.
+# i18n: `name`/`description` are ES; `*_en` add English (SDD 4).
 galaxies:
   - key: milky_way
     name: "Via Lactea"
+    name_en: "Milky Way"
     planets:
       - key: earth
         name: "Tierra"
+        name_en: "Earth"
         description: "Mundo equilibrado, rico en hierro y aluminio."
+        description_en: "Balanced world, rich in iron and aluminum."
         abundance:
           iron: 1.4
           silicon: 1.3
@@ -18,7 +22,9 @@ galaxies:
         moons: [luna]
       - key: mars
         name: "Marte"
+        name_en: "Mars"
         description: "Mundo de oxido de hierro y azufre, duro y militarista."
+        description_en: "World of iron oxide and sulfur, harsh and militaristic."
         abundance:
           iron: 1.5
           silicon: 1.0
@@ -30,7 +36,9 @@ galaxies:
         moons: [phobos, deimos]
       - key: venus
         name: "Venus"
+        name_en: "Venus"
         description: "Mundo volcanico de basalto y azufre, alta tecnologia."
+        description_en: "Volcanic world of basalt and sulfur, high technology."
         abundance:
           iron: 1.0
           silicon: 1.1
@@ -42,7 +50,9 @@ galaxies:
         moons: [zoozve]
       - key: mercury
         name: "Mercurio"
+        name_en: "Mercury"
         description: "Mundo abrasador, denso en hierro y silicio; sin lunas."
+        description_en: "Scorching world, dense in iron and silicon; no moons."
         abundance:
           iron: 1.6
           silicon: 1.4
@@ -54,10 +64,13 @@ galaxies:
         moons: []
   - key: andromeda
     name: "Andromeda"
+    name_en: "Andromeda"
     planets:
       - key: vega_prime
         name: "Vega Prime"
+        name_en: "Vega Prime"
         description: "Mundo oceanico rico en titanio y aluminio."
+        description_en: "Oceanic world rich in titanium and aluminum."
         abundance:
           iron: 0.9
           silicon: 1.2
@@ -69,7 +82,9 @@ galaxies:
         moons: []
       - key: nyx
         name: "Nyx"
+        name_en: "Nyx"
         description: "Mundo sombrio y volcanico, abundante en azufre y basalto."
+        description_en: "Dark volcanic world, abundant in sulfur and basalt."
         abundance:
           iron: 1.1
           silicon: 0.9

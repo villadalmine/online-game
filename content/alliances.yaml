@@ -5,18 +5,25 @@
 #   shared_vision    -> ves los ataques entrantes sobre cualquier aliado
 #   trade            -> transferir minerales entre aliados
 #   shared_unit_tech -> tus unidades ganan el "perk" de TODAS las razas de la alianza
+# i18n: `name`/`description` son ES; `*_en` agregan inglés (SDD 4).
 types:
   - key: nonaggression
     name: "Pacto de No-Agresion"
+    name_en: "Non-Aggression Pact"
     description: "Solo dejan de atacarse entre si."
+    description_en: "Members simply stop attacking each other."
     benefits: []
   - key: defensive
     name: "Pacto Defensivo"
+    name_en: "Defensive Pact"
     description: "No-agresion + defensa mutua + vision compartida."
+    description_en: "Non-aggression + mutual defense + shared vision."
     benefits: [mutual_defense, shared_vision]
   - key: full
     name: "Alianza Plena"
+    name_en: "Full Alliance"
     description: "Todos los beneficios: bonus, defensa mutua, vision, comercio y tech de unidades."
+    description_en: "All benefits: bonus, mutual defense, vision, trade and unit tech."
     benefits: [shared_bonus, mutual_defense, shared_vision, trade, shared_unit_tech]
     shared_bonus:
       production: 1.10

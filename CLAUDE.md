@@ -30,6 +30,9 @@ make help             # lista todos los targets
 - **Data-driven**: el contenido del juego está en `content/*.yaml` (minerales, planetas,
   razas, edificios, unidades, dioses/lunas, tecnologías, tipos de alianza). Rebalancear o
   extender = editar YAML, no código.
+- **i18n del contenido**: `name`/`description`/`real` son ES (default); agregá `name_en`/
+  `description_en`/`real_en` para inglés (cae al ES si falta). El catálogo se localiza con
+  `GET /catalog?lang=` (`registry.localize*`). Agregar un idioma = editar YAML.
 - **Extender, no romper**: cambios aditivos; API versionada.
 - **Regla del proyecto: toda feature entra con su test e2e** en `tests/test_api_e2e.py`
   (happy path + al menos un caso de error), además de tests de servicio.

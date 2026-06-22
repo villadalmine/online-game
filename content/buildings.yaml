@@ -1,18 +1,23 @@
 # Buildings. Costs are expressed in resource ROLES (resolved per-race) plus
 # a flat energy cost and a build time. category=mine buildings produce a mineral.
+# i18n: `name`/`description` are ES; `*_en` add English (SDD 4).
 buildings:
   - key: headquarters
     name: "Base central"
+    name_en: "Headquarters"
     category: core
     description: "Centro de mando. Punto de partida de cada jugador."
+    description_en: "Command center. Each player's starting point."
     energy_cost: 0
     build_seconds: 0
     cost:
       structural: 0
   - key: mine
     name: "Mina"
+    name_en: "Mine"
     category: mine
     description: "Extrae un mineral del planeta. Produccion lazy por timestamp."
+    description_en: "Extracts a mineral from the planet. Lazy production by timestamp."
     energy_cost: 10
     build_seconds: 60
     base_output_per_hour: 60   # multiplied by planet abundance for the target mineral
@@ -21,8 +26,10 @@ buildings:
       energetic: 40
   - key: power_plant
     name: "Planta de energia"
+    name_en: "Power plant"
     category: energy
     description: "Aumenta el tope/regen de energia."
+    description_en: "Raises the energy cap/regen."
     energy_cost: 15
     build_seconds: 120
     cost:
@@ -30,8 +37,10 @@ buildings:
       energetic: 80
   - key: barracks
     name: "Cuartel"
+    name_en: "Barracks"
     category: military
     description: "Entrena unidades militares."
+    description_en: "Trains military units."
     energy_cost: 20
     build_seconds: 180
     cost:
@@ -40,8 +49,10 @@ buildings:
       advanced: 30
   - key: factory
     name: "Taller / Fabrica"
+    name_en: "Factory / Workshop"
     category: heavy
     description: "Produce unidades pesadas (tanques, barcos, aviones)."
+    description_en: "Produces heavy units (tanks, ships, aircraft)."
     energy_cost: 25
     build_seconds: 240
     cost:
@@ -50,8 +61,10 @@ buildings:
       advanced: 60
   - key: research_lab
     name: "Laboratorio"
+    name_en: "Research lab"
     category: science
     description: "Habilita investigacion y cientificos."
+    description_en: "Enables research and scientists."
     energy_cost: 20
     build_seconds: 200
     cost:
@@ -60,8 +73,10 @@ buildings:
       advanced: 80
   - key: turret
     name: "Torreta defensiva"
+    name_en: "Defensive turret"
     category: defense
     description: "Defiende la base: suma poder defensivo fijo en combate (sin unidades)."
+    description_en: "Defends the base: adds fixed defensive power in combat (no units)."
     energy_cost: 18
     build_seconds: 150
     defense_power: 40   # se suma a la defensa de la base al resolver un ataque

@@ -2,9 +2,11 @@
 # expedition: costo/tiempo/requisito. grants: recursos entregados al volver.
 # boon: buff temporal que se aplica en los sistemas existentes
 #   (effect: production | attack | defense). magnitude multiplica; duration en segundos.
+# i18n: `name` es ES; `name_en` agrega inglés. `god` es nombre propio (no se traduce).
 moons:
   - key: luna
     name: "Luna"
+    name_en: "The Moon"
     planet: earth
     god: "Selene"
     expedition:
@@ -20,6 +22,7 @@ moons:
       duration_seconds: 3600
   - key: phobos
     name: "Fobos"
+    name_en: "Phobos"
     planet: mars
     god: "Fobos"
     expedition:
@@ -34,6 +37,7 @@ moons:
       duration_seconds: 3600
   - key: deimos
     name: "Deimos"
+    name_en: "Deimos"
     planet: mars
     god: "Deimos"
     expedition:
@@ -48,6 +52,7 @@ moons:
       duration_seconds: 3600
   - key: zoozve
     name: "Zoozve (cuasi-luna 2002 VE68)"
+    name_en: "Zoozve (quasi-moon 2002 VE68)"
     planet: venus
     god: "Zoozve"
     expedition:

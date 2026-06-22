@@ -1,10 +1,13 @@
 # Units catalog. Costs use resource ROLES (resolved per-race), like buildings.
 # personnel = population roles; heavy = race-specific war machines.
 # requires = building (key) that must be ACTIVE in the base to train this unit.
+# i18n: `name`/`description` are ES; `*_en` add English (SDD 4).
 personnel:
   - key: worker
     name: "Trabajador"
+    name_en: "Worker"
     description: "Aumenta produccion y construccion."
+    description_en: "Boosts production and construction."
     requires: headquarters
     energy_cost: 2
     train_seconds: 30
@@ -12,7 +15,9 @@ personnel:
     stats: { attack: 0, defense: 1, hp: 5 }
   - key: soldier
     name: "Militar"
+    name_en: "Soldier"
     description: "Unidad de combate basica."
+    description_en: "Basic combat unit."
     requires: barracks
     energy_cost: 3
     train_seconds: 45
@@ -20,7 +25,9 @@ personnel:
     stats: { attack: 8, defense: 5, hp: 12 }
   - key: scientist
     name: "Cientifico"
+    name_en: "Scientist"
     description: "Acelera investigacion."
+    description_en: "Speeds up research."
     requires: research_lab
     energy_cost: 3
     train_seconds: 45
@@ -30,6 +37,7 @@ personnel:
 heavy:
   - key: tank
     name: "Tanque"
+    name_en: "Tank"
     requires: factory
     energy_cost: 8
     train_seconds: 120
@@ -37,6 +45,7 @@ heavy:
     stats: { attack: 30, defense: 25, hp: 60 }
   - key: ship
     name: "Barco"
+    name_en: "Ship"
     requires: factory
     energy_cost: 9
     train_seconds: 140
@@ -44,6 +53,7 @@ heavy:
     stats: { attack: 25, defense: 30, hp: 80 }
   - key: aircraft
     name: "Avion"
+    name_en: "Aircraft"
     requires: factory
     energy_cost: 10
     train_seconds: 150
@@ -51,6 +61,7 @@ heavy:
     stats: { attack: 40, defense: 15, hp: 40 }
   - key: shuttle
     name: "Transbordador espacial"
+    name_en: "Space shuttle"
     requires: factory
     energy_cost: 15
     train_seconds: 240

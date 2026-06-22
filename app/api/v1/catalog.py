@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from redis.asyncio import Redis
 
-from app.content.registry import get_content
+from app.content.registry import get_content, localize_catalog, normalize_lang
 from app.core.config import get_settings
 from app.core.redis import cached_json, get_redis
 from app.services import depgraph
@@ -34,11 +34,19 @@ def build_catalog() -> dict:
 
 
 @router.get("")
-async def catalog(redis: Redis | None = Depends(get_redis)):
+async def catalog(
+    lang: str | None = None,
+    accept_language: str | None = Header(default=None),
+    redis: Redis | None = Depends(get_redis),
+):
     """Full data-driven catalog so any client can render the game without hardcoding.
 
-    Static per deploy → cached in Redis when available (TTL configurable)."""
-    return await cached_json(redis, "catalog:v1", get_settings().catalog_cache_ttl, build_catalog)
+    Localized by `?lang=` (wins) or `Accept-Language`, default `es`. Cached per language."""
+    chosen = normalize_lang(lang or accept_language)
+    return await cached_json(
+        redis, f"catalog:v1:{chosen}", get_settings().catalog_cache_ttl,
+        lambda: localize_catalog(build_catalog(), chosen),
+    )
 
 
 @router.get("/graph")

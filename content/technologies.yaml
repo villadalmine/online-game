@@ -1,10 +1,13 @@
 # Tecnologías investigables. Requieren un laboratorio activo. Al completarse otorgan un
 # efecto permanente (multiplicador) que se aplica en los sistemas existentes:
 #   effect: production | attack | defense  (apila sobre bonus de raza y boons de dioses)
+# i18n: `name`/`description` son ES; `*_en` agregan inglés (SDD 4).
 technologies:
   - key: mining_efficiency
     name: "Mineria mejorada"
+    name_en: "Improved mining"
     description: "+25% de produccion de minas."
+    description_en: "+25% mine production."
     requires: research_lab
     energy_cost: 20
     research_seconds: 300
@@ -13,7 +16,9 @@ technologies:
     magnitude: 1.25
   - key: deep_core_mining
     name: "Mineria de nucleo profundo"
+    name_en: "Deep core mining"
     description: "+25% de produccion adicional."
+    description_en: "+25% additional production."
     requires: research_lab
     energy_cost: 30
     research_seconds: 600
@@ -22,7 +27,9 @@ technologies:
     magnitude: 1.25
   - key: weapons
     name: "Armamento avanzado"
+    name_en: "Advanced weaponry"
     description: "+30% de ataque de tus flotas."
+    description_en: "+30% attack for your fleets."
     requires: research_lab
     energy_cost: 25
     research_seconds: 480
@@ -31,7 +38,9 @@ technologies:
     magnitude: 1.30
   - key: shields
     name: "Escudos planetarios"
+    name_en: "Planetary shields"
     description: "+30% de defensa de tus bases."
+    description_en: "+30% defense for your bases."
     requires: research_lab
     energy_cost: 25
     research_seconds: 480

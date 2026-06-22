@@ -92,3 +92,50 @@ class GameContent:
 @lru_cache
 def get_content() -> GameContent:
     return GameContent()
+
+
+# --------------------------------------------------------------------------- #
+# i18n: localize data-driven content (SDD 4). Base fields are ES (default); a
+# `<field>_en` sibling holds the English variant. Adding a language = editing YAML.
+# --------------------------------------------------------------------------- #
+SUPPORTED_LANGS = ("es", "en")
+LOCALIZED_FIELDS = ("name", "description", "real")
+
+
+def normalize_lang(lang: str | None) -> str:
+    """Map any input (incl. Accept-Language like 'en-US,en;q=0.9') to a supported lang."""
+    if not lang:
+        return "es"
+    head = lang.split(",")[0].strip().lower()[:2]
+    return head if head in SUPPORTED_LANGS else "es"
+
+
+def localize(obj: dict, lang: str) -> dict:
+    """Shallow copy of `obj` with localized fields swapped in; drops the `*_en` helper keys."""
+    out = {k: v for k, v in obj.items() if not k.endswith("_en")}
+    if lang == "en":
+        for field in LOCALIZED_FIELDS:
+            en = obj.get(f"{field}_en")
+            if en is not None:
+                out[field] = en
+    return out
+
+
+def localize_catalog(catalog: dict, lang: str) -> dict:
+    """Localize every item of every collection in a /catalog payload (planets included)."""
+    if lang == "es":
+        # still strip helper keys so the payload is clean/consistent across langs
+        pass
+    out: dict = {}
+    for coll, items in catalog.items():
+        if not isinstance(items, list):
+            out[coll] = items
+            continue
+        loc = []
+        for item in items:
+            li = localize(item, lang) if isinstance(item, dict) else item
+            if isinstance(li, dict) and isinstance(li.get("planets"), list):
+                li["planets"] = [localize(p, lang) for p in li["planets"]]
+            loc.append(li)
+        out[coll] = loc
+    return out

@@ -110,6 +110,27 @@ async def test_catalog(client):
     assert any(b["key"] == "mine" for b in body["buildings"])
 
 
+async def test_catalog_i18n(client):
+    def names(body):
+        return {b["key"]: b["name"] for b in body["buildings"]}
+
+    en = (await client.http.get("/api/v1/catalog?lang=en")).json()
+    assert names(en)["mine"] == "Mine"
+    assert "name_en" not in en["buildings"][0]  # helper keys stripped
+    # nested planets localized too
+    gx = {g["key"]: g for g in en["galaxies"]}
+    assert gx["milky_way"]["planets"][0]["name"] == "Earth"
+
+    es = (await client.http.get("/api/v1/catalog?lang=es")).json()
+    assert names(es)["mine"] == "Mina"
+    # invalid lang -> default español; no query also español
+    bad = (await client.http.get("/api/v1/catalog?lang=zz")).json()
+    assert names(bad)["mine"] == "Mina"
+    # Accept-Language honored when no ?lang
+    r = await client.http.get("/api/v1/catalog", headers={"Accept-Language": "en-US,en;q=0.9"})
+    assert names(r.json())["mine"] == "Mine"
+
+
 async def test_catalog_graph(client):
     r = await client.http.get("/api/v1/catalog/graph?race=martian&planet=mars")
     assert r.status_code == 200
@@ -841,8 +862,8 @@ async def test_catalog_cached_in_redis(client):
     try:
         r = await client.http.get("/api/v1/catalog")
         assert r.status_code == 200
-        # first call populated the cache
-        assert await fake.get("catalog:v1") is not None
+        # first call populated the cache (keyed per language; default es)
+        assert await fake.get("catalog:v1:es") is not None
     finally:
         app.dependency_overrides.pop(get_redis, None)
 
