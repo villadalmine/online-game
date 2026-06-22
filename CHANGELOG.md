@@ -7,6 +7,27 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — Fix web: "marcar leídas" ahora vacía el feed
+- El feed de 🔔 Notificaciones se renderiza desde la API (`GET /notifications?unread=true`) en
+  cada `refresh()`; antes era un log de solo-escritura que el stream SSE iba acumulando en el
+  DOM y **nunca se limpiaba**, así que "marcar leídas" bajaba el contador pero las notis seguían
+  visibles. Ahora muestra solo las no leídas y al marcarlas queda "sin notificaciones sin leer".
+- El backend ya marcaba bien (`POST /notifications/read` + filtro `unread`); el bug era de front.
+- Test de navegador `test_mark_read_clears_notifications_feed` (mockea el endpoint para ser
+  determinista). El contrato del backend sigue cubierto por `test_building_completion_notifies_and_mark_read`.
+
+### 2026-06-22 — Diseño: asistente AI personal + grafo de dependencias (SDDs)
+- **[SDD 1 — Grafo de dependencias](docs/sdd-dependency-graph.md)**: modelo data-driven
+  (minerales→minas→edificios→unidades→tecnologías→efectos) con consultas deterministas
+  (`prerequisites`, `mineral_sources`, `analyze`/blockers) y endpoint `GET /catalog/graph`. Es el
+  *skill*/grounding del asistente; razona sin LLM (fallback) y sin depender de Redis.
+- **[SDD 2 — Asistente AI personal](docs/sdd-ai-assistant.md)**: consejero por jugador que usa el
+  grafo + el **mismo LLM que las NPC** (agnóstico, con fallback) para decirte *qué te falta y
+  cómo conseguirlo* y sugerir acciones de un clic; incluye un **"hack" de emergencia** que otorga
+  el faltante mínimo, acotado a **3/día** (contador lazy en `Player`, sin cron/Redis).
+- ROADMAP actualizado: asistente AI + **i18n del juego (ES/EN)** (contenido/UI, no docs/SDDs).
+- Solo documentación de diseño (sin código todavía); la implementación entrará con sus tests e2e.
+
 ### 2026-06-21 — NPCs: estrategia (taunts + rivalidad + few-shot)
 - **Taunts in-character**: cuando una NPC ataca a un **humano** le manda una notificación con
   una frase de su raza (al despachar, y otra al ganar/perder). Data-driven: `taunts.{attack,

@@ -1,5 +1,6 @@
 """Browser e2e: drives the real web client in Chromium and saves screenshots so you
 can see how each screen looks. Run with `make test-ui`."""
+import re
 import uuid
 
 from playwright.sync_api import Page, expect
@@ -221,3 +222,49 @@ def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
 
     # AUTO_TICK spawns the NPC alliance; it must show up flagged as not joinable.
     expect(page.locator("#ally-list")).to_contain_text("NPC (no unible)", timeout=15000)
+
+
+def test_mark_read_clears_notifications_feed(page: Page, live_server, shots):
+    """Bug fix: 'marcar leídas' must empty the feed (it used to leave stale items).
+    The feed renders unread notifications from the API; mocking that endpoint keeps the
+    test deterministic (real notifications need slow in-game timers)."""
+    seen_read = {"done": False}
+
+    def handle_list(route):
+        body = (
+            "[]"
+            if seen_read["done"]
+            else '[{"id":1,"type":"battle","message":"NPC atacó tu base",'
+            '"data":{},"is_read":false,"created_at":"2026-06-22T10:00:00+00:00"}]'
+        )
+        route.fulfill(status=200, content_type="application/json", body=body)
+
+    def handle_read(route):
+        seen_read["done"] = True
+        route.fulfill(
+            status=200, content_type="application/json", body='{"marked_read":1}'
+        )
+
+    page.route(re.compile(r"/api/v1/notifications\?unread=true"), handle_list)
+    page.route(re.compile(r"/api/v1/notifications/read$"), handle_read)
+
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(live_server + "/")
+    user = "ui_" + uuid.uuid4().hex[:6]
+    page.locator("#u").fill(user)
+    page.locator("#p").fill("secret123")
+    page.click("button:has-text('Registrar')")
+    page.select_option("#planet", "earth")
+    page.select_option("#race", "terran")
+    page.click("button:has-text('Comenzar')")
+    expect(page.locator("#game")).to_be_visible()
+
+    # The unread notification shows up in the feed...
+    expect(page.locator("#feed")).to_contain_text("NPC atacó tu base", timeout=10000)
+    _shot(page, shots / "10-notifs-before.png")
+
+    # ...and 'marcar leídas' empties it (the regression).
+    page.click("button:has-text('marcar leídas')")
+    expect(page.locator("#feed")).to_contain_text("sin notificaciones sin leer")
+    expect(page.locator("#feed")).not_to_contain_text("NPC atacó tu base")
+    _shot(page, shots / "10-notifs-after.png")

@@ -40,9 +40,19 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
 
 ## 🔜 Próximo (mañana seguimos)
 
-1. **Bot de Telegram** — otro cliente sobre la misma API (jugar y recibir notificaciones desde
+1. **Asistente AI personal** — consejero por jugador que entiende el grafo de dependencias del
+   juego y te dice *qué te falta / cómo conseguirlo*, con un **"hack" de emergencia** (te
+   consigue el material faltante, máx **3/día**). Usa el mismo LLM que las NPC (agnóstico, con
+   fallback). Diseñado en dos SDDs:
+   [grafo de dependencias](docs/sdd-dependency-graph.md) +
+   [asistente](docs/sdd-ai-assistant.md).
+2. **i18n del juego (ES/EN)** — que **el juego** soporte español e inglés (contenido visible:
+   nombres/descripciones de `content/*.yaml`, textos de la API y del cliente web). *No* aplica a
+   docs ni a los SDDs. Idea: campos `name`/`description` localizables (`name_en`/`name_es` o
+   `i18n:` por clave) + `Accept-Language` / preferencia del jugador; el front elige idioma.
+3. **Bot de Telegram** — otro cliente sobre la misma API (jugar y recibir notificaciones desde
    Telegram). Cierra la premisa multi-cliente.
-2. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
+4. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
 
 (✅ NPCs LLM mejorados: proveedor agnóstico OpenAI-compatible en app + Helm — OpenRouter/
 LiteLLM/Ollama/vLLM —, JSON mode, few-shot, taunts in-character y rivalidad coordinada

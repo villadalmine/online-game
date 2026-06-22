@@ -308,7 +308,14 @@ async function attack(){ try{ const force={}; ($("force").value||"").split(",").
 async function expedition(){ try{ await api("/api/v1/expeditions","POST",{moon_key:$("moon").value}); msg("Expedición lanzada"); refresh(); }catch(e){ msg(e.message,false);} }
 async function recall(id){ try{ await api(`/api/v1/combat/missions/${id}/recall`,"POST"); msg("Flota retirándose"); refresh(); }catch(e){ msg(e.message,false);} }
 async function doTick(){ try{ const d=await api("/api/v1/admin/tick","POST"); msg("Tick: NPC jugaron"); refresh(); }catch(e){ msg(e.message,false);} }
-async function markRead(){ await api("/api/v1/notifications/read","POST",{}); refresh(); }
+async function markRead(){ await api("/api/v1/notifications/read","POST",{}); await loadFeed(); refresh(); }
+async function loadFeed(){
+  try{ const ns=await api("/api/v1/notifications?unread=true");
+    $("feed").innerHTML = ns.length ? ns.map(n=>
+      `<div class="note"><b>${esc(n.type)}</b> — ${esc(n.message)} <span class="muted">${new Date(n.created_at).toLocaleTimeString()}</span></div>`
+    ).join("") : '<span class="muted">sin notificaciones sin leer</span>';
+  }catch(e){}
+}
 async function doResearch(k){ try{ await api("/api/v1/research","POST",{tech_key:k}); msg("Investigando "+k); refresh(); }catch(e){ msg(e.message,false);} }
 async function allianceCreate(){ try{ await api("/api/v1/alliances","POST",{name:$("aname").value,tag:$("atag").value,type:$("atype").value}); msg("Alianza creada"); refresh(); }catch(e){ msg(e.message,false);} }
 async function allianceJoin(id){ try{ await api(`/api/v1/alliances/${id}/join`,"POST"); refresh(); }catch(e){ msg(e.message,false);} }
@@ -355,7 +362,7 @@ async function refresh(){
     b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
-  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld();
+  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed();
   renderCost(); renderTrainCost(); renderExpInfo();
 }
 function renderResearch(){
@@ -588,9 +595,7 @@ function startStream(){
   es=new EventSource(API+"/api/v1/notifications/stream?token="+encodeURIComponent(token)+"&interval=2");
   es.onopen=()=>{ $("streamstate").textContent="● en vivo"; $("live").textContent="●"; $("live").className="ok"; };
   es.onerror=()=>{ $("streamstate").textContent="○ reconectando…"; $("live").textContent="○"; $("live").className="muted"; };
-  es.onmessage=ev=>{ const n=JSON.parse(ev.data); playBeep(soundForType(n.type)); const d=document.createElement("div"); d.className="note";
-    d.innerHTML=`<b>${esc(n.type)}</b> — ${esc(n.message)} <span class="muted">${new Date(n.created_at).toLocaleTimeString()}</span>`;
-    $("feed").prepend(d); refresh(); };
+  es.onmessage=ev=>{ const n=JSON.parse(ev.data); playBeep(soundForType(n.type)); refresh(); };
 }
 
 async function showDb(){ try{ const h=await (await fetch(API+"/health")).json(); $("dbpill").textContent="🗄 "+h.db; }catch{} }
