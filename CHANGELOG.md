@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 6 (diseño): login para producción (email + código OTP)
+- Diseño del login passwordless por **email + código** para abrir al público, **adaptando el
+  patrón OTP de `bot-telegram`** (`src/otp.py`: CSPRNG, HMAC-SHA256 con salt, TTL, máx intentos,
+  compare constant-time, respuestas uniformes anti-enumeración) a **SQLAlchemy async** (modelo
+  `EmailOtp` + `Player.email`), con **mailer agnóstico sin deps nuevas** (console/SMTP stdlib/
+  Resend httpx) y rate-limit. Convive con el login username+password actual (no rompe).
+  [docs/sdd-auth-login.md](docs/sdd-auth-login.md). Solo diseño; la entrega real de email se
+  verifica en deploy.
+
 ### 2026-06-22 — SDD 5 (diseño): bot de Telegram
 - Diseño del bot como **cliente delgado** sobre `/api/v1`: long-poll con `httpx` (sin deps
   nuevas), opt-in por `TELEGRAM_BOT_TOKEN`, comandos `/login /me /build /train /attack /research`,

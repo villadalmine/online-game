@@ -64,7 +64,11 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    Telegram). Cierra la premisa multi-cliente. 📝 **[SDD listo](docs/sdd-telegram-bot.md)** (sin
    deps: long-poll con `httpx`, opt-in por token). ⛔ **Implementación bloqueada**: necesita un
    `TELEGRAM_BOT_TOKEN` real (de @BotFather) para verificar el smoke end-to-end.
-5. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
+5. **Login para producción (email + código OTP)** — antes de publicar: login passwordless por
+   email + código, adaptando el patrón OTP de `bot-telegram` (CSPRNG, HMAC, TTL, intentos,
+   anti-enumeración) a SQLAlchemy async, mailer agnóstico sin deps (console/SMTP/Resend).
+   📝 **[SDD listo](docs/sdd-auth-login.md)**. La entrega real de email se prueba en deploy.
+6. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
 
 (✅ NPCs LLM mejorados: proveedor agnóstico OpenAI-compatible en app + Helm — OpenRouter/
 LiteLLM/Ollama/vLLM —, JSON mode, few-shot, taunts in-character y rivalidad coordinada
