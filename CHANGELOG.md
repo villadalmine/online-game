@@ -7,10 +7,25 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-22 — SDD 11 implementado (v1): temporadas + Hall of Fame + newbie protection
+- **Mundo persistente + temporadas**: modelo `Season` (abre/cierra en el tick), al cerrar toma
+  foto del ranking → top-N al **`HallOfFame`** (persiste) y abre la siguiente; **el imperio no se
+  borra**. Ranking de temporada **en vivo** por `player_score` (tabla `SeasonScore` acumulable =
+  follow-up).
+- **Newbie protection** (`Player.protected_until`): el onboarding te da escudo
+  (`NEWBIE_PROTECTION_HOURS`, default 48 h); no se puede **atacar a un protegido**, y **atacar a un
+  humano cancela tu propia protección** (opt-out); atacar NPCs no la afecta.
+- **API**: `GET /seasons`, `/seasons/current/ranking`, `/seasons/hall-of-fame`,
+  `POST /admin/season/close`; `/players/me` agrega `protected_until` + `season`.
+- **Web**: card "📅 Temporada" (countdown + ranking + aviso de protección), i18n ES/EN.
+- Config `SEASON_DAYS`/`SEASON_HALL_OF_FAME_TOP`/`NEWBIE_PROTECTION_HOURS`. Migración aditiva.
+- Tests: `tests/test_seasons.py` (8 servicio) + 2 e2e + 1 browser; tests de combate existentes
+  ajustados (la protección bloquea atacar novatos). **137 unit/e2e + 13 browser verdes.**
+
 ### ⏳ Pendiente de implementar (diseñado, con SDD) — al 2026-06-22
 > Detalle y orden en [`ROADMAP.md`](ROADMAP.md). Cada uno entra con su test e2e + entrada acá.
-- **SDD 11 — Inicio/final del juego** (`docs/sdd-game-lifecycle.md`): mundo persistente +
-  temporadas (Hall of Fame + insignias, sin wipe) + newbie protection.
+- **SDD 11 — follow-ups**: `SeasonScore` acumulable, evento del mundo al cerrar, ligar temporada a
+  galaxy instances (SDD 8). (v1 ya implementado.)
 - **SDD 12 — Métricas + historial + showcase público** (`docs/sdd-player-metrics-public.md`):
   `PlayerStats` de por vida, historial de temporadas, `/public/*` + showcase en el login. (Depende del 11.)
 - **SDD 13 — Rigor científico del contenido** (`docs/sdd-scientific-accuracy.md`): galaxias →

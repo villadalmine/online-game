@@ -42,6 +42,13 @@ async def run_tick(session: AsyncSession) -> dict:
             except Exception:
                 await session.rollback()
 
+    # Seasons (SDD 11): asegurá una temporada activa y cerrá las vencidas (abre la siguiente).
+    from app.services.seasons import close_due_seasons, ensure_active_season
+
+    await ensure_active_season(session)
+    seasons_closed = await close_due_seasons(session)
+    await session.commit()
+
     # Resolve fleet arrivals/returns across the whole world.
     from app.services.combat import process_missions
 
@@ -70,6 +77,7 @@ async def run_tick(session: AsyncSession) -> dict:
         "units_trained": trained,
         "expeditions_finished": expeditions,
         "research_done": researched,
+        "seasons_closed": seasons_closed,
         **missions,
     }
 

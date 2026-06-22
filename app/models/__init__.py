@@ -46,6 +46,10 @@ class Player(Base):
     assistant_hacks_reset_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Newbie protection (SDD 11): hasta esta fecha no te pueden atacar. null = sin protección.
+    protected_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     alliance_id: Mapped[int | None] = mapped_column(
         ForeignKey("alliances.id", ondelete="SET NULL"), nullable=True, index=True
@@ -214,6 +218,35 @@ class AllianceMessage(Base):
     sender_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"))
     body: Mapped[str] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Season(Base):
+    """Temporada (SDD 11): ventana de tiempo sobre el mundo persistente. Al cerrar, los mejores
+    entran al Hall of Fame y arranca la siguiente. El imperio NO se borra."""
+
+    __tablename__ = "seasons"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    seq: Mapped[int] = mapped_column(Integer, index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)  # active|closed
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class HallOfFame(Base):
+    """Posición final de un jugador en una temporada cerrada (persiste para siempre, SDD 11)."""
+
+    __tablename__ = "hall_of_fame"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    season_id: Mapped[int] = mapped_column(ForeignKey("seasons.id", ondelete="CASCADE"), index=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    username: Mapped[str] = mapped_column(String(50))  # snapshot para mostrar sin join
+    rank: Mapped[int] = mapped_column(Integer)
+    points: Mapped[int] = mapped_column(Integer)
+    awarded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class EmailOtp(Base):

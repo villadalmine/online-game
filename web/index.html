@@ -219,6 +219,12 @@
     </div>
     <div class="card" data-panel="bases"><h2>Bases y edificios</h2><div id="bases"></div></div>
     <div class="card" data-panel="colas"><h2>Colas y flotas</h2><div id="queues"></div></div>
+    <div class="card" data-panel="temporada">
+      <h2>📅 Temporada</h2>
+      <div id="seasoninfo" class="muted">—</div>
+      <div class="row"><button class="sec sm" onclick="loadSeasonRanking()">ver ranking de temporada</button></div>
+      <table id="seasonranking"></table>
+    </div>
     <div class="card" data-panel="ranking">
       <h2>🏆 Ranking</h2>
       <div class="row"><button class="sec sm" onclick="loadRanking()" data-i18n="loadranking">cargar ranking</button></div>
@@ -410,10 +416,10 @@ document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-pan
 // i18n del chrome (ES/EN). El contenido del juego (nombres/descripciones) viene del catálogo ya
 // traducido; acá traducimos títulos de paneles y botones fijos. SDD docs/sdd-i18n.md
 const I18N={
-  es:{ panels:{acciones:"Acciones",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
+  es:{ panels:{acciones:"Acciones",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
     ui:{build:"🏗 Construir",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking"},
     ph:{advmsg:"¿qué construyo? me falta algo…"} },
-  en:{ panels:{acciones:"Actions",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
+  en:{ panels:{acciones:"Actions",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
     ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking"},
     ph:{advmsg:"what should I build? I'm missing something…"} },
 };
@@ -445,6 +451,18 @@ async function loadRanking(){ try{ const r=await api("/api/v1/players/ranking");
   $("ranking").innerHTML="<tr><th>#</th><th>jugador</th><th>raza</th><th>score</th></tr>"+
     r.map(e=>`<tr><td>${e.rank}</td><td>${esc(e.username)}${e.is_npc?' 🤖':''}</td><td>${esc(e.race_key||'')}</td><td>${e.score}</td></tr>`).join(""); }catch(e){ msg(e.message,false);} }
 function prefill(id){ $("tbase").value=id; $("force").focus(); window.scrollTo({top:0,behavior:"smooth"}); }
+// temporadas (SDD 11)
+function cdDays(iso){ if(!iso)return "—"; let s=Math.floor((new Date(iso)-Date.now())/1000); if(s<=0)return "cerrando…";
+  const d=Math.floor(s/86400); s-=d*86400; const h=Math.floor(s/3600); s-=h*3600; const m=Math.floor(s/60);
+  return (d?d+"d ":"")+h+"h "+m+"m"; }
+function renderSeason(){ if(!state) return; const s=state.season;
+  let html = s ? `<b>${esc(s.name)}</b> · cierra en <b>${cdDays(s.ends_at)}</b>` : "Sin temporada activa.";
+  if(state.protected_until && new Date(state.protected_until)>new Date())
+    html += `<br><span class="ok">🛡 Protección de novato</span> <span class="muted">(termina en ${cdDays(state.protected_until)}; atacar a un jugador la cancela)</span>`;
+  $("seasoninfo").innerHTML = html; }
+async function loadSeasonRanking(){ try{ const r=await api("/api/v1/seasons/current/ranking");
+  $("seasonranking").innerHTML="<tr><th>#</th><th>jugador</th><th>score</th></tr>"+
+    r.map(e=>`<tr><td>${e.rank}</td><td>${esc(e.username)}</td><td>${e.score}</td></tr>`).join(""); }catch(e){ msg(e.message,false);} }
 
 // progress bar from a total duration + completion timestamp
 function bar(total,when){ const rem=(new Date(when)-Date.now())/1000; const pct= total>0?Math.max(0,Math.min(100,100*(total-rem)/total)):0; return `<div class="bar"><div style="width:${pct}%"></div></div>`; }
@@ -464,7 +482,7 @@ async function refresh(){
     b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
-  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed();
+  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed(); renderSeason();
   renderCost(); renderTrainCost(); renderExpInfo();
 }
 function renderResearch(){

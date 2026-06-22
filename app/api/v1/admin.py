@@ -18,3 +18,15 @@ async def trigger_tick(
     Handy for the demo/CLI and tests so you don't have to wait for the CronJob.
     """
     return await run_tick(session)
+
+
+@router.post("/season/close")
+async def close_season(
+    _: Player = Depends(get_current_player), session: AsyncSession = Depends(get_session)
+):
+    """Cierra YA la temporada activa (snapshot al Hall of Fame) y abre la siguiente. Admin/tests."""
+    from app.services.seasons import close_current_now
+
+    closed = await close_current_now(session)
+    await session.commit()
+    return {"closed": closed}

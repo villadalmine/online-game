@@ -61,6 +61,15 @@ async def _grant_units(maker, username, units: dict[str, int]) -> None:
         await s.commit()
 
 
+async def _clear_protection(maker, *usernames) -> None:
+    """Arrange: lift newbie protection (SDD 11) so tests can attack a fresh player."""
+    async with maker() as s:
+        for username in usernames:
+            p = (await s.execute(select(Player).where(Player.username == username))).scalar_one()
+            p.protected_until = None
+        await s.commit()
+
+
 # ---- meta / auth -----------------------------------------------------------
 
 async def test_health(client):
@@ -209,6 +218,45 @@ async def test_advisor_hack_grants_and_exhausts_daily_budget(client):
     assert r.status_code == 429, r.text
 
 
+# ---- temporadas + Hall of Fame + newbie protection (SDD 11) -----------------
+async def test_seasons_endpoints_and_close(client):
+    h = await _register(client.http, "seasonal")
+    await _onboard(client.http, h)
+
+    s = await client.http.get("/api/v1/seasons", headers=h)
+    assert s.status_code == 200 and s.json()["current"]["seq"] >= 1
+
+    r = await client.http.get("/api/v1/seasons/current/ranking", headers=h)
+    assert r.status_code == 200 and isinstance(r.json(), list)
+
+    # cerrar la temporada -> Hall of Fame poblado y nueva temporada activa
+    c = await client.http.post("/api/v1/admin/season/close", headers=h)
+    assert c.status_code == 200 and c.json()["closed"] == 1
+    hof = (await client.http.get("/api/v1/seasons/hall-of-fame", headers=h)).json()
+    assert any(e["username"] == "seasonal" for e in hof)
+    nxt = (await client.http.get("/api/v1/seasons", headers=h)).json()["current"]
+    assert nxt["seq"] >= 2
+
+    # /me reporta protección de novato y temporada
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["protected_until"] is not None and me["season"]["seq"] >= 2
+
+
+async def test_newbie_protection_blocks_attack(client):
+    ha = await _register(client.http, "atkr")
+    await _onboard(client.http, ha)
+    hb = await _register(client.http, "prey2")
+    sb = await _onboard(client.http, hb)
+    base_b = sb["bases"][0]["id"]
+
+    # atacar a un jugador protegido -> 400 con mensaje claro (antes de pedir unidades)
+    r = await client.http.post(
+        "/api/v1/combat/attack", headers=ha,
+        json={"target_base_id": base_b, "force": {"tank": 1}},
+    )
+    assert r.status_code == 400 and "protec" in r.text.lower()
+
+
 # ---- passwordless login: email + código OTP (SDD 6) -------------------------
 async def test_otp_login_happy_path(client, monkeypatch):
     from app.services import auth_otp
@@ -346,6 +394,7 @@ async def test_attack_dispatches_a_traveling_fleet(client):
     hd = await _register(client.http, "defender")
     dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
     target_base = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "attacker", "defender")
     await _grant_units(client.session_maker, "attacker", {"tank": 5})
 
     r = await client.http.post(
@@ -371,6 +420,7 @@ async def test_full_battle_resolves_on_arrival_and_fleet_returns(client):
     hd = await _register(client.http, "defender")
     dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
     target_base = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "attacker", "defender")
     await _grant_units(client.session_maker, "attacker", {"tank": 5})
     await _grant_units(client.session_maker, "defender", {"soldier": 3})
 
@@ -410,6 +460,7 @@ async def test_base_turrets_help_the_defender_hold(client):
     hd = await _register(client.http, "defender")
     dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
     target_base = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "attacker", "defender")
 
     await _grant_units(client.session_maker, "attacker", {"soldier": 3})  # weak force
     await _add_active_building(client.session_maker, "defender", "turret", qty=2)
@@ -432,6 +483,7 @@ async def test_recall_brings_fleet_home_without_battle(client):
     hd = await _register(client.http, "defender")
     dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
     target_base = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "attacker", "defender")
     await _grant_units(client.session_maker, "attacker", {"tank": 5})
 
     r = await client.http.post(
@@ -461,6 +513,7 @@ async def test_incoming_attack_notifies_defender(client):
     hd = await _register(client.http, "defender")
     dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
     await _grant_units(client.session_maker, "attacker", {"tank": 3})
+    await _clear_protection(client.session_maker, "attacker", "defender")
 
     await client.http.post(
         "/api/v1/combat/attack",
@@ -604,6 +657,7 @@ async def test_world_events_feed(client):
     )
 
     await _grant_units(client.session_maker, "warlord", {"tank": 5})
+    await _clear_protection(client.session_maker, "warlord", "victim")
     await client.http.post(
         "/api/v1/combat/attack",
         headers=ha,
@@ -777,6 +831,7 @@ async def test_shared_vision_shows_ally_incoming(client):
     ha = await _register(client.http, "raider")
     await _onboard(client.http, ha, planet="venus", race="venusian")
     await _grant_units(client.session_maker, "raider", {"tank": 3})
+    await _clear_protection(client.session_maker, "raider", "frontline")
     await client.http.post(
         "/api/v1/combat/attack",
         headers=ha,

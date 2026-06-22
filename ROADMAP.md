@@ -81,10 +81,11 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    atados a publicar (secretos fuertes, email real, backup offsite/PITR, target de hosting).
 
 ### Diseño de juego (diseñado, pendiente de implementar)
-- 📝 **[SDD 11 — Inicio y final del juego](docs/sdd-game-lifecycle.md)**: **híbrido** — mundo
-  persistente + **temporadas** (ranking, ganadores, Hall of Fame + insignias cosméticas que
-  persisten, **sin wipe**) + **newbie protection**. Inspirado en StarKingdoms (rondas/HoF) pero sin
-  el reset destructivo. Monetización fuera de alcance por ahora.
+- 🟢 **[SDD 11 — Inicio y final del juego](docs/sdd-game-lifecycle.md)**: **v1 hecho** — mundo
+  persistente + **temporadas** (abre/cierra en el tick, **Hall of Fame** persistente, sin wipe) +
+  **newbie protection** (escudo al empezar; atacar a un humano lo cancela). API `/seasons*` +
+  card "📅 Temporada". Follow-up: `SeasonScore` acumulable, evento de cierre, ligar a galaxy
+  instances (SDD 8). Monetización fuera de alcance.
 - 📝 **[SDD 12 — Métricas + historial + showcase público](docs/sdd-player-metrics-public.md)**:
   contadores de por vida (`PlayerStats`: batallas, construido, entrenado, explorado, minado/gastado/
   saqueado), **historial de temporadas** (HoF), endpoints **públicos** `/public/*` y **showcase en

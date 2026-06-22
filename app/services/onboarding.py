@@ -1,5 +1,5 @@
 """Player onboarding: choose galaxy/planet/race, create homebase + starting stock."""
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,6 +36,10 @@ async def onboard_player(
     player.race_key = race_key
     player.energy = settings.energy_start
     player.energy_updated_at = now
+    # Newbie protection (SDD 11): no te atacan al empezar; se libera al vencer o al primer
+    # ataque a otro humano (opt-out). Los NPC no tienen protección.
+    if not player.is_npc:
+        player.protected_until = now + timedelta(hours=settings.newbie_protection_hours)
 
     base = Base_(player=player, planet_key=planet_key, name="Base central")
     session.add(base)

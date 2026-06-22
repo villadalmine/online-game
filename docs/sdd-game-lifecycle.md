@@ -91,6 +91,26 @@ newbie protection bloquea ataque a/desde protegido y se libera al vencer o al pr
 atacar a un jugador protegido → 4xx claro; `/players/me` reporta `protected_until` y puesto;
 `POST /admin/season/close` cierra y abre la siguiente.
 
+## 8.bis Estado de implementación (2026-06-22) — v1 hecho
+- **Modelos**: `Season`, `HallOfFame`, `Player.protected_until` (+ migración aditiva).
+- **`app/services/seasons.py`**: `ensure_active_season`, `close_due_seasons`/`close_current_now`
+  (snapshot top-N al Hall of Fame + abre la siguiente; **el imperio no se borra**), `season_ranking`
+  (en vivo por `player_score`), `hall_of_fame`. Apertura/cierre en el **tick** (`worker.run_tick`).
+- **Newbie protection**: `onboarding` setea `protected_until`; `combat.start_attack` **bloquea
+  atacar a un protegido** y **atacar a un humano cancela tu protección** (opt-out); atacar NPCs no.
+- **API**: `GET /seasons`, `GET /seasons/current/ranking`, `GET /seasons/hall-of-fame`,
+  `POST /admin/season/close`. `/players/me` expone `protected_until` + `season`.
+- **Web**: card "📅 Temporada" (countdown + ranking + escudo de novato), i18n ES/EN.
+- **Tests**: `tests/test_seasons.py` (8 servicio) + 2 e2e + 1 browser. 137 unit/e2e + 13 browser ✅.
+
+**Decisión / refinamiento vs. §3**: en v1 el ranking de temporada se computa **en vivo con
+`player_score`** y se congela en el Hall of Fame al cerrar (no hay tabla `SeasonScore` acumulable
+todavía → **follow-up**). Y la protección permite atacar a un humano **cancelando** tu escudo
+(opt-out) en vez de prohibirlo, que es más claro.
+
+**Pendiente (follow-up)**: `SeasonScore` acumulable (puntos por eventos / delta de score),
+evento del mundo al cerrar temporada, y ligar la temporada a las **galaxy instances** (SDD 8).
+
 ## 9. Riesgos / decisiones
 - **Puntos de temporada**: elegir entre "delta de score" (simple) vs. "eventos ponderados" (más
   rico). v1 = delta + bonus por victorias; data-driven para tunear.

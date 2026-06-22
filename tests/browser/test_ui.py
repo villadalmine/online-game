@@ -224,6 +224,26 @@ def test_npc_alliance_is_not_joinable_in_ui(page: Page, live_server):
     expect(page.locator("#ally-list")).to_contain_text("NPC (no unible)", timeout=15000)
 
 
+def test_season_card_shows_current_and_protection(page: Page, live_server, shots):
+    """La card de Temporada muestra la temporada activa y el escudo de novato (SDD 11)."""
+    page.set_viewport_size({"width": 1280, "height": 900})
+    page.goto(live_server + "/")
+    user = "ui_" + uuid.uuid4().hex[:6]
+    page.locator("#u").fill(user)
+    page.locator("#p").fill("secret123")
+    page.click("button:has-text('Registrar')")
+    page.select_option("#planet", "earth")
+    page.select_option("#race", "terran")
+    page.click("button:has-text('Comenzar')")
+    expect(page.locator("#game")).to_be_visible()
+
+    expect(page.locator("#seasoninfo")).to_contain_text("Temporada", timeout=10000)
+    expect(page.locator("#seasoninfo")).to_contain_text("Protección de novato")
+    page.click("button:has-text('ver ranking de temporada')")
+    expect(page.locator("#seasonranking")).to_contain_text(user, timeout=10000)
+    _shot(page, shots / "15-season.png")
+
+
 def test_email_otp_request_and_verify(page: Page, live_server, shots):
     """Passwordless por la UI: pedir código llama al server real (MAIL_BACKEND=console) y aparece
     el campo de código; verificar con un código mal da error claro (sin crashear la UI)."""

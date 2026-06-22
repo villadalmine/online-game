@@ -244,6 +244,7 @@ async def test_npc_taunts_human_on_attack(session):
     session.add(human)
     await session.flush()
     await onboard_player(session, human, "milky_way", "earth", "terran")
+    human.protected_until = None  # SDD 11: sin protección para poder ser atacado en el test
     (await get_or_create_unit_stock(session, npc.id, "tank")).quantity = 5
     await session.commit()
 
@@ -275,6 +276,7 @@ async def test_rule_brain_ganks_the_leading_human(session):
         session.add(h)
         await session.flush()
         await onboard_player(session, h, "milky_way", planet, "terran")
+        h.protected_until = None  # SDD 11: atacables en el test (sin protección de novato)
         return h
 
     await add_human("weak_human", "earth")

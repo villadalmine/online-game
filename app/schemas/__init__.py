@@ -222,6 +222,31 @@ class PlayerSummaryOut(BaseModel):
     alliance_id: int | None = None
 
 
+# ---- SDD 11: temporadas + Hall of Fame --------------------------------------
+class SeasonOut(BaseModel):
+    id: int
+    seq: int
+    name: str
+    starts_at: datetime
+    ends_at: datetime
+    status: str
+
+
+class SeasonRankingEntryOut(BaseModel):
+    rank: int
+    player_id: int
+    username: str
+    score: int
+
+
+class HallOfFameEntryOut(BaseModel):
+    season_id: int
+    rank: int
+    username: str
+    points: int
+    awarded_at: datetime
+
+
 class PlayerStateOut(BaseModel):
     id: int
     username: str
@@ -245,6 +270,8 @@ class PlayerStateOut(BaseModel):
     alliance_type: str | None = None
     alliance_incoming: list[IncomingAttackOut] = []  # attacks on allies (shared_vision)
     unread_notifications: int = 0
+    protected_until: datetime | None = None          # newbie protection (SDD 11)
+    season: SeasonOut | None = None                  # temporada actual
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

@@ -145,6 +145,14 @@ async def start_attack(
     if attacker.alliance_id is not None and attacker.alliance_id == defender.alliance_id:
         raise CombatError("No puedes atacar a un aliado.")
 
+    # Newbie protection (SDD 11): no podés atacar a un jugador protegido; atacar a un humano
+    # termina TU protección (opt-out). Atacar NPCs no la afecta.
+    if not defender.is_npc:
+        if defender.protected_until is not None and _aware(defender.protected_until) > now:
+            raise CombatError("Ese jugador está bajo protección de novato.")
+        if attacker.protected_until is not None and _aware(attacker.protected_until) > now:
+            attacker.protected_until = None
+
     force = {k: int(q) for k, q in force.items() if q and int(q) > 0}
     if not force:
         raise CombatError("Debes enviar al menos una unidad.")

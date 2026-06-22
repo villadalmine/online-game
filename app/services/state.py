@@ -191,4 +191,18 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         alliance_type=alliance.type if alliance else None,
         alliance_incoming=ally_incoming,
         unread_notifications=await unread_count(session, player.id),
+        protected_until=player.protected_until,
+        season=await _current_season_out(session),
+    )
+
+
+async def _current_season_out(session):
+    from app.schemas import SeasonOut
+    from app.services.seasons import current_season
+
+    s = await current_season(session)
+    if s is None:
+        return None
+    return SeasonOut(
+        id=s.id, seq=s.seq, name=s.name, starts_at=s.starts_at, ends_at=s.ends_at, status=s.status
     )
