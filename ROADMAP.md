@@ -77,9 +77,9 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    ClusterIssuer Let's Encrypt + listener HTTPS en el Gateway). Falta: ClusterIssuer aplicado
    (DNS-01 detrás de NAT, o HTTP-01 si el :80 llega al Gateway), `JWT_SECRET`/`OTP_SECRET` fuertes
    + mailer real.
-8. 📝 **[SDD 18 — GitHub Pages auto-generado](docs/sdd-github-pages.md)**: landing del juego en
-   Pages, generada leyendo los `docs/sdd-*.md` + ROADMAP + CHANGELOG (auto-actualizable por Action).
-   Sin datos de infra; URL por variable de repo. En la cola.
+8. 🟢 **[SDD 18 — GitHub Pages auto-generado](docs/sdd-github-pages.md)**: **v1 hecho** —
+   `scripts/build_site.py` + Action `pages.yml` generan la landing desde los SDDs+CHANGELOG (guard
+   de PII, `GAME_URL` por variable). Falta habilitar Pages en Settings (1 vez).
 9. 🟢 **[SDD 19 — Métricas Prometheus + Grafana](docs/sdd-observability-metrics.md)**: **v1 hecho** —
    `/metrics` (stdlib) con RED + conectados en vivo (SSE) + signups/logins + players_total; token
    guard (no público); **ServiceMonitor** opt-in. Follow-up: counters de negocio restantes,

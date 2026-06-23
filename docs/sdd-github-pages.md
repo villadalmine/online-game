@@ -88,6 +88,16 @@ site/                        # salida generada (o publicada por el Action sin co
   de cada SDD y su estado; el guard de privacidad rechaza una entrada con un email/IP de prueba.
 - El Action corre el generador en CI; si falla el guard, no publica.
 
+## 8.bis Estado de implementación (2026-06-23) — v1
+- `scripts/build_site.py` (stdlib): parsea `docs/sdd-*.md` (título/estado/objetivo) + últimas
+  entradas del `CHANGELOG`, renderiza `site/index.html` (features+estado+novedades+botón Jugar).
+  **Guard de privacidad** (`scan_pii`): aborta si detecta email/IP/clave en la salida (permite
+  placeholders). `GAME_URL` por env (variable de repo), no hardcodeada.
+- `.github/workflows/pages.yml`: en push a `main` genera y publica (GitHub Pages vía Actions).
+- Tests: `tests/test_site.py` (4) — títulos/estado, botón con URL, guard PII, run real limpio.
+- **Falta (1 vez, manual)**: Settings → Pages → Source = **GitHub Actions**; y opcional
+  Settings → Variables → `GAME_URL`. Hasta hacerlo, el job de deploy falla (no afecta nada más).
+
 ## 9. Follow-up / ideas
 
 - Showcase en vivo (stats/leaderboard) vía `/public/*` (SDD 12) con fetch JS.

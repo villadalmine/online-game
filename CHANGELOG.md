@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — SDD 18 v1: GitHub Pages auto-generado desde los SDDs
+- `scripts/build_site.py` (stdlib) genera `site/index.html` desde `docs/sdd-*.md` + CHANGELOG
+  (features+estado+novedades+botón Jugar). **Guard de privacidad** que aborta si hay PII/secretos.
+  `GAME_URL` por variable de repo (no hardcodeada). `.github/workflows/pages.yml` publica en cada
+  push a main. Tests `tests/test_site.py` (4). **174 unit/e2e verdes.** Falta habilitar Pages
+  (Settings → Pages → GitHub Actions) — 1 vez, manual.
+
 ### 2026-06-23 — SDD 19 v1.1: métricas de negocio + tick/LLM + dashboard Grafana
 - **`game_events_total{kind}`** instrumentado en `stats.bump` (un solo punto) → cubre
   construcciones/entrenamientos/investigación/expediciones/ataques/batallas/minería/saqueo/pérdidas.

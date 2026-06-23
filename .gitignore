@@ -17,3 +17,6 @@ deploy/helm/values-*.yaml
 
 # Credenciales reales de la cuenta acme-dns (DNS-01). El .example.json SÍ se versiona.
 acme-dns-account.json
+
+# Salida generada del GitHub Pages (SDD 18)
+site/
