@@ -17,9 +17,11 @@ spec:
         - alert: OnlineGameSignup
           expr: increase(game_signups_total[10m]) > 0
           for: 0m
-          labels: {severity: info}
+          # severity=warning a propósito: el Alertmanager solo rutea a Telegram (openclaw)
+          # las alertas critical|warning; info se descarta. Es "buena noticia", no un problema.
+          labels: {severity: warning}
           annotations:
-            summary: "Nuevo jugador en Online Galaxy War"
+            summary: "🎮 Nuevo jugador en Online Galaxy War"
             description: "Se registraron {{`{{ $value | printf \"%.0f\" }}`}} jugador(es) en los últimos 10m."
         - alert: OnlineGameApiDown
           expr: up{job="{{ .Release.Name }}-api"} == 0
