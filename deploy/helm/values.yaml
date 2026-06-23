@@ -22,7 +22,7 @@ nodeSelector: {}
 # Let's Encrypt + listener). El HTTPRoute liga por hostname al listener que matchee `host`.
 gateway:
   enabled: false
-  host: online-game.cluster.home   # ej --set gateway.host=cruzdelsur.cybercirujas.club
+  host: online-game.cluster.home   # ej --set gateway.host=tu-dominio.example
   name: cluster-gateway
   namespace: gateway
 

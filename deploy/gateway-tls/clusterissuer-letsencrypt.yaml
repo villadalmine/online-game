@@ -1,12 +1,17 @@
 # ClusterIssuer de Let's Encrypt (ACME) para certs PÚBLICOS (browsers confían).
-# El cluster ya tiene cert-manager con enableGatewayAPI:true, así que el solver HTTP-01 puede
-# resolver el challenge creando un HTTPRoute temporal sobre el listener :80 del Gateway.
+# El cluster ya tiene cert-manager con enableGatewayAPI:true.
 #
-# REQUISITO HTTP-01: el dominio debe resolver a una IP pública y el :80 debe llegar al Gateway
-# desde internet (cruzdelsur.cybercirujas.club → 81.207.69.100; forwardeá el :80 al Gateway
-# 192.168.178.200). Si NO podés exponer el :80, usá DNS-01 (ver README).
+# Solver: DNS-01 (recomendado). No necesita tráfico HTTP entrante (sirve detrás de NAT o si
+# solo tenés el :443 forwardeado). Requiere credenciales de tu proveedor de DNS en un Secret.
+# (Si en cambio podés exponer el :80 al Gateway, podés usar HTTP-01 con un solver
+#  http01.gatewayHTTPRoute apuntando al Gateway; ver README.)
 #
-# Empezá SIEMPRE con staging (no tiene rate-limits agresivos); cuando emita ok, pasá a prod.
+# Ejemplo abajo con Cloudflare; ajustá al proveedor real (route53, acme-dns, rfc2136, etc.).
+# Empezá SIEMPRE con staging; cuando emita ok, pasá a prod.
+#
+# Secret con el token (NO lo commitees):
+#   kubectl create secret generic clouddns-token -n cert-manager \
+#     --from-literal=api-token=<DNS_API_TOKEN>
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -15,16 +20,15 @@ metadata:
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: villadalmine@gmail.com          # <- tu email (avisos de expiración)
+    email: you@example.com                  # <- tu email (avisos de expiración)
     privateKeySecretRef:
       name: letsencrypt-staging-account-key
     solvers:
-      - http01:
-          gatewayHTTPRoute:
-            parentRefs:
-              - name: cluster-gateway
-                namespace: gateway
-                kind: Gateway
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: clouddns-token
+              key: api-token
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -33,13 +37,12 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: villadalmine@gmail.com          # <- tu email
+    email: you@example.com                  # <- tu email
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
     solvers:
-      - http01:
-          gatewayHTTPRoute:
-            parentRefs:
-              - name: cluster-gateway
-                namespace: gateway
-                kind: Gateway
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: clouddns-token
+              key: api-token

@@ -1,26 +1,27 @@
-# Listener HTTPS para cruzdelsur.cybercirujas.club en el Gateway COMPARTIDO `cluster-gateway`.
+# Listener HTTPS para tu dominio en el Gateway COMPARTIDO de Cilium.
+# Reemplazá <DOMINIO> y los nombres del Gateway/Secret según tu cluster.
 #
 # Esto NO es un objeto nuevo: es el bloque a AGREGAR a los listeners del Gateway existente
 # (es aditivo, no rompe a los demás tenants). Dos formas:
 #
 #   A) kubectl patch (recomendado, no toca el resto):
-#      kubectl annotate gateway cluster-gateway -n gateway \
-#        cert-manager.io/cluster-issuer=letsencrypt-prod
-#      kubectl patch gateway cluster-gateway -n gateway --type=json -p '[
+#      kubectl annotate gateway <GATEWAY> -n <GATEWAY_NS> \
+#        cert-manager.io/cluster-issuer=letsencrypt-prod --overwrite
+#      kubectl patch gateway <GATEWAY> -n <GATEWAY_NS> --type=json -p '[
 #        {"op":"add","path":"/spec/listeners/-","value":{
-#          "name":"cruzdelsur-https",
-#          "hostname":"cruzdelsur.cybercirujas.club",
+#          "name":"app-https",
+#          "hostname":"<DOMINIO>",
 #          "port":443,"protocol":"HTTPS",
 #          "allowedRoutes":{"namespaces":{"from":"All"}},
 #          "tls":{"mode":"Terminate","certificateRefs":[
-#            {"group":"","kind":"Secret","name":"cruzdelsur-tls","namespace":"gateway"}]}}}]'
+#            {"group":"","kind":"Secret","name":"app-tls","namespace":"<GATEWAY_NS>"}]}}}]'
 #
-#   B) Editando el Gateway a mano (kubectl edit gateway cluster-gateway -n gateway):
+#   B) Editando el Gateway a mano (kubectl edit gateway <GATEWAY> -n <GATEWAY_NS>):
 #      - agregá la annotation `cert-manager.io/cluster-issuer: letsencrypt-prod` en metadata
 #      - agregá este listener al array spec.listeners:
 #
-#        - name: cruzdelsur-https
-#          hostname: cruzdelsur.cybercirujas.club
+#        - name: app-https
+#          hostname: <DOMINIO>
 #          port: 443
 #          protocol: HTTPS
 #          allowedRoutes:
@@ -31,12 +32,11 @@
 #            certificateRefs:
 #              - group: ""
 #                kind: Secret
-#                name: cruzdelsur-tls       # cert-manager lo crea y rellena (no existe aún)
-#                namespace: gateway
+#                name: app-tls               # cert-manager lo crea y rellena (no existe aún)
+#                namespace: <GATEWAY_NS>
 #
 # Con la annotation + el listener, el "gateway shim" de cert-manager crea un Certificate
-# automáticamente (dnsNames = la hostname del listener) y rellena el Secret `cruzdelsur-tls`.
+# automáticamente (dnsNames = la hostname del listener) y rellena el Secret `app-tls`.
 # No hace falta crear el Certificate a mano.
 #
-# El HTTPRoute del chart (gateway.host=cruzdelsur.cybercirujas.club) liga por hostname a este
-# listener → la app queda servida en https://cruzdelsur.cybercirujas.club.
+# El HTTPRoute del chart (gateway.host=<DOMINIO>) liga por hostname a este listener.

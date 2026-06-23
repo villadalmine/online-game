@@ -1,12 +1,9 @@
-# TLS público con cert-manager + Gateway API (cruzdelsur.cybercirujas.club)
+# TLS público con cert-manager + Gateway API
 
 El dominio se sirve por **Gateway API** (Cilium). El TLS termina en el **Gateway compartido**
-`cluster-gateway` (ns `gateway`), no en el chart del juego. Por eso el cert vive acá y no en
-`deploy/helm/`.
+(no en el chart del juego), así que el cert vive acá y no en `deploy/helm/`.
 
-**Estado del cluster (verificado):** cert-manager v1.20.1 con `enableGatewayAPI: true` ✅;
-Gateway `cluster-gateway` con listener `:80` (`from: All`) ✅; **no hay** ClusterIssuer ACME ❌
-(solo CA interna, que no sirve para un dominio público).
+> Requiere cert-manager con `enableGatewayAPI: true` (el "gateway shim") en el cluster.
 
 ## Dónde va el dominio
 
@@ -15,56 +12,48 @@ En el chart: **`gateway.host`**.
 ```sh
 helm upgrade --install online-game deploy/helm \
   --set gateway.enabled=true \
-  --set gateway.host=cruzdelsur.cybercirujas.club \
-  --set gateway.name=cluster-gateway \
-  --set gateway.namespace=gateway
+  --set gateway.host=<DOMINIO> \
+  --set gateway.name=<GATEWAY> \
+  --set gateway.namespace=<GATEWAY_NS>
 ```
 
 ## Pasos para el cert (cert-manager lo pide solo)
 
-1. **Crear el ClusterIssuer de Let's Encrypt** (editá el email). Empezá por staging:
+1. **ClusterIssuer de Let's Encrypt** (editá email + solver). Empezá por staging:
    ```sh
    kubectl apply -f deploy/gateway-tls/clusterissuer-letsencrypt.yaml
    kubectl get clusterissuer letsencrypt-staging letsencrypt-prod   # READY=True
    ```
 
-2. **Agregar el listener HTTPS + la annotation al Gateway** (aditivo, no afecta otros tenants):
+2. **Listener HTTPS + annotation en el Gateway** (aditivo; ver `gateway-https-listener.yaml`):
    ```sh
-   kubectl annotate gateway cluster-gateway -n gateway \
+   kubectl annotate gateway <GATEWAY> -n <GATEWAY_NS> \
      cert-manager.io/cluster-issuer=letsencrypt-prod --overwrite
-   kubectl patch gateway cluster-gateway -n gateway --type=json -p '[
-     {"op":"add","path":"/spec/listeners/-","value":{
-       "name":"cruzdelsur-https","hostname":"cruzdelsur.cybercirujas.club",
-       "port":443,"protocol":"HTTPS",
-       "allowedRoutes":{"namespaces":{"from":"All"}},
-       "tls":{"mode":"Terminate","certificateRefs":[
-         {"group":"","kind":"Secret","name":"cruzdelsur-tls","namespace":"gateway"}]}}}]'
+   # + agregar el listener HTTPS con hostname=<DOMINIO> y certificateRefs name=app-tls
    ```
-   (Ver `gateway-https-listener.yaml` para la variante `kubectl edit`.) El **gateway shim** de
-   cert-manager ve la annotation + el listener y **crea el Certificate solo**, llenando el
-   Secret `cruzdelsur-tls`.
+   El shim ve la annotation + el listener y **crea el Certificate solo**, llenando `app-tls`.
 
-3. **Verificar la emisión**:
+3. **Verificar**:
    ```sh
-   kubectl get certificate -n gateway
-   kubectl describe certificate cruzdelsur-tls -n gateway   # Events: Issued
-   kubectl get order,challenge -n gateway                   # mientras resuelve
+   kubectl get certificate -n <GATEWAY_NS>
+   kubectl describe certificate app-tls -n <GATEWAY_NS>   # Events: Issued
+   kubectl get order,challenge -n <GATEWAY_NS>            # mientras resuelve
    ```
-   Probá staging primero (`cert-manager.io/cluster-issuer=letsencrypt-staging`); cuando emita,
-   cambiá la annotation a `letsencrypt-prod` y borrá el secret para forzar reemisión:
-   `kubectl delete secret cruzdelsur-tls -n gateway`.
+   Probá staging; cuando emita, cambiá la annotation a `letsencrypt-prod` y borrá el secret para
+   forzar reemisión: `kubectl delete secret app-tls -n <GATEWAY_NS>`.
 
-4. **Listo**: `https://cruzdelsur.cybercirujas.club` → la app (el HTTPRoute del chart liga por
-   hostname al nuevo listener). Para forzar HTTP→HTTPS, agregá un HTTPRoute de redirect en el
-   listener `:80` (opcional).
+4. **Listo**: `https://<DOMINIO>` → la app (el HTTPRoute del chart liga por hostname al listener).
 
-## Requisito de red (HTTP-01)
+## Validación del challenge: DNS-01 vs HTTP-01
 
-`cruzdelsur.cybercirujas.club` resuelve a `81.207.69.100` (pública). Para HTTP-01, ese **`:80`
-debe llegar al Gateway** (`192.168.178.200`) desde internet (port-forward/NAT). El challenge es
-`http://cruzdelsur.cybercirujas.club/.well-known/acme-challenge/...`.
+- **DNS-01** (recomendado detrás de NAT / si solo tenés el `:443` expuesto): no necesita tráfico
+  HTTP entrante, solo credenciales del DNS. Es el solver por defecto del ClusterIssuer.
+- **HTTP-01**: necesita el `:80` alcanzable desde internet llegando al Gateway. Si ese es tu caso,
+  cambiá el `solvers:` por `http01.gatewayHTTPRoute` apuntando al Gateway.
 
-### Si no podés exponer el :80 → DNS-01
-Cambiá el `solvers:` del ClusterIssuer por un `dns01` con tu proveedor de DNS de
-`cybercirujas.club` (ej. Cloudflare con un Secret de API token). DNS-01 **no necesita
-reachability entrante** — solo credenciales del DNS. El resto (listener + secret + shim) es igual.
+## Frente TCP / SNI passthrough (si hay un proxy delante)
+
+Si un proxy L4 (haproxy/nginx stream) recibe el `:443` y enruta por SNI en **modo TCP
+passthrough**, su backend debe apuntar a la **VIP del Service LoadBalancer del Gateway**
+(`kubectl get svc -n <GATEWAY_NS>` → la external IP), **no** a un nodo/controlplane: ahí termina
+el TLS con el cert de Let's Encrypt. No termines TLS en el proxy (dejá pasar el ClientHello).
