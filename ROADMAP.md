@@ -77,6 +77,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    ClusterIssuer Let's Encrypt + listener HTTPS en el Gateway). Falta: ClusterIssuer aplicado
    (DNS-01 detrás de NAT, o HTTP-01 si el :80 llega al Gateway), `JWT_SECRET`/`OTP_SECRET` fuertes
    + mailer real.
+8. 📝 **[SDD 18 — GitHub Pages auto-generado](docs/sdd-github-pages.md)**: landing del juego en
+   Pages, generada leyendo los `docs/sdd-*.md` + ROADMAP + CHANGELOG (auto-actualizable por Action).
+   Sin datos de infra; URL por variable de repo. En la cola.
+
 7. 🟢 **[SDD 14 — Alta moderada](docs/sdd-admin-approval.md)**: **v1 hecho (variante simple)** —
    allowlist `ALLOWED_EMAILS` (env) gatea `/auth/request-code`, passwordless, sin claves que
    repartir. Emails reales fuera del repo (`.env`/`values-local.yaml`). v2 (opcional): panel de

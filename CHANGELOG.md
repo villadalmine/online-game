@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — SDD 18 diseñado: GitHub Pages auto-generado desde los SDDs
+- Doc `docs/sdd-github-pages.md` (propuesto, sin código aún): landing del juego en GitHub Pages
+  generada por un script stdlib que lee `docs/sdd-*.md` + ROADMAP + CHANGELOG (auto-actualizable en
+  cada push a `main` vía Action). URL del juego por variable de repo (no hardcodeada); guard de
+  privacidad sobre el HTML. En la cola.
+
 ### 2026-06-23 — 🚀 Publicado: build Kaniko + upgrade + migraciones (SDD 15/16/17)
 - **El juego está LIVE** detrás del dominio público con TLS Let's Encrypt **prod** válido, login
   OTP + allowlist (SDD 14) y asistente AI (OpenRouter free). Release `galaxy`, ns `online-game`.
