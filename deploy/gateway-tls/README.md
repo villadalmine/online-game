@@ -1,62 +1,78 @@
-# TLS público con cert-manager + Gateway API
+# TLS público para cruzdelsur.cybercirujas.club (Let's Encrypt + Gateway API)
 
-El dominio se sirve por **Gateway API** (Cilium). El TLS termina en el **Gateway compartido**
-(no en el chart del juego), así que el cert vive acá y no en `deploy/helm/`.
+El dominio se sirve por **Gateway API (Cilium)**; el TLS termina en el **Gateway**. El cert lo emite
+**cert-manager** con **Let's Encrypt** vía **DNS-01 / acme-dns.io** (no necesita exponer el `:80`).
 
-> Requiere cert-manager con `enableGatewayAPI: true` (el "gateway shim") en el cluster.
+## Qué crea el Helm chart vs. qué es prerequisito
 
-## Dónde va el dominio
+El chart (`deploy/helm`, con `values-cruzdelsur.example.yaml`) **crea y ownea**:
+- los `ClusterIssuer` `letsencrypt-staging` / `letsencrypt-prod` (`letsencrypt.enabled=true`)
+- el `Gateway` propio + listener HTTPS (`gateway.create=true`, `lbip`)
+- el `Certificate` (`gateway.tls.enabled=true`)
+- el `HTTPRoute` (`gateway.enabled=true`)
 
-En el chart: **`gateway.host`**.
+**Lo único que el chart NO crea** (a propósito — un secret no va al repo en claro):
+- el **secret `acme-dns-account`** en el ns `cert-manager` con las credenciales de tu cuenta acme-dns.
+
+Ese secret es el prerequisito reproducible de este directorio.
+
+## Crear el secret acme-dns (una sola vez, reproducible)
 
 ```sh
-helm upgrade --install online-game deploy/helm \
-  --set gateway.enabled=true \
-  --set gateway.host=<DOMINIO> \
-  --set gateway.name=<GATEWAY> \
-  --set gateway.namespace=<GATEWAY_NS>
+# 1) Registrar cuenta acme-dns (si no tenés):
+curl -s -X POST https://auth.acme-dns.io/register
+#    -> guardá username/password/fulldomain/subdomain
+
+# 2) CNAME estático en Namecheap (a mano, sin API), por hostname:
+#    _acme-challenge.cruzdelsur   CNAME   <subdomain>.auth.acme-dns.io.
+#    (¡el guion bajo "_" adelante es OBLIGATORIO!)
+
+# 3) Completar credenciales y crear el secret:
+cp acme-dns-account.example.json acme-dns-account.json    # gitignored
+$EDITOR acme-dns-account.json
+./create-acme-dns-secret.sh
 ```
 
-## Pasos para el cert (cert-manager lo pide solo)
+`create-acme-dns-secret.sh` es **idempotente** (server-side apply, sin annotation que filtre la
+credencial). Verificá la delegación DNS antes de emitir:
 
-1. **ClusterIssuer de Let's Encrypt** (editá email + solver). Empezá por staging:
-   ```sh
-   kubectl apply -f deploy/gateway-tls/clusterissuer-letsencrypt.yaml
-   kubectl get clusterissuer letsencrypt-staging letsencrypt-prod   # READY=True
-   ```
+```sh
+dig _acme-challenge.<HOSTNAME> CNAME +short
+# debe devolver: <subdomain>.auth.acme-dns.io.
+```
 
-2. **Listener HTTPS + annotation en el Gateway** (aditivo; ver `gateway-https-listener.yaml`):
-   ```sh
-   kubectl annotate gateway <GATEWAY> -n <GATEWAY_NS> \
-     cert-manager.io/cluster-issuer=letsencrypt-prod --overwrite
-   # + agregar el listener HTTPS con hostname=<DOMINIO> y certificateRefs name=app-tls
-   ```
-   El shim ve la annotation + el listener y **crea el Certificate solo**, llenando `app-tls`.
+## Desplegar
 
-3. **Verificar**:
-   ```sh
-   kubectl get certificate -n <GATEWAY_NS>
-   kubectl describe certificate app-tls -n <GATEWAY_NS>   # Events: Issued
-   kubectl get order,challenge -n <GATEWAY_NS>            # mientras resuelve
-   ```
-   Probá staging; cuando emita, cambiá la annotation a `letsencrypt-prod` y borrá el secret para
-   forzar reemisión: `kubectl delete secret app-tls -n <GATEWAY_NS>`.
+```sh
+helm upgrade --install galaxy ../helm -n online-game --create-namespace \
+  -f ../helm/values-cruzdelsur.example.yaml
+```
 
-4. **Listo**: `https://<DOMINIO>` → la app (el HTTPRoute del chart liga por hostname al listener).
+Podés arrancar con `gateway.tls.issuer: letsencrypt-staging`; cuando emita verde, pasá a
+`letsencrypt-prod` (`helm upgrade` + `kubectl delete secret cruzdelsur-tls -n gateway` para forzar la
+reemisión).
 
-## Validación del challenge: DNS-01 vs HTTP-01
+## HAProxy (SNI passthrough en la Mac mini)
 
-- **DNS-01** (recomendado detrás de NAT / si solo tenés el `:443` expuesto): no necesita tráfico
-  HTTP entrante. Con proveedor que tenga solver nativo (cloudflare/route53/etc.) usás un token.
-  Con un proveedor SIN solver nativo (registradores con API limitada/no apta), usá **acme-dns**:
-  corrés un acme-dns, delegás `_acme-challenge.<dominio>` con un CNAME estático y cert-manager
-  escribe los TXT ahí (solver built-in). Es el ejemplo por defecto del ClusterIssuer.
-- **HTTP-01**: necesita el `:80` alcanzable desde internet llegando al Gateway. Si ese es tu caso,
-  cambiá el `solvers:` por `http01.gatewayHTTPRoute` apuntando al Gateway.
+El router manda el `:443` a HAProxy, que enruta por SNI y reenvía el TCP crudo al Gateway (el TLS
+termina en el Gateway, no en HAProxy). El backend apunta a la **VIP del LoadBalancer del Gateway**
+(`kubectl get svc -n gateway` → la external IP):
 
-## Frente TCP / SNI passthrough (si hay un proxy delante)
+```haproxy
+backend app_backend
+    mode tcp
+    server app_server1 <IP-DEL-GATEWAY>:443 check maxconn 5
+    timeout queue 5s
+```
 
-Si un proxy L4 (haproxy/nginx stream) recibe el `:443` y enruta por SNI en **modo TCP
-passthrough**, su backend debe apuntar a la **VIP del Service LoadBalancer del Gateway**
-(`kubectl get svc -n <GATEWAY_NS>` → la external IP), **no** a un nodo/controlplane: ahí termina
-el TLS con el cert de Let's Encrypt. No termines TLS en el proxy (dejá pasar el ClientHello).
+> Camino vigente: `gateway.create=false` + `gateway.name=cluster-gateway` (se reusa el Gateway
+> compartido). La IP del backend es la VIP del `cluster-gateway`, y el **listener HTTPS** del
+> hostname hay que agregarlo aparte (Helm no edita un Gateway ajeno) — ver
+> `gateway-https-listener.yaml`. La variante de Gateway dedicado quedó descartada.
+
+## Archivos
+
+- `acme-dns-account.example.json` — plantilla de credenciales (placeholders, **se versiona**).
+- `create-acme-dns-secret.sh` — crea el secret desde `acme-dns-account.json` (gitignored).
+- `clusterissuer-letsencrypt.yaml` / `gateway-https-listener.yaml` — **referencia/legacy** (variante
+  HTTP-01 + patch al cluster-gateway). El camino vigente es el del chart (arriba).

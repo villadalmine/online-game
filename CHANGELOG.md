@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — Deploy: bootstrap reproducible del secret acme-dns (cert DNS-01)
+- `deploy/gateway-tls/create-acme-dns-secret.sh` (idempotente, server-side apply) crea el secret
+  `acme-dns-account` en `cert-manager` — el ÚNICO prerequisito que el chart no crea (un secret no
+  va al repo en claro). `acme-dns-account.example.json` (placeholders, versionado) + el real
+  `acme-dns-account.json` gitignored. Documentado en `deploy/gateway-tls/README.md` (proceso de
+  emisión del cert). HAProxy/SNI-passthrough → VIP del LB del Gateway (sin IPs internas en el repo).
+
 ### 2026-06-23 — Deploy: chart con Gateway/Certificate/ClusterIssuer + values personales gitignored
 - **Templates nuevos (genéricos, opt-in por values, aditivos):** `gateway.yaml` (Gateway dedicado
   cuando `gateway.create=true`, o reusar uno existente), `certificate.yaml` (Certificate público

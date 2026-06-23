@@ -1,0 +1,9 @@
+{
+  "cruzdelsur.cybercirujas.club": {
+    "username": "<ACME_DNS_USERNAME>",
+    "password": "<ACME_DNS_PASSWORD>",
+    "fulldomain": "<SUBDOMAIN>.auth.acme-dns.io",
+    "subdomain": "<SUBDOMAIN>",
+    "allowfrom": []
+  }
+}
