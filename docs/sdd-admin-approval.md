@@ -99,8 +99,13 @@ Por decisión del usuario, v1 NO trae panel/aprobación; usa el camino **más si
   responde igual) → no revela la lista (anti-enumeración). Sigue passwordless (no hay claves que
   repartir): el admin agrega el email y la persona entra con su código.
 - Tests: `tests/test_auth_otp.py` (3 servicio: bloquea no-listado, permite listado, no bloquea a
-  existente) + 1 e2e (`test_otp_allowlist_gates_signup`). Fixture autouse `_open_registration` en
-  `conftest.py` aísla los tests del `.env` local. **162 unit/e2e verdes.**
+  existente) + e2e (`test_otp_allowlist_gates_signup`). Fixture autouse `_open_registration` en
+  `conftest.py` aísla los tests del `.env` local.
+- **v1.1 (cierre de agujero)**: `/auth/register` (usuario+contraseña) ahora **también** está gateado
+  por la allowlist — requiere `email` autorizado (403 si falta o no está; 201 si está). Antes el
+  registro user+pass salteaba la allowlist. Permite acceso **sin mailer** (el permitido se registra
+  con su email+clave). Tests e2e `test_register_gated_by_allowlist` + `test_register_open_without_allowlist`.
+  **164 unit/e2e verdes.**
 - Operación: los emails reales van en `.env` (local) / `deploy/helm/values-local.yaml` (gitignored)
   / `--set`, **nunca** en `values.yaml` (repo público).
 

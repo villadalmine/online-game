@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — fix(seguridad): cerrar bypass de allowlist en /auth/register (SDD 14 v1.1)
+- **Bug**: `/auth/register` (usuario+contraseña) NO respetaba la allowlist → cualquiera podía
+  crear cuenta salteando el gate (solo el OTP estaba gateado). Detectado probando en vivo.
+- **Fix**: register ahora exige `email` autorizado cuando hay allowlist (403 si falta/no está;
+  201 si está). Da acceso a los permitidos **sin depender del mailer** (email+clave). Sin
+  allowlist, registro abierto (dev) como antes.
+- Tests (regla e2e que faltaba aplicar): `test_register_gated_by_allowlist` +
+  `test_register_open_without_allowlist`. **164 unit/e2e verdes.**
+
 ### 2026-06-23 — SDD 19 diseñado: métricas Prometheus + dashboard Grafana
 - Doc `docs/sdd-observability-metrics.md` (propuesto): `/metrics` (stdlib, sin dep) con RED de la
   API + métricas de negocio (construcciones/entrenamientos/investigación/expediciones/combate/altas/

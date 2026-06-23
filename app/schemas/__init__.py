@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 class RegisterRequest(BaseModel):
     username: str = Field(min_length=3, max_length=50)
     password: str = Field(min_length=6, max_length=128)
+    # Requerido si hay allowlist activa (SDD 14): el email debe estar autorizado.
+    email: str | None = Field(default=None, max_length=254)
 
 
 class LoginRequest(BaseModel):

@@ -388,6 +388,39 @@ async def test_otp_verify_wrong_code_401(client, monkeypatch):
     assert r.status_code == 401
 
 
+async def test_register_gated_by_allowlist(client, monkeypatch):
+    # SDD 14: con allowlist activa, el registro usuario+contraseña TAMBIÉN queda gateado por email.
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "allowed_emails", "vip@b.com")
+
+    # sin email -> 403 (registro por invitación)
+    r = await client.http.post(
+        "/api/v1/auth/register", json={"username": "intruso", "password": "secret123"}
+    )
+    assert r.status_code == 403, r.text
+    # email no autorizado -> 403
+    r = await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "intruso2", "password": "secret123", "email": "otro@b.com"},
+    )
+    assert r.status_code == 403, r.text
+    # email autorizado -> 201
+    r = await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "vip", "password": "secret123", "email": "vip@b.com"},
+    )
+    assert r.status_code == 201, r.text
+
+
+async def test_register_open_without_allowlist(client):
+    # Sin allowlist (default), el registro sigue abierto (no rompe dev/CLI/tests).
+    r = await client.http.post(
+        "/api/v1/auth/register", json={"username": "libre", "password": "secret123"}
+    )
+    assert r.status_code == 201, r.text
+
+
 async def test_otp_allowlist_gates_signup(client, monkeypatch):
     # SDD 14: con allowlist, solo emails autorizados pueden darse de alta. La respuesta de
     # request-code es uniforme (200/sent), pero al no-autorizado nunca se le generó código → 401.
