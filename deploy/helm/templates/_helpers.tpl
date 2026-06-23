@@ -42,6 +42,30 @@ imagePullSecrets:
 - name: LLM_TIMEOUT_SECONDS
   value: {{ .Values.llm.timeoutSeconds | quote }}
 {{- end }}
+{{- if .Values.mail }}
+{{- if .Values.mail.backend }}
+- name: MAIL_BACKEND
+  value: {{ .Values.mail.backend | quote }}
+{{- end }}
+{{- if .Values.mail.from }}
+- name: MAIL_FROM
+  value: {{ .Values.mail.from | quote }}
+{{- end }}
+{{- if .Values.mail.resendApiKey }}
+- name: RESEND_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Release.Name }}-secrets
+      key: RESEND_API_KEY
+{{- end }}
+{{- if .Values.mail.otpSecret }}
+- name: OTP_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Release.Name }}-secrets
+      key: OTP_SECRET
+{{- end }}
+{{- end }}
 {{- if .Values.scaling }}
 {{- if .Values.scaling.streamInterval }}
 - name: STREAM_INTERVAL

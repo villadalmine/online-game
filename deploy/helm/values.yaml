@@ -142,6 +142,15 @@ llm:
   # del chart — ver deploy/gpu-llm/. Vacío = default de la app (20 s).
   timeoutSeconds: ""           # ej "30"
 
+# Envío de email (SDD 6/14): para que llegue el código OTP. backend console (default, solo loguea)
+# | smtp | resend. Para Resend: poné resendApiKey (va a un Secret) y un from del dominio verificado.
+# otpSecret fuerte en prod (HMAC del código OTP) — va a un Secret. Todo lo real en values-local.yaml.
+mail:
+  backend: ""                  # ej: resend
+  from: ""                     # ej: "Online Galaxy War <no-reply@tu-dominio-verificado>"
+  resendApiKey: ""             # va a un Secret (no al repo)
+  otpSecret: ""                # va a un Secret (HMAC del OTP); fuerte en prod
+
 # Legacy / fallback. El token nunca al repo: usá --set o un values-local.yaml gitignored.
 openrouter:
   apiKey: ""                   # ej: helm install ... --set openrouter.apiKey=sk-or-...

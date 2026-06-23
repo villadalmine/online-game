@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — Deploy: mailer Resend + OTP_SECRET vía Secret (entrega real de códigos)
+- El chart ahora wirea el **envío de email** (SDD 6/14): `mail.backend`/`mail.from` (env) +
+  `mail.resendApiKey`/`mail.otpSecret` **vía Secret** (`templates/secret.yaml` + `commonEnv`). Reusa
+  el mismo proveedor que `bot-telegram` (**Resend**, dominio verificado). Cierra el blocker: antes
+  `MAIL_BACKEND=console` no entregaba el código OTP. Ahora `request-code` envía de verdad.
+- `OTP_SECRET` fuerte (no el default) por Secret. Datos reales en `values-local.yaml` (gitignored).
+
 ### 2026-06-23 — fix(seguridad): cerrar bypass de allowlist en /auth/register (SDD 14 v1.1)
 - **Bug**: `/auth/register` (usuario+contraseña) NO respetaba la allowlist → cualquiera podía
   crear cuenta salteando el gate (solo el OTP estaba gateado). Detectado probando en vivo.
