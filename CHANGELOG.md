@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — SDD 19 diseñado: métricas Prometheus + dashboard Grafana
+- Doc `docs/sdd-observability-metrics.md` (propuesto): `/metrics` (stdlib, sin dep) con RED de la
+  API + métricas de negocio (construcciones/entrenamientos/investigación/expediciones/combate/altas/
+  asistente), conectados en vivo (gauge de conexiones SSE), tick, LLM e infra. ServiceMonitor +
+  dashboard Grafana versionado. Guard de cardinalidad/privacidad; `/metrics` no público. En la cola.
+
 ### 2026-06-23 — SDD 18 diseñado: GitHub Pages auto-generado desde los SDDs
 - Doc `docs/sdd-github-pages.md` (propuesto, sin código aún): landing del juego en GitHub Pages
   generada por un script stdlib que lee `docs/sdd-*.md` + ROADMAP + CHANGELOG (auto-actualizable en
