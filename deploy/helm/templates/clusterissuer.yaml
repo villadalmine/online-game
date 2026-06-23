@@ -1,0 +1,48 @@
+{{- if .Values.letsencrypt.enabled }}
+# ClusterIssuers de Let's Encrypt (DNS-01 vía acme-dns.io) — ADITIVO. NO toca la instalación
+# de cert-manager ni los issuers internos del cluster (cluster.home). Conviven.
+#
+# Requisito: el secret `{{ .Values.letsencrypt.acmeDnsSecret }}` debe existir en el ns
+# `cert-manager` con la key `credentials.json` (credenciales de la cuenta acme-dns). Se crea
+# FUERA del chart para no versionar secretos:
+#   kubectl create secret generic {{ .Values.letsencrypt.acmeDnsSecret }} -n cert-manager \
+#     --from-file=credentials.json=acme-dns-account.json
+#
+# DNS: por cada hostname, un CNAME estático en Namecheap (a mano, sin API):
+#   _acme-challenge.<host>  CNAME  <subdomain>.auth.acme-dns.io.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: {{ .Values.letsencrypt.email | quote }}
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - dns01:
+          acmeDNS:
+            host: {{ .Values.letsencrypt.acmeDnsHost | quote }}
+            accountSecretRef:
+              name: {{ .Values.letsencrypt.acmeDnsSecret }}
+              key: credentials.json
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: {{ .Values.letsencrypt.email | quote }}
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - dns01:
+          acmeDNS:
+            host: {{ .Values.letsencrypt.acmeDnsHost | quote }}
+            accountSecretRef:
+              name: {{ .Values.letsencrypt.acmeDnsSecret }}
+              key: credentials.json
+{{- end }}

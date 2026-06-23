@@ -1,0 +1,53 @@
+# Ejemplo GENÉRICO de exposición (commiteable, sin datos reales). Copialo a un archivo
+# gitignored con TUS datos (dominio/IPs/email) y desplegá con -f ese archivo:
+#
+#   cp deploy/helm/examples/remote.example.yaml deploy/helm/values-local.yaml   # gitignored
+#   # editá dominio/email/issuer y:
+#   helm upgrade --install online-game deploy/helm -n online-game --create-namespace \
+#     -f deploy/helm/values-local.yaml
+#
+# Reglas (mismo concepto que .env): el dominio real, IPs internas y el email van SOLO en tu
+# values gitignored (values-local.yaml / values-<algo>.local.yaml), NUNCA en values.yaml.
+#
+# ─────────────────────────────────────────────────────────────────────────────────────────────
+# DOS PERFILES (ambos REUSAN un gateway existente — no se crea IP nueva: gateway.create=false):
+#
+#  A) LOCAL (jugar en la LAN): gateway interno + hostname *.cluster.home, sin TLS público.
+#       gateway:
+#         enabled: true
+#         host: online-game.cluster.home
+#         name: galaxy            # tu gateway local existente
+#         namespace: gateway
+#         create: false
+#       letsencrypt: { enabled: false }
+#
+#  B) REMOTO (público): reusar el gateway público existente + dominio + TLS Let's Encrypt.
+#     (Lo de abajo.) El listener HTTPS del dominio se agrega UNA vez al gateway compartido por
+#     fuera del chart —Helm no edita objetos ajenos— con un kubectl patch aditivo (ver
+#     deploy/gateway-tls/). El backend de tu proxy SNI-passthrough apunta a la VIP del LB de
+#     ese gateway (la IP que ya tiene; no se crea una nueva).
+# ─────────────────────────────────────────────────────────────────────────────────────────────
+
+gateway:
+  enabled: true                    # crea el HTTPRoute (templates/httproute.yaml)
+  host: tu-dominio.example         # ← tu dominio (en values gitignored)
+  name: cluster-gateway            # REUSAR el gateway público existente
+  namespace: gateway
+  create: false                    # NO crear gateway propio / NO pedir IP nueva
+  tls:
+    enabled: true                  # crea el Certificate <secretName> (cert-manager)
+    secretName: app-tls
+    issuer: letsencrypt-staging    # empezá staging; flip a letsencrypt-prod cuando emita verde
+
+letsencrypt:
+  enabled: true                    # crea letsencrypt-staging + letsencrypt-prod (DNS-01/acme-dns)
+  email: you@example.com           # ← tu email
+  acmeDnsHost: https://auth.acme-dns.io
+  acmeDnsSecret: acme-dns-account  # secret en ns cert-manager (key credentials.json), creado a mano
+
+env:
+  ENVIRONMENT: production
+  REDIS_ENABLED: "true"
+  AUTO_TICK_SECONDS: "0"
+  # Allowlist de altas (SDD 14): solo estos emails pueden registrarse.
+  ALLOWED_EMAILS: "amigo1@example.com,amigo2@example.com"

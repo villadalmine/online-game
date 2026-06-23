@@ -17,14 +17,32 @@ nodeSelector: {}
 
 # Exponer vía Gateway API (ej. Cilium). Activá con --set gateway.enabled=true
 # El HTTPRoute se engancha al Gateway `name`/`namespace` y enruta por `host` (el DOMINIO va acá).
-# TLS: termina en el GATEWAY, no en este chart. Para HTTPS con cert público, agregá un listener
-# HTTPS al Gateway con la annotation de cert-manager — ver deploy/gateway-tls/ (ClusterIssuer
-# Let's Encrypt + listener). El HTTPRoute liga por hostname al listener que matchee `host`.
 gateway:
-  enabled: false
-  host: online-game.cluster.home   # ej --set gateway.host=tu-dominio.example
-  name: cluster-gateway
+  enabled: false                   # renderiza el HTTPRoute (templates/httproute.yaml)
+  host: online-game.cluster.home   # el DOMINIO. ej: tu-dominio.example
+  name: cluster-gateway            # Gateway al que se engancha el HTTPRoute
   namespace: gateway
+
+  # --- Gateway DEDICADO (aditivo) -------------------------------------------------------------
+  # create=true → el chart CREA un Gateway propio (name/namespace) en vez de usar uno existente.
+  # No toca `cluster-gateway` ni a los tenants. Para esto, poné name=public-gateway (o el que sea).
+  create: false
+  className: cilium
+  lbip: ""                         # IP fija del pool Cilium (la que va en HAProxy). "" = el pool elige.
+                                   #   ej: 192.0.2.50  (poné la IP de tu pool en tu values local)
+  tls:
+    enabled: false                 # true → listener HTTPS + Certificate (cert-manager)
+    secretName: ""                 # "" = <release>-tls
+    issuer: letsencrypt-staging    # ClusterIssuer: empezá con staging; flip a letsencrypt-prod
+
+# --- ClusterIssuers Let's Encrypt (DNS-01 vía acme-dns) ---------------------------------------
+# enabled=true → crea letsencrypt-staging + letsencrypt-prod. ADITIVO, no toca cert-manager.
+# El secret de credenciales acme-dns se crea FUERA del chart (ver clusterissuer.yaml).
+letsencrypt:
+  enabled: false
+  email: you@example.com           # tu email real va en values-local.yaml (gitignored), no acá
+  acmeDnsHost: https://auth.acme-dns.io
+  acmeDnsSecret: acme-dns-account  # secret en ns cert-manager, key credentials.json
 
 api:
   replicas: 2
@@ -88,6 +106,9 @@ env:
   ENERGY_REGEN_PER_HOUR: "10"
   ENERGY_MAX: "240"
   ENERGY_START: "60"
+  # Allowlist de altas (SDD 14): solo estos emails pueden registrarse (passwordless por código).
+  # Vacío/ausente = registro abierto. Cambiar la lista = redeploy. Ej:
+  # ALLOWED_EMAILS: "amigo1@gmail.com,amigo2@proton.me"
 
 # NPCs con IA. Para usar LLM: brain=llm. El chart es agnóstico del proveedor: apuntá a
 # CUALQUIER endpoint OpenAI-compatible (OpenRouter, LiteLLM, Ollama, vLLM) con llm.*.

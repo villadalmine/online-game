@@ -1,0 +1,41 @@
+{{- if .Values.gateway.create }}
+# Gateway DEDICADO (aditivo): NO modifica el `cluster-gateway` compartido ni a los tenants.
+# Toma una IP del pool de Cilium (fija si gateway.lbip está seteado). El HTTPRoute (httproute.yaml)
+# se engancha a este Gateway por `gateway.name` y enruta por `gateway.host`.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ .Values.gateway.name }}
+  namespace: {{ .Values.gateway.namespace }}
+  {{- if .Values.gateway.lbip }}
+  annotations:
+    # Cilium LB-IPAM: fija la IP del Service generado (la que va en el backend de HAProxy).
+    # Va en metadata.annotations (igual que cluster-gateway); spec.infrastructure NO lo reconcilia.
+    lbipam.cilium.io/ips: {{ .Values.gateway.lbip | quote }}
+  {{- end }}
+spec:
+  gatewayClassName: {{ .Values.gateway.className }}
+  listeners:
+    {{- if .Values.gateway.tls.enabled }}
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: {{ .Values.gateway.host | quote }}
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: {{ .Values.gateway.tls.secretName | default (printf "%s-tls" .Release.Name) }}
+    {{- else }}
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: {{ .Values.gateway.host | quote }}
+      allowedRoutes:
+        namespaces:
+          from: All
+    {{- end }}
+{{- end }}

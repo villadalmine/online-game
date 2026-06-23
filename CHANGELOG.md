@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — Deploy: chart con Gateway/Certificate/ClusterIssuer + values personales gitignored
+- **Templates nuevos (genéricos, opt-in por values, aditivos):** `gateway.yaml` (Gateway dedicado
+  cuando `gateway.create=true`, o reusar uno existente), `certificate.yaml` (Certificate público
+  cuando `gateway.tls.enabled`), `clusterissuer.yaml` (Let's Encrypt staging+prod DNS-01/acme-dns
+  cuando `letsencrypt.enabled`). No tocan `cluster-gateway` ni a otros tenants.
+- **Privacidad (mismo concepto que `.env`):** los values con datos reales (dominio/IPs/email) van
+  en `deploy/helm/values-*.yaml` **gitignored**; el repo solo lleva ejemplos genéricos con
+  placeholders en `deploy/helm/examples/` (`remote.example.yaml`, perfiles local y remoto). El
+  default de `values.yaml` quedó sin datos reales.
+- Verificado: `helm lint` + `helm template` (default y ejemplo) OK.
+
 ### 2026-06-23 — SDD 14 v1: allowlist de altas (passwordless)
 - Variante simple elegida: **`ALLOWED_EMAILS`** (env, lista por coma) gatea `/auth/request-code`
   — solo emails autorizados (o jugadores ya existentes) reciben código. Vacío = registro abierto.
