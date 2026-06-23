@@ -162,6 +162,10 @@ metrics:
     # labels para que tu Prometheus lo seleccione (matchea spec.serviceMonitorSelector). Ej:
     #   release: kube-prometheus-stack
     labels: {}
+  # Alertas (PrometheusRule): signup nuevo (→ Telegram vía tu Alertmanager), API caída, 5xx alto.
+  # Reusa metrics.serviceMonitor.labels para que el ruleSelector las tome. Opt-in.
+  prometheusRule:
+    enabled: false
 
 # Legacy / fallback. El token nunca al repo: usá --set o un values-local.yaml gitignored.
 openrouter:

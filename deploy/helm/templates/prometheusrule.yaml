@@ -1,0 +1,40 @@
+{{- if .Values.metrics.prometheusRule.enabled }}
+# Alertas (Prometheus Operator) sobre las métricas del juego (SDD 19). Se rutean por tu
+# Alertmanager (→ openclaw/Telegram). Opt-in. Necesita el label que matchee el ruleSelector del
+# Prometheus (igual que el ServiceMonitor, p.ej. release: kube-prometheus-stack).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Release.Name }}-rules
+  {{- with .Values.metrics.serviceMonitor.labels }}
+  labels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  groups:
+    - name: online-game
+      rules:
+        - alert: OnlineGameSignup
+          expr: increase(game_signups_total[10m]) > 0
+          for: 0m
+          labels: {severity: info}
+          annotations:
+            summary: "Nuevo jugador en Online Galaxy War"
+            description: "Se registraron {{`{{ $value | printf \"%.0f\" }}`}} jugador(es) en los últimos 10m."
+        - alert: OnlineGameApiDown
+          expr: up{job="{{ .Release.Name }}-api"} == 0
+          for: 2m
+          labels: {severity: critical}
+          annotations:
+            summary: "API de Online Galaxy War caída"
+            description: "El scrape de {{ .Release.Name }}-api falla hace >2m."
+        - alert: OnlineGameHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(http_requests_total[5m])), 0.001) > 0.05
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: "Tasa de errores 5xx alta (>5%)"
+            description: "Online Galaxy War: >5% de respuestas 5xx en 5m."
+{{- end }}

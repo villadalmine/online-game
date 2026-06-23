@@ -17,6 +17,10 @@ Registro de todo lo que vamos logrando. Formato basado en
   nombrado, `METRICS_TOKEN` por Secret. Para kube-prometheus-stack: label
   `release: kube-prometheus-stack`.
 - Tests: `test_metrics_endpoint_and_no_pii`, `test_metrics_token_guard`. **169 unit/e2e verdes.**
+- **Desplegado y verificado**: kube-prometheus-stack scrapea `galaxy-api` (`game_players_total`=6,
+  RED, SSE). **PrometheusRule** opt-in con alertas (`OnlineGameSignup` → avisa altas vía
+  Alertmanager→openclaw/Telegram, `OnlineGameApiDown`, `OnlineGameHighErrorRate`). PromQL para los
+  bots en el SDD 19. (rev 18, imagen 0.6.0.)
 
 ### 2026-06-23 — Privacidad: nick neutro en alta OTP (no derivar del email) (SDD 20)
 - El alta por OTP genera `comandante-<hex>` en vez de derivar el username del local-part del email

@@ -124,6 +124,24 @@ opcional provisioning por ConfigMap.
 - **Pendiente**: más counters de negocio (build/train/research/expedition/combate) en los puntos de
   `stats.bump`; histogram del tick y del LLM; dashboard Grafana JSON; PrometheusRule (alertas).
 
+## 7.ter Para tus bots (openclaw/hermes) y alertas — PromQL útil
+Las series viven en Prometheus (job `galaxy-api`, ns `online-game`). Ejemplos que un bot puede
+consultar vía la API de Prometheus (`/api/v1/query?query=...`) para responder preguntas:
+- **¿Cuántos jugadores hay?** → `game_players_total`
+- **¿Cuántos conectados ahora?** → `sum(game_sse_connections)`
+- **¿Se creó alguien (última hora)?** → `increase(game_signups_total[1h])` (por método: sin `sum`)
+- **Logins última hora** → `increase(game_logins_total[1h])`
+- **Tráfico (rps)** → `sum(rate(http_requests_total[5m]))`; **errores** →
+  `sum(rate(http_requests_total{status=~"5.."}[5m]))`
+- **Latencia p95** → `histogram_quantile(0.95, sum by (le)(rate(http_request_duration_seconds_bucket[5m])))`
+
+**Alertas** (`PrometheusRule` opt-in `metrics.prometheusRule.enabled`, ya desplegado): `OnlineGameSignup`
+(info, `increase(game_signups_total[10m])>0` → te avisa de altas vía Alertmanager→openclaw→Telegram),
+`OnlineGameApiDown` (critical), `OnlineGameHighErrorRate` (warning). Ajustá el ruteo en tu Alertmanager.
+
+> Nota: los counters resetean al reiniciar el pod (normal); por eso se usan `increase()`/`rate()`,
+> no el valor absoluto.
+
 ## 8. Follow-up
 - Alertas (PrometheusRule): tick caído (`game_tick_last_run_timestamp` viejo), error-rate alto,
   pool de DB saturado, p95 `/players/me` > objetivo (liga con autoscaling, SDD 7), LLM fallback alto.
