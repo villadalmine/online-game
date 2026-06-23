@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — SDD 14 v1: allowlist de altas (passwordless)
+- Variante simple elegida: **`ALLOWED_EMAILS`** (env, lista por coma) gatea `/auth/request-code`
+  — solo emails autorizados (o jugadores ya existentes) reciben código. Vacío = registro abierto.
+  Salida uniforme (anti-enumeración); sigue passwordless (sin claves que repartir).
+- `app/core/config.py` (`allowed_email_set`), `app/services/auth_otp.py` (gate). Emails reales en
+  `.env`/`values-local.yaml` (gitignored), nunca en el repo.
+- Tests: 3 servicio (`tests/test_auth_otp.py`) + 1 e2e + fixture autouse `_open_registration`.
+  **162 unit/e2e verdes.** Doc `docs/sdd-admin-approval.md` (el panel/aprobación queda como v2).
+
 ### 2026-06-23 — Deploy: TLS público con cert-manager + Gateway API
 - **Dónde va el dominio**: `gateway.host` del chart; el HTTPRoute liga por hostname al listener
   del Gateway. Comentario aclaratorio en `values.yaml`.

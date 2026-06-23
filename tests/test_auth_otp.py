@@ -79,6 +79,28 @@ async def test_invalid_email_rejected(session):
         assert e.status == 422
 
 
+async def test_allowlist_blocks_unlisted_email(session, monkeypatch):
+    # SDD 14: con allowlist seteada, un email no autorizado NO recibe código (salida uniforme).
+    monkeypatch.setattr(auth_otp.get_settings(), "allowed_emails", "ok@b.com")
+    await _request(session, monkeypatch, "stranger@b.com", "999999")
+    assert await session.get(EmailOtp, "stranger@b.com") is None  # no se generó OTP
+
+
+async def test_allowlist_permits_listed_email(session, monkeypatch):
+    monkeypatch.setattr(auth_otp.get_settings(), "allowed_emails", "ok@b.com, other@b.com")
+    await _request(session, monkeypatch, "ok@b.com", "424242")
+    assert await session.get(EmailOtp, "ok@b.com") is not None
+
+
+async def test_allowlist_does_not_lock_out_existing_player(session, monkeypatch):
+    # Quien YA tiene cuenta sigue pudiendo loguear aunque no esté en la lista.
+    session.add(Player(username="vet", password_hash="x", email="vet@b.com"))
+    await session.commit()
+    monkeypatch.setattr(auth_otp.get_settings(), "allowed_emails", "someone-else@b.com")
+    await _request(session, monkeypatch, "vet@b.com", "313131")
+    assert await session.get(EmailOtp, "vet@b.com") is not None
+
+
 async def test_resend_within_cooldown_keeps_previous_code(session, monkeypatch):
     codes = iter(["111111", "222222"])
     monkeypatch.setattr(auth_otp, "generate_code", lambda n: next(codes))

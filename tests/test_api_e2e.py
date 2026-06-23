@@ -388,6 +388,30 @@ async def test_otp_verify_wrong_code_401(client, monkeypatch):
     assert r.status_code == 401
 
 
+async def test_otp_allowlist_gates_signup(client, monkeypatch):
+    # SDD 14: con allowlist, solo emails autorizados pueden darse de alta. La respuesta de
+    # request-code es uniforme (200/sent), pero al no-autorizado nunca se le generó código → 401.
+    from app.services import auth_otp
+
+    monkeypatch.setattr(auth_otp.get_settings(), "allowed_emails", "vip@b.com")
+    monkeypatch.setattr(auth_otp, "generate_code", lambda n: "555000")
+
+    # no autorizado: request-code responde igual (uniforme) pero verify falla
+    r = await client.http.post("/api/v1/auth/request-code", json={"email": "outsider@b.com"})
+    assert r.status_code == 200 and r.json()["sent"] is True
+    blocked = await client.http.post(
+        "/api/v1/auth/verify-code", json={"email": "outsider@b.com", "code": "555000"}
+    )
+    assert blocked.status_code == 401
+
+    # autorizado: flujo completo
+    await client.http.post("/api/v1/auth/request-code", json={"email": "vip@b.com"})
+    ok = await client.http.post(
+        "/api/v1/auth/verify-code", json={"email": "vip@b.com", "code": "555000"}
+    )
+    assert ok.status_code == 200, ok.text
+
+
 # ---- onboarding / state -----------------------------------------------------
 
 async def test_onboard_and_me(client):

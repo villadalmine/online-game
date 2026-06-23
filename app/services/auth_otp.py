@@ -69,6 +69,18 @@ async def request_code(session: AsyncSession, email: str, lang: str = "es") -> N
     if not is_valid_email(email):
         raise AuthOtpError("Email inválido.", 422)
 
+    # Allowlist de altas (SDD 14): si está configurada, solo emails autorizados —o jugadores ya
+    # existentes— reciben código. Salida UNIFORME (no enviar pero responder igual) para no revelar
+    # la lista. Quitar a alguien de la lista no bloquea a quien ya tiene cuenta.
+    allowed = settings.allowed_email_set
+    if allowed and email not in allowed:
+        exists = (
+            await session.execute(select(Player.id).where(Player.email == email))
+        ).first()
+        if exists is None:
+            log.info("request_code: email no autorizado (allowlist) — no se envía código")
+            return
+
     now = datetime.now(UTC)
     otp = await session.get(EmailOtp, email)
     if otp is not None:

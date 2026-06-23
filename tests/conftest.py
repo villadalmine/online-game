@@ -1,10 +1,20 @@
 import httpx
+import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app import models  # noqa: F401  (register tables on Base.metadata)
 from app.core.db import Base
+
+
+@pytest.fixture(autouse=True)
+def _open_registration(monkeypatch):
+    """Aísla los tests del allowlist del `.env` local (SDD 14): por defecto registro abierto.
+    Los tests que prueban la allowlist setean `allowed_emails` explícitamente."""
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "allowed_emails", "", raising=False)
 
 
 def _make_engine():

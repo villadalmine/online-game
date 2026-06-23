@@ -73,6 +73,12 @@ class Settings(BaseSettings):
     otp_max_attempts: int = 5
     otp_resend_cooldown_seconds: int = 60
     otp_length: int = 6
+    # Allowlist de altas (SDD 14, modo simple): lista de emails autorizados a registrarse,
+    # separados por coma. Vacío = registro abierto (comportamiento actual). Si está seteada, solo
+    # esos emails (o jugadores ya existentes) reciben código en /auth/request-code. Cambiarla =
+    # redeploy/restart. El gate es uniforme (no revela la lista → anti-enumeración).
+    allowed_emails: str = ""
+
     # Envío de email: console (default, loguea el código — dev/CI sin SMTP) | smtp | resend
     mail_backend: str = "console"
     mail_from: str = "Online Galaxy War <no-reply@localhost>"
@@ -101,6 +107,11 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_model: str = "google/gemma-4-31b-it:free"
+
+    @property
+    def allowed_email_set(self) -> set[str]:
+        """Emails autorizados (lower, sin espacios). Vacío ⇒ registro abierto."""
+        return {e.strip().lower() for e in self.allowed_emails.split(",") if e.strip()}
 
     @property
     def llm_key(self) -> str:

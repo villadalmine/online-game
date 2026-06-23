@@ -74,6 +74,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    ClusterIssuer Let's Encrypt + listener HTTPS en el Gateway). Falta: ClusterIssuer aplicado
    (DNS-01 detrás de NAT, o HTTP-01 si el :80 llega al Gateway), `JWT_SECRET`/`OTP_SECRET` fuertes
    + mailer real.
+7. 🟢 **[SDD 14 — Alta moderada](docs/sdd-admin-approval.md)**: **v1 hecho (variante simple)** —
+   allowlist `ALLOWED_EMAILS` (env) gatea `/auth/request-code`, passwordless, sin claves que
+   repartir. Emails reales fuera del repo (`.env`/`values-local.yaml`). v2 (opcional): panel de
+   admin + aprobación `pending` + `is_admin`/gate de `/admin/*` + 2FA para remoto.
 
 ### 🧭 Orden de implementación recomendado (de los SDDs en cola)
 1. **SDD 11 → 8 → 12** juntos: comparten el modelo de **ronda/instancia/temporada** (lifecycle +
