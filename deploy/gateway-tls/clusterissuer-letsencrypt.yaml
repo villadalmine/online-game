@@ -1,0 +1,45 @@
+# ClusterIssuer de Let's Encrypt (ACME) para certs PÚBLICOS (browsers confían).
+# El cluster ya tiene cert-manager con enableGatewayAPI:true, así que el solver HTTP-01 puede
+# resolver el challenge creando un HTTPRoute temporal sobre el listener :80 del Gateway.
+#
+# REQUISITO HTTP-01: el dominio debe resolver a una IP pública y el :80 debe llegar al Gateway
+# desde internet (cruzdelsur.cybercirujas.club → 81.207.69.100; forwardeá el :80 al Gateway
+# 192.168.178.200). Si NO podés exponer el :80, usá DNS-01 (ver README).
+#
+# Empezá SIEMPRE con staging (no tiene rate-limits agresivos); cuando emita ok, pasá a prod.
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: villadalmine@gmail.com          # <- tu email (avisos de expiración)
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: cluster-gateway
+                namespace: gateway
+                kind: Gateway
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: villadalmine@gmail.com          # <- tu email
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: cluster-gateway
+                namespace: gateway
+                kind: Gateway

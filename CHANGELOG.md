@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — Deploy: TLS público con cert-manager + Gateway API
+- **Dónde va el dominio**: `gateway.host` del chart (ej. `cruzdelsur.cybercirujas.club`); el
+  HTTPRoute liga por hostname al listener del Gateway. Comentario aclaratorio en `values.yaml`.
+- **TLS (fuera del chart, en el Gateway compartido)**: `deploy/gateway-tls/` con ClusterIssuer
+  Let's Encrypt (staging+prod, solver HTTP-01 vía `gatewayHTTPRoute`), el listener HTTPS a
+  agregar a `cluster-gateway` (+ annotation `cert-manager.io/cluster-issuer` → el shim pide el
+  cert solo) y README con pasos + alternativa DNS-01. cert-manager ya tiene `enableGatewayAPI`.
+
 ### 2026-06-23 — SDD 7 + SDD 9 implementados (v1): capacidad/autoscaling + LLM local en GPU
 - **App (testeable):**
   - **Pool de DB tuneable** (SDD 7): `engine_kwargs()` aplica `pool_size`/`max_overflow`/

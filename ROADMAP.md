@@ -70,6 +70,9 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    dev. [SDD](docs/sdd-auth-login.md) + tests servicio/e2e/browser. Follow-up: rate-limit por IP +
    entrega real de email + `OTP_SECRET` fuerte en deploy.
 6. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
+   Dominio en `gateway.host`; TLS público con cert-manager + Gateway API (`deploy/gateway-tls/`:
+   ClusterIssuer Let's Encrypt + listener HTTPS en el Gateway). Falta: ClusterIssuer aplicado +
+   :80 expuesto (HTTP-01) o DNS-01, y `JWT_SECRET`/`OTP_SECRET` fuertes + mailer real.
 
 ### 🧭 Orden de implementación recomendado (de los SDDs en cola)
 1. **SDD 11 → 8 → 12** juntos: comparten el modelo de **ronda/instancia/temporada** (lifecycle +

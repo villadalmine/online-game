@@ -16,9 +16,13 @@ imagePullSecrets: []
 nodeSelector: {}
 
 # Exponer vía Gateway API (ej. Cilium). Activá con --set gateway.enabled=true
+# El HTTPRoute se engancha al Gateway `name`/`namespace` y enruta por `host` (el DOMINIO va acá).
+# TLS: termina en el GATEWAY, no en este chart. Para HTTPS con cert público, agregá un listener
+# HTTPS al Gateway con la annotation de cert-manager — ver deploy/gateway-tls/ (ClusterIssuer
+# Let's Encrypt + listener). El HTTPRoute liga por hostname al listener que matchee `host`.
 gateway:
   enabled: false
-  host: online-game.cluster.home
+  host: online-game.cluster.home   # ej --set gateway.host=cruzdelsur.cybercirujas.club
   name: cluster-gateway
   namespace: gateway
 
