@@ -7,6 +7,30 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — SDD 7 + SDD 9 implementados (v1): capacidad/autoscaling + LLM local en GPU
+- **App (testeable):**
+  - **Pool de DB tuneable** (SDD 7): `engine_kwargs()` aplica `pool_size`/`max_overflow`/
+    `pool_timeout`/`pool_recycle`/`pool_pre_ping` en Postgres (SQLite intacto). El techo de
+    conexiones es por réplica → de ahí PgBouncer a gran escala.
+  - **Intervalo del SSE configurable** (SDD 7): `STREAM_INTERVAL` como default del stream;
+    subirlo baja drásticamente la carga DB (el SSE pollea por conexión).
+  - **Timeout del LLM configurable** (SDD 9): `LLM_TIMEOUT_SECONDS` (antes 20s fijo) corta la
+    espera de la GPU serial y dispara el fallback (NPC→reglas, asistente→determinista).
+  - **Rate-limit del asistente** (SDD 9): `/advisor/ask` limitado por jugador
+    (`advisor_rate_limit_per_min`, 429 al pasarse) — protege la GPU del pico simultáneo.
+- **Helm (SDD 7):** `api.resources`/`worker.resources` (requests/limits → el HPA necesita
+  requests), **HPA** opt-in (`autoscaling.enabled`, CPU 70%, ignora `api.replicas`),
+  **PodDisruptionBudget** opt-in, `topologySpreadConstraints`, y envs `STREAM_INTERVAL`/
+  `DB_POOL_SIZE`/`DB_MAX_OVERFLOW`/`LLM_TIMEOUT_SECONDS`. Verificado con `helm lint`/`template`.
+- **Infra/ejemplos (SDD 9, fuera del chart):** `deploy/gpu-llm/` (Ollama en GPU + LiteLLM proxy
+  con cola/fallback + README: topología, elección de modelo 3–4B/7B Q4, concurrencia serial).
+- **Load test (SDD 7):** `tests/load/k6_ccu.js` + README con el modelo de cálculo de CCU
+  (~0.8 rps/CCU) — no corre en CI.
+- Tests: `tests/test_scaling.py` (4) + 1 e2e (rate-limit del asistente 429). **158 unit/e2e +
+  15 browser verdes.**
+- Follow-up: métrica custom rps/pod (KEDA), PgBouncer + réplicas de lectura, tick shardeado por
+  galaxia (SDD 8), benchmark real de tok/s por modelo en P4/Maxwell.
+
 ### 2026-06-22 — SDD 13 implementado (v1): rigor científico del contenido
 - **Propiedades físicas reales** por planeta en `content/planets.yaml` (`gravity_g`, `mean_temp_c`,
   `atmosphere`, `has_liquid_water`, `insolation`, `canon`, `sources` — NASA Fact Sheets). Sistema

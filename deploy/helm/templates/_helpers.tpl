@@ -38,6 +38,24 @@ imagePullSecrets:
 - name: LLM_JSON_MODE
   value: {{ .Values.llm.jsonMode | quote }}
 {{- end }}
+{{- if .Values.llm.timeoutSeconds }}
+- name: LLM_TIMEOUT_SECONDS
+  value: {{ .Values.llm.timeoutSeconds | quote }}
+{{- end }}
+{{- if .Values.scaling }}
+{{- if .Values.scaling.streamInterval }}
+- name: STREAM_INTERVAL
+  value: {{ .Values.scaling.streamInterval | quote }}
+{{- end }}
+{{- if .Values.scaling.dbPoolSize }}
+- name: DB_POOL_SIZE
+  value: {{ .Values.scaling.dbPoolSize | quote }}
+{{- end }}
+{{- if .Values.scaling.dbMaxOverflow }}
+- name: DB_MAX_OVERFLOW
+  value: {{ .Values.scaling.dbMaxOverflow | quote }}
+{{- end }}
+{{- end }}
 {{- if .Values.llm.apiKey }}
 - name: LLM_API_KEY
   valueFrom:

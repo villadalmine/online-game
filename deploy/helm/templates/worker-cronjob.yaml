@@ -22,3 +22,7 @@ spec:
               command: ["python", "-m", "app.worker"]
               env:
 {{ include "online-game.commonEnv" . | indent 16 }}
+              {{- with .Values.worker.resources }}
+              resources:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}

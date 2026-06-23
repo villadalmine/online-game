@@ -3,11 +3,28 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 
 settings = get_settings()
 
-engine = create_async_engine(settings.database_url, future=True)
+
+def engine_kwargs(s: Settings) -> dict:
+    """Pool args for create_async_engine. SQLite (dev/tests) keeps its single-file
+    defaults; Postgres (prod) gets a tuned pool (SDD 7). pool_size × réplicas es el
+    techo de conexiones contra Postgres — de ahí PgBouncer a gran escala."""
+    if s.is_sqlite:
+        return {"future": True}
+    return {
+        "future": True,
+        "pool_size": s.db_pool_size,
+        "max_overflow": s.db_max_overflow,
+        "pool_timeout": s.db_pool_timeout,
+        "pool_recycle": s.db_pool_recycle,
+        "pool_pre_ping": True,
+    }
+
+
+engine = create_async_engine(settings.database_url, **engine_kwargs(settings))
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 

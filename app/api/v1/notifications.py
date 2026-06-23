@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
 from app.api.deps import get_current_player
+from app.core.config import get_settings
 from app.core.db import get_session, get_sessionmaker
 from app.core.security import decode_token
 from app.models import Player
@@ -19,7 +20,7 @@ router = APIRouter()
 async def stream(
     request: Request,
     token: str,
-    interval: float = 2.0,
+    interval: float | None = None,
     maker=Depends(get_sessionmaker),
 ):
     """Server-Sent Events: pushes notifications live. Auth via ?token= because
@@ -34,6 +35,9 @@ async def stream(
     if player is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Jugador no encontrado")
 
+    # Default desde config (SDD 7): subir STREAM_INTERVAL en prod baja la carga DB del SSE.
+    if interval is None:
+        interval = get_settings().stream_interval
     interval = min(max(interval, 0.05), 30.0)
     gen = stream_events(maker, player.id, request.is_disconnected, interval)
     return StreamingResponse(gen, media_type="text/event-stream")

@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     catalog_cache_ttl: int = 300  # seconds
     attack_rate_limit_per_min: int = 20
 
+    # Capacidad / escalado (SDD 7). El SSE pollea la DB por conexión: subir el intervalo
+    # baja drásticamente la carga (0.5 rps/CCU a 2 s → 0.2 a 5 s). El pool de DB es por
+    # réplica; pool_size × n_réplicas ≤ max_connections de Postgres (techo real → PgBouncer).
+    stream_interval: float = 2.0          # default del SSE (s) si el cliente no pide otro
+    db_pool_size: int = 5                 # conexiones persistentes por réplica (no-sqlite)
+    db_max_overflow: int = 10             # conexiones extra bajo ráfaga
+    db_pool_timeout: int = 30             # s a esperar una conexión del pool antes de fallar
+    db_pool_recycle: int = 1800           # reciclar conexiones cada N s (evita stale en PgBouncer)
+
     jwt_secret: str = "change-me-in-prod"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 10080
@@ -82,6 +91,11 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_model: str = ""
     llm_json_mode: bool = True  # ask for response_format=json_object (LiteLLM/Ollama/OpenAI)
+    # LLM local en GPU (SDD 9): la IA es serial (una GPU = una cola), NO escala como la API.
+    # El timeout corta la espera y dispara el fallback (NPC→reglas, asistente→determinista).
+    # El rate-limit del asistente protege la GPU del pico de "todos preguntan a la vez".
+    llm_timeout_seconds: float = 20.0
+    advisor_rate_limit_per_min: int = 6   # consultas /advisor/ask por jugador por minuto
 
     # Legacy OpenRouter knobs (still honored as defaults for the LLM_* above).
     openrouter_api_key: str = ""

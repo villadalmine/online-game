@@ -1,0 +1,66 @@
+# Ollama en GPU (SDD 9). Corre FUERA del chart del juego. Reserva 1 GPU entera (no se
+# fracciona entre pods). Ajustá nodeSelector/storageClass a tu cluster.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gpu-llm
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: gpu-llm
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 20Gi   # pesos de los modelos
+  # storageClassName: ""   # default del cluster
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: gpu-llm
+spec:
+  replicas: 1            # una GPU = una instancia; escalar IA = más GPUs/nodos, no más réplicas
+  selector:
+    matchLabels: { app: ollama }
+  template:
+    metadata:
+      labels: { app: ollama }
+    spec:
+      nodeSelector:
+        gpu: nvidia-p4   # etiquetá el nodo de la P4/Quadro
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports:
+            - containerPort: 11434
+          env:
+            - name: OLLAMA_KEEP_ALIVE
+              value: "24h"          # mantené el modelo cargado (no pagar el reload)
+            - name: OLLAMA_NUM_PARALLEL
+              value: "1"            # 8 GB: 1-2; comparten VRAM/cómputo
+          resources:
+            limits:
+              nvidia.com/gpu: 1     # reserva la GPU entera
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: gpu-llm
+spec:
+  selector: { app: ollama }
+  ports:
+    - port: 11434
+      targetPort: 11434
+# El juego (si va directo a Ollama): llm.baseUrl=http://ollama.gpu-llm.svc:11434/v1

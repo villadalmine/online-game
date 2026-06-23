@@ -86,6 +86,22 @@ antes de encolar. Por eso:
   (¿consejo correcto en ES/EN, fiel al grafo?). La verdad de factibilidad ya es determinista
   (SDD 1), así que el LLM solo redacta/prioriza.
 
+## 7.bis Estado de implementación (2026-06-23) — v1
+- **App (testeable):** **timeout del LLM configurable** (`LLM_TIMEOUT_SECONDS`, antes 20s fijo en
+  `app/services/llm.py`) → corta la espera de la GPU serial y dispara el fallback ya existente
+  (NPC→reglas, asistente→determinista). **Rate-limit del asistente** por jugador en
+  `/advisor/ask` (`advisor_rate_limit_per_min`, 429 al pasarse) usando el patrón de
+  `core/redis.py`. Config en `app/core/config.py`.
+- **Infra/ejemplos (fuera del chart):** `deploy/gpu-llm/` con `ollama.yaml` (1 GPU dedicada, PVC
+  de pesos, keep-alive, `NUM_PARALLEL=1`), `litellm.yaml` (+ ConfigMap: proxy OpenAI-compatible
+  con cola/retries/fallback) y `README.md` (topología, elección de modelo 3–4B/7B Q4 en P4 vs
+  Maxwell, concurrencia serial). El chart sólo apunta `llm.baseUrl`/`llm.timeoutSeconds`.
+- Tests: `tests/test_scaling.py` (defaults/overrides de `llm_timeout_seconds`/
+  `advisor_rate_limit_per_min`) + e2e `test_advisor_rate_limited` (429).
+- **Pendiente (follow-up):** **benchmark real** de tok/s y latencia por modelo candidato en
+  P4/Maxwell (NPC 120 tok / asistente 400 tok) → elegir modelo y `max_tokens`; prueba de
+  saturación (N asistentes → encolado + fallback); fallback a hosted vía LiteLLM bajo carga.
+
 ## 8. Riesgos / decisiones
 - **Maxwell viejo**: puede quedar sin soporte en builds nuevas de CUDA/llama.cpp; el **P4** es la
   apuesta segura. Si ninguna alcanza la latencia deseada en 7B, **bajar a 3–4B**.

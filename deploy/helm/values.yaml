@@ -25,10 +25,56 @@ gateway:
 api:
   replicas: 2
   port: 8000
+  # Resource requests/limits: SIN requests el HPA no puede escalar por CPU (SDD 7). Tunear
+  # con un load test (tests/load/). requests = lo que reserva; limits = el techo por pod.
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+# Autoscaling de la API (SDD 7). Opt-in: cuando enabled=true, el HPA maneja las réplicas
+# (se ignora api.replicas). Necesita metrics-server y api.resources.requests.cpu.
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 0   # 0 = sólo CPU
+
+# No tirar todas las réplicas juntas en drains/upgrades (SDD 7).
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  maxUnavailable: 0
+
+# Repartir las réplicas de la API entre nodos/zonas (SDD 7). Ej:
+#   - maxSkew: 1
+#     topologyKey: kubernetes.io/hostname
+#     whenUnsatisfiable: ScheduleAnyway
+#     labelSelector: { matchLabels: { app: RELEASE-api } }
+topologySpreadConstraints: []
+
+# Ajustes de capacidad de la app (SDD 7): SSE y pool de DB. Subir streamInterval baja la
+# carga DB del SSE; dbPoolSize × maxReplicas ≤ max_connections de Postgres (techo real).
+scaling:
+  streamInterval: ""   # ej "5" (s). Vacío = default de la app (2 s)
+  dbPoolSize: ""       # ej "5" por réplica
+  dbMaxOverflow: ""    # ej "10"
 
 worker:
   # CronJob schedule for the periodic tick (build queues, mines, future combat/AI).
   schedule: "*/5 * * * *"
+  # El tick es O(N) (recorre todos los players); a escala, shardear por galaxia (SDD 8).
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
 
 env:
   ENVIRONMENT: production
@@ -52,6 +98,10 @@ llm:
   model: ""                    # ej llama3.1:8b
   apiKey: ""                   # va a un Secret; para Ollama poné cualquier cosa (lo ignora)
   jsonMode: "true"             # response_format=json_object (apagá si tu server no lo soporta)
+  # GPU local serial (SDD 9): el timeout corta la espera y dispara el fallback. Para una P4
+  # con 7B podés necesitar subirlo; con 3-4B baja. El serving (Ollama/LiteLLM) corre FUERA
+  # del chart — ver deploy/gpu-llm/. Vacío = default de la app (20 s).
+  timeoutSeconds: ""           # ej "30"
 
 # Legacy / fallback. El token nunca al repo: usá --set o un values-local.yaml gitignored.
 openrouter:

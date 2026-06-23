@@ -1,0 +1,17 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+# PodDisruptionBudget: en drains/upgrades no se tiran todas las réplicas a la vez (SDD 7).
+# Combinado con topologySpreadConstraints reparte la API y evita ventanas sin servicio.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-api
+spec:
+  {{- if .Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  {{- else }}
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-api
+{{- end }}

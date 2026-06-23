@@ -79,6 +79,23 @@ conexiones (de ahí PgBouncer). El `/players/me` (advance + writes) es la query 
 - Dashboards: rps, p95, CPU/mem por pod, conexiones Postgres, hit-rate Redis, duración del tick.
 - Criterio de aceptación: a `maxReplicas`, p95 `/players/me` < objetivo y conexiones DB < límite.
 
+## 5.bis Estado de implementación (2026-06-23) — v1
+- **App (testeable):** pool de DB tuneable (`app/core/db.py:engine_kwargs` → `pool_size`/
+  `max_overflow`/`pool_timeout`/`pool_recycle`/`pool_pre_ping` en Postgres; SQLite intacto) e
+  **intervalo del SSE configurable** (`STREAM_INTERVAL`, default del stream en
+  `app/api/v1/notifications.py`). Config en `app/core/config.py`.
+- **Helm:** `api.resources`/`worker.resources` (requests/limits), **HPA** opt-in
+  (`templates/hpa.yaml`, `autoscaling.enabled`, CPU 70%, ignora `api.replicas`),
+  **PodDisruptionBudget** opt-in (`templates/pdb.yaml`), `topologySpreadConstraints`, y los envs
+  `STREAM_INTERVAL`/`DB_POOL_SIZE`/`DB_MAX_OVERFLOW` en `commonEnv`. Verificado con `helm
+  lint`/`template`.
+- **Load test:** `tests/load/k6_ccu.js` + `tests/load/README.md` (modelo de CCU ~0.8 rps;
+  criterio de aceptación p95 `/players/me` < objetivo). No corre en CI.
+- Tests: `tests/test_scaling.py` (engine_kwargs sqlite/postgres + defaults/overrides).
+- **Pendiente (follow-up):** métrica custom **rps/pod** (KEDA/Prometheus-adapter) para el HPA;
+  **PgBouncer** + réplicas de lectura; **tick shardeado por galaxia** (SDD 8); SSE por Redis
+  pub/sub; correr el load test real y calibrar `rps_por_pod`/`CCU_max`.
+
 ## 6. Riesgos / decisiones
 - **Postgres es el límite duro** (un escritor). El sharding por galaxia (SDD 8) es lo que permite
   crecer de verdad; el HPA de la API sin DB escalable solo mueve el cuello.

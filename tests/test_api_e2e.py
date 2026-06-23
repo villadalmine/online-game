@@ -1081,6 +1081,35 @@ async def test_attack_rate_limited(client, monkeypatch):
         app.dependency_overrides.pop(get_redis, None)
 
 
+async def test_advisor_rate_limited(client, monkeypatch):
+    # SDD 9: el asistente está rate-limitado por jugador (la IA es serial, una GPU = una cola).
+    import fakeredis.aioredis
+
+    from app.core.config import get_settings
+    from app.core.redis import get_redis
+    from app.main import app
+
+    fake = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    app.dependency_overrides[get_redis] = lambda: fake
+    monkeypatch.setattr(get_settings(), "advisor_rate_limit_per_min", 2)
+    try:
+        h = await _register(client.http, "advisor_spammer")
+        await _onboard(client.http, h)
+        codes = []
+        for _ in range(3):
+            r = await client.http.post(
+                "/api/v1/players/me/advisor/ask",
+                headers=h,
+                json={"message": "que construyo?"},
+            )
+            codes.append(r.status_code)
+        # las dos primeras pasan el limiter (200); la tercera queda bloqueada
+        assert codes[0] == 200, codes
+        assert codes[-1] == 429, codes
+    finally:
+        app.dependency_overrides.pop(get_redis, None)
+
+
 async def test_human_can_attack_an_npc(client):
     h = await _register(client.http, "human")
     await _onboard(client.http, h, planet="mars", race="martian")

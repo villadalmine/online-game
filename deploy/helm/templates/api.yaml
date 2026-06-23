@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: {{ .Release.Name }}-api
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.api.replicas }}
+  {{- end }}
   selector:
     matchLabels:
       app: {{ .Release.Name }}-api
@@ -15,6 +17,10 @@ spec:
 {{ include "online-game.imagePullSecrets" . | indent 6 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
@@ -34,6 +40,10 @@ spec:
             - containerPort: {{ .Values.api.port }}
           env:
 {{ include "online-game.commonEnv" . | indent 12 }}
+          {{- with .Values.api.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           readinessProbe:
             httpGet:
               path: /health

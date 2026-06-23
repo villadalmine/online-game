@@ -29,7 +29,7 @@ async def llm_chat(
     if json_mode:
         # Honored by OpenAI/LiteLLM/Ollama/vLLM; makes the reply parse-safe.
         payload["response_format"] = {"type": "json_object"}
-    async with httpx.AsyncClient(timeout=20) as client:
+    async with httpx.AsyncClient(timeout=settings.llm_timeout_seconds) as client:
         resp = await client.post(
             f"{settings.llm_url}/chat/completions",
             headers={

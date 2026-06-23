@@ -1,0 +1,73 @@
+# LiteLLM como proxy OpenAI-compatible delante de Ollama (SDD 9): da cola + límite de
+# concurrencia + fallback a un hosted bajo saturación. Corre FUERA del chart del juego.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-config
+  namespace: gpu-llm
+data:
+  config.yaml: |
+    model_list:
+      # Modelo local en la GPU (primario).
+      - model_name: qwen2.5:3b
+        litellm_params:
+          model: ollama/qwen2.5:3b
+          api_base: http://ollama.gpu-llm.svc:11434
+      # Fallback hosted (opcional): se usa cuando la GPU está saturada / da error.
+      # - model_name: qwen2.5:3b
+      #   litellm_params:
+      #     model: openrouter/qwen/qwen-2.5-7b-instruct
+      #     api_key: os.environ/OPENROUTER_API_KEY
+    litellm_settings:
+      num_retries: 1
+      request_timeout: 30
+      # fallbacks: [{ "qwen2.5:3b": ["qwen2.5:3b"] }]   # local → hosted
+    router_settings:
+      routing_strategy: simple-shuffle
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litellm
+  namespace: gpu-llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: litellm }
+  template:
+    metadata:
+      labels: { app: litellm }
+    spec:
+      containers:
+        - name: litellm
+          image: ghcr.io/berriai/litellm:main-latest
+          args: ["--config", "/config/config.yaml", "--port", "4000"]
+          ports:
+            - containerPort: 4000
+          env:
+            - name: LITELLM_MASTER_KEY
+              value: "sk-anything"   # úsalo como llm.apiKey en el chart
+            # - name: OPENROUTER_API_KEY
+            #   valueFrom: { secretKeyRef: { name: openrouter, key: apiKey } }
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: "1",  memory: 512Mi }
+      volumes:
+        - name: config
+          configMap:
+            name: litellm-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: litellm
+  namespace: gpu-llm
+spec:
+  selector: { app: litellm }
+  ports:
+    - port: 4000
+      targetPort: 4000
+# El juego: llm.baseUrl=http://litellm.gpu-llm.svc:4000/v1  llm.apiKey=sk-anything

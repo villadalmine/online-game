@@ -76,7 +76,8 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    galaxy instances + métricas/HoF públicas). Es el combo de mayor impacto jugable.
 2. **SDD 13** en paralelo, **incremental y data-only**: empezar por el **Sistema Solar real** y
    sumar exosistemas / `speculative` / spin-offs cuando se quiera (no bloquea nada).
-3. **SDD 7 + 9** al preparar el **deploy real** (escalado/autoscaling + LLM local en GPU).
+3. ✅ **SDD 7 + 9 hechos (v1)**: escalado/autoscaling (HPA/PDB/pool/SSE) + LLM local en GPU
+   (timeout/rate-limit + ejemplos Ollama/LiteLLM). Falta calibrar con load test/benchmark reales.
 4. **SDD 5 (Telegram)**: cuando haya `TELEGRAM_BOT_TOKEN`. **Follow-ups SDD 6/10** + **deploy**:
    atados a publicar (secretos fuertes, email real, backup offsite/PITR, target de hosting).
 
@@ -98,14 +99,18 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   multiplicadores físicos.
 
 ### Escalado / producción (diseñado, pendiente de implementar)
-- 📝 **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: cuántos CCU aguanta,
-  HPA + resource requests, PgBouncer; el `run_tick` O(N) y el SSE son los cuellos a atacar.
+- 🟢 **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: **v1 hecho** —
+  pool de DB tuneable + SSE configurable (app); HPA/PDB/`topologySpreadConstraints`/resources en
+  el Helm (opt-in `autoscaling.enabled`); load test `tests/load/k6_ccu.js`. Follow-up: métrica
+  rps/pod (KEDA), PgBouncer + réplicas de lectura, tick shardeado por galaxia (SDD 8).
 - 🟢 **[SDD 8 — Límites de galaxia](docs/sdd-galaxy-limits.md)**: **v1 hecho** — `GalaxyInstance`
   con `capacity` (overflow a nueva instancia); aislamiento humano↔humano (no atacás otra galaxia,
   scoreboard filtrado), NPCs ambientales, `GET /galaxies`. Follow-up: NPCs/ranking/temporada por
   instancia y tick por shard.
-- 📝 **[SDD 9 — LLM local en GPU](docs/sdd-local-gpu-llm.md)**: Ollama/LiteLLM en P4/Quadro,
-  concurrencia serial + fallback, qué modelo local usar para NPCs y asistente.
+- 🟢 **[SDD 9 — LLM local en GPU](docs/sdd-local-gpu-llm.md)**: **v1 hecho** — timeout del LLM
+  configurable + rate-limit del asistente (app); ejemplos `deploy/gpu-llm/` (Ollama en GPU +
+  LiteLLM proxy con cola/fallback, fuera del chart). Follow-up: benchmark real de tok/s por
+  modelo en P4/Maxwell + prueba de saturación.
 - 🟢 **[SDD 10 — Durabilidad / backup / restore](docs/sdd-durability-backup-restore.md)**:
   **hecho lo crítico** — Postgres es `StatefulSet`+PVC (pod muere ≠ pérdida), soporte de DB externa
   (managed/operador), backup `pg_dump` opt-in. Follow-up: backup offsite cifrado + PITR + runbook/
