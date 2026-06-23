@@ -71,3 +71,9 @@ async def _send_resend(settings, to: str, subject: str, body: str) -> None:
             json={"from": settings.mail_from, "to": [to], "subject": subject, "text": body},
         )
         resp.raise_for_status()
+        # Log de operación (sin el código): confirma el envío y deja el id de Resend para rastrear.
+        try:
+            rid = resp.json().get("id")
+        except Exception:
+            rid = None
+        log.info("[mail:resend] enviado to=%s from=%r resend_id=%s", to, settings.mail_from, rid)

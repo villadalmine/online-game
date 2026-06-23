@@ -41,6 +41,13 @@ un manifiesto versionado, no pasos a mano. Adaptado del patrón de `infra-ai`
    helm upgrade galaxy deploy/helm -n online-game -f <values-local> \
      --set image.tag=<tag>
    ```
+6. **Limpiar el build** (cuando el deploy verificó OK): borrar el Workflow/pod de Kaniko para no
+   dejar basura en `kaniko` (el TTL igual los limpia ~1h, pero lo hacemos explícito):
+   ```sh
+   kubectl delete workflow -n kaniko -l app=online-game-build
+   ```
+   (Solo después de confirmar que la imagen anda; si falló, dejarlo para debug — el TTL de fallo
+   retiene 24h.)
 
 ## 4. Anatomía del Workflow (`deploy/build/online-game-kaniko.yaml`)
 
