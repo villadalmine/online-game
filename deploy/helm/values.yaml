@@ -20,6 +20,11 @@ nodeSelector: {}
 gateway:
   enabled: false                   # renderiza el HTTPRoute (templates/httproute.yaml)
   host: online-game.cluster.home   # el DOMINIO. ej: tu-dominio.example
+  # Hostnames ADICIONALES en la MISMA HTTPRoute (un solo release/DB sirve varios dominios).
+  # Ej para servir local + público a la vez: host=online-game.cluster.home y extraHosts:
+  #   extraHosts: ["tu-dominio.example"]
+  # OJO: cada host público necesita su listener HTTPS + cert en el Gateway (cert-manager).
+  extraHosts: []
   name: cluster-gateway            # Gateway al que se engancha el HTTPRoute
   namespace: gateway
 

@@ -7,6 +7,9 @@ metadata:
 spec:
   hostnames:
     - {{ .Values.gateway.host | quote }}
+    {{- range .Values.gateway.extraHosts }}
+    - {{ . | quote }}
+    {{- end }}
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
