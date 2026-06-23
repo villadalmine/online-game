@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — Privacidad: nick neutro en alta OTP (no derivar del email) (SDD 20)
+- El alta por OTP genera `comandante-<hex>` en vez de derivar el username del local-part del email
+  (que lo exponía en el nombre público). `auth_otp._unique_username`. Test
+  `test_otp_username_is_neutral_not_from_email`. **167 unit/e2e verdes.** Follow-up: endpoint de
+  renombrado (requiere re-emitir el JWT). Incluye también el log INFO de envío de email (resend_id).
+
 ### 2026-06-23 — Seguridad: admin gate + rate-limit OTP + registro web por email; SDDs 20/usuarios
 - **Gate de `/admin/*` (SDD 14 v2)**: `get_current_admin` (`Player.is_admin` + `ADMIN_EMAIL`).
   Antes `tick`/`season/close` los llamaba cualquier logueado. Migración aditiva `is_admin`

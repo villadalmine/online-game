@@ -31,6 +31,14 @@ async def test_verify_creates_player_signup_equals_login(session, monkeypatch):
     assert again.id == player.id
 
 
+async def test_otp_username_is_neutral_not_from_email(session, monkeypatch):
+    # SDD 20: el nick del alta por OTP NO deriva del email (no lo expone).
+    await _request(session, monkeypatch, "juan.perez@correo.com", "777777")
+    player = await auth_otp.verify_code(session, "juan.perez@correo.com", "777777")
+    assert player.username.startswith("comandante-")
+    assert "juan" not in player.username and "perez" not in player.username
+
+
 async def test_verify_wrong_code_counts_attempts_then_locks(session, monkeypatch):
     await _request(session, monkeypatch, "c@b.com", "111111")
     for _ in range(auth_otp.get_settings().otp_max_attempts - 1):

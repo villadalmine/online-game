@@ -13,7 +13,6 @@ loguea el código.
 import hashlib
 import hmac
 import logging
-import re
 import secrets
 from datetime import UTC, datetime, timedelta
 
@@ -108,17 +107,15 @@ async def request_code(session: AsyncSession, email: str, lang: str = "es") -> N
     await session.commit()
 
 
-_USERNAME_RE = re.compile(r"[^a-z0-9_]+")
-
-
-async def _unique_username(session: AsyncSession, email: str) -> str:
-    base = _USERNAME_RE.sub("", email.split("@")[0].lower())[:40] or "player"
-    candidate = base
-    while (
-        await session.execute(select(Player.id).where(Player.username == candidate))
-    ).first() is not None:
-        candidate = f"{base}_{secrets.token_hex(3)}"[:50]
-    return candidate
+async def _unique_username(session: AsyncSession) -> str:
+    """Nickname NEUTRO para el alta por OTP (SDD 20): NO derivar del email (no exponerlo en el
+    nombre público). El usuario puede renombrarse luego (PATCH /players/me/username)."""
+    while True:
+        candidate = f"comandante-{secrets.token_hex(3)}"
+        if (
+            await session.execute(select(Player.id).where(Player.username == candidate))
+        ).first() is None:
+            return candidate
 
 
 async def verify_code(session: AsyncSession, email: str, code: str) -> Player:
@@ -142,7 +139,7 @@ async def verify_code(session: AsyncSession, email: str, code: str) -> Player:
         if player is None:  # signup = login
             admin_email = settings.admin_email.strip().lower()
             player = Player(
-                username=await _unique_username(session, email),
+                username=await _unique_username(session),
                 # passwordless: contraseña inutilizable (no la conoce nadie)
                 password_hash=hash_password(secrets.token_urlsafe(32)),
                 email=email,

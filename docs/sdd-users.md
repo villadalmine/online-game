@@ -44,9 +44,11 @@ email **nunca** se expone a otros jugadores.
 Hoy, en el **signup por OTP**, el `username` se deriva del **local-part del email**
 (`_unique_username`: `nombre.apellido@correo.com` → `nombreapellido`). Eso **insinúa el email** en el
 nickname público → contradice §3.
-- **Fix propuesto**: permitir **elegir nickname** en el alta (OTP y registro), o generar uno
-  **neutro** (p.ej. `comandante-7f3a`) y dejar que el usuario lo cambie. Endpoint
-  `PATCH /players/me {username}` (con validación de unicidad + rate-limit + cooldown de cambio).
+- **HECHO (2026-06-23)**: el alta por OTP genera un nick **neutro** (`comandante-<hex>`), ya **no
+  deriva del email** (`auth_otp._unique_username`). Test `test_otp_username_is_neutral_not_from_email`.
+- **Pendiente (follow-up)**: `PATCH /players/me/username` para que el usuario se renombre. Ojo: el
+  JWT lleva `sub=username` → al renombrar hay que **re-emitir el token** (y actualizarlo en el
+  cliente) o pasar el JWT a usar `player.id`. Por eso quedó para un cambio supervisado (toca auth+web).
 - En el **registro invitado** (usuario+contraseña+email) el usuario **ya elige** username → ahí no
   hay leak; el problema es solo el camino OTP.
 
