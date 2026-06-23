@@ -1,0 +1,82 @@
+{{- if and .Values.gateway.enabled .Values.gateway.ensureListener.enabled (not .Values.gateway.create) }}
+{{- /*
+  Reuso de un Gateway EXISTENTE (create=false): Helm no puede editar un objeto que no ownea,
+  así que un hook Job AGREGA el listener HTTPS al Gateway ajeno de forma IDEMPOTENTE (solo si no
+  está). Corre en post-install/post-upgrade. RBAC mínimo: patch del Gateway en su ns.
+*/}}
+{{- $ln := .Values.gateway.ensureListener.name | default (printf "%s-https" .Release.Name) }}
+{{- $secret := .Values.gateway.tls.secretName | default (printf "%s-tls" .Release.Name) }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-ensure-listener
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Release.Name }}-ensure-listener
+  namespace: {{ .Values.gateway.namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+rules:
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["gateways"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Release.Name }}-ensure-listener
+  namespace: {{ .Values.gateway.namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Release.Name }}-ensure-listener
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}-ensure-listener
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-ensure-listener
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      serviceAccountName: {{ .Release.Name }}-ensure-listener
+      restartPolicy: Never
+      containers:
+        - name: ensure-listener
+          image: {{ .Values.gateway.ensureListener.image | quote }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              GW="{{ .Values.gateway.name }}"; NS="{{ .Values.gateway.namespace }}"
+              LN="{{ $ln }}"; HOST="{{ .Values.gateway.host }}"; SECRET="{{ $secret }}"
+              if kubectl get gateway "$GW" -n "$NS" -o jsonpath='{.spec.listeners[*].name}' \
+                   | tr ' ' '\n' | grep -qx "$LN"; then
+                echo "listener $LN ya existe en $GW/$NS — no-op (idempotente)"; exit 0
+              fi
+              echo "agregando listener $LN ($HOST -> secret $SECRET) a $GW/$NS"
+              kubectl patch gateway "$GW" -n "$NS" --type=json -p "[{\"op\":\"add\",\"path\":\"/spec/listeners/-\",\"value\":{\"name\":\"$LN\",\"hostname\":\"$HOST\",\"port\":443,\"protocol\":\"HTTPS\",\"allowedRoutes\":{\"namespaces\":{\"from\":\"All\"}},\"tls\":{\"mode\":\"Terminate\",\"certificateRefs\":[{\"kind\":\"Secret\",\"name\":\"$SECRET\",\"namespace\":\"$NS\"}]}}}]"
+              echo "OK"
+{{- end }}
