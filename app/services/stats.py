@@ -7,6 +7,7 @@ públicas (`/public/*`) exponen solo agregados + username (nunca email).
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import metrics
 from app.models import Base_, CombatLog, HallOfFame, Player, PlayerStats
 from app.services.scoring import player_score
 
@@ -32,6 +33,7 @@ async def bump(session: AsyncSession, player_id: int, **counters: float) -> None
     for key, val in counters.items():
         if val:
             setattr(st, key, (getattr(st, key) or 0) + val)
+            metrics.GAME_EVENTS.inc(val, kind=key)  # SDD 19: métrica Prometheus de negocio
 
 
 def stats_dict(st: PlayerStats | None) -> dict:

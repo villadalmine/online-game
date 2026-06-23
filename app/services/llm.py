@@ -4,8 +4,11 @@ vLLM). Used by the NPC brain and the personal assistant — they all speak the s
 
 Raises on missing config or network error so callers can fall back (NPC -> rules, assistant ->
 deterministic blockers). One place to change the HTTP contract, used everywhere."""
+import time
+
 import httpx
 
+from app.core import metrics
 from app.core.config import get_settings
 
 
@@ -29,14 +32,23 @@ async def llm_chat(
     if json_mode:
         # Honored by OpenAI/LiteLLM/Ollama/vLLM; makes the reply parse-safe.
         payload["response_format"] = {"type": "json_object"}
-    async with httpx.AsyncClient(timeout=settings.llm_timeout_seconds) as client:
-        resp = await client.post(
-            f"{settings.llm_url}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {settings.llm_key}",
-                "X-Title": "online-game",  # ignored by non-OpenRouter servers
-            },
-            json=payload,
-        )
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+    _t0 = time.perf_counter()
+    try:
+        async with httpx.AsyncClient(timeout=settings.llm_timeout_seconds) as client:
+            resp = await client.post(
+                f"{settings.llm_url}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {settings.llm_key}",
+                    "X-Title": "online-game",  # ignored by non-OpenRouter servers
+                },
+                json=payload,
+            )
+            resp.raise_for_status()
+            out = resp.json()["choices"][0]["message"]["content"]
+        metrics.LLM_REQUESTS.inc(status="ok")  # SDD 19
+        return out
+    except Exception:
+        metrics.LLM_REQUESTS.inc(status="error")
+        raise
+    finally:
+        metrics.LLM_LATENCY.observe(time.perf_counter() - _t0)

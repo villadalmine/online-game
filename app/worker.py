@@ -8,10 +8,12 @@ Two jobs each tick:
 admin endpoint and tests); `tick()` wraps it with its own SessionLocal for the CronJob.
 """
 import asyncio
+import time
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import metrics
 from app.core.config import get_settings
 from app.core.db import SessionLocal, run_migrations
 from app.models import Player
@@ -21,6 +23,7 @@ from app.services.training import finalize_due_training
 
 
 async def run_tick(session: AsyncSession) -> dict:
+    _t0 = time.perf_counter()
     settings = get_settings()
     npc_actions = 0
     npcs_count = 0
@@ -69,6 +72,8 @@ async def run_tick(session: AsyncSession) -> dict:
         researched += await finalize_due_research(session, player)
     await session.commit()
 
+    metrics.TICK_DURATION.observe(time.perf_counter() - _t0)  # SDD 19
+    metrics.TICK_LAST_RUN.set(time.time())
     return {
         "players": len(players),
         "npcs": npcs_count,

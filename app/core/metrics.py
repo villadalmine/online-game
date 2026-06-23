@@ -144,3 +144,16 @@ SSE_CONNECTIONS = Gauge("game_sse_connections", "Conexiones SSE abiertas (conect
 PLAYERS_TOTAL = Gauge("game_players_total", "Jugadores humanos totales")
 SIGNUPS = Counter("game_signups_total", "Altas de jugadores", ("method",))  # method=password|otp
 LOGINS = Counter("game_logins_total", "Logins exitosos", ("method",))
+
+# Eventos de negocio (SDD 19): un solo Counter con label `kind` (set fijo y acotado de stats.bump):
+# buildings_built, units_trained, research_completed, expeditions_completed, attacks_launched,
+# battles_won/lost, resources_mined/looted/lost. Cardinalidad baja (nunca ids de jugador).
+GAME_EVENTS = Counter("game_events_total", "Eventos del juego por tipo", ("kind",))
+
+# Tick del mundo
+TICK_DURATION = Histogram("game_tick_duration_seconds", "Duración de run_tick")
+TICK_LAST_RUN = Gauge("game_tick_last_run_timestamp", "Unix ts del último tick OK")
+
+# LLM (IA): no escala como la API (SDD 9). status=ok|error
+LLM_REQUESTS = Counter("game_llm_requests_total", "Llamadas al LLM", ("status",))
+LLM_LATENCY = Histogram("game_llm_latency_seconds", "Latencia del LLM")

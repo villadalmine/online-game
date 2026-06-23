@@ -166,6 +166,10 @@ metrics:
   # Reusa metrics.serviceMonitor.labels para que el ruleSelector las tome. Opt-in.
   prometheusRule:
     enabled: false
+  # Dashboard de Grafana como ConfigMap (lo levanta el sidecar de Grafana por el label). Opt-in.
+  grafanaDashboard:
+    enabled: false
+    label: grafana_dashboard   # label que busca el sidecar (kube-prometheus-stack: grafana_dashboard)
 
 # Legacy / fallback. El token nunca al repo: usá --set o un values-local.yaml gitignored.
 openrouter:

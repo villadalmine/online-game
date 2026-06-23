@@ -121,8 +121,12 @@ opcional provisioning por ConfigMap.
   puerto `http` nombrado + label, `METRICS_TOKEN` por Secret. Para kube-prometheus-stack, label
   `release: kube-prometheus-stack` en el SM.
 - Tests: `test_metrics_endpoint_and_no_pii`, `test_metrics_token_guard`. **169 unit/e2e verdes.**
-- **Pendiente**: más counters de negocio (build/train/research/expedition/combate) en los puntos de
-  `stats.bump`; histogram del tick y del LLM; dashboard Grafana JSON; PrometheusRule (alertas).
+- **v1.1 (2026-06-23)**: `game_events_total{kind}` (un counter, instrumentado en `stats.bump` →
+  cubre buildings_built/units_trained/research_completed/expeditions_completed/attacks_launched/
+  battles_won|lost/resources_mined|looted|lost). `game_tick_duration_seconds`(histogram)+
+  `game_tick_last_run_timestamp` en `run_tick`. `game_llm_requests_total{status}` +
+  `game_llm_latency_seconds` en `llm_chat`. **Dashboard Grafana** (`deploy/helm/dashboards/online-game.json`)
+  como ConfigMap opt-in (`metrics.grafanaDashboard.enabled`, label `grafana_dashboard`).
 
 ## 7.ter Para tus bots (openclaw/hermes) y alertas — PromQL útil
 Las series viven en Prometheus (job `galaxy-api`, ns `online-game`). Ejemplos que un bot puede

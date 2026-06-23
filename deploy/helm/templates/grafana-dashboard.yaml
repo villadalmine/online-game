@@ -1,0 +1,13 @@
+{{- if .Values.metrics.grafanaDashboard.enabled }}
+# Dashboard de Grafana provisto como ConfigMap (SDD 19). El sidecar de kube-prometheus-stack lo
+# importa solo si tiene el label de descubrimiento (default: grafana_dashboard: "1"). Opt-in.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-grafana-dashboard
+  labels:
+    {{ .Values.metrics.grafanaDashboard.label }}: "1"
+data:
+  online-game.json: |-
+{{ .Files.Get "dashboards/online-game.json" | indent 4 }}
+{{- end }}

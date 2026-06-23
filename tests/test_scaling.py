@@ -38,6 +38,21 @@ def test_scaling_defaults_present():
     assert s.advisor_rate_limit_per_min == 6
 
 
+async def test_bump_increments_prometheus_events(session):
+    # SDD 19: stats.bump emite game_events_total{kind=...} (métricas de negocio).
+    from app.core import metrics
+    from app.models import Player
+    from app.services import stats
+
+    p = Player(username="evtmetric", password_hash="x")
+    session.add(p)
+    await session.commit()
+    await stats.bump(session, p.id, buildings_built=2, units_trained=1)
+    out = metrics.render()
+    assert 'game_events_total{kind="buildings_built"}' in out
+    assert 'game_events_total{kind="units_trained"}' in out
+
+
 def test_scaling_overridable():
     s = Settings(stream_interval=5.0, llm_timeout_seconds=30.0, advisor_rate_limit_per_min=2)
     assert s.stream_interval == 5.0
