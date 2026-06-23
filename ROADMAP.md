@@ -83,6 +83,9 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
 9. 📝 **[SDD 19 — Métricas Prometheus + Grafana](docs/sdd-observability-metrics.md)**: `/metrics`
    (stdlib) con RED + métricas de negocio + conectados en vivo (SSE) + tick + LLM + infra;
    ServiceMonitor + dashboard. `/metrics` no público; guard de cardinalidad. En la cola.
+10. 📝 **[SDD 20 — Usuarios](docs/sdd-users.md)**: define el modelo `Player`, sus campos, e
+   identidad **nickname público / email privado** (entrás por email, te ven por nickname). Documenta
+   el modelo vigente + el fix de no derivar el username del email en alta OTP. Ref.
 
 7. 🟢 **[SDD 14 — Alta moderada](docs/sdd-admin-approval.md)**: **v1 hecho (variante simple)** —
    allowlist `ALLOWED_EMAILS` (env) gatea `/auth/request-code`, passwordless, sin claves que
@@ -140,6 +143,11 @@ contra el humano líder.)
 
 ## 💡 Backlog / ideas
 
+- **i18n EN incompleto** (SDD 4): al cambiar a inglés, parte del juego sigue en ES — falta el
+  **texto dinámico del server** (notis/combate/asistente/errores) y **chrome fijo** restante de la
+  web. Completar traducciones EN. *(Backlog, pedido 2026-06-23.)*
+- **Nickname editable / no derivar del email en alta OTP** (SDD 20): hoy el username OTP sale del
+  local-part del email (insinúa el email). Permitir elegir/generar nickname neutro.
 - Tech `build_speed` (acelerar construcción/entrenamiento) — ya hay framework de efectos.
 - Combate que use `hp` de unidades; daño por rondas.
 - Chat / mensajes de alianza; eventos del mundo; misiones.

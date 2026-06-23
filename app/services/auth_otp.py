@@ -140,11 +140,13 @@ async def verify_code(session: AsyncSession, email: str, code: str) -> Player:
         res = await session.execute(select(Player).where(Player.email == email))
         player = res.scalar_one_or_none()
         if player is None:  # signup = login
+            admin_email = settings.admin_email.strip().lower()
             player = Player(
                 username=await _unique_username(session, email),
                 # passwordless: contraseña inutilizable (no la conoce nadie)
                 password_hash=hash_password(secrets.token_urlsafe(32)),
                 email=email,
+                is_admin=bool(admin_email) and email == admin_email,
             )
             session.add(player)
         await session.delete(otp)

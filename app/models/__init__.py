@@ -26,6 +26,8 @@ class Player(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     is_npc: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Admin (SDD 14 v2): gate de /admin/*. Se siembra desde ADMIN_EMAIL al crear la cuenta.
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     # Passwordless login por email + código OTP (SDD 6). Nullable: cuentas legacy/NPC no tienen.
     email: Mapped[str | None] = mapped_column(String(254), unique=True, index=True, nullable=True)
 

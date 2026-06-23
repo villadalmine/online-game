@@ -71,6 +71,29 @@ Documentar y **probar** en `docs/RUNBOOK` (o sección del README de deploy):
   cronometrado en el drill.
 - Backups **offsite** y **cifrados**; el bucket no en el mismo dominio de falla que el cluster.
 
+### 3.5 Redis: ¿hay que resguardarlo? (análisis)
+**No es fuente de verdad** — Redis en el juego es **cache + rate-limit** (catálogo cacheado, límites
+de OTP/ataque/asistente), todo **derivable o efímero**. Toda la verdad vive en **Postgres** (estado
+lazy por timestamp). Conclusión: **NO requiere backup**; si Redis se pierde o se reinicia, el juego
+sigue (cache se repuebla, los contadores de rate-limit se reinician — peor caso: alguien obtiene
+unos requests extra). De hecho el sistema corre **sin Redis** (degrada a no-op).
+- **Recomendación**: Redis **sin persistencia** (o RDB con `save` flexible) y **sin** PVC crítico;
+  tratarlo como reemplazable. Lo único a cuidar es **no** apoyar en Redis datos que deban sobrevivir
+  (hoy no se hace). Si en el futuro se mete algo durable en Redis (colas, locks con estado), revisar
+  esta decisión y agregar AOF/replica.
+- **Pérdida aceptable** de Redis: ventanas de rate-limit y cache caliente. RPO Redis = "no aplica".
+
+## 3.6 Runbook de recuperación (resumen accionable)
+**Pod de Postgres muere** → el `StatefulSet`+PVC lo reprograma con el mismo disco; el initContainer
+`migrate` corre `alembic upgrade head` (idempotente) y la API vuelve. **Sin acción manual.**
+**Disco/PVC perdido o corrupción** → restaurar del último backup:
+1. Escalar la API a 0 (evitar escrituras): `kubectl scale deploy/<rel>-api --replicas=0 -n <ns>`.
+2. Crear/limpiar la DB y restaurar: `pg_restore -c -d <db> <ultimo_dump.fc>` (o `psql < dump.sql`).
+3. Verificar `alembic current` = head; correr smoke (SDD 17 §4).
+4. Escalar la API de vuelta. Anotar RTO real.
+**Cluster entero perdido** → reinstalar chart con Postgres externo/PVC restaurado del **backup
+offsite cifrado**; Redis se levanta vacío (no requiere restore).
+
 ## 4. Resiliencia operativa (complementos)
 - **PodDisruptionBudget** + readiness (ya hay) para que un drain no tire todo a la vez (ver SDD 7).
 - Postgres: `PersistentVolume` con `Retain` reclaim policy (no borrar el disco al borrar el PVC).

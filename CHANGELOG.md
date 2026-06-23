@@ -7,6 +7,21 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — Seguridad: admin gate + rate-limit OTP + registro web por email; SDDs 20/usuarios
+- **Gate de `/admin/*` (SDD 14 v2)**: `get_current_admin` (`Player.is_admin` + `ADMIN_EMAIL`).
+  Antes `tick`/`season/close` los llamaba cualquier logueado. Migración aditiva `is_admin`
+  (`server_default`). Sin `ADMIN_EMAIL` (dev/test) queda abierto como antes. e2e
+  `test_admin_endpoints_gated`.
+- **Rate-limit por IP en `/auth/request-code`** (`otp_rate_limit_per_min`, 429): defensa anti-abuso
+  del endpoint (el envío ya estaba acotado por allowlist+cooldown). e2e `test_otp_request_rate_limited`.
+- **Web alineada con la allowlist**: el form de registro ahora manda **email** (antes daba 403 al
+  gatear register por email). `register()` envía email; login sigue user+pass. `is_admin` se siembra
+  desde `ADMIN_EMAIL` al crear la cuenta (register + OTP).
+- **SDD 20 — Usuarios** (`docs/sdd-users.md`): modelo `Player`, campos, e identidad **nickname
+  público / email privado**. **SDD 10 ampliado**: estrategia de **Redis** (cache, no requiere
+  backup) + runbook de recuperación. **Backlog**: i18n EN incompleto + nickname OTP no derivar del email.
+- **166 unit/e2e verdes.**
+
 ### 2026-06-23 — Deploy: mailer Resend + OTP_SECRET vía Secret (entrega real de códigos)
 - El chart ahora wirea el **envío de email** (SDD 6/14): `mail.backend`/`mail.from` (env) +
   `mail.resendApiKey`/`mail.otpSecret` **vía Secret** (`templates/secret.yaml` + `commonEnv`). Reusa

@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import normalize_lang
 from app.core.config import get_settings
 from app.core.db import get_session
+from app.core.redis import get_redis, rate_limited
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models import Player
 from app.schemas import (
@@ -42,8 +44,12 @@ async def register(body: RegisterRequest, session: AsyncSession = Depends(get_se
         taken = await session.execute(select(Player.id).where(Player.email == email))
         if taken.first() is not None:
             raise HTTPException(status.HTTP_409_CONFLICT, "Ese email ya tiene cuenta.")
+    admin_email = get_settings().admin_email.strip().lower()
     player = Player(
-        username=body.username, password_hash=hash_password(body.password), email=email
+        username=body.username,
+        password_hash=hash_password(body.password),
+        email=email,
+        is_admin=bool(admin_email) and email == admin_email,
     )
     session.add(player)
     await session.commit()
@@ -63,11 +69,19 @@ async def login(body: LoginRequest, session: AsyncSession = Depends(get_session)
 @router.post("/request-code", response_model=RequestCodeResponse)
 async def request_code(
     body: RequestCodeRequest,
+    request: Request,
     lang: str | None = None,
     accept_language: str | None = Header(default=None),
     session: AsyncSession = Depends(get_session),
+    redis: Redis | None = Depends(get_redis),
 ):
-    """Manda un código al email. Respuesta SIEMPRE uniforme (no revela si el email existe)."""
+    """Manda un código al email. Respuesta SIEMPRE uniforme (no revela si el email existe).
+    Rate-limit por IP (anti-abuso): el envío ya está acotado por allowlist+cooldown."""
+    ip = request.client.host if request.client else "unknown"
+    if await rate_limited(redis, f"rl:otp:{ip}", get_settings().otp_rate_limit_per_min, 60):
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS, "Demasiados intentos; esperá un momento."
+        )
     try:
         await auth_otp.request_code(session, body.email, normalize_lang(lang or accept_language))
     except auth_otp.AuthOtpError as e:

@@ -413,6 +413,57 @@ async def test_register_gated_by_allowlist(client, monkeypatch):
     assert r.status_code == 201, r.text
 
 
+async def test_admin_endpoints_gated(client, monkeypatch):
+    # SDD 14 v2: con ADMIN_EMAIL configurado, /admin/* exige ser admin.
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "allowed_emails", "boss@b.com,rando@b.com")
+    monkeypatch.setattr(get_settings(), "admin_email", "boss@b.com")
+
+    # jugador no-admin (email permitido pero no admin) -> 403
+    r = await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "rando2", "password": "secret123", "email": "rando@b.com"},
+    )
+    tok = r.json()["access_token"]
+    nonadmin = {"Authorization": f"Bearer {tok}"}
+    assert (await client.http.post("/api/v1/admin/tick", headers=nonadmin)).status_code == 403
+
+    # el admin (email configurado) -> 200
+    r = await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "boss", "password": "secret123", "email": "boss@b.com"},
+    )
+    admintok = r.json()["access_token"]
+    rr = await client.http.post(
+        "/api/v1/admin/tick", headers={"Authorization": f"Bearer {admintok}"}
+    )
+    assert rr.status_code == 200, rr.text
+
+
+async def test_otp_request_rate_limited(client, monkeypatch):
+    # SDD 6/14: rate-limit por IP del request-code (anti-abuso del endpoint).
+    import fakeredis.aioredis
+
+    from app.core.config import get_settings
+    from app.core.redis import get_redis
+    from app.main import app
+
+    fake = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    app.dependency_overrides[get_redis] = lambda: fake
+    monkeypatch.setattr(get_settings(), "otp_rate_limit_per_min", 2)
+    try:
+        codes = []
+        for _ in range(3):
+            r = await client.http.post(
+                "/api/v1/auth/request-code", json={"email": "x@b.com"}
+            )
+            codes.append(r.status_code)
+        assert codes[-1] == 429, codes
+    finally:
+        app.dependency_overrides.pop(get_redis, None)
+
+
 async def test_register_open_without_allowlist(client):
     # Sin allowlist (default), el registro sigue abierto (no rompe dev/CLI/tests).
     r = await client.http.post(

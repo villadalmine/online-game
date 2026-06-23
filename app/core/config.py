@@ -73,11 +73,18 @@ class Settings(BaseSettings):
     otp_max_attempts: int = 5
     otp_resend_cooldown_seconds: int = 60
     otp_length: int = 6
+    # Defensa anti-abuso del endpoint OTP (SDD 6/14): tope de request-code por IP por minuto.
+    # El envío real ya está acotado por allowlist + cooldown; esto frena el martilleo del endpoint.
+    otp_rate_limit_per_min: int = 5
     # Allowlist de altas (SDD 14, modo simple): lista de emails autorizados a registrarse,
     # separados por coma. Vacío = registro abierto (comportamiento actual). Si está seteada, solo
     # esos emails (o jugadores ya existentes) reciben código en /auth/request-code. Cambiarla =
     # redeploy/restart. El gate es uniforme (no revela la lista → anti-enumeración).
     allowed_emails: str = ""
+
+    # Admin (SDD 14 v2): email del admin. Si está seteado, /admin/* exige ser admin (ese email
+    # o is_admin=True). Vacío = sin gate (dev/test, comportamiento actual).
+    admin_email: str = ""
 
     # Envío de email: console (default, loguea el código — dev/CI sin SMTP) | smtp | resend
     mail_backend: str = "console"

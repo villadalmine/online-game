@@ -102,10 +102,11 @@
 <!-- AUTH -->
 <div id="auth" class="card" style="max-width:460px;margin:48px auto;">
   <h2>Crear cuenta / Entrar</h2>
-  <p class="muted">¿Primera vez? Elegí usuario y contraseña y tocá <b>Registrar</b>
-     (no hay cuentas pre-creadas). Si ya tenés, <b>Entrar</b>.<br>
+  <p class="muted">¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá
+     <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>
      Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro
      dispositivo, y está todo igual.</p>
+  <div class="row"><input id="regemail" type="email" placeholder="email invitado (para registrarte)" style="flex:1" /></div>
   <div class="row"><input id="u" placeholder="usuario (mín. 3)" style="flex:1" /></div>
   <div class="row"><input id="p" type="password" placeholder="contraseña (mín. 6)" style="flex:1" /></div>
   <div class="row">
@@ -294,7 +295,7 @@ function msg(t,ok=true){ const m=$("msg"); m.textContent=t; m.className=ok?"ok":
 // auth
 function authErr(t){ const e=$("autherr"); e.textContent=t; e.className="bad"; }
 function remember(){ localStorage.setItem("lastuser",$("u").value); }
-async function register(){ try{ const d=await api("/api/v1/auth/register","POST",cred()); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
+async function register(){ try{ const body={...cred(), email:($("regemail").value||"").trim()||null}; const d=await api("/api/v1/auth/register","POST",body); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
 async function login(){ try{ const d=await api("/api/v1/auth/login","POST",cred()); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
 function cred(){ return { username:$("u").value, password:$("p").value }; }
 // passwordless: email + código OTP (SDD 6)
