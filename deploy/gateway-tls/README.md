@@ -47,7 +47,10 @@ helm upgrade --install online-game deploy/helm \
 ## Validación del challenge: DNS-01 vs HTTP-01
 
 - **DNS-01** (recomendado detrás de NAT / si solo tenés el `:443` expuesto): no necesita tráfico
-  HTTP entrante, solo credenciales del DNS. Es el solver por defecto del ClusterIssuer.
+  HTTP entrante. Con proveedor que tenga solver nativo (cloudflare/route53/etc.) usás un token.
+  Con un proveedor SIN solver nativo (registradores con API limitada/no apta), usá **acme-dns**:
+  corrés un acme-dns, delegás `_acme-challenge.<dominio>` con un CNAME estático y cert-manager
+  escribe los TXT ahí (solver built-in). Es el ejemplo por defecto del ClusterIssuer.
 - **HTTP-01**: necesita el `:80` alcanzable desde internet llegando al Gateway. Si ese es tu caso,
   cambiá el `solvers:` por `http01.gatewayHTTPRoute` apuntando al Gateway.
 

@@ -2,16 +2,18 @@
 # El cluster ya tiene cert-manager con enableGatewayAPI:true.
 #
 # Solver: DNS-01 (recomendado). No necesita tráfico HTTP entrante (sirve detrás de NAT o si
-# solo tenés el :443 forwardeado). Requiere credenciales de tu proveedor de DNS en un Secret.
-# (Si en cambio podés exponer el :80 al Gateway, podés usar HTTP-01 con un solver
-#  http01.gatewayHTTPRoute apuntando al Gateway; ver README.)
+# solo tenés el :443 forwardeado). (Si podés exponer el :80 al Gateway, alternativamente usá
+# HTTP-01 con http01.gatewayHTTPRoute apuntando al Gateway; ver README.)
 #
-# Ejemplo abajo con Cloudflare; ajustá al proveedor real (route53, acme-dns, rfc2136, etc.).
+# Ejemplo abajo con acme-dns (solver BUILT-IN): ideal para proveedores SIN solver nativo en
+# cert-manager (p.ej. registradores con API limitada). Delegás _acme-challenge.<dominio> con un
+# CNAME estático a tu acme-dns y cert-manager escribe ahí los TXT dinámicos. Para proveedores
+# con solver nativo (cloudflare/route53/azuredns/google) o webhooks, cambiá el bloque `solvers`.
 # Empezá SIEMPRE con staging; cuando emita ok, pasá a prod.
 #
-# Secret con el token (NO lo commitees):
-#   kubectl create secret generic clouddns-token -n cert-manager \
-#     --from-literal=api-token=<DNS_API_TOKEN>
+# Secret con las credenciales de registro de acme-dns (NO lo commitees):
+#   kubectl create secret generic acme-dns-creds -n cert-manager \
+#     --from-file=acmedns.json=./acmedns-accounts.json
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -25,10 +27,11 @@ spec:
       name: letsencrypt-staging-account-key
     solvers:
       - dns01:
-          cloudflare:
-            apiTokenSecretRef:
-              name: clouddns-token
-              key: api-token
+          acmeDNS:
+            host: https://acme-dns.example   # tu instancia acme-dns
+            accountSecretRef:
+              name: acme-dns-creds
+              key: acmedns.json
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -42,7 +45,8 @@ spec:
       name: letsencrypt-prod-account-key
     solvers:
       - dns01:
-          cloudflare:
-            apiTokenSecretRef:
-              name: clouddns-token
-              key: api-token
+          acmeDNS:
+            host: https://acme-dns.example   # tu instancia acme-dns
+            accountSecretRef:
+              name: acme-dns-creds
+              key: acmedns.json
