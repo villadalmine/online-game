@@ -1,0 +1,71 @@
+# Build de la imagen online-game con Kaniko vía Argo Workflows (in-cluster, arm64).
+# Adaptado del patrón de infra-ai (roles/install-leloir-image): un Workflow clona el repo
+# (inputs.artifacts.git) y Kaniko builda desde deploy/Dockerfile, empujando al registry interno.
+#
+# Aplicar:   kubectl create -f deploy/build/online-game-kaniko.yaml
+# Seguir:    kubectl logs -l app=online-game-build -n kaniko -f
+# Esperar:   kubectl wait workflow -l app=online-game-build -n kaniko \
+#              --for=jsonpath='{.status.phase}'=Succeeded --timeout=900s
+#
+# Cambiá el tag en --destination y luego: helm upgrade galaxy ... --set image.tag=<tag>
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: build-online-game-
+  namespace: kaniko
+  labels:
+    app: online-game-build
+spec:
+  entrypoint: build-image
+  ttlStrategy:
+    secondsAfterSuccess: 3600      # limpia el workspace 1h después de éxito
+    secondsAfterFailure: 86400     # retiene 24h para debug si falla
+  nodeSelector:
+    kubernetes.io/hostname: srv-rk1-nvme-01    # arm64, como el nodo del juego
+  tolerations:
+    - key: "node.kubernetes.io/unreachable"
+      operator: Exists
+      effect: NoExecute
+    - key: "node.kubernetes.io/not-ready"
+      operator: Exists
+      effect: NoExecute
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn-nvme
+        resources:
+          requests:
+            storage: 5Gi
+  templates:
+    - name: build-image
+      inputs:
+        artifacts:
+          - name: source
+            path: /workspace/source
+            git:
+              repo: "https://github.com/villadalmine/online-game.git"
+              revision: main
+              depth: 1
+      container:
+        image: gcr.io/kaniko-project/executor:latest
+        args:
+          - "--dockerfile=/workspace/source/deploy/Dockerfile"
+          - "--context=dir:///workspace/source"
+          - "--destination=registry.registry:5000/online-game:0.2.0"
+          - "--insecure"
+          - "--skip-tls-verify"
+          - "--snapshot-mode=redo"
+          - "--compression=zstd"
+          - "--compression-level=1"
+        resources:
+          requests:
+            cpu: "1"
+            memory: "2Gi"
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace

@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — 🚀 Publicado: build Kaniko + upgrade + migraciones (SDD 15/16/17)
+- **El juego está LIVE** detrás del dominio público con TLS Let's Encrypt **prod** válido, login
+  OTP + allowlist (SDD 14) y asistente AI (OpenRouter free). Release `galaxy`, ns `online-game`.
+- **SDD 15 — build Kaniko/Argo** (`docs/sdd-image-build-kaniko.md` + `deploy/build/online-game-kaniko.yaml`):
+  build in-cluster arm64 desde `git`, push al registry interno. Reproducible.
+- **SDD 16 — migraciones en deploy** (`docs/sdd-migrations-deploy.md`): el initContainer `migrate`
+  corre `alembic upgrade head` antes de servir; aditivo e idempotente (no-op si no hay cambios),
+  datos intactos (PVC, SDD 10). Guía expand/contract + rollback.
+- **SDD 17 — runbook de upgrade** (`docs/sdd-deploy-upgrade.md`): build → `helm upgrade
+  --set image.tag` → migraciones → smoke. Casos: cambió esquema / solo env / flip cert / allowlist.
+
 ### 2026-06-23 — Deploy: bootstrap reproducible del secret acme-dns (cert DNS-01)
 - `deploy/gateway-tls/create-acme-dns-secret.sh` (idempotente, server-side apply) crea el secret
   `acme-dns-account` en `cert-manager` — el ÚNICO prerequisito que el chart no crea (un secret no

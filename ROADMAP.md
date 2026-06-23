@@ -69,7 +69,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    agnóstico sin deps (console/SMTP/Resend), i18n del email; el login usuario+contraseña sigue para
    dev. [SDD](docs/sdd-auth-login.md) + tests servicio/e2e/browser. Follow-up: rate-limit por IP +
    entrega real de email + `OTP_SECRET` fuerte en deploy.
-6. **Deploy online real** — exponer para jugar a distancia (tunnel/cloud) con Postgres + secreto fuerte.
+6. 🟢 **Deploy online real — HECHO**: el juego está **publicado** detrás del dominio público con TLS
+   Let's Encrypt **prod** (cert-manager + Gateway API/Cilium, reuso de `cluster-gateway`), login OTP
+   + allowlist (SDD 14) y asistente AI (OpenRouter). Build con Kaniko/Argo (SDD 15), migraciones
+   automáticas (SDD 16), runbook de upgrade (SDD 17). Release `galaxy` / ns `online-game`.
    Dominio en `gateway.host`; TLS público con cert-manager + Gateway API (`deploy/gateway-tls/`:
    ClusterIssuer Let's Encrypt + listener HTTPS en el Gateway). Falta: ClusterIssuer aplicado
    (DNS-01 detrás de NAT, o HTTP-01 si el :80 llega al Gateway), `JWT_SECRET`/`OTP_SECRET` fuertes

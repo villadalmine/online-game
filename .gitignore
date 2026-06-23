@@ -7,10 +7,13 @@ venv/
 *.db
 .pytest_cache/
 .ruff_cache/
-dist/
-build/
+/dist/
+/build/
 tests/browser/screenshots/
 # Helm values PERSONALES (dominio/IPs/email/secretos reales) — nunca al repo público.
 # Convención: cualquier values-*.yaml es personal y se ignora; los ejemplos genéricos
 # (commiteables, con placeholders) viven en deploy/helm/examples/. (values.yaml SÍ se versiona.)
 deploy/helm/values-*.yaml
+
+# Credenciales reales de la cuenta acme-dns (DNS-01). El .example.json SÍ se versiona.
+acme-dns-account.json
