@@ -46,7 +46,7 @@ gateway:
   # patchear el Gateway en su ns. Opt-in. Para Gateway dedicado (create=true) NO hace falta.
   ensureListener:
     enabled: false
-    name: ""                       # nombre del listener; "" = <release>-https. (ej: cruzdelsur-https)
+    name: ""                       # nombre del listener; "" = <release>-https
     image: bitnami/kubectl:latest  # imagen con kubectl (mirror a tu registry si hace falta)
 
 # --- ClusterIssuers Let's Encrypt (DNS-01 vía acme-dns) ---------------------------------------
