@@ -1,0 +1,146 @@
+"""Métricas Prometheus sin dependencias (SDD 19).
+
+Registro en memoria del proceso (Counter/Gauge/Histogram) + `render()` en el formato de
+exposición de Prometheus. Multi-réplica: cada pod expone lo suyo y Prometheus suma (usar rate()).
+Reglas: labels ACOTADOS (nunca ids/emails de jugador → cardinalidad + privacidad).
+"""
+from __future__ import annotations
+
+import threading
+
+_lock = threading.Lock()
+_metrics: list[_Metric] = []
+
+
+def _fmt_labels(names: tuple[str, ...], values: tuple[str, ...]) -> str:
+    if not names:
+        return ""
+    inner = ",".join(f'{n}="{_esc(v)}"' for n, v in zip(names, values, strict=False))
+    return "{" + inner + "}"
+
+
+def _esc(v: str) -> str:
+    return str(v).replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")
+
+
+class _Metric:
+    def __init__(self, name: str, help_: str, labelnames: tuple[str, ...] = ()):
+        self.name = name
+        self.help = help_
+        self.labelnames = labelnames
+        _metrics.append(self)
+
+
+class Counter(_Metric):
+    kind = "counter"
+
+    def __init__(self, name, help_, labelnames=()):
+        super().__init__(name, help_, tuple(labelnames))
+        self._vals: dict[tuple[str, ...], float] = {}
+
+    def inc(self, amount: float = 1.0, **labels) -> None:
+        key = tuple(str(labels.get(n, "")) for n in self.labelnames)
+        with _lock:
+            self._vals[key] = self._vals.get(key, 0.0) + amount
+
+    def _lines(self) -> list[str]:
+        out = []
+        for key, v in list(self._vals.items()):
+            out.append(f"{self.name}{_fmt_labels(self.labelnames, key)} {v}")
+        if not self._vals:
+            out.append(f"{self.name} 0")
+        return out
+
+
+class Gauge(_Metric):
+    kind = "gauge"
+
+    def __init__(self, name, help_, labelnames=()):
+        super().__init__(name, help_, tuple(labelnames))
+        self._vals: dict[tuple[str, ...], float] = {}
+
+    def set(self, value: float, **labels) -> None:
+        key = tuple(str(labels.get(n, "")) for n in self.labelnames)
+        with _lock:
+            self._vals[key] = float(value)
+
+    def inc(self, amount: float = 1.0, **labels) -> None:
+        key = tuple(str(labels.get(n, "")) for n in self.labelnames)
+        with _lock:
+            self._vals[key] = self._vals.get(key, 0.0) + amount
+
+    def dec(self, amount: float = 1.0, **labels) -> None:
+        self.inc(-amount, **labels)
+
+    def _lines(self) -> list[str]:
+        out = []
+        for key, v in list(self._vals.items()):
+            out.append(f"{self.name}{_fmt_labels(self.labelnames, key)} {v}")
+        if not self._vals:
+            out.append(f"{self.name} 0")
+        return out
+
+
+_DEFAULT_BUCKETS = (0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10)
+
+
+class Histogram(_Metric):
+    kind = "histogram"
+
+    def __init__(self, name, help_, labelnames=(), buckets=_DEFAULT_BUCKETS):
+        super().__init__(name, help_, tuple(labelnames))
+        self.buckets = tuple(buckets)
+        self._counts: dict[tuple[str, ...], list[int]] = {}
+        self._sum: dict[tuple[str, ...], float] = {}
+        self._n: dict[tuple[str, ...], int] = {}
+
+    def observe(self, value: float, **labels) -> None:
+        key = tuple(str(labels.get(n, "")) for n in self.labelnames)
+        with _lock:
+            counts = self._counts.setdefault(key, [0] * len(self.buckets))
+            for i, b in enumerate(self.buckets):
+                if value <= b:
+                    counts[i] += 1
+            self._sum[key] = self._sum.get(key, 0.0) + value
+            self._n[key] = self._n.get(key, 0) + 1
+
+    def _lines(self) -> list[str]:
+        out = []
+        for key in list(self._n.keys()):
+            base = self.labelnames
+            counts = self._counts[key]
+            cumulative = 0
+            for i, b in enumerate(self.buckets):
+                cumulative = counts[i]
+                lab = _fmt_labels(base + ("le",), key + (str(b),))
+                out.append(f"{self.name}_bucket{lab} {cumulative}")
+            lab_inf = _fmt_labels(base + ("le",), key + ("+Inf",))
+            out.append(f"{self.name}_bucket{lab_inf} {self._n[key]}")
+            out.append(f"{self.name}_sum{_fmt_labels(base, key)} {self._sum[key]}")
+            out.append(f"{self.name}_count{_fmt_labels(base, key)} {self._n[key]}")
+        return out
+
+
+def render() -> str:
+    """Serializa todo el registro en formato de exposición Prometheus (text/plain)."""
+    lines: list[str] = []
+    for m in _metrics:
+        lines.append(f"# HELP {m.name} {m.help}")
+        lines.append(f"# TYPE {m.name} {m.kind}")
+        lines.extend(m._lines())
+    return "\n".join(lines) + "\n"
+
+
+# --- Métricas del juego (SDD 19) -------------------------------------------------------------
+HTTP_REQUESTS = Counter(
+    "http_requests_total", "Requests HTTP por método/ruta/status", ("method", "path", "status")
+)
+HTTP_DURATION = Histogram(
+    "http_request_duration_seconds", "Latencia de requests HTTP", ("method", "path")
+)
+IN_FLIGHT = Gauge("http_requests_in_flight", "Requests HTTP en curso")
+
+SSE_CONNECTIONS = Gauge("game_sse_connections", "Conexiones SSE abiertas (conectados ahora)")
+PLAYERS_TOTAL = Gauge("game_players_total", "Jugadores humanos totales")
+SIGNUPS = Counter("game_signups_total", "Altas de jugadores", ("method",))  # method=password|otp
+LOGINS = Counter("game_logins_total", "Logins exitosos", ("method",))

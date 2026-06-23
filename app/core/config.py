@@ -86,6 +86,10 @@ class Settings(BaseSettings):
     # o is_admin=True). Vacío = sin gate (dev/test, comportamiento actual).
     admin_email: str = ""
 
+    # Observabilidad (SDD 19): si está seteado, /metrics exige Bearer = este token (Prometheus lo
+    # manda por bearerTokenSecret) → no queda público por el gateway. Vacío = abierto (dev).
+    metrics_token: str = ""
+
     # Envío de email: console (default, loguea el código — dev/CI sin SMTP) | smtp | resend
     mail_backend: str = "console"
     mail_from: str = "Online Galaxy War <no-reply@localhost>"

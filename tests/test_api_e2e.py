@@ -496,6 +496,32 @@ async def test_otp_allowlist_gates_signup(client, monkeypatch):
     assert ok.status_code == 200, ok.text
 
 
+async def test_metrics_endpoint_and_no_pii(client):
+    # SDD 19: /metrics expone series clave y NO filtra PII (sin emails en labels).
+    await client.http.get("/api/v1/catalog")
+    await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "metricuser", "password": "secret123"},
+    )
+    r = await client.http.get("/metrics")
+    assert r.status_code == 200
+    body = r.text
+    assert "http_requests_total" in body
+    assert "game_sse_connections" in body
+    assert 'game_signups_total{method="password"}' in body
+    assert "@" not in body  # ninguna serie con email/PII
+
+
+async def test_metrics_token_guard(client, monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "metrics_token", "sekret-token")
+    r = await client.http.get("/metrics")
+    assert r.status_code == 401
+    ok = await client.http.get("/metrics", headers={"Authorization": "Bearer sekret-token"})
+    assert ok.status_code == 200
+
+
 # ---- onboarding / state -----------------------------------------------------
 
 async def test_onboard_and_me(client):

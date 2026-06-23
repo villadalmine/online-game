@@ -151,6 +151,18 @@ mail:
   resendApiKey: ""             # va a un Secret (no al repo)
   otpSecret: ""                # va a un Secret (HMAC del OTP); fuerte en prod
 
+# Observabilidad (SDD 19): /metrics (Prometheus) + ServiceMonitor para scrapearlo.
+# token va a un Secret; con token, /metrics exige Bearer (no público). Prometheus lo manda por
+# bearerTokenSecret. serviceMonitor.enabled requiere el Prometheus Operator (CRD ServiceMonitor).
+metrics:
+  token: ""                    # ej: un random; va a un Secret (no al repo)
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    # labels para que tu Prometheus lo seleccione (matchea spec.serviceMonitorSelector). Ej:
+    #   release: kube-prometheus-stack
+    labels: {}
+
 # Legacy / fallback. El token nunca al repo: usá --set o un values-local.yaml gitignored.
 openrouter:
   apiKey: ""                   # ej: helm install ... --set openrouter.apiKey=sk-or-...

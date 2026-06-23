@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import normalize_lang
+from app.core import metrics
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.redis import get_redis, rate_limited
@@ -53,6 +54,7 @@ async def register(body: RegisterRequest, session: AsyncSession = Depends(get_se
     )
     session.add(player)
     await session.commit()
+    metrics.SIGNUPS.inc(method="password")
     return TokenResponse(access_token=create_access_token(player.username))
 
 
@@ -62,6 +64,7 @@ async def login(body: LoginRequest, session: AsyncSession = Depends(get_session)
     player = res.scalar_one_or_none()
     if player is None or not verify_password(body.password, player.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Credenciales invalidas")
+    metrics.LOGINS.inc(method="password")
     return TokenResponse(access_token=create_access_token(player.username))
 
 

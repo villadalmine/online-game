@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
 from app.api.deps import get_current_player
+from app.core import metrics
 from app.core.config import get_settings
 from app.core.db import get_session, get_sessionmaker
 from app.core.security import decode_token
@@ -40,7 +41,17 @@ async def stream(
         interval = get_settings().stream_interval
     interval = min(max(interval, 0.05), 30.0)
     gen = stream_events(maker, player.id, request.is_disconnected, interval)
-    return StreamingResponse(gen, media_type="text/event-stream")
+
+    async def _counted():
+        # SDD 19: gauge de conexiones SSE = "conectados ahora".
+        metrics.SSE_CONNECTIONS.inc()
+        try:
+            async for ev in gen:
+                yield ev
+        finally:
+            metrics.SSE_CONNECTIONS.dec()
+
+    return StreamingResponse(_counted(), media_type="text/event-stream")
 
 
 @router.get("", response_model=list[NotificationOut])

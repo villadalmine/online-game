@@ -19,6 +19,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import metrics
 from app.core.config import get_settings
 from app.core.security import hash_password
 from app.models import EmailOtp, Player
@@ -146,8 +147,10 @@ async def verify_code(session: AsyncSession, email: str, code: str) -> Player:
                 is_admin=bool(admin_email) and email == admin_email,
             )
             session.add(player)
+            metrics.SIGNUPS.inc(method="otp")
         await session.delete(otp)
         await session.commit()
+        metrics.LOGINS.inc(method="otp")
         return player
 
     otp.attempts += 1

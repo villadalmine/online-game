@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-23 — SDD 19 v1: métricas Prometheus (/metrics) + ServiceMonitor
+- **`/metrics`** (formato Prometheus, módulo stdlib `app/core/metrics.py`, sin deps): RED por ruta
+  (path-template), `game_sse_connections` (conectados ahora), `game_players_total`,
+  `game_signups_total{method}`, `game_logins_total{method}`. Middleware + instrumentación en
+  auth/OTP/SSE.
+- **No público**: `METRICS_TOKEN` (Secret) → `/metrics` exige Bearer; sin PII en labels (test).
+- **Helm**: ServiceMonitor opt-in (`metrics.serviceMonitor.enabled`), Service con puerto `http`
+  nombrado, `METRICS_TOKEN` por Secret. Para kube-prometheus-stack: label
+  `release: kube-prometheus-stack`.
+- Tests: `test_metrics_endpoint_and_no_pii`, `test_metrics_token_guard`. **169 unit/e2e verdes.**
+
 ### 2026-06-23 — Privacidad: nick neutro en alta OTP (no derivar del email) (SDD 20)
 - El alta por OTP genera `comandante-<hex>` en vez de derivar el username del local-part del email
   (que lo exponía en el nombre público). `auth_otp._unique_username`. Test

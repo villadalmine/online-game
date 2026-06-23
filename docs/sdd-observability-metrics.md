@@ -110,6 +110,20 @@ opcional provisioning por ConfigMap.
 - e2e (`tests/test_api_e2e.py`): `/metrics` accesible y, si se aplica la mitigación (1), 404 desde el
   hostname público.
 
+## 7.bis Estado de implementación (2026-06-23) — v1
+- **`/metrics`** (Prometheus text) con módulo stdlib `app/core/metrics.py` (Counter/Gauge/Histogram,
+  sin deps). Middleware RED (`http_requests_total`, `http_request_duration_seconds`,
+  `http_requests_in_flight`) con **path-template** (no ids). Métricas: `game_sse_connections`
+  (conectados ahora), `game_players_total`, `game_signups_total{method}`, `game_logins_total{method}`.
+- **No público**: `METRICS_TOKEN` (Secret) → `/metrics` exige Bearer; vacío = abierto (dev). El
+  middleware no se mide a sí mismo; sin labels con PII (test lo verifica).
+- **Helm**: `templates/servicemonitor.yaml` (opt-in `metrics.serviceMonitor.enabled`), Service con
+  puerto `http` nombrado + label, `METRICS_TOKEN` por Secret. Para kube-prometheus-stack, label
+  `release: kube-prometheus-stack` en el SM.
+- Tests: `test_metrics_endpoint_and_no_pii`, `test_metrics_token_guard`. **169 unit/e2e verdes.**
+- **Pendiente**: más counters de negocio (build/train/research/expedition/combate) en los puntos de
+  `stats.bump`; histogram del tick y del LLM; dashboard Grafana JSON; PrometheusRule (alertas).
+
 ## 8. Follow-up
 - Alertas (PrometheusRule): tick caído (`game_tick_last_run_timestamp` viejo), error-rate alto,
   pool de DB saturado, p95 `/players/me` > objetivo (liga con autoscaling, SDD 7), LLM fallback alto.

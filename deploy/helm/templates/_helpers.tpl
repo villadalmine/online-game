@@ -66,6 +66,15 @@ imagePullSecrets:
       key: OTP_SECRET
 {{- end }}
 {{- end }}
+{{- if .Values.metrics }}
+{{- if .Values.metrics.token }}
+- name: METRICS_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Release.Name }}-secrets
+      key: METRICS_TOKEN
+{{- end }}
+{{- end }}
 {{- if .Values.scaling }}
 {{- if .Values.scaling.streamInterval }}
 - name: STREAM_INTERVAL

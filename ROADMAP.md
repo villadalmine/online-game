@@ -80,9 +80,10 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
 8. 📝 **[SDD 18 — GitHub Pages auto-generado](docs/sdd-github-pages.md)**: landing del juego en
    Pages, generada leyendo los `docs/sdd-*.md` + ROADMAP + CHANGELOG (auto-actualizable por Action).
    Sin datos de infra; URL por variable de repo. En la cola.
-9. 📝 **[SDD 19 — Métricas Prometheus + Grafana](docs/sdd-observability-metrics.md)**: `/metrics`
-   (stdlib) con RED + métricas de negocio + conectados en vivo (SSE) + tick + LLM + infra;
-   ServiceMonitor + dashboard. `/metrics` no público; guard de cardinalidad. En la cola.
+9. 🟢 **[SDD 19 — Métricas Prometheus + Grafana](docs/sdd-observability-metrics.md)**: **v1 hecho** —
+   `/metrics` (stdlib) con RED + conectados en vivo (SSE) + signups/logins + players_total; token
+   guard (no público); **ServiceMonitor** opt-in. Follow-up: counters de negocio restantes,
+   histogram tick/LLM, dashboard Grafana, PrometheusRule (alertas).
 10. 📝 **[SDD 20 — Usuarios](docs/sdd-users.md)**: define el modelo `Player`, sus campos, e
    identidad **nickname público / email privado** (entrás por email, te ven por nickname). Documenta
    el modelo vigente + el fix de no derivar el username del email en alta OTP. Ref.

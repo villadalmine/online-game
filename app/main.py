@@ -1,11 +1,14 @@
 import asyncio
 import contextlib
+import hmac
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-from starlette.responses import FileResponse
+from fastapi import FastAPI, Request
+from starlette.responses import FileResponse, PlainTextResponse, Response
 
 from app.api.v1 import api_router
+from app.core import metrics
 from app.core.config import REPO_ROOT, get_settings
 from app.core.db import SessionLocal, run_migrations
 
@@ -53,6 +56,54 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 app.include_router(api_router)
+
+
+@app.middleware("http")
+async def _metrics_middleware(request: Request, call_next):
+    """RED por request (SDD 19). Usa el path-template (no la URL con ids) para no inflar labels."""
+    metrics.IN_FLIGHT.inc()
+    start = time.perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        metrics.IN_FLIGHT.dec()
+        route = request.scope.get("route")
+        path = getattr(route, "path", None) or request.url.path
+        if path != "/metrics":  # no medirse a sí mismo
+            method = request.method
+            metrics.HTTP_REQUESTS.inc(method=method, path=path, status=str(status_code))
+            metrics.HTTP_DURATION.observe(time.perf_counter() - start, method=method, path=path)
+
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics_endpoint(request: Request):
+    """Exposición Prometheus. NO público: si METRICS_TOKEN está seteado, exige Bearer (Prometheus
+    lo manda vía bearerTokenSecret). Vacío = abierto (dev). El scrapeo real es in-cluster."""
+    token = settings.metrics_token
+    if token:
+        auth = request.headers.get("authorization", "")
+        provided = auth[7:] if auth.lower().startswith("bearer ") else ""
+        if not hmac.compare_digest(provided, token):
+            return Response(status_code=401)
+    # gauge "jugadores totales" se calcula al scrapear
+    try:
+        from sqlalchemy import func, select
+
+        from app.models import Player
+
+        async with SessionLocal() as s:
+            n = (
+                await s.execute(
+                    select(func.count()).select_from(Player).where(~Player.is_npc)
+                )
+            ).scalar_one()
+            metrics.PLAYERS_TOTAL.set(n)
+    except Exception:
+        pass
+    return PlainTextResponse(metrics.render(), media_type="text/plain; version=0.0.4")
 
 
 @app.get("/health", tags=["meta"])
