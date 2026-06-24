@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 28 v1: métricas de uso LLM por usuario (monetización) + GPU + dashboard
 - **App**: `llm_chat(user=...)` manda el campo OpenAI `user` (asistente `player:<id>`, NPCs
   `npc:<id>`) → LiteLLM puebla `end_user` → tokens/requests/spend **por jugador y backend**
