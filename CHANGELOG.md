@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 13 §4: refrigeración por temperatura (completa los multiplicadores físicos)
 - `mean_temp_c` → **refrigeración**: temperaturas lejos del confort (frío o calor) **drenan** la
   regen de energía (nunca la suben), acotado al piso configurable. La regen efectiva ahora es
