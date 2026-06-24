@@ -97,6 +97,22 @@ La intel se revela **graduada** — el contraespionaje del defensor baja tu `dep
 - **Detección:** counter alto → el defensor recibe notificación y el atacante pierde espías.
 - **IA:** el asistente no expone datos del rival que no estén en tu IntelReport.
 
+## 9.bis Estado de implementación (2026-06-24) — v1 (backend)
+- **Contenido:** unidad `spy` (stat `spy:10`) + edificio `counter_intel` (`counter_power:60`).
+- **Modelos + migración:** `SpyMission` (patrón de AttackMission) + `IntelReport` (único por
+  observer+target).
+- **Servicio `app/services/espionage.py`:** `resolve_spy` (puro: `depth=spy/(spy+counter)`),
+  `_counter_power` (espías + counter_intel), `graded_payload` (revelado por tiers + `_blur` a rangos),
+  `start_spy` (valida, gasta energía, saca espías del stock, despacha viaje), `process_spy_missions`
+  (resuelve al llegar → guarda intel + detección/bajas + notifica; al volver reintegra sobrevivientes),
+  `intel_confidence` (decay por half-life), `player_intel`. Enganchado en `state.advance`.
+- **API:** `POST /api/v1/spy`, `GET /api/v1/intel`, `GET /api/v1/intel/{target}`.
+- **Tests:** servicio (fórmula, payload graduado, ciclo completo, counter_intel baja depth + detecta) +
+  e2e (lanzar → resolver → leer intel; error). **231 verdes.**
+- **Pendiente (follow-up):** UI web (click en player/NPC → ver intel + botón espiar); integrar la intel
+  en la calculadora de combate (SDD 34) y en el asistente IA (SDD 1/2); técnicas
+  `espionage`/`counter_espionage`; visión de alianza como intel base.
+
 ## 10. Riesgos / decisiones
 - **Balance:** `spy`/`counter_power`/half-life se afinan por YAML; arrancar conservador (que espiar
   valga, pero el contraespionaje sea defensa real).

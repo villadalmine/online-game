@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 35 v1: espionaje e inteligencia (backend)
+- Unidad **`spy`** + edificio **`counter_intel`**; modelos **`SpyMission`**/**`IntelReport`** + migración.
+  Servicio `espionage.py`: `resolve_spy` (depth = spy/(spy+counter)), payload **graduado** (rangos→exacto
+  según depth = ofuscación), `start_spy` + `process_spy_missions` (viaje → resuelve intel + detección/
+  bajas + notifica → vuelven sobrevivientes), confianza con decay. API `POST /spy`, `GET /intel`,
+  `GET /intel/{target}`. Tests servicio + e2e. **231 verdes.** Follow-up: UI web (click→intel),
+  integración con calculadora de combate (SDD 34) y asistente.
+
 ### 2026-06-24 — SDD 35 diseñado: espionaje e inteligencia
 - Doc `docs/sdd-espionage-intel.md`: espías + contraespías + edificio/tech de contraespionaje, con
   **fórmula** `depth = spy/(spy+counter)` (rendimientos decrecientes → mandar de más es al pedo) y

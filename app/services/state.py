@@ -51,6 +51,8 @@ async def advance(session: AsyncSession, player: Player) -> None:
     await finalize_due_research(session, player, now)
     # resolve fleet arrivals/returns involving this player
     await process_missions(session, now, player_id=player.id)
+    from app.services.espionage import process_spy_missions  # SDD 35
+    await process_spy_missions(session, now, observer_id=player.id)
     apply_regen(player, now, effective_energy_regen(player, settings), settings.energy_max)
     await session.commit()
 

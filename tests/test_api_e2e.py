@@ -304,6 +304,45 @@ async def test_npc_strategy_runs_in_tick(client):
         assert npc is not None and npc.npc_posture == "opportunist"
 
 
+async def test_spy_and_intel_e2e(client):
+    # SDD 35: lanzar espías → resolver al llegar → leer intel acumulada por objetivo.
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import SpyMission, UnitStock
+
+    ho = await _register(client.http, "spyboss")
+    await _onboard(client.http, ho)
+    ht = await _register(client.http, "victim")
+    st = await _onboard(client.http, ht)
+    target_base = st["bases"][0]["id"]
+
+    async with client.session_maker() as s:
+        obs = (await s.execute(select(Player).where(Player.username == "spyboss"))).scalar_one()
+        s.add(UnitStock(player_id=obs.id, unit_key="spy", quantity=3))
+        await s.commit()
+
+    r = await client.http.post(
+        "/api/v1/spy", headers=ho, json={"target_base_id": target_base, "spies": {"spy": 3}}
+    )
+    assert r.status_code == 201, r.text
+
+    # adelantar la llegada y disparar el advance (GET /players/me) para resolver
+    async with client.session_maker() as s:
+        m = (await s.execute(select(SpyMission))).scalars().first()
+        m.arrives_at = datetime.now(UTC) - timedelta(seconds=1)
+        await s.commit()
+    await client.http.get("/api/v1/players/me", headers=ho)
+
+    intel = (await client.http.get("/api/v1/intel", headers=ho)).json()
+    assert any(i["target"] == "victim" and i["depth"] > 0 for i in intel)
+
+    # error: base inexistente
+    bad = await client.http.post(
+        "/api/v1/spy", headers=ho, json={"target_base_id": 999999, "spies": {"spy": 1}}
+    )
+    assert bad.status_code == 400
+
+
 async def test_catalog_graph(client):
     r = await client.http.get("/api/v1/catalog/graph?race=martian&planet=mars")
     assert r.status_code == 200

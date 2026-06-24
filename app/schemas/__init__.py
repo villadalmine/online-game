@@ -94,6 +94,27 @@ class RankingEntryOut(BaseModel):
     score: int
 
 
+class SpyRequest(BaseModel):
+    target_base_id: int
+    spies: dict[str, int] = {"spy": 1}
+
+
+class SpyMissionOut(BaseModel):
+    id: int
+    target_base_id: int
+    status: str
+    arrives_at: datetime
+
+
+class IntelReportOut(BaseModel):
+    target_id: int
+    target: str | None
+    depth: float
+    confidence: float
+    as_of: datetime
+    payload: dict
+
+
 class AttackRequest(BaseModel):
     target_base_id: int
     force: dict[str, int]

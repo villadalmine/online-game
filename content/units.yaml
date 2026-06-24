@@ -43,6 +43,20 @@ personnel:
     cost: { structural: 10, energetic: 15, advanced: 10 }
     stats: { attack: 0, defense: 2, hp: 6 }
 
+  - key: spy
+    name: "Espía"
+    name_en: "Spy"
+    description: "Recopila inteligencia de un objetivo; tambien defiende del espionaje enemigo."
+    description_en: "Gathers intel on a target; also defends against enemy espionage."
+    real: "Inteligencia / reconocimiento (HUMINT/ISR)."
+    real_en: "Intelligence / reconnaissance (HUMINT/ISR)."
+    sources: ["Wikipedia: Espionage"]
+    requires: research_lab
+    energy_cost: 4
+    train_seconds: 40
+    cost: { structural: 12, energetic: 8, advanced: 6 }
+    stats: { attack: 1, defense: 2, hp: 8, spy: 10 }
+
 heavy:
   - key: tank
     name: "Tanque"

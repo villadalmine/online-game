@@ -104,3 +104,19 @@ buildings:
     cost:
       structural: 140
       energetic: 60
+  - key: counter_intel
+    name: "Contrainteligencia"
+    name_en: "Counter-intelligence"
+    category: defense
+    description: "Protege tu base del espionaje enemigo: reduce la info que obtienen."
+    description_en: "Shields your base from enemy espionage: reduces the intel they get."
+    real: "Contraespionaje / OPSEC."
+    real_en: "Counter-espionage / OPSEC."
+    sources: ["Wikipedia: Counterintelligence"]
+    energy_cost: 12
+    build_seconds: 90
+    counter_power: 60   # se suma a la defensa de espionaje de la base
+    cost:
+      structural: 120
+      energetic: 60
+      advanced: 40

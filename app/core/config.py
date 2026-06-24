@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     catchup_percentile: float = 0.4
     catchup_min_peers: int = 3
 
+    # Espionaje / inteligencia (SDD 35).
+    spy_energy_cost: float = 5.0
+    intel_confidence_half_life_seconds: int = 28800   # 8h: la intel pierde confianza con el tiempo
+
     # Inteligencia estratégica de NPCs (SDD 29): capa estratégica periódica que lee el scoreboard
     # y fija una postura. Opt-in; cae a la postura previa si el LLM falla (SDD 9).
     npc_strategy_enabled: bool = True

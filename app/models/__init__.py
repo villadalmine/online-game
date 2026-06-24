@@ -208,6 +208,49 @@ class AttackMission(Base):
     returns_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class SpyMission(Base):
+    """Espías en tránsito hacia un objetivo (SDD 35). Resuelven al llegar (generan intel) y vuelven;
+    si los detectan, algunos caen y el defensor es notificado."""
+
+    __tablename__ = "spy_missions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    observer_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    target_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    target_base_id: Mapped[int] = mapped_column(Integer)
+    force: Mapped[str] = mapped_column(Text, default="{}")  # JSON {spy: qty}
+    status: Mapped[str] = mapped_column(String(20), default="outbound")  # outbound|returning|done
+    details: Mapped[str] = mapped_column(Text, default="{}")  # JSON: depth/detected/losses
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    arrives_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    returns_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class IntelReport(Base):
+    """Inteligencia acumulada de un observador sobre un objetivo (SDD 35). Única por par; se
+    actualiza al espiar. `payload` = campos revelados según `depth`; `as_of` para la confianza."""
+
+    __tablename__ = "intel_reports"
+    __table_args__ = (
+        UniqueConstraint("observer_id", "target_id", name="uq_intel_obs_target"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    observer_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    target_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    depth: Mapped[float] = mapped_column(Float, default=0.0)
+    payload: Mapped[str] = mapped_column(Text, default="{}")
+    as_of: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Alliance(Base):
     """A group of players who can't attack each other."""
 
