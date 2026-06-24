@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 35: tecnologías, visión de alianza e intel en el asistente
 - **Tecnologías** `espionage` (+40% poder de espías) y `counter_espionage` (+40% defensa de
   espionaje), data-driven en `content/technologies.yaml`; entran por el mismo `effects.multiplier`
