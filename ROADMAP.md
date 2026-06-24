@@ -84,6 +84,7 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    `/metrics` (stdlib) con RED + conectados en vivo (SSE) + signups/logins + players_total; token
    guard (no público); **ServiceMonitor** opt-in. Follow-up: counters de negocio restantes,
    histogram tick/LLM, dashboard Grafana, PrometheusRule (alertas).
+13. 📝 **[SDD 24 — Landing /game](docs/sdd-landing-page.md)**: página pública linda + bilingüe + social-share (OG) en `/game`; modelo free/BYOD/paid. Diseñado.
 12. 🟢 **[SDD 23 — Versionado (SemVer)](docs/sdd-versioning.md)**: **hecho** — `make release V=X.Y.Z`
    (mueve CHANGELOG, setea appVersion+tag, git tag). Cambios de solo env NO versionan.
 11. 🟢 **[SDD 21 — Presencia + métricas por usuario/galaxia](docs/sdd-presence-dimensional-metrics.md)**:
