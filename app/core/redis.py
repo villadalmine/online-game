@@ -4,8 +4,10 @@ Redis is optional: if it's disabled (default) or unreachable, every helper degra
 to a safe no-op (cache misses, rate limit always allows). This keeps the game running
 identically on a laptop with just SQLite, and lets it use Redis when deployed.
 """
+import contextlib
 import json
-from collections.abc import Callable
+import secrets
+from collections.abc import AsyncIterator, Callable
 
 from redis.asyncio import Redis
 
@@ -41,6 +43,37 @@ async def cached_json(redis: Redis | None, key: str, ttl: int, producer: Callabl
         except Exception:
             pass
     return data
+
+
+@contextlib.asynccontextmanager
+async def player_lock(
+    redis: Redis | None, player_id: int, ttl_ms: int = 10_000
+) -> AsyncIterator[bool]:
+    """Lock distribuido por jugador para serializar acciones mutantes (evita doble-gasto por
+    requests concurrentes del mismo jugador). `yield True` = lo tenemos (o Redis no está → no-op
+    seguro); `yield False` = otro request lo tiene ahora (el caller debe devolver 409). Degrada a
+    no-op si Redis está deshabilitado o falla, para no bloquear el juego."""
+    if redis is None:
+        yield True
+        return
+    key = f"lock:player:{player_id}"
+    token = secrets.token_hex(16)
+    try:
+        acquired = await redis.set(key, token, nx=True, px=ttl_ms)
+    except Exception:
+        yield True  # Redis caído → no bloqueamos el juego
+        return
+    if not acquired:
+        yield False
+        return
+    try:
+        yield True
+    finally:
+        # Liberar solo si seguimos siendo el dueño (token) → no borramos el lock de otro. El TTL
+        # acota el peor caso si el proceso muere antes de llegar acá.
+        with contextlib.suppress(Exception):
+            if await redis.get(key) == token:
+                await redis.delete(key)
 
 
 async def rate_limited(redis: Redis | None, key: str, limit: int, window: int) -> bool:

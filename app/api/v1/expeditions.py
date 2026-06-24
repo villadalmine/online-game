@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_player
+from app.api.deps import get_current_player, lock_current_player
 from app.content.registry import get_content
 from app.core.db import get_session
 from app.models import Player
@@ -27,7 +27,7 @@ async def reachable_moons(player: Player = Depends(get_current_player)):
 @router.post("", response_model=ExpeditionOrderOut, status_code=status.HTTP_201_CREATED)
 async def launch(
     body: ExpeditionRequest,
-    player: Player = Depends(get_current_player),
+    player: Player = Depends(lock_current_player),
     session: AsyncSession = Depends(get_session),
 ):
     if player.race_key is None:

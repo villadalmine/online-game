@@ -32,6 +32,14 @@ async def _auto_tick_loop(interval: int) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Secretos fuertes en prod (deuda técnica): en production, secretos default/cortos frenan el
+    # arranque (el pod no levanta → fuerza arreglarlo); en dev solo avisa.
+    weak = settings.weak_secrets()
+    if weak:
+        msg = f"secretos débiles (default/cortos): {', '.join(weak)} — seteá valores fuertes"
+        if settings.is_production:
+            raise RuntimeError(f"[online-game] arranque abortado en production: {msg}")
+        print(f"[online-game] ⚠️  {msg}", flush=True)
     # Apply migrations on startup so schema changes take effect with no manual reset.
     # Run in a thread because Alembic's async env uses asyncio.run internally.
     await asyncio.to_thread(run_migrations)

@@ -5,7 +5,7 @@ from redis.asyncio import Redis
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_player
+from app.api.deps import get_current_player, lock_current_player
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.redis import get_redis, rate_limited
@@ -19,7 +19,7 @@ router = APIRouter()
 @router.post("/attack", response_model=AttackMissionOut, status_code=status.HTTP_201_CREATED)
 async def do_attack(
     body: AttackRequest,
-    player: Player = Depends(get_current_player),
+    player: Player = Depends(lock_current_player),
     session: AsyncSession = Depends(get_session),
     redis: Redis | None = Depends(get_redis),
 ):
@@ -50,7 +50,7 @@ async def do_attack(
 @router.post("/missions/{mission_id}/recall", response_model=AttackMissionOut)
 async def recall(
     mission_id: int,
-    player: Player = Depends(get_current_player),
+    player: Player = Depends(lock_current_player),
     session: AsyncSession = Depends(get_session),
 ):
     """Retira una flota en vuelo de ida; vuelve con toda la fuerza, sin combate."""

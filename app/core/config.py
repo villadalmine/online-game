@@ -163,6 +163,24 @@ class Settings(BaseSettings):
             return "postgres"
         return "other"
 
+    def weak_secrets(self) -> list[str]:
+        """Nombres de secretos que siguen en su default o son demasiado cortos (< 16 bytes).
+        En production el arranque falla si esta lista no está vacía (deuda técnica: secretos
+        fuertes en prod). Solo se chequea OTP si el login passwordless está activo (allowlist o
+        mailer real); en dev/CLI con login usuario+clave no estorba."""
+        weak: list[str] = []
+        defaults = {"change-me", "change-me-in-prod", "change-me-otp-secret", ""}
+        if self.jwt_secret in defaults or len(self.jwt_secret) < 16:
+            weak.append("JWT_SECRET")
+        otp_in_use = bool(self.allowed_email_set) or self.mail_backend != "console"
+        if otp_in_use and (self.otp_secret in defaults or len(self.otp_secret) < 16):
+            weak.append("OTP_SECRET")
+        return weak
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment.strip().lower() in ("production", "prod")
+
     @property
     def safe_database_url(self) -> str:
         """DB URL with any password redacted (safe to log/show)."""

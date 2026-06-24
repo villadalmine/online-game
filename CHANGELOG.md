@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — Deuda técnica de prod: secretos fuertes + locks distribuidos
+- **Secretos fuertes en prod**: `Settings.weak_secrets()` detecta `JWT_SECRET`/`OTP_SECRET`
+  default o cortos (<16 bytes); con `ENVIRONMENT=production` el **arranque aborta** si hay alguno
+  débil (el pod no levanta → obliga a setear uno real); en dev solo avisa. OTP solo se exige cuando
+  el login passwordless está activo (allowlist o mailer real). Tests `tests/test_secrets_guard.py`.
+- **Locks distribuidos por jugador** (Redis): `player_lock()` (SET NX PX + release con check de token;
+  degrada a no-op sin Redis o si Redis falla) + dependency `lock_current_player` aplicada a las
+  acciones que gastan recursos (build/train/research/expedición/ataque/recall) → **serializa** los
+  requests concurrentes del mismo jugador y evita doble-gasto; en contención devuelve **409**. Tests
+  unit (`test_redis.py`) + e2e (409 con Redis simulado). **205 verdes.**
+
 ### 2026-06-24 — SDD 26 diseñado: universos spin-off (Star Trek / BSG / Star Wars)
 - Doc `docs/sdd-spinoff-universes.md`: packs de datos **tipados** (mismo modelo de objetos del
   contenido) con mundos/naves/materiales **fieles al canon** de cada franquicia (`canon: fiction` +

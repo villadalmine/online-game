@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_player
+from app.api.deps import lock_current_player
 from app.core.db import get_session
 from app.models import Player
 from app.schemas import ResearchOrderOut, ResearchRequest
@@ -13,7 +13,7 @@ router = APIRouter()
 @router.post("", response_model=ResearchOrderOut, status_code=status.HTTP_201_CREATED)
 async def research(
     body: ResearchRequest,
-    player: Player = Depends(get_current_player),
+    player: Player = Depends(lock_current_player),
     session: AsyncSession = Depends(get_session),
 ):
     if player.race_key is None:

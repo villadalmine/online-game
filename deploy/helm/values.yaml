@@ -118,6 +118,8 @@ worker:
 
 env:
   ENVIRONMENT: production
+  # JWT_SECRET fuerte (≥16 bytes, no el default) en values-local.yaml. Con ENVIRONMENT=production
+  # el arranque ABORTA si queda débil/default (el pod no levanta) → forzá un secreto real.
   JWT_SECRET: change-me
   REDIS_ENABLED: "true"
   AUTO_TICK_SECONDS: "0"        # 0 = usar el CronJob (multi-réplica); >0 corre tick in-process

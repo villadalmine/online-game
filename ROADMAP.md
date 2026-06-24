@@ -171,6 +171,9 @@ contra el humano líder.)
 
 ## ⚠️ Deuda técnica
 
-- `JWT_SECRET` fuerte en prod (PyJWT avisa con el default corto).
-- Redis **locks** distribuidos para acciones mutantes (hoy hay cache + rate-limit).
+- ✅ `JWT_SECRET`/`OTP_SECRET` fuertes en prod — **hecho**: guard de arranque (`weak_secrets()`) que
+  **aborta en production** con secretos default/cortos; en dev avisa.
+- ✅ Redis **locks** distribuidos para acciones mutantes — **hecho**: `player_lock()` +
+  `lock_current_player` serializan build/train/research/expedición/ataque por jugador (409 en
+  contención; no-op sin Redis). Ya había cache + rate-limit.
 - Web sin test de navegador para *todos* los flujos (cubrimos los principales).

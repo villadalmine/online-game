@@ -184,6 +184,29 @@ async def test_ship_blocked_without_water(client):
     assert r.status_code == 400 and "agua" in r.text.lower()
 
 
+async def test_mutating_action_returns_409_when_player_locked(client):
+    # Deuda técnica de prod: lock distribuido por jugador en acciones mutantes. Si otro request
+    # ya tiene el lock (Redis), la acción concurrente devuelve 409 en vez de doble-gastar.
+    from app.core.redis import get_redis
+    from app.main import app
+
+    class _LockedRedis:
+        async def set(self, *a, **k):
+            return None  # NX falla → simula lock ya tomado por otro request
+
+    h = await _register(client.http, "locked")
+    state = await _onboard(client.http, h)
+    base = state["bases"][0]["id"]
+    app.dependency_overrides[get_redis] = lambda: _LockedRedis()
+    try:
+        r = await client.http.post(
+            f"/api/v1/bases/{base}/build", headers=h, json={"building_key": "mine"}
+        )
+    finally:
+        app.dependency_overrides.pop(get_redis, None)
+    assert r.status_code == 409 and "en curso" in r.text.lower()
+
+
 async def test_catalog_graph(client):
     r = await client.http.get("/api/v1/catalog/graph?race=martian&planet=mars")
     assert r.status_code == 200

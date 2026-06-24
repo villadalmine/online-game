@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_player
+from app.api.deps import lock_current_player
 from app.core.db import get_session
 from app.models import Base_, Player
 from app.schemas import BuildingOut, BuildRequest, TrainingOrderOut, TrainRequest
@@ -24,7 +24,7 @@ async def _load_owned_base(base_id: int, player: Player, session) -> Base_:
 async def build(
     base_id: int,
     body: BuildRequest,
-    player: Player = Depends(get_current_player),
+    player: Player = Depends(lock_current_player),
     session: AsyncSession = Depends(get_session),
 ):
     base = await _load_owned_base(base_id, player, session)
@@ -51,7 +51,7 @@ async def build(
 async def train(
     base_id: int,
     body: TrainRequest,
-    player: Player = Depends(get_current_player),
+    player: Player = Depends(lock_current_player),
     session: AsyncSession = Depends(get_session),
 ):
     base = await _load_owned_base(base_id, player, session)
