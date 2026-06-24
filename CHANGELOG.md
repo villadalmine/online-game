@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — Página técnica /tech (PoC self-hosted + flujo de tráfico)
+- `web/tech.html` + ruta `GET /tech`: página pública que explica el stack (k3s arm64 bare-metal,
+  FastAPI API-first, Cilium Gateway API, cert-manager, Postgres/Redis, Kaniko/Argo in-cluster,
+  Prometheus/Grafana) y el **flujo de tráfico** con un diagrama SVG inline (sin CDNs): Internet →
+  **HAProxy (SNI passthrough)** → **VIP del Cilium Gateway** (termina TLS) → HTTPRoute → Service →
+  Pod. Omite direccionamiento privado exacto (IPs LAN/hostnames) por seguridad. Test e2e. Topología
+  verificada en vivo con `kubectl`.
+
 ### 2026-06-24 — SDD 27 diseñado: sección de Anuncios / "Lo que viene"
 - Doc `docs/sdd-announcements.md`: sección pública **"📣 Anuncios / Lo que viene"** con anuncios
   **tipados** (`content/announcements.yaml`) en categorías (`release`/`incoming`/`spinoff`/`season`/

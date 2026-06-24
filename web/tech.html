@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Online Galaxy War — Arquitectura / Tech (PoC self-hosted)</title>
+<meta name="description" content="PoC 100% self-hosted: FastAPI API-first sobre k3s (arm64), Cilium Gateway API detrás de HAProxy con SNI passthrough, builds in-cluster con Kaniko/Argo. El stack y el flujo de tráfico, explicado.">
+<style>
+  :root{
+    --bg:#0a0e17; --panel:#111726; --panel2:#0d1320; --line:#1e2942;
+    --txt:#dce6f5; --dim:#8aa0c4; --accent:#5cc8ff; --accent2:#7df0c0;
+    --warn:#ffcf6b; --pink:#ff7eb6; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#16213b 0,var(--bg) 55%);
+    color:var(--txt);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 80px}
+  header{padding:36px 0 8px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.5px}
+  h1 .g{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--dim);font-size:17px;margin:0 0 18px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 8px}
+  .badge{font:600 12px/1 var(--mono);color:#cfe6ff;background:#13203a;border:1px solid var(--line);
+    padding:7px 10px;border-radius:999px;letter-spacing:.3px}
+  .badge.ok{color:#bff5dd;background:#0f2a22;border-color:#1d5040}
+  h2{font-size:20px;margin:40px 0 12px;padding-top:10px;border-top:1px solid var(--line)}
+  h2 small{color:var(--dim);font-weight:400;font-size:13px;margin-left:8px;font-family:var(--mono)}
+  p{color:#c5d3ea}
+  .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
+    border-radius:14px;padding:18px 20px;margin:14px 0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .card{background:#0e1626;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .card h3{margin:0 0 6px;font-size:15px;color:#eaf2ff}
+  .card .k{font:600 11px/1 var(--mono);color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
+  .card p{margin:6px 0 0;font-size:13.5px;color:var(--dim)}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font:600 12px var(--mono);text-transform:uppercase;letter-spacing:.4px}
+  td code,.mono{font-family:var(--mono);font-size:13px;color:var(--accent2)}
+  .note{font-size:13px;color:var(--dim);border-left:3px solid var(--warn);padding:4px 0 4px 12px;margin:14px 0}
+  .flow{width:100%;height:auto;display:block;margin:6px 0}
+  ol.steps{margin:6px 0 0;padding-left:20px}
+  ol.steps li{margin:8px 0;color:#c5d3ea}
+  footer{margin-top:50px;color:var(--dim);font-size:13px;border-top:1px solid var(--line);padding-top:18px}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;font:600 12px var(--mono);color:var(--dim)}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1><span class="g">Online Galaxy War</span> — Arquitectura</h1>
+    <p class="sub">Un PoC <strong>100% self-hosted</strong> y <strong>API-first</strong>: cómo está
+      construido y cómo fluye el tráfico, de punta a punta.</p>
+    <div class="badges">
+      <span class="badge ok">PoC · self-hosted</span>
+      <span class="badge ok">100% en casa · sin nube</span>
+      <span class="badge">API-first · FastAPI</span>
+      <span class="badge">k3s · Kubernetes</span>
+      <span class="badge">arm64 · bare-metal</span>
+      <span class="badge">Cilium · Gateway API</span>
+      <span class="badge">builds in-cluster</span>
+    </div>
+  </header>
+
+  <p>Esto <strong>no</strong> corre en ningún proveedor cloud. Todo el juego vive en un clúster
+    <span class="mono">k3s</span> casero sobre placas <strong>ARM</strong> (bare-metal), detrás de la
+    infra de red propia. La misma imagen de contenedor corre idéntica en la laptop y en el clúster;
+    la configuración entra por variables de entorno (12-factor) y el contenido del juego es
+    <em>data-as-code</em> en YAML. La premisa de diseño: <strong>toda la lógica detrás de
+    <code>/api/v1</code></strong> — web, CLI y futuros clientes son consumidores delgados.</p>
+
+  <h2>Flujo de tráfico <small>internet → pod</small></h2>
+  <p>El borde es un <strong>HAProxy</strong> propio que hace <strong>SNI passthrough</strong>: no
+    termina TLS, sólo mira el <code>ServerName</code> del handshake y reenvía el byte-stream cifrado al
+    <strong>backend = la VIP del Cilium Gateway</strong> en la LAN. El TLS se termina recién en el
+    Gateway, con el certificado que emite <strong>cert-manager</strong> (Let's Encrypt, reto DNS-01).</p>
+
+  <svg class="flow" viewBox="0 0 920 560" role="img" aria-label="Diagrama de flujo de tráfico">
+    <defs>
+      <marker id="arr" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L7,3 L0,6 Z" fill="#5cc8ff"/>
+      </marker>
+      <style>
+        .b{fill:#0e1626;stroke:#26365a;stroke-width:1.5;rx:12}
+        .t{fill:#eaf2ff;font:600 15px system-ui}
+        .s{fill:#8aa0c4;font:12px ui-monospace,Menlo,monospace}
+        .e{stroke:#3a4d78;stroke-width:2;fill:none;marker-end:url(#arr)}
+        .lbl{fill:#7df0c0;font:11px ui-monospace,Menlo,monospace}
+        .zone{fill:#0c1322;stroke:#1c2742;stroke-width:1;stroke-dasharray:5 5;rx:14}
+        .ztt{fill:#5b7099;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.5px}
+      </style>
+    </defs>
+
+    <!-- zones -->
+    <rect class="zone" x="8" y="86" width="904" height="120"/>
+    <text class="ztt" x="22" y="104">RED PROPIA (EDGE)</text>
+    <rect class="zone" x="8" y="220" width="904" height="320"/>
+    <text class="ztt" x="22" y="238">CLÚSTER k3s · CNI Cilium</text>
+
+    <!-- internet -->
+    <rect class="b" x="380" y="14" width="160" height="48" rx="12"/>
+    <text class="t" x="460" y="38" text-anchor="middle">🌐 Internet</text>
+    <text class="s" x="460" y="54" text-anchor="middle">cliente / navegador</text>
+
+    <!-- haproxy -->
+    <rect class="b" x="330" y="112" width="260" height="70" rx="12"/>
+    <text class="t" x="460" y="140" text-anchor="middle">HAProxy</text>
+    <text class="s" x="460" y="160" text-anchor="middle">SNI passthrough (no termina TLS)</text>
+    <text class="s" x="460" y="175" text-anchor="middle">lee ServerName → reenvía cifrado</text>
+
+    <!-- gateway -->
+    <rect class="b" x="330" y="250" width="260" height="74" rx="12"/>
+    <text class="t" x="460" y="278" text-anchor="middle">Cilium Gateway</text>
+    <text class="s" x="460" y="297" text-anchor="middle">Gateway API · VIP en LAN</text>
+    <text class="s" x="460" y="312" text-anchor="middle">termina TLS (cert de cert-manager)</text>
+
+    <!-- httproute -->
+    <rect class="b" x="330" y="356" width="260" height="60" rx="12"/>
+    <text class="t" x="460" y="382" text-anchor="middle">HTTPRoute</text>
+    <text class="s" x="460" y="400" text-anchor="middle">match por host → Service</text>
+
+    <!-- service -->
+    <rect class="b" x="330" y="446" width="260" height="56" rx="12"/>
+    <text class="t" x="460" y="470" text-anchor="middle">Service (ClusterIP)</text>
+    <text class="s" x="460" y="488" text-anchor="middle">galaxy-api : 80</text>
+
+    <!-- pods -->
+    <rect class="b" x="650" y="440" width="240" height="68" rx="12"/>
+    <text class="t" x="770" y="466" text-anchor="middle">Pod · FastAPI</text>
+    <text class="s" x="770" y="485" text-anchor="middle">uvicorn · /api/v1</text>
+    <text class="s" x="770" y="499" text-anchor="middle">HPA (escala horizontal)</text>
+
+    <!-- cert-manager side -->
+    <rect class="b" x="40" y="250" width="200" height="74" rx="12"/>
+    <text class="t" x="140" y="276" text-anchor="middle">cert-manager</text>
+    <text class="s" x="140" y="295" text-anchor="middle">Let's Encrypt</text>
+    <text class="s" x="140" y="310" text-anchor="middle">reto DNS-01</text>
+
+    <!-- edges -->
+    <line class="e" x1="460" y1="62" x2="460" y2="110"/>
+    <text class="lbl" x="470" y="98">:443 TLS (SNI)</text>
+    <line class="e" x1="460" y1="182" x2="460" y2="248"/>
+    <text class="lbl" x="470" y="222">TCP cifrado → VIP del GW</text>
+    <line class="e" x1="460" y1="324" x2="460" y2="354"/>
+    <line class="e" x1="460" y1="416" x2="460" y2="444"/>
+    <line class="e" x1="590" y1="474" x2="648" y2="474"/>
+    <text class="lbl" x="600" y="466">HTTP</text>
+    <line class="e" x1="240" y1="287" x2="328" y2="287"/>
+    <text class="lbl" x="246" y="279">emite cert</text>
+  </svg>
+  <div class="legend">
+    <span><i style="background:#0e1626;border:1px solid #26365a"></i>componente</span>
+    <span><i style="background:#3a4d78"></i>flujo de datos</span>
+    <span style="color:#7df0c0">━ anotación de protocolo</span>
+  </div>
+
+  <ol class="steps">
+    <li>El cliente abre <code>https://&lt;dominio&gt;</code>; el handshake TLS lleva el host en el SNI.</li>
+    <li><strong>HAProxy</strong> (edge propio) hace <em>passthrough</em>: no descifra, reenvía el TCP
+      cifrado a la <strong>VIP del Cilium Gateway</strong> en la LAN.</li>
+    <li>El <strong>Gateway</strong> (Gateway API sobre Cilium) <strong>termina el TLS</strong> con el
+      certificado que mantiene <strong>cert-manager</strong>.</li>
+    <li>Un <strong>HTTPRoute</strong> matchea por <em>hostname</em> y enruta al <code>Service</code>.</li>
+    <li>El <code>Service</code> (ClusterIP) balancea a los <strong>pods</strong> de
+      <code>galaxy-api</code> (FastAPI/uvicorn), escalables por HPA.</li>
+  </ol>
+
+  <h2>Stack por capa <small>qué y para qué</small></h2>
+  <div class="panel">
+  <table>
+    <tr><th>Capa</th><th>Tecnología</th><th>Rol</th></tr>
+    <tr><td>Edge</td><td><code>HAProxy</code></td><td>SNI passthrough hacia la VIP del Gateway (no termina TLS).</td></tr>
+    <tr><td>Ingress</td><td><code>Cilium</code> + <code>Gateway API</code></td><td>GatewayClass <code>cilium</code>; termina TLS; HTTPRoute por host.</td></tr>
+    <tr><td>TLS</td><td><code>cert-manager</code></td><td>Let's Encrypt vía reto DNS-01; renovación automática.</td></tr>
+    <tr><td>Orquestación</td><td><code>k3s</code> (Kubernetes)</td><td>Clúster bare-metal multi-nodo, mayormente <strong>arm64</strong>.</td></tr>
+    <tr><td>App</td><td><code>FastAPI</code> · <code>uvicorn</code></td><td>API-first <code>/api/v1</code>; estado <em>lazy</em> por timestamp (sin cron por usuario).</td></tr>
+    <tr><td>Datos</td><td><code>PostgreSQL 16</code> (StatefulSet+PVC)</td><td>Fuente de verdad; migraciones Alembic al arrancar.</td></tr>
+    <tr><td>Cache</td><td><code>Redis 7</code></td><td>Cache de catálogo, rate-limit y <strong>locks distribuidos</strong> por jugador.</td></tr>
+    <tr><td>Mundo</td><td><code>CronJob</code> (tick */5)</td><td>Avanza el mundo y corre los turnos de las NPC.</td></tr>
+    <tr><td>Build</td><td><code>Argo Workflows</code> + <code>Kaniko</code></td><td>Builds <strong>dentro del clúster</strong> (arm64) → registry interno; gate de tests en el Dockerfile.</td></tr>
+    <tr><td>Deploy</td><td><code>Helm</code> (<code>--atomic</code>)</td><td>initContainers <em>migrate</em>+<em>smoke</em>, <code>helm test</code>, rollback automático.</td></tr>
+    <tr><td>Observabilidad</td><td><code>Prometheus</code> · <code>Grafana</code> · <code>Alertmanager</code></td><td>ServiceMonitor + dashboards + alertas a un bot de Telegram.</td></tr>
+  </table>
+  </div>
+
+  <h2>Pipeline de build &amp; deploy <small>git → registry → clúster</small></h2>
+  <div class="grid">
+    <div class="card"><div class="k">1 · push</div><h3>Commit a main</h3><p>SemVer (<code>make release</code>): mueve el CHANGELOG, fija appVersion y el tag de imagen, taggea git.</p></div>
+    <div class="card"><div class="k">2 · build</div><h3>Kaniko / Argo</h3><p>Build <em>in-cluster</em> en un nodo arm64, sin Docker daemon. El Dockerfile multi-stage <strong>corre la suite de tests</strong>: si algo falla, no hay imagen.</p></div>
+    <div class="card"><div class="k">3 · registry</div><h3>Registry interno</h3><p>La imagen se publica en el registry del propio clúster (nada sale a internet).</p></div>
+    <div class="card"><div class="k">4 · deploy</div><h3>Helm --atomic</h3><p>initContainer <em>migrate</em> (Alembic) + <em>smoke</em>; <code>helm test</code>; si el rollout no queda sano, <strong>rollback solo</strong>.</p></div>
+  </div>
+  <p class="note">Defensa en profundidad del deploy: el gate de tests vive en el <em>build</em> (no se
+    produce imagen rota), el <em>smoke</em> frena el rollout antes de exponerlo, y <code>--atomic</code>
+    revierte si algo sale mal. Los secretos van por <code>Secret</code> de k8s; en prod, el arranque
+    <strong>aborta</strong> si un secreto quedó en su valor por defecto.</p>
+
+  <h2>Por qué escala (siendo casero) <small>turn-based asíncrono</small></h2>
+  <div class="grid">
+    <div class="card"><div class="k">stateless</div><h3>API horizontal</h3><p>Los pods no guardan estado → réplicas detrás del Service, HPA por carga.</p></div>
+    <div class="card"><div class="k">lazy state</div><h3>Sin cron por usuario</h3><p>Energía y producción se calculan desde <code>*_updated_at</code> al leer; el costo no crece con usuarios inactivos.</p></div>
+    <div class="card"><div class="k">async</div><h3>Por turnos</h3><p>Sin requisitos de baja latencia → muchísimo más barato de escalar que tiempo real.</p></div>
+    <div class="card"><div class="k">degradación</div><h3>Redis opcional</h3><p>Si Redis no está, cache/locks degradan a no-op: el juego sigue corriendo.</p></div>
+  </div>
+
+  <h2>Hardware <small>bare-metal en casa</small></h2>
+  <p>Clúster <code>k3s</code> multi-nodo sobre placas <strong>ARM</strong> de bajo consumo
+    (Raspberry Pi + Turing RK1 + Super6c) y un nodo x86 para tareas puntuales. Almacenamiento
+    persistente en disco local del clúster (PVC). <strong>Cero dependencia de nube.</strong></p>
+
+  <p class="note">Por seguridad, esta página describe la <em>arquitectura</em> y los protocolos, pero
+    omite el direccionamiento exacto (IPs privadas LAN, hostnames de nodos, endpoints internos).</p>
+
+  <footer>
+    Online Galaxy War — PoC self-hosted. ¿Querés jugar? → <a href="/game">/game</a> ·
+    API en <a href="/docs">/docs</a> · código abierto (MIT).
+  </footer>
+
+</div>
+</body>
+</html>

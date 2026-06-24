@@ -84,6 +84,17 @@ async def test_landing_page_and_og(client):
     assert img.status_code == 200 and img.headers["content-type"] == "image/png"
 
 
+async def test_tech_page(client):
+    # Página técnica pública /tech: stack self-hosted + flujo de tráfico (HAProxy SNI → Gateway).
+    r = await client.http.get("/tech")
+    assert r.status_code == 200 and "text/html" in r.headers["content-type"]
+    b = r.text
+    assert "self-hosted" in b and "HAProxy" in b and "SNI passthrough" in b
+    assert "Cilium" in b and "k3s" in b and "Gateway" in b
+    # no debe filtrar direccionamiento privado exacto
+    assert "192.168." not in b
+
+
 async def test_health(client):
     r = await client.http.get("/health")
     assert r.status_code == 200

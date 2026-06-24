@@ -168,6 +168,13 @@ async def landing():
     return HTMLResponse(html.replace("__PUBLIC_URL__", settings.public_url.rstrip("/")))
 
 
+@app.get("/tech", include_in_schema=False)
+async def tech_page():
+    """Página técnica pública: stack del PoC self-hosted + flujo de tráfico (HAProxy SNI → Cilium
+    Gateway → Service → Pod). Estática y sin dependencias externas (coherente con self-hosted)."""
+    return FileResponse(REPO_ROOT / "web" / "tech.html")
+
+
 @app.get("/og-image.png", include_in_schema=False)
 async def og_image():
     img = REPO_ROOT / "web" / "og-image.png"
