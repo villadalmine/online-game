@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 24: landing pública /game (bilingüe, social-share)
+- `web/landing.html` (ES/EN, toggle 🌐) servida en **`GET /game`**: hero + features + modelo
+  **Free / BYOD (open source, self-host + tu API key de LLM) / Paid (nada por ahora)** + CTA a jugar.
+- **Open Graph / Twitter cards** con `PUBLIC_URL` inyectada (og:url/og:image absolutas) →
+  `GET /og-image.png` (1200×630, generado con Playwright vía `scripts/capture_og.py`).
+- Tests e2e (`/game` bilingüe + OG, `/og-image.png` png). config `public_url`.
+
 ### 2026-06-24 — SDD 23: `make release V=X.Y.Z` (corte de release con una sola fuente del número)
 - `scripts/release.py` + target `make release`: valida SemVer + tree limpio, mueve el CHANGELOG
   `[Unreleased]`→`[X.Y.Z]`, setea `Chart.appVersion` + tag del build manifest, commit + `git tag`.

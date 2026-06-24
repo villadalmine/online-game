@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Online Galaxy War — estrategia espacial con galaxias reales</title>
+<meta name="description" content="Juego de estrategia espacial por turnos con galaxias y planetas reales, NPCs con IA y un asistente que entiende el juego. Gratis y open source.">
+<!-- Open Graph / Twitter (preview al compartir). __PUBLIC_URL__ se reemplaza al servir. -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Online Galaxy War — estrategia espacial con galaxias reales">
+<meta property="og:description" content="Conquistá la galaxia: planetas reales, flotas que viajan, NPCs con IA y un asistente AI. Gratis y open source.">
+<meta property="og:url" content="__PUBLIC_URL__/game">
+<meta property="og:image" content="__PUBLIC_URL__/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Online Galaxy War">
+<meta name="twitter:description" content="Estrategia espacial por turnos con galaxias reales, IA y alianzas. Gratis y open source.">
+<meta name="twitter:image" content="__PUBLIC_URL__/og-image.png">
+<style>
+ :root{--bg:#0b0e17;--card:#121726;--line:#232a3a;--fg:#e8eaf0;--mut:#9aa3b2;--ac:#3b82f6}
+ *{box-sizing:border-box} body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--fg);line-height:1.5}
+ .wrap{max-width:920px;margin:0 auto;padding:24px}
+ header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+ .brand{font-weight:800;font-size:1.2rem}
+ .btn{display:inline-block;background:var(--ac);color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:700}
+ .btn.sec{background:transparent;border:1px solid var(--line);color:var(--fg);padding:8px 14px;font-weight:600;cursor:pointer}
+ .hero{text-align:center;padding:48px 0 24px}
+ .hero h1{font-size:2.4rem;margin:.2em 0}
+ .hero p{color:var(--mut);font-size:1.15rem;max-width:640px;margin:0 auto 22px}
+ .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:28px 0}
+ .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+ .card h3{margin:.2em 0}.card p{color:var(--mut);margin:.3em 0 0;font-size:.95rem}
+ h2{margin-top:36px} .muted{color:var(--mut)} a{color:#7eb6ff}
+ .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+ .plan b{font-size:1.05rem} .tag{display:inline-block;font-size:.75rem;background:#1c2335;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--mut)}
+ footer{margin:40px 0 16px;color:var(--mut);text-align:center;border-top:1px solid var(--line);padding-top:16px}
+</style></head>
+<body><div class="wrap">
+ <header>
+   <span class="brand">🌌 Online Galaxy War</span>
+   <span><button class="btn sec" id="lang" onclick="toggle()">🌐 EN</button> <a class="btn" href="/" data-i="play">Jugar</a></span>
+ </header>
+
+ <section class="hero">
+   <h1 data-i="tagline">Conquistá la galaxia.</h1>
+   <p data-i="sub">Estrategia espacial por turnos con <b>galaxias y planetas reales</b>, flotas que viajan, NPCs con IA y un asistente que entiende el juego. Gratis y open source.</p>
+   <a class="btn" href="/" data-i="cta">🚀 Jugar gratis</a>
+ </section>
+
+ <h2 data-i="feat">Qué tiene</h2>
+ <div class="grid" id="features"></div>
+
+ <h2 data-i="modelt">Modelo</h2>
+ <div class="plans" id="plans"></div>
+
+ <footer>
+   <span data-i="foot">Hecho con ciencia real · Open source (MIT)</span> ·
+   <a href="https://github.com/villadalmine/online-game" target="_blank">GitHub</a>
+ </footer>
+</div>
+<script>
+const T={
+ es:{play:"Jugar",cta:"🚀 Jugar gratis",tagline:"Conquistá la galaxia.",
+  sub:"Estrategia espacial por turnos con <b>galaxias y planetas reales</b>, flotas que viajan, NPCs con IA y un asistente que entiende el juego. Gratis y open source.",
+  feat:"Qué tiene",modelt:"Modelo",foot:"Hecho con ciencia real · Open source (MIT)",
+  features:[["🪐","Galaxias reales","Planetas, lunas y minerales basados en ciencia (NASA), con propiedades físicas."],
+   ["🚀","Combate con viaje","Flotas que viajan, resuelven al llegar y vuelven con botín. Torretas y defensa de alianza."],
+   ["🤖","NPCs con IA","Rivales controlados por LLM, con personalidad y memoria, que se coordinan."],
+   ["🧠","Asistente AI","Te dice qué construir y cómo destrabarte; entiende el grafo del juego."],
+   ["🤝","Alianzas","No-agresión, defensiva o plena: bonus compartido, comercio, visión y defensa mutua."],
+   ["📅","Temporadas","Mundo persistente + temporadas con Hall of Fame y protección de novato."]],
+  plans:[["Free","Gratis","Jugá gratis en la instancia pública (alta por invitación)."],
+   ["BYOD","Open source","Es MIT: levantá tu propia instancia (Helm/Docker) y traé tu propia API key de LLM."],
+   ["Pago","Por ahora, nada","Sin monetización hoy. A futuro, quizás algo cosmético opcional."]]},
+ en:{play:"Play",cta:"🚀 Play free",tagline:"Conquer the galaxy.",
+  sub:"Turn-based space strategy with <b>real galaxies and planets</b>, traveling fleets, AI NPCs and an assistant that understands the game. Free and open source.",
+  feat:"What you get",modelt:"Model",foot:"Built on real science · Open source (MIT)",
+  features:[["🪐","Real galaxies","Planets, moons and minerals grounded in science (NASA), with physical properties."],
+   ["🚀","Travel combat","Fleets travel, resolve on arrival and return with loot. Turrets and alliance defense."],
+   ["🤖","AI NPCs","LLM-driven rivals with personality and memory that coordinate."],
+   ["🧠","AI assistant","Tells you what to build and how to get unblocked; understands the game's graph."],
+   ["🤝","Alliances","Non-aggression, defensive or full: shared bonus, trade, vision and mutual defense."],
+   ["📅","Seasons","Persistent world + seasons with a Hall of Fame and newbie protection."]],
+  plans:[["Free","Free","Play for free on the public instance (invite-based signup)."],
+   ["BYOD","Open source","It's MIT: run your own instance (Helm/Docker) and bring your own LLM API key."],
+   ["Paid","Nothing for now","No monetization today. Maybe optional cosmetics in the future."]]},
+};
+let lang=(navigator.language||"es").startsWith("en")?"en":"es";
+function render(){
+ const d=T[lang];
+ document.documentElement.lang=lang;
+ document.getElementById("lang").textContent=lang==="es"?"🌐 EN":"🌐 ES";
+ document.querySelectorAll("[data-i]").forEach(el=>{ const v=d[el.dataset.i]; if(v) el.innerHTML=v; });
+ document.getElementById("features").innerHTML=d.features.map(([i,t,p])=>`<div class="card"><div style="font-size:1.6rem">${i}</div><h3>${t}</h3><p>${p}</p></div>`).join("");
+ document.getElementById("plans").innerHTML=d.plans.map(([tag,t,p])=>`<div class="card"><span class="tag">${tag}</span><div style="margin-top:8px"><b>${t}</b></div><p>${p}</p></div>`).join("");
+}
+function toggle(){ lang=lang==="es"?"en":"es"; render(); }
+render();
+</script>
+</body></html>

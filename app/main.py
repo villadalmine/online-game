@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.responses import FileResponse, PlainTextResponse, Response
+from starlette.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 
 from app.api.v1 import api_router
 from app.core import metrics
@@ -150,3 +150,19 @@ async def health():
 async def web_client():
     """Minimal playable web UI (vanilla JS, talks to /api/v1)."""
     return FileResponse(WEB_INDEX)
+
+
+@app.get("/game", include_in_schema=False)
+async def landing():
+    """Landing pública para compartir (SDD 24): bilingüe + Open Graph. Inyecta PUBLIC_URL para que
+    og:url/og:image sean absolutas (preview en redes)."""
+    html = (REPO_ROOT / "web" / "landing.html").read_text(encoding="utf-8")
+    return HTMLResponse(html.replace("__PUBLIC_URL__", settings.public_url.rstrip("/")))
+
+
+@app.get("/og-image.png", include_in_schema=False)
+async def og_image():
+    img = REPO_ROOT / "web" / "og-image.png"
+    if not img.exists():
+        return Response(status_code=404)
+    return FileResponse(img, media_type="image/png")

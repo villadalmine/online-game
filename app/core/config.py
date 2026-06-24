@@ -90,6 +90,10 @@ class Settings(BaseSettings):
     # manda por bearerTokenSecret) → no queda público por el gateway. Vacío = abierto (dev).
     metrics_token: str = ""
 
+    # Landing pública (SDD 24): URL base absoluta para og:url/og:image (preview en redes).
+    # Ej: https://tu-dominio. Vacío = og relativas (preview pobre, pero la página anda).
+    public_url: str = ""
+
     # Presencia + métricas por entidad (SDD 21).
     presence_window_seconds: int = 90       # "online" = visto en esta ventana
     metrics_per_player: bool = False        # opt-in: gauges por jugador (cardinalidad alta)

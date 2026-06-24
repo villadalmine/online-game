@@ -72,6 +72,18 @@ async def _clear_protection(maker, *usernames) -> None:
 
 # ---- meta / auth -----------------------------------------------------------
 
+async def test_landing_page_and_og(client):
+    # SDD 24: landing pública /game bilingüe con Open Graph + imagen social.
+    r = await client.http.get("/game")
+    assert r.status_code == 200
+    b = r.text
+    assert 'property="og:title"' in b and 'name="twitter:card"' in b
+    assert "Conquistá la galaxia" in b and "Conquer the galaxy" in b  # ES + EN
+    assert "BYOD" in b
+    img = await client.http.get("/og-image.png")
+    assert img.status_code == 200 and img.headers["content-type"] == "image/png"
+
+
 async def test_health(client):
     r = await client.http.get("/health")
     assert r.status_code == 200
