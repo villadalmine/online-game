@@ -6,6 +6,9 @@ personnel:
   - key: worker
     name: "Trabajador"
     name_en: "Worker"
+    real: "Obrero/operario: mano de obra industrial."
+    real_en: "Worker/operator: industrial labour."
+    sources: ["Wikipedia: Manual labour"]
     description: "Aumenta produccion y construccion."
     description_en: "Boosts production and construction."
     requires: headquarters
@@ -16,6 +19,9 @@ personnel:
   - key: soldier
     name: "Militar"
     name_en: "Soldier"
+    real: "Infantería: soldado de combate terrestre."
+    real_en: "Infantry: ground combat soldier."
+    sources: ["Wikipedia: Infantry"]
     description: "Unidad de combate basica."
     description_en: "Basic combat unit."
     requires: barracks
@@ -26,6 +32,9 @@ personnel:
   - key: scientist
     name: "Cientifico"
     name_en: "Scientist"
+    real: "Investigador científico: I+D y experimentación."
+    real_en: "Research scientist: R&D and experimentation."
+    sources: ["Wikipedia: Scientist"]
     description: "Acelera investigacion."
     description_en: "Speeds up research."
     requires: research_lab
@@ -38,6 +47,9 @@ heavy:
   - key: tank
     name: "Tanque"
     name_en: "Tank"
+    real: "Carro de combate: vehículo blindado con orugas."
+    real_en: "Tank: tracked armored fighting vehicle."
+    sources: ["Wikipedia: Tank"]
     requires: factory
     energy_cost: 8
     train_seconds: 120
@@ -46,6 +58,9 @@ heavy:
   - key: ship
     name: "Barco"
     name_en: "Ship"
+    real: "Buque de guerra: nave naval de combate."
+    real_en: "Warship: naval combat vessel."
+    sources: ["Wikipedia: Warship"]
     requires: factory
     # Rigor científico (SDD 13): un barco necesita un océano → solo en planetas con agua líquida.
     requires_liquid_water: true
@@ -57,6 +72,9 @@ heavy:
   - key: aircraft
     name: "Avion"
     name_en: "Aircraft"
+    real: "Aeronave militar: avión de combate."
+    real_en: "Military aircraft: combat airplane."
+    sources: ["Wikipedia: Military aircraft"]
     requires: factory
     # Rigor científico (SDD 13): un avión necesita atmósfera para volar → no en el vacío.
     requires_atmosphere: true
@@ -68,6 +86,9 @@ heavy:
   - key: shuttle
     name: "Transbordador espacial"
     name_en: "Space shuttle"
+    real: "Transbordador espacial: lanzadera reutilizable a órbita."
+    real_en: "Space shuttle: reusable orbital spacecraft."
+    sources: ["NASA: Space Shuttle"]
     requires: factory
     energy_cost: 15
     train_seconds: 240

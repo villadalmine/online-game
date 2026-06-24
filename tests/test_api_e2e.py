@@ -184,6 +184,22 @@ async def test_catalog_has_physical_fields_and_canon(client):
     assert planets["mercury"]["atmosphere"] == "none"
 
 
+async def test_catalog_buildings_units_have_real_localized(client):
+    # SDD 13: edificios y unidades exponen su contraparte real + sources, localizable a EN.
+    es = (await client.http.get("/api/v1/catalog?lang=es")).json()
+    mine = {b["key"]: b for b in es["buildings"]}["mine"]
+    assert "ISRU" in mine["real"] and mine["sources"]
+    tank = {u["key"]: u for u in es["heavy_units"]}["tank"]
+    assert tank["real"] and tank["sources"]
+
+    en = (await client.http.get("/api/v1/catalog?lang=en")).json()
+    mine_en = {b["key"]: b for b in en["buildings"]}["mine"]
+    assert "in-situ" in mine_en["real"].lower()  # real localizado a inglés
+    assert "real_en" not in mine_en  # helper key removido
+    worker_en = {u["key"]: u for u in en["personnel"]}["worker"]
+    assert "labour" in worker_en["real"].lower()
+
+
 async def test_ship_blocked_without_water(client):
     h = await _register(client.http, "drysailor")
     state = await _onboard(client.http, h, planet="mars", race="martian")  # Marte: sin agua

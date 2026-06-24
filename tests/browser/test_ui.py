@@ -60,6 +60,9 @@ def test_full_play_through_ui(page: Page, live_server, shots):
     # 7) Guide / glossary
     page.click("button:has-text('mostrar')")
     expect(page.locator("#guide")).to_contain_text("Minerales")
+    # SDD 13: la guía también lista la contraparte real de edificios y unidades
+    expect(page.locator("#guide")).to_contain_text("Edificios")
+    expect(page.locator("#guide")).to_contain_text("Unidades")
     _shot(page, shots / "05-guide.png")
 
 

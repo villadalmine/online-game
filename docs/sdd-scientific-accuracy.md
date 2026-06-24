@@ -172,9 +172,16 @@ Multiplicadores físicos opt-in (extender, no romper): `gravity_g` → costo/tie
   energía con clamp, planeta/campo faltante neutral, regen efectiva) + e2e (gravedad cambia el
   tiempo de build; off ⇒ neutral). **212 verdes.**
 
+## 5.sexies Estado v4 (2026-06-24) — `real`/`sources` en edificios y unidades
+- Cada **edificio** (`content/buildings.yaml`) y **unidad** (`content/units.yaml`, personnel+heavy)
+  declara su **contraparte real** (`real`/`real_en`) + `sources`, igual que minerales y planetas. Se
+  expone en `GET /catalog` (localizado a EN vía `real_en`, helpers removidos) y el **cliente web** lo
+  muestra en la guía in-game (secciones "Edificios/Unidades (in-game ↔ real)").
+- Tests: contenido (todo edificio/unidad tiene `real`/`real_en`/`sources`), e2e (catálogo ES/EN) y
+  browser (guía lista edificios y unidades). **218 verdes** + browser.
+
 **Pendiente (follow-up)**: jerarquía anidada real (galaxy→system→planet en el árbol, no solo campo);
-**universos/spin-offs** ([SDD 26](sdd-spinoff-universes.md)) seleccionables por partida;
-`real`/`canon` en edificios/unidades.
+**universos/spin-offs** ([SDD 26](sdd-spinoff-universes.md)) seleccionables por partida.
 
 ## 6. Riesgos / decisiones
 - **Realismo vs. jugabilidad**: las restricciones físicas deben sumar, no frustrar → gating

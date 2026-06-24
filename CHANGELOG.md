@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 13: `real`/`sources` en edificios y unidades
+- `content/buildings.yaml` y `content/units.yaml`: cada edificio/unidad declara su **contraparte
+  real** (`real`/`real_en`) + `sources` (NASA/IAEA/Wikipedia), como minerales y planetas. Expuesto y
+  localizado en `GET /catalog`; el cliente web lo muestra en la guía in-game (Edificios/Unidades
+  in-game ↔ real). Tests de contenido + e2e (ES/EN) + browser. **218 verdes** + browser.
+
 ## [1.9.0] - 2026-06-24
 
 ### 2026-06-24 — Página técnica /tech (PoC self-hosted + flujo de tráfico)

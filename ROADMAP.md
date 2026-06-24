@@ -126,6 +126,7 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   y nivel **`speculative`** (`nova_terra`+rationale). **v3**: **multiplicadores físicos** (§4) —
   `gravity_g`→tiempo de build, `insolation`→regen de energía, `mean_temp_c`→refrigeración (drena
   energía); opt-in (`PHYSICS_ENABLED`), anclados a Tierra=1.0 y acotados; encendido en prod.
+  **v4**: `real`/`sources` en **edificios y unidades** (expuesto en `/catalog` + guía web).
   Follow-up: jerarquía anidada real, **universos/spin-offs** ([SDD 26](docs/sdd-spinoff-universes.md)).
 - 📝 **[SDD 26 — Universos spin-off](docs/sdd-spinoff-universes.md)**: packs de datos (Star Trek/BSG/Star Wars) tipados y fieles al canon (`fiction`+sources); solo spec, con nota IP (fan/no-comercial). Implementable editando el SDD.
 - 📝 **[SDD 27 — Anuncios / "Lo que viene"](docs/sdd-announcements.md)**: sección pública con anuncios tipados por categoría (`release`/`incoming`/`spinoff`/…) y `status`, bilingüe, `GET /announcements`; los `spinoff` explican qué trae cada universo y su diferencia con el estándar. Solo spec.

@@ -5,6 +5,9 @@ buildings:
   - key: headquarters
     name: "Base central"
     name_en: "Headquarters"
+    real: "Centro de mando y control (C2), como un centro de operaciones de misión."
+    real_en: "Command & control (C2) center, like a mission operations center."
+    sources: ["Wikipedia: Command and control", "NASA: Mission Control Center"]
     category: core
     description: "Centro de mando. Punto de partida de cada jugador."
     description_en: "Command center. Each player's starting point."
@@ -15,6 +18,9 @@ buildings:
   - key: mine
     name: "Mina"
     name_en: "Mine"
+    real: "Minería e ISRU: utilización de recursos in situ para extraer materiales."
+    real_en: "Mining and ISRU: in-situ resource utilization to extract materials."
+    sources: ["NASA: In-Situ Resource Utilization (ISRU)"]
     category: mine
     description: "Extrae un mineral del planeta. Produccion lazy por timestamp."
     description_en: "Extracts a mineral from the planet. Lazy production by timestamp."
@@ -27,6 +33,9 @@ buildings:
   - key: power_plant
     name: "Planta de energia"
     name_en: "Power plant"
+    real: "Central eléctrica (solar, nuclear o fusión) que genera energía."
+    real_en: "Power plant (solar, nuclear or fusion) generating energy."
+    sources: ["IAEA: Nuclear power", "NASA: Radioisotope Power Systems"]
     category: energy
     description: "Aumenta el tope/regen de energia."
     description_en: "Raises the energy cap/regen."
@@ -38,6 +47,9 @@ buildings:
   - key: barracks
     name: "Cuartel"
     name_en: "Barracks"
+    real: "Cuartel: alojamiento y entrenamiento de tropas."
+    real_en: "Barracks: troop housing and training."
+    sources: ["Wikipedia: Barracks"]
     category: military
     description: "Entrena unidades militares."
     description_en: "Trains military units."
@@ -50,6 +62,9 @@ buildings:
   - key: factory
     name: "Taller / Fabrica"
     name_en: "Factory / Workshop"
+    real: "Planta de manufactura industrial / ensamblaje."
+    real_en: "Industrial manufacturing / assembly plant."
+    sources: ["Wikipedia: Factory"]
     category: heavy
     description: "Produce unidades pesadas (tanques, barcos, aviones)."
     description_en: "Produces heavy units (tanks, ships, aircraft)."
@@ -62,6 +77,9 @@ buildings:
   - key: research_lab
     name: "Laboratorio"
     name_en: "Research lab"
+    real: "Laboratorio de investigación y desarrollo (I+D)."
+    real_en: "Research and development (R&D) laboratory."
+    sources: ["Wikipedia: Research and development"]
     category: science
     description: "Habilita investigacion y cientificos."
     description_en: "Enables research and scientists."
@@ -74,6 +92,9 @@ buildings:
   - key: turret
     name: "Torreta defensiva"
     name_en: "Defensive turret"
+    real: "Sistema de defensa puntual (CIWS): torreta de armas de fuego rápido."
+    real_en: "Close-in weapon system (CIWS): rapid-fire defensive turret."
+    sources: ["Wikipedia: Close-in weapon system"]
     category: defense
     description: "Defiende la base: suma poder defensivo fijo en combate (sin unidades)."
     description_en: "Defends the base: adds fixed defensive power in combat (no units)."
