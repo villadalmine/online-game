@@ -23,6 +23,9 @@ COPY alembic.ini ./alembic.ini
 # de este stage (COPY del marker), así que Kaniko lo ejecuta sí o sí.
 FROM base AS test
 COPY tests ./tests
+# El test del generador de Pages (SDD 18) y otros leen docs/CHANGELOG/ROADMAP del repo.
+COPY docs ./docs
+COPY ROADMAP.md CHANGELOG.md ./
 RUN pip install --no-cache-dir ".[dev]" && pytest -q && touch /tmp/tests-passed
 
 # --- Runtime final (lean: sin dev-deps ni tests). Depende del gate.
