@@ -197,6 +197,9 @@ postgres:
   # Usar un Postgres EXTERNO (managed / operador con PITR). Si lo seteás, poné enabled=false:
   #   --set postgres.enabled=false --set postgres.externalUrl=postgresql+asyncpg://user:pass@host:5432/db
   externalUrl: ""
+  # Con storageClass de Longhorn, FIJAR a nodos que corren Longhorn (SDD 32) o el volumen no
+  # attachea al reagendar. Ej: --set postgres.nodeSelector.storage=rk1-longhorn
+  nodeSelector: {}
   # Almacenamiento persistente: el PVC sobrevive a que el pod muera (SDD 10). enabled=false usa
   # emptyDir (efímero, SOLO para pruebas — se pierde al reprogramar el pod).
   persistence:

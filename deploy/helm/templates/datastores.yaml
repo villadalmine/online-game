@@ -18,6 +18,13 @@ spec:
       labels:
         app: {{ .Release.Name }}-postgres
     spec:
+      {{- with .Values.postgres.nodeSelector }}
+      # Con storageClass Longhorn, el pod SÓLO puede agendar en nodos que corren Longhorn (SDD 32):
+      # si no, el volumen no attachea y el pod queda ContainerCreating. nodeSelector p.ej.
+      # {storage: rk1-longhorn}. (verificado 2026-06-24).
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: postgres
           image: {{ .Values.postgres.image }}
