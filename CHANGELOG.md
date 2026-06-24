@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-06-24
+
 ### 2026-06-24 — UX: menú de ataque más fácil (sin escribir unidades a mano)
 - El panel ⚔ Atacar ahora muestra un **selector por unidad** (un input de cantidad por cada unidad
   de ataque que tenés, con su ⚔ y "tenés N") en vez del texto libre `tank:5,...`.
