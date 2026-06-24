@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 29 diseñado: inteligencia estratégica de NPCs (cerebro de 2 capas)
+- Doc `docs/sdd-npc-strategic-intelligence.md`: NPCs que **cada tanto leen el scoreboard de su galaxia
+  + su trayectoria de recursos** y fijan una **postura** (agresivo/defensivo/expansión/raid) persistida,
+  que sesga la capa táctica per-turn. Más inteligencia + más uso de GPU (medible por `npc:<nombre>`,
+  SDD 28), con fallback a reglas (SDD 9). Solo especificación.
+
 ### 2026-06-24 — SDD 28: end_user verificado + DCGM-exporter (GPU física)
 - LiteLLM: `enable_end_user_cost_tracking_prometheus_only: true` (vía Ansible) — sin él, `end_user`
   no aparecía. **Verificado**: tokens/spend/requests **por usuario** ya se loguean.

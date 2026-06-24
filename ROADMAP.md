@@ -131,6 +131,7 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
 - 📝 **[SDD 26 — Universos spin-off](docs/sdd-spinoff-universes.md)**: packs de datos (Star Trek/BSG/Star Wars) tipados y fieles al canon (`fiction`+sources); solo spec, con nota IP (fan/no-comercial). Implementable editando el SDD.
 - 📝 **[SDD 27 — Anuncios / "Lo que viene"](docs/sdd-announcements.md)**: sección pública con anuncios tipados por categoría (`release`/`incoming`/`spinoff`/…) y `status`, bilingüe, `GET /announcements`; los `spinoff` explican qué trae cada universo y su diferencia con el estándar. Solo spec.
 - 📝 **[SDD 28 — Métricas de uso LLM por usuario + GPU](docs/sdd-llm-usage-metrics.md)**: ver en Grafana el uso de GPU en vivo y atribuir tokens/spend de LLM **por jugador y backend** (GPU/free/pago) para monetizar. Falta que el juego pase `user` → LiteLLM ya emite `end_user`. Diseñado.
+- 📝 **[SDD 29 — Inteligencia estratégica de NPCs](docs/sdd-npc-strategic-intelligence.md)**: cerebro de 2 capas (estratégico periódico lee scoreboard+recursos y fija postura; táctico per-turn la ejecuta). Más inteligencia + más GPU, medible por NPC. Diseñado.
 - 🟢 **[SDD 25 — Catch-up del recién llegado](docs/sdd-newcomer-catchup.md)**: **v1 hecho** — al
   entrar con ≥3 pares en su galaxia, top-up al **P40** del stock (sin pasar la mediana) + energía
   full + mina/torreta (defensa). Hook en onboarding. Follow-up: factor explícito por días.
