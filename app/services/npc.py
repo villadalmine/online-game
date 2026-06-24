@@ -25,6 +25,7 @@ from app.services.energy import compute_energy
 from app.services.expedition import start_expedition
 from app.services.llm import llm_chat
 from app.services.onboarding import onboard_player
+from app.services.physics import effective_energy_regen
 from app.services.scoring import player_score
 from app.services.state import advance
 from app.services.training import player_units, start_training
@@ -97,7 +98,11 @@ def _current_energy(player: Player) -> float:
     s = get_settings()
     now = datetime.now(UTC)
     return compute_energy(
-        player.energy, player.energy_updated_at, now, s.energy_regen_per_hour, s.energy_max
+        player.energy,
+        player.energy_updated_at,
+        now,
+        effective_energy_regen(player, s),
+        s.energy_max,
     )
 
 

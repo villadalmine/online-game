@@ -34,6 +34,7 @@ from app.services.economy import collect_mines, finalize_due_builds, player_stoc
 from app.services.energy import apply_regen
 from app.services.expedition import finalize_due_expeditions
 from app.services.notifications import unread_count
+from app.services.physics import effective_energy_regen
 from app.services.research import finalize_due_research, in_progress, researched_techs
 from app.services.training import finalize_due_training, player_units
 
@@ -50,7 +51,7 @@ async def advance(session: AsyncSession, player: Player) -> None:
     await finalize_due_research(session, player, now)
     # resolve fleet arrivals/returns involving this player
     await process_missions(session, now, player_id=player.id)
-    apply_regen(player, now, settings.energy_regen_per_hour, settings.energy_max)
+    apply_regen(player, now, effective_energy_regen(player, settings), settings.energy_max)
     await session.commit()
 
 

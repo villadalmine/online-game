@@ -21,6 +21,7 @@ from app.services.economy import get_or_create_stock, player_stocks
 from app.services.energy import compute_energy
 from app.services.llm import llm_chat
 from app.services.notifications import notify
+from app.services.physics import effective_energy_regen
 from app.services.state import advance
 
 HISTORY_LEN = 10
@@ -39,7 +40,7 @@ async def build_snapshot(session: AsyncSession, player: Player) -> depgraph.Play
     s = get_settings()
     energy = compute_energy(
         player.energy, player.energy_updated_at, datetime.now(UTC),
-        s.energy_regen_per_hour, s.energy_max,
+        effective_energy_regen(player, s), s.energy_max,
     )
     rows = (
         await session.execute(

@@ -156,9 +156,22 @@ Multiplicadores físicos opt-in (extender, no romper): `gravity_g` → costo/tie
 - Expuesto en `/catalog` (+ `?lang=en`) y en el **modal de planeta** (system, canon, confidence,
   rationale). Tests `tests/test_science.py` (exosistemas/speculative + sources/rationale + i18n).
 
+## 5.quinquies Estado v3 (2026-06-24) — multiplicadores físicos (§4) implementados
+- `app/services/physics.py`: multiplicadores **opt-in** (`physics_enabled`) y **data-driven**,
+  anclados a la Tierra=1.0 (off o sin datos ⇒ neutral, comportamiento actual) y **acotados** a
+  `[physics_min_mult, physics_max_mult]` (evita que extremos como la insolación de Mercurio rompan el
+  balance). Mapeos: **`gravity_g` → tiempo de construcción** (más gravedad ⇒ build más lento;
+  `start_build`) y **`insolation` → regen de energía** (más sol ⇒ más energía; helper
+  `effective_energy_regen` usado en advance/build/train/research/expedición/ataque + display
+  advisor/NPC). Sensibilidad y techos configurables (`physics_*` en config).
+- **Encendido en prod** por env (`PHYSICS_ENABLED=true`); off en dev/tests por default.
+- Tests: `tests/test_physics.py` (unit: Tierra neutral, Marte build más rápido, Venus/Mercurio
+  energía con clamp, planeta/campo faltante neutral, regen efectiva) + e2e (gravedad cambia el
+  tiempo de build; off ⇒ neutral). **212 verdes.**
+
 **Pendiente (follow-up)**: jerarquía anidada real (galaxy→system→planet en el árbol, no solo campo);
-**universos/spin-offs** (packs de contenido tipo *The Expanse*) seleccionables por partida;
-multiplicadores físicos (gravedad→costo, insolación→energía solar); `real`/`canon` en edificios/unidades.
+**universos/spin-offs** ([SDD 26](sdd-spinoff-universes.md)) seleccionables por partida;
+`mean_temp_c`→refrigeración; `real`/`canon` en edificios/unidades.
 
 ## 6. Riesgos / decisiones
 - **Realismo vs. jugabilidad**: las restricciones físicas deben sumar, no frustrar → gating

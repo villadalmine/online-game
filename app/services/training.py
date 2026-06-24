@@ -12,6 +12,7 @@ from app.core.config import get_settings
 from app.models import Base_, Building, Player, TrainingOrder, UnitStock
 from app.services.economy import collect_mines, finalize_due_builds, player_stocks
 from app.services.energy import spend_energy
+from app.services.physics import effective_energy_regen
 
 
 class TrainingError(Exception):
@@ -119,7 +120,7 @@ async def start_training(
 
     energy_cost = spec.get("energy_cost", 0) * quantity
     if not spend_energy(
-        player, energy_cost, now, settings.energy_regen_per_hour, settings.energy_max
+        player, energy_cost, now, effective_energy_regen(player, settings), settings.energy_max
     ):
         raise TrainingError("Energia insuficiente.")
 

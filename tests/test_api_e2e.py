@@ -207,6 +207,37 @@ async def test_mutating_action_returns_409_when_player_locked(client):
     assert r.status_code == 409 and "en curso" in r.text.lower()
 
 
+async def test_physics_gravity_scales_build_time(client, monkeypatch):
+    # SDD 13 §4: con physics on, construir en baja gravedad (Marte 0.38g) tarda menos que en la
+    # Tierra (1g). Con physics off, ambos tardan igual (neutral). Encendemos el singleton settings.
+    from datetime import datetime
+
+    from app.core.config import get_settings
+
+    async def _build_seconds(planet, race, user):
+        h = await _register(client.http, user)
+        st = await _onboard(client.http, h, planet=planet, race=race)
+        base = st["bases"][0]["id"]
+        r = await client.http.post(
+            f"/api/v1/bases/{base}/build",
+            headers=h,
+            json={"building_key": "mine", "target_mineral": "iron"},
+        )
+        assert r.status_code == 201, r.text
+        completes = datetime.fromisoformat(r.json()["completes_at"])
+        return (completes - datetime.now(completes.tzinfo)).total_seconds()
+
+    monkeypatch.setattr(get_settings(), "physics_enabled", True)
+    mars = await _build_seconds("mars", "martian", "gquick")
+    earth = await _build_seconds("earth", "terran", "gslow")
+    assert mars < earth * 0.9  # Marte (0.38g) claramente más rápido que la Tierra
+
+    monkeypatch.setattr(get_settings(), "physics_enabled", False)
+    mars_off = await _build_seconds("mars", "martian", "goffm")
+    earth_off = await _build_seconds("earth", "terran", "goffe")
+    assert abs(mars_off - earth_off) < 2.0  # off ⇒ mismo tiempo (neutral)
+
+
 async def test_catalog_graph(client):
     r = await client.http.get("/api/v1/catalog/graph?race=martian&planet=mars")
     assert r.status_code == 200

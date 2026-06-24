@@ -8,6 +8,7 @@ from app.core.config import get_settings
 from app.models import Base_, Building, Player
 from app.services.economy import collect_mines, finalize_due_builds, player_stocks
 from app.services.energy import spend_energy
+from app.services.physics import effective_energy_regen, gravity_build_multiplier
 
 
 class BuildError(Exception):
@@ -43,7 +44,11 @@ async def start_build(
 
     # Charge energy (also applies regen).
     if not spend_energy(
-        player, spec.get("energy_cost", 0), now, settings.energy_regen_per_hour, settings.energy_max
+        player,
+        spec.get("energy_cost", 0),
+        now,
+        effective_energy_regen(player, settings),
+        settings.energy_max,
     ):
         raise BuildError("Energia insuficiente.")
 
@@ -60,11 +65,14 @@ async def start_build(
             stock = await get_or_create_stock(session, player.id, mineral)
             stock.amount -= amount
 
+    build_seconds = spec.get("build_seconds", 0) * gravity_build_multiplier(
+        player.planet_key, settings
+    )
     building = Building(
         base_id=base.id,
         building_key=building_key,
         status="building",
-        completes_at=now + timedelta(seconds=spec.get("build_seconds", 0)),
+        completes_at=now + timedelta(seconds=build_seconds),
         production_mineral=target_mineral if spec["category"] == "mine" else None,
     )
     session.add(building)

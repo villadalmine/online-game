@@ -122,6 +122,7 @@ env:
   # el arranque ABORTA si queda débil/default (el pod no levanta) → forzá un secreto real.
   JWT_SECRET: change-me
   REDIS_ENABLED: "true"
+  PHYSICS_ENABLED: "true"       # SDD 13 §4: gravedad→tiempo de build, insolación→regen de energía
   AUTO_TICK_SECONDS: "0"        # 0 = usar el CronJob (multi-réplica); >0 corre tick in-process
   ENERGY_REGEN_PER_HOUR: "10"
   ENERGY_MAX: "240"

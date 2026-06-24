@@ -72,6 +72,14 @@ class Settings(BaseSettings):
     catchup_percentile: float = 0.4
     catchup_min_peers: int = 3
 
+    # Multiplicadores físicos del planeta (SDD 13 §4). Opt-in: off ⇒ comportamiento actual. Anclados
+    # a la Tierra=1.0; gravity_g→tiempo de construcción, insolation→regen de energía. Acotados.
+    physics_enabled: bool = False
+    physics_gravity_sensitivity: float = 0.5      # pendiente de gravity_g sobre el tiempo de build
+    physics_insolation_sensitivity: float = 0.5   # pendiente de insolation sobre la regen
+    physics_min_mult: float = 0.5                 # techo inferior de un multiplicador físico
+    physics_max_mult: float = 2.0                 # techo superior (evita extremos como Mercurio)
+
     # Passwordless login por email + código OTP (SDD 6). El login usuario+contraseña sigue
     # existiendo (dev/CLI/tests). En prod este es el camino para el público.
     otp_secret: str = "change-me-otp-secret"   # HMAC del código; fuerte en prod (Secret)

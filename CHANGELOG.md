@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 13 §4: multiplicadores físicos del planeta
+- `app/services/physics.py`: **gravedad → tiempo de construcción** (más gravedad ⇒ build más lento)
+  e **insolación → regen de energía** (más sol ⇒ más energía). **Opt-in** (`PHYSICS_ENABLED`) y
+  **data-driven**, anclados a la Tierra=1.0 (off o sin datos ⇒ neutral) y **acotados**
+  (`physics_min_mult`/`physics_max_mult`) para que extremos como Mercurio no rompan el balance.
+  Sensibilidad configurable (`physics_gravity_sensitivity`/`physics_insolation_sensitivity`).
+  Wireado en advance/build/train/research/expedición/ataque + display advisor/NPC. **Encendido en
+  prod**. Tests unit + e2e (gravedad cambia el build; off ⇒ neutral). **212 verdes.**
+
 ## [1.6.0] - 2026-06-24
 
 ### 2026-06-24 — Deuda técnica de prod: secretos fuertes + locks distribuidos

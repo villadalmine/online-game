@@ -16,6 +16,7 @@ from app.services.economy import (
     player_stocks,
 )
 from app.services.energy import spend_energy
+from app.services.physics import effective_energy_regen
 
 
 class ResearchError(Exception):
@@ -100,7 +101,11 @@ async def start_research(session: AsyncSession, player, tech_key: str) -> Resear
         raise ResearchError(f"Requiere el edificio activo: {required}")
 
     if not spend_energy(
-        player, tech.get("energy_cost", 0), now, settings.energy_regen_per_hour, settings.energy_max
+        player,
+        tech.get("energy_cost", 0),
+        now,
+        effective_energy_regen(player, settings),
+        settings.energy_max,
     ):
         raise ResearchError("Energia insuficiente.")
 
