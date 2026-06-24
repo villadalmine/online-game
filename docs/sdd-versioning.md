@@ -47,9 +47,12 @@ trabajás → commits → CHANGELOG [Unreleased] crece   (NO build por commit)
      - helm upgrade --atomic --set image.tag=X.Y.Z ; helm test
 ```
 
-## 5. Implementación sugerida (follow-up, opcional)
-- `make release V=X.Y.Z`: valida limpio, mueve la sección del CHANGELOG, setea `Chart.appVersion`
-  + el tag del build manifest, `git tag vX.Y.Z`, push. Un solo comando, una sola fuente del número.
+## 5. Implementación (HECHO 2026-06-24)
+- **`make release V=X.Y.Z`** (`scripts/release.py`, stdlib): valida SemVer + working tree limpio;
+  mueve `## [Unreleased]` → `## [X.Y.Z] - fecha`; setea `Chart.yaml appVersion` y el tag del build
+  manifest; `git commit "release vX.Y.Z"` + `git tag vX.Y.Z`. Imprime los próximos pasos (push +
+  build + `helm upgrade --atomic --set image.tag=` + `helm test`). `make release V=.. DRY=1` para
+  dry-run. **No hace push** (lo hacés vos: `git push --follow-tags`). Tests `tests/test_release.py`.
 - (Más adelante) derivar X.Y.Z de conventional-commits / `git describe` para automatizar el bump.
 - Mantener `Chart.yaml version` (del chart) separado de `appVersion` (de la app/imagen); hoy el
   chart está fijo en 0.1.0 — subirlo cuando cambie el chart en sí.

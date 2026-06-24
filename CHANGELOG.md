@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 23: `make release V=X.Y.Z` (corte de release con una sola fuente del número)
+- `scripts/release.py` + target `make release`: valida SemVer + tree limpio, mueve el CHANGELOG
+  `[Unreleased]`→`[X.Y.Z]`, setea `Chart.appVersion` + tag del build manifest, commit + `git tag`.
+  `DRY=1` para dry-run; no hace push. Tests `tests/test_release.py` (5). **188 verdes.**
+
 ### 2026-06-24 — SDD 23 diseñado: estrategia de versionado (SemVer) + releases
 - Doc `docs/sdd-versioning.md`: MAJOR.MINOR.PATCH, **versión por release (no por commit)**, los
   cambios de **solo env/config (allowlist) NO llevan versión ni rebuild**, tag de imagen = release,

@@ -101,6 +101,10 @@ fmt: ## Autofix de lint
 check: lint test ## Lint + tests (lo que corre CI)
 
 ## Migraciones (Alembic)
+release: ## Corta un release SemVer: make release V=X.Y.Z [DRY=1] (SDD 23)
+	@test -n "$(V)" || (echo 'Falta V=X.Y.Z'; exit 1)
+	$(PY) scripts/release.py $(V) $(if $(DRY),--dry-run,)
+
 migrate: ## Aplica migraciones (alembic upgrade head)
 	DATABASE_URL=$(DB_URL) $(ALEMBIC) upgrade head
 
