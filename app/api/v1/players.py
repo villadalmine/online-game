@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_player
 from app.core.db import get_session
+from app.core.redis import get_redis
 from app.models import Base_, Player
 from app.schemas import OnboardRequest, PlayerStateOut, PlayerSummaryOut, RankingEntryOut
+from app.services import presence
 from app.services.onboarding import OnboardingError, onboard_player
 from app.services.scoring import player_score
 from app.services.state import advance, snapshot
@@ -57,10 +60,13 @@ async def list_players(
 
 @router.get("/me", response_model=PlayerStateOut)
 async def get_me(
-    player: Player = Depends(get_current_player), session: AsyncSession = Depends(get_session)
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_session),
+    redis: Redis | None = Depends(get_redis),
 ):
     if player.race_key is not None:
         await advance(session, player)
+    await presence.touch(redis, player.id)  # SDD 21: heartbeat de "online"
     return await snapshot(session, player)
 
 

@@ -170,6 +170,10 @@ metrics:
   grafanaDashboard:
     enabled: false
     label: grafana_dashboard   # label que busca el sidecar (kube-prometheus-stack: grafana_dashboard)
+  # Métricas POR JUGADOR (SDD 21): game_player_online{player,galaxy}. Opt-in por cardinalidad —
+  # solo para deploys chicos/privados (el username queda en Prometheus interno).
+  perPlayer:
+    enabled: false
 
 # Legacy / fallback. El token nunca al repo: usá --set o un values-local.yaml gitignored.
 openrouter:

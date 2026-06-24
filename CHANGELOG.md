@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 21 v1: presencia (quién está online) + métricas por usuario/galaxia
+- **Presencia** (`app/services/presence.py`, Redis ZSET + fallback memoria): heartbeat en
+  `/players/me`; `GET /public/online` (conteo) y `GET /admin/online` (lista de usernames, admin).
+- **Métricas**: `game_online_players` + opt-in `game_player_online{player,galaxy}`
+  (`metrics.perPlayer.enabled`, tope) → en Grafana filtrás por player/galaxy. Gauge con `clear()`
+  para no dejar series stale.
+- Tests: `tests/test_presence.py` (2) + e2e (`test_presence_online_endpoints`). **177 verdes.**
+  El bot (hermes) ya puede preguntar `/admin/online` o PromQL `game_online_players`.
+
 ### 2026-06-24 — SDD 21 diseñado: presencia (quién está online) + métricas por usuario/galaxia
 - Doc `docs/sdd-presence-dimensional-metrics.md`: presencia vía Redis (SSE + last-seen),
   `/public/online` (conteo) y `/admin/online` (lista, admin); label **`galaxy`** (seguro) y

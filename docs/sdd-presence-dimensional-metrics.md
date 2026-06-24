@@ -73,6 +73,20 @@ username como label en Prometheus. Mejor para escalar; peor para alertas/PromQL.
 - **Presencia con multi-réplica**: usar Redis (no per-pod) para que el conteo sea global.
 - **Privacy**: la *lista* de quién está online es admin-only; el *conteo* puede ser público.
 
+## 5.bis Estado de implementación (2026-06-24) — v1
+- **Presencia** (`app/services/presence.py`): ZSET Redis (global) con fallback en memoria; heartbeat
+  en `GET /players/me`; ventana `presence_window_seconds` (90s).
+- **Endpoints**: `GET /public/online` (conteo, sin PII) · `GET /admin/online` (lista de usernames,
+  admin-gated).
+- **Métricas**: `game_online_players` (gauge, al scrapear) + opt-in `game_player_online{player,galaxy}`
+  (`metrics_per_player`, tope `metrics_per_player_max`, recalculado con `clear()` cada scrape) →
+  filtrable por player/galaxy en Grafana (`sum by(galaxy)(game_player_online)`).
+- **Helm**: `metrics.perPlayer.enabled` → env `METRICS_PER_PLAYER`.
+- Tests: `tests/test_presence.py` (2) + e2e `test_presence_online_endpoints` (público cuenta,
+  admin lista, 403 no-admin). **177 unit/e2e verdes.**
+- **Pendiente**: label `galaxy` en los counters agregados (no solo en el per-player); presencia por
+  SSE además del heartbeat; "última vez visto" en el perfil público; vía datasource JSON para escalar.
+
 ## 6. Follow-up
 - Heatmap de actividad por hora; "última vez visto" por jugador en el perfil público (SDD 12);
   alerta "pico de online" (PrometheusRule).

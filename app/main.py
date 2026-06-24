@@ -88,19 +88,36 @@ async def metrics_endpoint(request: Request):
         provided = auth[7:] if auth.lower().startswith("bearer ") else ""
         if not hmac.compare_digest(provided, token):
             return Response(status_code=401)
-    # gauge "jugadores totales" se calcula al scrapear
+    # gauges calculados al scrapear: totales + presencia (SDD 21)
     try:
         from sqlalchemy import func, select
 
-        from app.models import Player
+        from app.core.redis import get_redis
+        from app.models import GalaxyInstance, Player
+        from app.services import presence
 
+        redis = await get_redis()
+        online = await presence.online_ids(redis)
+        metrics.ONLINE_PLAYERS.set(len(online))
         async with SessionLocal() as s:
             n = (
-                await s.execute(
-                    select(func.count()).select_from(Player).where(~Player.is_npc)
-                )
+                await s.execute(select(func.count()).select_from(Player).where(~Player.is_npc))
             ).scalar_one()
             metrics.PLAYERS_TOTAL.set(n)
+            # opt-in por jugador (cardinalidad): 1 serie por online, filtrable por player/galaxy
+            metrics.PLAYER_ONLINE.clear()
+            if settings.metrics_per_player and online:
+                ids = online[: settings.metrics_per_player_max]
+                rows = (
+                    await s.execute(
+                        select(Player.username, GalaxyInstance.name)
+                        .join(GalaxyInstance, Player.galaxy_instance_id == GalaxyInstance.id,
+                              isouter=True)
+                        .where(Player.id.in_(ids))
+                    )
+                ).all()
+                for username, galaxy in rows:
+                    metrics.PLAYER_ONLINE.set(1, player=username, galaxy=galaxy or "-")
     except Exception:
         pass
     return PlainTextResponse(metrics.render(), media_type="text/plain; version=0.0.4")

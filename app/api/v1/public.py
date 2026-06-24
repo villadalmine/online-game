@@ -2,9 +2,11 @@
 
 Solo agregados + username (nunca email ni datos de cuenta). Pensados para cachear (SDD 7)."""
 from fastapi import APIRouter, Depends, HTTPException, status
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
+from app.core.redis import get_redis
 from app.schemas import (
     GlobalStatsOut,
     HallOfFameEntryOut,
@@ -13,10 +15,17 @@ from app.schemas import (
     PublicProfileOut,
     SeasonOut,
 )
+from app.services import presence
 from app.services import stats as svc
 from app.services.seasons import hall_of_fame
 
 router = APIRouter()
+
+
+@router.get("/online")
+async def online_count(redis: Redis | None = Depends(get_redis)):
+    """Cuántos jugadores online ahora (agregado, sin PII) — SDD 21."""
+    return {"count": await presence.online_count(redis)}
 
 
 @router.get("/stats", response_model=GlobalStatsOut)

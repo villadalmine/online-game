@@ -72,6 +72,11 @@ class Gauge(_Metric):
     def dec(self, amount: float = 1.0, **labels) -> None:
         self.inc(-amount, **labels)
 
+    def clear(self) -> None:
+        """Olvida todas las series con label (para gauges recalculados en cada scrape)."""
+        with _lock:
+            self._vals.clear()
+
     def _lines(self) -> list[str]:
         out = []
         for key, v in list(self._vals.items()):
@@ -142,6 +147,9 @@ IN_FLIGHT = Gauge("http_requests_in_flight", "Requests HTTP en curso")
 
 SSE_CONNECTIONS = Gauge("game_sse_connections", "Conexiones SSE abiertas (conectados ahora)")
 PLAYERS_TOTAL = Gauge("game_players_total", "Jugadores humanos totales")
+ONLINE_PLAYERS = Gauge("game_online_players", "Jugadores online (heartbeat /players/me)")  # SDD 21
+# Opt-in (alta cardinalidad): 1 por jugador online, filtrable por player/galaxy en Grafana.
+PLAYER_ONLINE = Gauge("game_player_online", "Jugador online (1)", ("player", "galaxy"))
 SIGNUPS = Counter("game_signups_total", "Altas de jugadores", ("method",))  # method=password|otp
 LOGINS = Counter("game_logins_total", "Logins exitosos", ("method",))
 

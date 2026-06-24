@@ -512,6 +512,39 @@ async def test_metrics_endpoint_and_no_pii(client):
     assert "@" not in body  # ninguna serie con email/PII
 
 
+async def test_presence_online_endpoints(client, monkeypatch):
+    # SDD 21: /players/me marca presencia → /public/online cuenta; /admin/online lista (admin).
+    from app.core.config import get_settings
+    from app.services import presence
+
+    presence._mem.clear()
+    monkeypatch.setattr(get_settings(), "admin_email", "boss@b.com")
+    monkeypatch.setattr(get_settings(), "allowed_emails", "boss@b.com,p1@b.com")
+
+    # registrar con email permitido (allowlist activa)
+    r = await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "p1user", "password": "secret123", "email": "p1@b.com"},
+    )
+    assert r.status_code == 201, r.text
+    htok = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    await client.http.get("/api/v1/players/me", headers=htok)  # heartbeat
+
+    pub = await client.http.get("/api/v1/public/online")
+    assert pub.status_code == 200 and pub.json()["count"] >= 1
+
+    # /admin/online: no-admin -> 403
+    assert (await client.http.get("/api/v1/admin/online", headers=htok)).status_code == 403
+    # admin -> lista
+    ra = await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "boss", "password": "secret123", "email": "boss@b.com"},
+    )
+    atok = {"Authorization": f"Bearer {ra.json()['access_token']}"}
+    adm = await client.http.get("/api/v1/admin/online", headers=atok)
+    assert adm.status_code == 200 and "p1user" in adm.json()["players"]
+
+
 async def test_metrics_token_guard(client, monkeypatch):
     from app.core.config import get_settings
 

@@ -74,6 +74,12 @@ imagePullSecrets:
       name: {{ .Release.Name }}-secrets
       key: METRICS_TOKEN
 {{- end }}
+{{- if .Values.metrics.perPlayer }}
+{{- if .Values.metrics.perPlayer.enabled }}
+- name: METRICS_PER_PLAYER
+  value: "true"
+{{- end }}
+{{- end }}
 {{- end }}
 {{- if .Values.scaling }}
 {{- if .Values.scaling.streamInterval }}

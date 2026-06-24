@@ -90,6 +90,11 @@ class Settings(BaseSettings):
     # manda por bearerTokenSecret) → no queda público por el gateway. Vacío = abierto (dev).
     metrics_token: str = ""
 
+    # Presencia + métricas por entidad (SDD 21).
+    presence_window_seconds: int = 90       # "online" = visto en esta ventana
+    metrics_per_player: bool = False        # opt-in: gauges por jugador (cardinalidad alta)
+    metrics_per_player_max: int = 200       # tope de series por jugador
+
     # Envío de email: console (default, loguea el código — dev/CI sin SMTP) | smtp | resend
     mail_backend: str = "console"
     mail_from: str = "Online Galaxy War <no-reply@localhost>"
