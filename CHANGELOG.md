@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — UX: menú de ataque más fácil (sin escribir unidades a mano)
+- El panel ⚔ Atacar ahora muestra un **selector por unidad** (un input de cantidad por cada unidad
+  de ataque que tenés, con su ⚔ y "tenés N") en vez del texto libre `tank:5,...`.
+- **Energía clara:** muestra `⚡ costo (tenés X)` con aviso si no alcanza (costo expuesto en el
+  catálogo: `catalog.costs.attack_energy`, sin hardcodear).
+- El plan 📊 ahora tiene botón **usar** por opción → autocompleta objetivo + cantidad en el menú de
+  ataque. Click en una base del mapa muestra el nombre del objetivo y baja al panel. Bilingüe ES/EN.
+
 ### 2026-06-24 — SDD 37 diseñado: colonización (grafo raza × planeta)
 - Doc `docs/sdd-colonization.md`: colonizar otros planetas con un **grafo raza×planeta** — cada
   planeta tiene atributos (ya existen, SDD 13) y cada raza sus `tolerances`; `compat(race,planet)`

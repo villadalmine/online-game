@@ -19,6 +19,7 @@ def _validate_race_planet(race: str, planet: str) -> None:
 
 def build_catalog() -> dict:
     c = get_content()
+    s = get_settings()
     return {
         "galaxies": list(c.galaxies.values()),
         "planets": list(c.planets.values()),
@@ -30,6 +31,8 @@ def build_catalog() -> dict:
         "moons": list(c.moons.values()),
         "technologies": list(c.technologies.values()),
         "alliance_types": list(c.alliance_types.values()),
+        # action energy costs so clients can show "cuesta ⚡X" sin hardcodear (SDD 34/35)
+        "costs": {"attack_energy": s.attack_energy_cost, "spy_energy": s.spy_energy_cost},
     }
 
 

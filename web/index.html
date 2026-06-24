@@ -178,9 +178,13 @@
     <div class="card" data-panel="atacar">
       <h2>⚔ Atacar</h2>
       <div class="row">
-        base <input id="tbase" type="number" placeholder="id" style="width:64px" />
-        <input id="force" placeholder="tank:5,soldier:10" style="flex:1" />
+        <label><span data-i18n="targetbase">objetivo base</span> <input id="tbase" type="number" placeholder="id" style="width:64px" /></label>
+        <span id="tbasename" class="muted"></span>
+      </div>
+      <div id="forcepicker" class="muted" style="margin:6px 0"></div>
+      <div class="row">
         <button class="danger" onclick="attack()" data-i18n="attack">Lanzar flota</button>
+        <span id="attackcost" class="muted"></span>
       </div>
       <p class="muted" data-i18n="attacktip">Tip: tocá una base enemiga en el mapa para elegir objetivo.</p>
     </div>
@@ -367,7 +371,47 @@ async function onboard(){ try{ await api("/api/v1/players/onboard","POST",{galax
 const baseId=()=>(state&&state.bases[0])?state.bases[0].id:1;
 async function build(){ try{ const k=$("building").value; const b={building_key:k}; if(k==="mine")b.target_mineral=$("mineral").value; await api(`/api/v1/bases/${baseId()}/build`,"POST",b); msg("Construyendo "+k); refresh(); }catch(e){ msg(e.message,false);} }
 async function train(){ try{ await api(`/api/v1/bases/${baseId()}/train`,"POST",{unit_key:$("unit").value,quantity:+$("qty").value}); msg("Entrenando"); refresh(); }catch(e){ msg(e.message,false);} }
-async function attack(){ try{ const force={}; ($("force").value||"").split(",").forEach(p=>{const[k,v]=p.split(":"); if(k&&v)force[k.trim()]=+v;}); const d=await api("/api/v1/combat/attack","POST",{target_base_id:+$("tbase").value,force}); msg("Flota despachada, llega "+new Date(d.arrives_at).toLocaleTimeString()); refresh(); }catch(e){ msg(e.message,false);} }
+// attack force picker: a qty input per attack-capable unit you OWN (no más escribir a mano)
+function attackUnits(){ return [...(catalog?catalog.personnel:[]),...(catalog?catalog.heavy_units:[])]
+  .filter(u=>(u.stats&&u.stats.attack>0)&&((state&&state.units[u.key])||0)>0); }
+function renderForcePicker(){
+  if(!state||!catalog) return;
+  const us=attackUnits();
+  const keys=us.map(u=>u.key).join(",");
+  // no pisar lo que el usuario tipeó: si el set de unidades no cambió, solo refrescá el costo
+  if($("forcepicker").dataset.keys===keys){ renderAttackCost(); return; }
+  const prev=pickedForce();
+  $("forcepicker").dataset.keys=keys;
+  $("forcepicker").innerHTML = us.length
+    ? us.map(u=>{ const have=state.units[u.key]||0; const v=Math.min(prev[u.key]||0, have);
+        return `<label style="display:inline-flex;align-items:center;gap:4px;margin:2px 8px 2px 0">`+
+          `<span>${esc(u.name)} <span class="muted">⚔${u.stats.attack} · ${esc(tr('youhave'))} ${have}</span></span>`+
+          `<input type="number" data-force="${esc(u.key)}" min="0" max="${have}" value="${v}" style="width:54px" oninput="renderAttackCost()"></label>`;
+      }).join("")
+    : `<span class="muted">${esc(tr('noattackunits'))}</span>`;
+  renderAttackCost();
+}
+function pickedForce(){ const f={}; document.querySelectorAll('[data-force]').forEach(i=>{ const q=+i.value||0; if(q>0)f[i.dataset.force]=q; }); return f; }
+function renderAttackCost(){
+  if(!state||!catalog) return; const cost=(catalog.costs||{}).attack_energy||0;
+  const force=pickedForce(); const n=Object.values(force).reduce((a,b)=>a+b,0);
+  const lack = state.energy<cost ? ` <span class="bad">⚠ ${esc(tr('lowenergy'))}</span>` : "";
+  $("attackcost").innerHTML = `⚡ ${cost} (${esc(tr('youhave'))} ${Math.round(state.energy)})${lack} · ${n} ${esc(tr('unitssel'))}`;
+}
+// fill the picker from a combat plan option and jump to the attack panel
+function usePlan(baseId, unit, qty){
+  $("tbase").value=baseId; const i=document.querySelector(`[data-force="${unit}"]`);
+  if(i){ i.value=Math.min(qty, +i.max||qty); renderAttackCost();
+    i.scrollIntoView({behavior:"smooth",block:"center"}); }
+  else { closePlanet(); msg(tr('trainfirst').replace('{u}',unit),false); }
+  $("tbasename").textContent = "#"+baseId;
+}
+async function attack(){
+  const force=pickedForce();
+  if(!Object.keys(force).length){ msg(tr('pickunits'),false); return; }
+  try{ const d=await api("/api/v1/combat/attack","POST",{target_base_id:+$("tbase").value,force});
+    msg(tr('fleetsent')+" "+new Date(d.arrives_at).toLocaleTimeString()); refresh();
+  }catch(e){ msg(e.message,false);} }
 async function expedition(){ try{ await api("/api/v1/expeditions","POST",{moon_key:$("moon").value}); msg("Expedición lanzada"); refresh(); }catch(e){ msg(e.message,false);} }
 async function recall(id){ try{ await api(`/api/v1/combat/missions/${id}/recall`,"POST"); msg("Flota retirándose"); refresh(); }catch(e){ msg(e.message,false);} }
 async function doTick(){ try{ const d=await api("/api/v1/admin/tick","POST"); msg("Tick: NPC jugaron"); refresh(); }catch(e){ msg(e.message,false);} }
@@ -436,7 +480,7 @@ document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-pan
 const I18N={
   es:{ panels:{acciones:"Acciones",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
     ui:{build:"🏗 Construir",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking",
-      logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo."},
+      logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo.",targetbase:"objetivo base"},
     ph:{advmsg:"¿qué construyo? me falta algo…",regemail:"email invitado (para registrarte)",user:"usuario (mín. 3)",pass:"contraseña (mín. 6)",otpemail:"tu@email.com",otpcode:"código de 6 dígitos",chatmsg:"mensaje…"},
     s:{nofeed:"sin notificaciones sin leer",authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
       otphelp:"Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta. Una vez dentro, quedás logueado en este dispositivo (no te pide código cada vez).",
@@ -446,11 +490,12 @@ const I18N={
       spyBtn:"🕵 espiar",nointel:"sin intel — espialo para ver qué tiene",spyPrompt:"¿Cuántos espías mandás a",spySent:"🕵 Espías despachados, llegan",
       iScore:"score",iAtk:"⚔ ataque",iDef:"🛡 defensa",iMin:"⛏ minerales",iTurrets:"🔫 torretas",iBuildings:"🏗 edificios",iUnits:"👥 unidades",
       iDepth:"profundidad",iConf:"confianza",iAsOf:"hace",iStale:"⚠ desactualizada — re-espiá",iShared:"🤝 aliado",
-      planBtn:"📊 planear",planLoading:"calculando…",planLoss:"pierde",planDef:"defensa est.",planMargin:"margen",planNeed:"poder de ataque",
+      planBtn:"📊 planear",planLoading:"calculando…",planLoss:"pierde",planDef:"defensa est.",planMargin:"margen",planNeed:"poder de ataque",planUse:"usar",
+      youhave:"tenés",noattackunits:"no tenés unidades de ataque — entrená soldados/tanques primero",lowenergy:"poca energía",unitssel:"unidades",pickunits:"elegí cuántas unidades mandás",fleetsent:"🚀 Flota despachada, llega",trainfirst:"entrená {u} primero",
       bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
   en:{ panels:{acciones:"Actions",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
     ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",
-      logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it."},
+      logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it.",targetbase:"target base"},
     ph:{advmsg:"what should I build? I'm missing something…",regemail:"invited email (to register)",user:"username (min. 3)",pass:"password (min. 6)",otpemail:"you@email.com",otpcode:"6-digit code",chatmsg:"message…"},
     s:{nofeed:"no unread notifications",authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
       otphelp:"We send a <b>code</b> to your email. First time, it creates your account. Once in, you stay logged in on this device (no code each time).",
@@ -460,7 +505,8 @@ const I18N={
       spyBtn:"🕵 spy",nointel:"no intel — spy them to see what they have",spyPrompt:"How many spies do you send to",spySent:"🕵 Spies dispatched, arriving",
       iScore:"score",iAtk:"⚔ attack",iDef:"🛡 defense",iMin:"⛏ minerals",iTurrets:"🔫 turrets",iBuildings:"🏗 buildings",iUnits:"👥 units",
       iDepth:"depth",iConf:"confidence",iAsOf:"as of",iStale:"⚠ stale — re-spy",iShared:"🤝 ally",
-      planBtn:"📊 plan",planLoading:"calculating…",planLoss:"loses",planDef:"est. defense",planMargin:"margin",planNeed:"attack power",
+      planBtn:"📊 plan",planLoading:"calculating…",planLoss:"loses",planDef:"est. defense",planMargin:"margin",planNeed:"attack power",planUse:"use",
+      youhave:"you have",noattackunits:"no attack units — train soldiers/tanks first",lowenergy:"low energy",unitssel:"units",pickunits:"pick how many units to send",fleetsent:"🚀 Fleet dispatched, arrives",trainfirst:"train {u} first",
       bMines:"Shared bonus: +production/attack/defense for all members",bUnit:"Unit tech: each race shares its edge with the whole alliance",bDef:"Mutual defense: your allies help defend your base",bVis:"Shared vision: you see attacks your allies receive",bTrade:"Trade: transfer minerals between allies"} },
 };
 function tr(k){ const d=I18N[lang]||I18N.es; return (d.s&&d.s[k])||(I18N.es.s[k])||k; }
@@ -509,7 +555,9 @@ function renderGuide(){
 async function loadRanking(){ try{ const r=await api("/api/v1/players/ranking");
   $("ranking").innerHTML=`<tr><th>#</th><th>${esc(tr('colplayer'))}</th><th>${esc(tr('colrace'))}</th><th>${esc(tr('colscore'))}</th></tr>`+
     r.map(e=>`<tr><td>${e.rank}</td><td>${esc(e.username)}${e.is_npc?' 🤖':''}</td><td>${esc(e.race_key||'')}</td><td>${e.score}</td></tr>`).join(""); }catch(e){ msg(e.message,false);} }
-function prefill(id){ $("tbase").value=id; $("force").focus(); window.scrollTo({top:0,behavior:"smooth"}); }
+function prefill(id){ $("tbase").value=id; const pl=(players||[]).find(p=>p.home_base_id===id);
+  $("tbasename").textContent=pl?("· "+esc(pl.username)):("#"+id); renderAttackCost();
+  document.querySelector('[data-panel="atacar"]').scrollIntoView({behavior:"smooth",block:"start"}); }
 // temporadas (SDD 11)
 function cdDays(iso){ if(!iso)return "—"; let s=Math.floor((new Date(iso)-Date.now())/1000); if(s<=0)return tr('closing');
   const d=Math.floor(s/86400); s-=d*86400; const h=Math.floor(s/3600); s-=h*3600; const m=Math.floor(s/60);
@@ -543,7 +591,7 @@ async function refresh(){
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
   renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed(); renderSeason();
-  renderCost(); renderTrainCost(); renderExpInfo();
+  renderCost(); renderTrainCost(); renderExpInfo(); renderForcePicker();
 }
 function renderResearch(){
   if(!catalog||!state) return; const done=new Set(state.technologies||[]);
@@ -727,7 +775,9 @@ async function planAttack(baseId){
   const el=$("plan_"+baseId); if(!el) return; el.textContent=tr('planLoading');
   try{ const p=await api("/api/v1/combat/plan","POST",{target_base_id:baseId,margin:2});
     const opts=p.options.filter(o=>o.qty>0).slice(0,4).map(o=>
-      `<div class="ab"><span>${esc(o.unit)}</span><span class="muted">×${o.qty} · ${esc(tr('planLoss'))} ~${o.est_attacker_loss_pct}%${o.wins?'':' <span class="bad">✗</span>'}</span></div>`
+      `<div class="ab"><span>${esc(o.unit)} ×${o.qty}</span>`+
+      `<span class="muted">${esc(tr('planLoss'))} ~${o.est_attacker_loss_pct}%${o.wins?'':' <span class="bad">✗</span>'}</span>`+
+      `<button class="sm sec" onclick="closePlanet();usePlan(${baseId},'${esc(o.unit)}',${o.qty})">${esc(tr('planUse'))}</button></div>`
     ).join("")||`<span class="muted">—</span>`;
     el.innerHTML=`<div class="muted" style="margin-top:4px">📊 ${esc(tr('planDef'))} ~${Math.round(p.estimated_defense)} · `+
       `${esc(tr('planMargin'))} ${p.margin}× · ${esc(tr('planNeed'))} <b>${Math.round(p.attack_power_needed)}</b></div>${opts}`;
