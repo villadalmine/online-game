@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 35 v1: espionaje e inteligencia (backend)
 - Unidad **`spy`** + edificio **`counter_intel`**; modelos **`SpyMission`**/**`IntelReport`** + migración.
   Servicio `espionage.py`: `resolve_spy` (depth = spy/(spy+counter)), payload **graduado** (rangos→exacto
