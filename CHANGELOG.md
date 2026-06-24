@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 31 + 32: HA/durabilidad de Postgres
+- **SDD 31** (`docs/sdd-postgres-ha-cnpg.md`): HA real con **CloudNativePG** (primary+réplicas,
+  failover en segundos, backups/PITR) — opción "pro"/proyecto; el juego apunta por `externalUrl`
+  (cero código). Diseño.
+- **SDD 32** (`docs/sdd-postgres-longhorn-migration.md`): **plan ejecutable** (runbook) para mover el
+  Postgres del juego de `local-path` a **Longhorn** → reagenda al apagar el fierro. Backup→borrar→
+  recrear→restore, con ventana, retención del PV viejo y rollback. Opción A, lista para ejecutar.
+
 ### 2026-06-24 — SDD 30 diseñado: mantenimiento/resiliencia (apagar el fierro GPU)
 - Doc `docs/sdd-maintenance-resilience.md`: impacto de apagar `srv-t7910` (GPU/amd64). La **IA cae
   sola a OpenRouter free** (LiteLLM fallback + fallback del juego, ya implementado). **Punto crítico:**

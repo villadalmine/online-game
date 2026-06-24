@@ -133,6 +133,8 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
 - 📝 **[SDD 28 — Métricas de uso LLM por usuario + GPU](docs/sdd-llm-usage-metrics.md)**: ver en Grafana el uso de GPU en vivo y atribuir tokens/spend de LLM **por jugador y backend** (GPU/free/pago) para monetizar. Falta que el juego pase `user` → LiteLLM ya emite `end_user`. Diseñado.
 - 🟢 **[SDD 29 — Inteligencia estratégica de NPCs](docs/sdd-npc-strategic-intelligence.md)**: **v1 hecho** — cerebro de 2 capas (estratégico periódico lee scoreboard+recursos y fija postura; táctico la ejecuta, también en reglas). Medible por NPC (SDD 28), fallback a reglas. Follow-up: reflexión post-batalla.
 - 📝 **[SDD 30 — Mantenimiento/resiliencia (apagar el fierro)](docs/sdd-maintenance-resilience.md)**: impacto de apagar el nodo GPU; IA cae sola a OpenRouter free; **Postgres en local-path = juego caído → mover a Longhorn**; runbook drain+backup. Diseñado.
+- 📝 **[SDD 31 — Postgres HA (CloudNativePG)](docs/sdd-postgres-ha-cnpg.md)**: failover real primary+réplicas + PITR; juego por externalUrl. Diseño (proyecto).
+- 🛠️ **[SDD 32 — Migración Postgres → Longhorn](docs/sdd-postgres-longhorn-migration.md)**: runbook ejecutable (backup→recrear→restore) para que la DB reagende al apagar el fierro. Listo para ejecutar.
 - 🟢 **[SDD 25 — Catch-up del recién llegado](docs/sdd-newcomer-catchup.md)**: **v1 hecho** — al
   entrar con ≥3 pares en su galaxia, top-up al **P40** del stock (sin pasar la mediana) + energía
   full + mina/torreta (defensa). Hook en onboarding. Follow-up: factor explícito por días.
