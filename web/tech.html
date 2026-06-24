@@ -163,7 +163,7 @@
     <tr><td data-i18n="l_data">Datos</td><td><code>PostgreSQL 16</code> (StatefulSet+PVC)</td><td data-i18n="r_data">Fuente de verdad; migraciones Alembic al arrancar.</td></tr>
     <tr><td>Cache</td><td><code>Redis 7</code></td><td data-i18n="r_cache">Cache de catálogo, rate-limit y <strong>locks distribuidos</strong> por jugador.</td></tr>
     <tr><td data-i18n="l_world">Mundo</td><td><code>CronJob</code> (tick */5)</td><td data-i18n="r_world">Avanza el mundo y corre los turnos de las NPC.</td></tr>
-    <tr><td>IA / LLM</td><td><code>LiteLLM</code> → <code>Ollama</code> (Tesla P4) / OpenRouter</td><td data-i18n="r_llm">Proxy OpenAI-compatible: GPU local primaria + fallback hosted.</td></tr>
+    <tr><td>IA / LLM</td><td><code>LiteLLM</code> → 2× <code>Ollama</code> (Tesla P4 + Quadro M4000) / OpenRouter</td><td data-i18n="r_llm">Gateway OpenAI-compatible: balancea entre las 2 GPUs (vGPU HAMI) y cae a OpenRouter free si tarda.</td></tr>
     <tr><td>Build</td><td><code>Argo Workflows</code> + <code>Kaniko</code></td><td data-i18n="r_build">Builds <strong>dentro del clúster</strong> (arm64) → registry interno; gate de tests en el Dockerfile.</td></tr>
     <tr><td>Deploy</td><td><code>Helm</code> (<code>--atomic</code>)</td><td data-i18n="r_deploy">initContainers <em>migrate</em>+<em>smoke</em>, <code>helm test</code>, rollback automático.</td></tr>
     <tr><td data-i18n="l_obs">Observabilidad</td><td><code>Prometheus</code> · <code>Grafana</code> · <code>Alertmanager</code></td><td data-i18n="r_obs">ServiceMonitor + dashboards + alertas a un bot de Telegram.</td></tr>
@@ -188,7 +188,7 @@
   </div>
 
   <h2><span data-i18n="s_hw">Hardware</span> <small data-i18n="s_hw_sm">bare-metal en casa</small></h2>
-  <p data-i18n="hw_p">Clúster <code>k3s</code> multi-nodo sobre placas <strong>ARM</strong> de bajo consumo (Raspberry Pi + Turing RK1 + Super6c) y un nodo x86 con <strong>GPU Tesla P4</strong> para la IA local. Almacenamiento persistente en disco del clúster (PVC). <strong>Cero dependencia de nube.</strong></p>
+  <p data-i18n="hw_p">Clúster <code>k3s</code> multi-nodo sobre placas <strong>ARM</strong> de bajo consumo (Raspberry Pi + Turing RK1 + Super6c) y un nodo x86 con <strong>2 GPUs (Tesla P4 + Quadro M4000)</strong> para la IA local. Almacenamiento persistente en disco del clúster (PVC). <strong>Cero dependencia de nube.</strong></p>
 
   <p class="note" data-i18n="note_sec">Por seguridad, esta página describe la <em>arquitectura</em> y los protocolos, pero omite el direccionamiento exacto (IPs privadas LAN, hostnames de nodos, endpoints internos).</p>
 
@@ -228,7 +228,7 @@ const T = {
     l_data:"Datos", r_data:"Fuente de verdad; migraciones Alembic al arrancar.",
     r_cache:"Cache de catálogo, rate-limit y <strong>locks distribuidos</strong> por jugador.",
     l_world:"Mundo", r_world:"Avanza el mundo y corre los turnos de las NPC.",
-    r_llm:"Proxy OpenAI-compatible: GPU local primaria + fallback hosted.",
+    r_llm:"Gateway OpenAI-compatible: balancea entre las 2 GPUs (vGPU HAMI) y cae a OpenRouter free si tarda.",
     r_build:"Builds <strong>dentro del clúster</strong> (arm64) → registry interno; gate de tests en el Dockerfile.",
     r_deploy:"initContainers <em>migrate</em>+<em>smoke</em>, <code>helm test</code>, rollback automático.",
     l_obs:"Observabilidad", r_obs:"ServiceMonitor + dashboards + alertas a un bot de Telegram.",
@@ -244,7 +244,7 @@ const T = {
     sc3h:"Por turnos", sc3p:"Sin requisitos de baja latencia → muchísimo más barato de escalar que tiempo real.",
     sc4h:"Aislamiento", sc4p:"El juego corre en su propio vCluster: API propia, RBAC y CRDs sin tocar el clúster anfitrión.",
     s_hw:"Hardware", s_hw_sm:"bare-metal en casa",
-    hw_p:"Clúster <code>k3s</code> multi-nodo sobre placas <strong>ARM</strong> de bajo consumo (Raspberry Pi + Turing RK1 + Super6c) y un nodo x86 con <strong>GPU Tesla P4</strong> para la IA local. Almacenamiento persistente en disco del clúster (PVC). <strong>Cero dependencia de nube.</strong>",
+    hw_p:"Clúster <code>k3s</code> multi-nodo sobre placas <strong>ARM</strong> de bajo consumo (Raspberry Pi + Turing RK1 + Super6c) y un nodo x86 con <strong>2 GPUs (Tesla P4 + Quadro M4000)</strong> para la IA local. Almacenamiento persistente en disco del clúster (PVC). <strong>Cero dependencia de nube.</strong>",
     note_sec:"Por seguridad, esta página describe la <em>arquitectura</em> y los protocolos, pero omite el direccionamiento exacto (IPs privadas LAN, hostnames de nodos, endpoints internos).",
     foot:"Online Galaxy War — PoC self-hosted. ¿Querés jugar?", foot2:"código abierto (MIT)",
   },
@@ -275,7 +275,7 @@ const T = {
     l_data:"Data", r_data:"Source of truth; Alembic migrations on startup.",
     r_cache:"Catalog cache, rate-limit and per-player <strong>distributed locks</strong>.",
     l_world:"World", r_world:"Advances the world and runs NPC turns.",
-    r_llm:"OpenAI-compatible proxy: local GPU primary + hosted fallback.",
+    r_llm:"OpenAI-compatible gateway: load-balances across both GPUs (HAMI vGPU), falls back to OpenRouter free on slow.",
     r_build:"<strong>In-cluster</strong> builds (arm64) → internal registry; test gate in the Dockerfile.",
     r_deploy:"<em>migrate</em>+<em>smoke</em> initContainers, <code>helm test</code>, auto rollback.",
     l_obs:"Observability", r_obs:"ServiceMonitor + dashboards + alerts to a Telegram bot.",
@@ -291,7 +291,7 @@ const T = {
     sc3h:"Turn-based", sc3p:"No low-latency requirements → far cheaper to scale than real-time.",
     sc4h:"Isolation", sc4p:"The game runs in its own vCluster: own API, RBAC and CRDs without touching the host cluster.",
     s_hw:"Hardware", s_hw_sm:"bare-metal at home",
-    hw_p:"Multi-node <code>k3s</code> cluster on low-power <strong>ARM</strong> boards (Raspberry Pi + Turing RK1 + Super6c) plus an x86 node with a <strong>Tesla P4 GPU</strong> for local AI. Persistent storage on cluster disk (PVC). <strong>Zero cloud dependency.</strong>",
+    hw_p:"Multi-node <code>k3s</code> cluster on low-power <strong>ARM</strong> boards (Raspberry Pi + Turing RK1 + Super6c) plus an x86 node with <strong>2 GPUs (Tesla P4 + Quadro M4000)</strong> for local AI. Persistent storage on cluster disk (PVC). <strong>Zero cloud dependency.</strong>",
     note_sec:"For security, this page describes the <em>architecture</em> and protocols but omits exact addressing (private LAN IPs, node hostnames, internal endpoints).",
     foot:"Online Galaxy War — self-hosted PoC. Want to play?", foot2:"open source (MIT)",
   },

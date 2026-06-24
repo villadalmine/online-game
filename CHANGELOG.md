@@ -7,6 +7,10 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — /tech refleja el stack de IA real (GPU dual)
+- `/tech`: la fila IA/LLM y el hardware ahora muestran el stack implementado — **LiteLLM → 2× Ollama
+  (Tesla P4 + Quadro M4000, vGPU HAMI) con balanceo + fallback OpenRouter free**. ES/EN.
+
 ### 2026-06-24 — IA self-hosted vía LiteLLM + GPU dual (SDD 9 v2)
 - **SDD 9 v2** (`docs/sdd-local-gpu-llm.md`): arquitectura final — un LiteLLM compartido enruta
   `local-gpu` a un **tier Ollama dual** (1 por placa: Tesla P4 + Quadro M4000, vía HAMI
