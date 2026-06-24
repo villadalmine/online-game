@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 29 v1: inteligencia estratégica de NPCs (cerebro de 2 capas)
 - NPCs que **cada ~30 min leen el scoreboard de su galaxia** (score + crecimiento `delta`) y sus
   recursos → fijan una **postura** persistida (`aggressive`/`defensive`/`expand`/`raid`/`opportunist`)
