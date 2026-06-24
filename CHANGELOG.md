@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 34: calculadora de combate (determinista + grounded en intel)
 - Servicio `combat_calc.py` con helpers **puros** (`loss_ratios`, `min_attack_power`,
   `units_for_power`, `defense_needed`) sobre la **misma fórmula** que `resolve_combat`.
