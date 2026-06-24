@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-06-24
+
 ### 2026-06-24 — Panel de reportes de combate (qué pasó en cada batalla)
 - Nueva tarjeta **⚔ Reportes de combate** que lee `GET /combat/reports`: por cada batalla muestra
   si **atacaste o te atacaron** y contra quién, **ganaste/perdiste**, **qué perdiste vos** y **qué
