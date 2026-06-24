@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-06-24
+
 ### 2026-06-24 — Deuda técnica de prod: secretos fuertes + locks distribuidos
 - **Secretos fuertes en prod**: `Settings.weak_secrets()` detecta `JWT_SECRET`/`OTP_SECRET`
   default o cortos (<16 bytes); con `ENVIRONMENT=production` el **arranque aborta** si hay alguno
