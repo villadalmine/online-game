@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 24: landing pública /game (bilingüe, social-share)
 - `web/landing.html` (ES/EN, toggle 🌐) servida en **`GET /game`**: hero + features + modelo
   **Free / BYOD (open source, self-host + tu API key de LLM) / Paid (nada por ahora)** + CTA a jugar.
