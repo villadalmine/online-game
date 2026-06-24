@@ -21,8 +21,11 @@ debe producir una imagen si la suite pasó. Opciones:
   (`deploy/build/online-game-kaniko.yaml`): un contenedor que `pip install .[dev] && pytest -q`
   sobre el repo clonado; si falla, el Workflow falla y **no se llega al paso Kaniko** → no hay
   imagen nueva. (Trade-off: agrega minutos al build; cachear deps.)
-- Mínimo viable hoy: el operador corre `make test` antes de `kubectl create -f ...kaniko.yaml`
-  (documentado en SDD 17). El step automático es el follow-up.
+- **HECHO (2026-06-24)**: el **`Dockerfile` es multi-stage con un gate de tests** — un stage `test`
+  corre `pip install .[dev] && pytest -q` (browser excluido por `addopts`) y el stage `runtime`
+  **depende** de él (`COPY --from=test`). Kaniko siempre construye el runtime → ejecuta el gate;
+  si un test falla, el `RUN` falla y **no se produce imagen**. Portable (Kaniko/docker/cualquiera),
+  sin reescribir el Workflow. Trade-off: +1-2 min por build (instala dev-deps + corre la suite).
 
 ## 3. Capa 2 — smoke en initContainer (gate automático del rollout)
 Agregar al Deployment un initContainer **`smoke`** (después de `migrate`) que corre un chequeo

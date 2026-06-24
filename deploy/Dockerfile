@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim AS base
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 
@@ -17,6 +17,17 @@ COPY migrations ./migrations
 COPY web ./web
 COPY scripts ./scripts
 COPY alembic.ini ./alembic.ini
+
+# --- GATE de tests (SDD 22, capa 1): corre la suite unit/e2e DURANTE el build (browser excluido
+# por addopts). Si algo falla, el RUN falla → la imagen NO se construye/publica. El runtime depende
+# de este stage (COPY del marker), así que Kaniko lo ejecuta sí o sí.
+FROM base AS test
+COPY tests ./tests
+RUN pip install --no-cache-dir ".[dev]" && pytest -q && touch /tmp/tests-passed
+
+# --- Runtime final (lean: sin dev-deps ni tests). Depende del gate.
+FROM base AS runtime
+COPY --from=test /tmp/tests-passed /tmp/tests-passed
 
 EXPOSE 8000
 

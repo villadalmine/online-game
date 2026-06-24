@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 22 capa 1: gate de tests en el build (Dockerfile multi-stage)
+- El `deploy/Dockerfile` ahora es **multi-stage** con un stage `test` que corre `pytest -q`
+  (unit/e2e, browser excluido) **durante el build**; el `runtime` depende de él (`COPY --from=test`).
+  → un build con tests rojos **falla y NO produce imagen** (Kaniko/docker, sin tocar el Workflow).
+  Cierra la capa 1 del SDD 22 (no publicar una versión que no pasa la suite). Runtime queda lean.
+
 ### 2026-06-24 — SDD 22: tests del deploy (helm test + smoke) + i18n de errores (SDD 4)
 - **i18n errores**: handler global traduce el `detail` de errores conocidos (auth/seguridad) a EN
   con `?lang=en`/`Accept-Language` (`app/core/i18n_errors.py`); la web manda `lang` en
