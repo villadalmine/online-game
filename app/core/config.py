@@ -79,6 +79,10 @@ class Settings(BaseSettings):
     physics_insolation_sensitivity: float = 0.5   # pendiente de insolation sobre la regen
     physics_min_mult: float = 0.5                 # techo inferior de un multiplicador físico
     physics_max_mult: float = 2.0                 # techo superior (evita extremos como Mercurio)
+    # mean_temp_c → refrigeración: temperaturas lejos del confort (frío o calor) drenan energía.
+    physics_comfort_temp_c: float = 15.0          # temperatura "neutral" (≈ Tierra)
+    physics_temp_sensitivity: float = 0.5         # cuánto penaliza el desvío térmico
+    physics_temp_scale_c: float = 200.0           # escala del desvío térmico (°C por unidad)
 
     # Passwordless login por email + código OTP (SDD 6). El login usuario+contraseña sigue
     # existiendo (dev/CLI/tests). En prod este es el camino para el público.

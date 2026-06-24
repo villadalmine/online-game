@@ -43,7 +43,27 @@ def insolation_energy_multiplier(planet_key: str | None, settings: Settings | No
     return _bounded(1.0 + s.physics_insolation_sensitivity * (ins - 1.0), s)
 
 
-def effective_energy_regen(player, settings: Settings | None = None) -> float:
-    """Regen de energía efectiva del jugador (base × multiplicador de insolación del planeta)."""
+def temperature_energy_multiplier(
+    planet_key: str | None, settings: Settings | None = None
+) -> float:
+    """Penaliza la regen según cuán lejos del confort esté la temperatura (frío o calor ⇒ gastar
+    energía en climatizar). 1.0 en el confort; nunca sube de 1.0 (solo penaliza)."""
     s = settings or get_settings()
-    return s.energy_regen_per_hour * insolation_energy_multiplier(player.planet_key, s)
+    if not s.physics_enabled:
+        return 1.0
+    t = _planet_value(planet_key, "mean_temp_c")
+    if t is None:
+        return 1.0
+    deviation = abs(t - s.physics_comfort_temp_c)
+    mult = 1.0 - s.physics_temp_sensitivity * (deviation / s.physics_temp_scale_c)
+    return _bounded(min(1.0, mult), s)
+
+
+def effective_energy_regen(player, settings: Settings | None = None) -> float:
+    """Regen efectiva: base × insolación (sol) × temperatura (refrigeración) del planeta."""
+    s = settings or get_settings()
+    return (
+        s.energy_regen_per_hour
+        * insolation_energy_multiplier(player.planet_key, s)
+        * temperature_energy_multiplier(player.planet_key, s)
+    )

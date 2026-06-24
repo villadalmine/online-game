@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 13 §4: refrigeración por temperatura (completa los multiplicadores físicos)
+- `mean_temp_c` → **refrigeración**: temperaturas lejos del confort (frío o calor) **drenan** la
+  regen de energía (nunca la suben), acotado al piso configurable. La regen efectiva ahora es
+  base × insolación × temperatura. Ej.: Venus (mucho sol, 464 °C) ⇒ la penalización térmica
+  compensa su alta insolación. Config `physics_comfort_temp_c`/`physics_temp_sensitivity`/
+  `physics_temp_scale_c`. Tests unit + e2e (planeta extremo regenera menos energía). **215 verdes.**
+
 ## [1.7.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 13 §4: multiplicadores físicos del planeta

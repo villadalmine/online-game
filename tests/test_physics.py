@@ -13,6 +13,9 @@ def _on(**kw) -> Settings:
         physics_insolation_sensitivity=0.5,
         physics_min_mult=0.5,
         physics_max_mult=2.0,
+        physics_comfort_temp_c=15.0,
+        physics_temp_sensitivity=0.5,
+        physics_temp_scale_c=200.0,
     )
     base.update(kw)
     return Settings(**base)
@@ -49,13 +52,28 @@ def test_missing_planet_or_field_is_neutral():
     assert physics.gravity_build_multiplier(None, s) == 1.0
 
 
-def test_effective_energy_regen_scales_with_insolation():
+def test_temperature_penalizes_energy_and_never_boosts():
+    s = _on()
+    assert physics.temperature_energy_multiplier("earth", s) == 1.0  # 15°C = confort
+    # Marte -63°C → desvío 78 → 1 - 0.5*78/200 = 0.805
+    assert physics.temperature_energy_multiplier("mars", s) == pytest.approx(0.805)
+    # Venus 464°C → desvío enorme → recortado al piso 0.5 (nunca negativo, nunca >1)
+    assert physics.temperature_energy_multiplier("venus", s) == 0.5
+
+
+def test_temperature_disabled_or_missing_is_neutral():
+    assert physics.temperature_energy_multiplier("venus", Settings(physics_enabled=False)) == 1.0
+    assert physics.temperature_energy_multiplier("planeta-x", _on()) == 1.0
+
+
+def test_effective_energy_regen_combines_insolation_and_temperature():
     s = _on(energy_regen_per_hour=10.0)
 
     class _P:
-        planet_key = "mars"  # insolación 0.43 → mult 0.715
+        planet_key = "mars"  # insolación 0.43 → 0.715 ; temp -63 → 0.805
 
-    assert physics.effective_energy_regen(_P(), s) == pytest.approx(7.15)
+    # 10 * 0.715 * 0.805 ≈ 5.756
+    assert physics.effective_energy_regen(_P(), s) == pytest.approx(10 * 0.715 * 0.805)
     # off ⇒ regen base intacta
     off = Settings(physics_enabled=False, energy_regen_per_hour=10.0)
     assert physics.effective_energy_regen(_P(), off) == 10.0

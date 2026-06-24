@@ -124,9 +124,9 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   v1: propiedades físicas reales + restricciones (aviones/atmósfera, barcos/agua). **v2**: campo
   `system` (i18n), **exosistemas reales** (Proxima b, TRAPPIST-1e, `canon real`+sources+confidence)
   y nivel **`speculative`** (`nova_terra`+rationale). **v3**: **multiplicadores físicos** (§4) —
-  `gravity_g`→tiempo de build, `insolation`→regen de energía; opt-in (`PHYSICS_ENABLED`), anclados a
-  Tierra=1.0 y acotados; encendido en prod. Follow-up: jerarquía anidada real,
-  **universos/spin-offs** ([SDD 26](docs/sdd-spinoff-universes.md)), `mean_temp_c`→refrigeración.
+  `gravity_g`→tiempo de build, `insolation`→regen de energía, `mean_temp_c`→refrigeración (drena
+  energía); opt-in (`PHYSICS_ENABLED`), anclados a Tierra=1.0 y acotados; encendido en prod.
+  Follow-up: jerarquía anidada real, **universos/spin-offs** ([SDD 26](docs/sdd-spinoff-universes.md)).
 - 📝 **[SDD 26 — Universos spin-off](docs/sdd-spinoff-universes.md)**: packs de datos (Star Trek/BSG/Star Wars) tipados y fieles al canon (`fiction`+sources); solo spec, con nota IP (fan/no-comercial). Implementable editando el SDD.
 - 🟢 **[SDD 25 — Catch-up del recién llegado](docs/sdd-newcomer-catchup.md)**: **v1 hecho** — al
   entrar con ≥3 pares en su galaxia, top-up al **P40** del stock (sin pasar la mediana) + energía

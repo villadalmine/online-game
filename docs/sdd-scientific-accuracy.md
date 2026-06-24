@@ -161,9 +161,12 @@ Multiplicadores físicos opt-in (extender, no romper): `gravity_g` → costo/tie
   anclados a la Tierra=1.0 (off o sin datos ⇒ neutral, comportamiento actual) y **acotados** a
   `[physics_min_mult, physics_max_mult]` (evita que extremos como la insolación de Mercurio rompan el
   balance). Mapeos: **`gravity_g` → tiempo de construcción** (más gravedad ⇒ build más lento;
-  `start_build`) y **`insolation` → regen de energía** (más sol ⇒ más energía; helper
-  `effective_energy_regen` usado en advance/build/train/research/expedición/ataque + display
-  advisor/NPC). Sensibilidad y techos configurables (`physics_*` en config).
+  `start_build`), **`insolation` → regen de energía** (más sol ⇒ más energía) y **`mean_temp_c` →
+  refrigeración** (temperaturas lejos del confort, frío o calor, **drenan** energía; nunca la suben).
+  La regen efectiva = base × insolación × temperatura (helper `effective_energy_regen` usado en
+  advance/build/train/research/expedición/ataque + display advisor/NPC). Sensibilidad y techos
+  configurables (`physics_*` en config). Ej.: Venus tiene mucho sol pero 464 °C ⇒ la penalización
+  térmica compensa su alta insolación (trade-off realista).
 - **Encendido en prod** por env (`PHYSICS_ENABLED=true`); off en dev/tests por default.
 - Tests: `tests/test_physics.py` (unit: Tierra neutral, Marte build más rápido, Venus/Mercurio
   energía con clamp, planeta/campo faltante neutral, regen efectiva) + e2e (gravedad cambia el
@@ -171,7 +174,7 @@ Multiplicadores físicos opt-in (extender, no romper): `gravity_g` → costo/tie
 
 **Pendiente (follow-up)**: jerarquía anidada real (galaxy→system→planet en el árbol, no solo campo);
 **universos/spin-offs** ([SDD 26](sdd-spinoff-universes.md)) seleccionables por partida;
-`mean_temp_c`→refrigeración; `real`/`canon` en edificios/unidades.
+`real`/`canon` en edificios/unidades.
 
 ## 6. Riesgos / decisiones
 - **Realismo vs. jugabilidad**: las restricciones físicas deben sumar, no frustrar → gating

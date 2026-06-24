@@ -238,6 +238,33 @@ async def test_physics_gravity_scales_build_time(client, monkeypatch):
     assert abs(mars_off - earth_off) < 2.0  # off ⇒ mismo tiempo (neutral)
 
 
+async def test_physics_extreme_planet_regenerates_less_energy(client, monkeypatch):
+    # SDD 13 §4: en un planeta hostil (Marte: poca insolación + frío extremo) la energía se
+    # regenera más lento que en la Tierra. Verificado por la API tras 1h de regen.
+    from datetime import UTC, datetime, timedelta
+
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "physics_enabled", True)
+
+    async def _energy_after_1h(planet, race, user):
+        h = await _register(client.http, user)
+        await _onboard(client.http, h, planet=planet, race=race)
+        async with client.session_maker() as s:
+            p = (await s.execute(select(Player).where(Player.username == user))).scalar_one()
+            p.energy = 0.0
+            p.energy_updated_at = datetime.now(UTC) - timedelta(hours=1)
+            await s.commit()
+        me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+        return me["energy"]
+
+    earth = await _energy_after_1h("earth", "terran", "warmworld")
+    mars = await _energy_after_1h("mars", "martian", "coldworld")
+    assert 0 < mars < earth  # Marte regenera menos que la Tierra
+
+
 async def test_catalog_graph(client):
     r = await client.http.get("/api/v1/catalog/graph?race=martian&planet=mars")
     assert r.status_code == 200
