@@ -99,7 +99,7 @@ def get_content() -> GameContent:
 # `<field>_en` sibling holds the English variant. Adding a language = editing YAML.
 # --------------------------------------------------------------------------- #
 SUPPORTED_LANGS = ("es", "en")
-LOCALIZED_FIELDS = ("name", "description", "real")
+LOCALIZED_FIELDS = ("name", "description", "real", "system", "rationale")  # +SDD 13
 
 
 def normalize_lang(lang: str | None) -> str:

@@ -1,10 +1,38 @@
-"""SDD 13 — rigor científico: restricciones físicas del planeta al entrenar."""
+"""SDD 13 — rigor científico: restricciones físicas + contenido (exosistemas/speculative)."""
 from sqlalchemy import select
 
+from app.content.registry import get_content, localize
 from app.core.security import hash_password
 from app.models import Base_, Building, Player
 from app.services.onboarding import onboard_player
 from app.services.training import TrainingError, start_training
+
+
+def test_exosystems_real_and_speculative_content():
+    r = get_content()
+    # exosistemas REALES nuevos con system + sources
+    for key, system in [("proxima_b", "Proxima Centauri"), ("trappist_1e", "TRAPPIST-1")]:
+        p = r.planets[key]
+        assert p["canon"] == "real" and p["system"] == system and p.get("sources")
+    # planeta speculative: requiere rationale (no sources)
+    nt = r.planets["nova_terra"]
+    assert nt["canon"] == "speculative" and nt.get("rationale")
+
+
+def test_every_real_planet_has_sources_and_speculative_has_rationale():
+    r = get_content()
+    for key, p in r.planets.items():
+        canon = p.get("canon")
+        if canon == "real":
+            assert p.get("sources"), f"{key} real sin sources"
+        if canon == "speculative":
+            assert p.get("rationale"), f"{key} speculative sin rationale"
+
+
+def test_system_field_is_localized_to_en():
+    r = get_content()
+    assert localize(r.planets["earth"], "en")["system"] == "Solar System"
+    assert localize(r.planets["nova_terra"], "en")["system"] == "Frontier (hypothetical)"
 
 
 async def _player(session, name, planet, race) -> Player:

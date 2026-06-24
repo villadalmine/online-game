@@ -120,12 +120,14 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   **v1 hecho** — `PlayerStats` de por vida (batallas/construido/entrenado/explorado/minado/saqueado),
   historial de temporadas (HoF), endpoints públicos `/public/*` (sin auth, sin email) y **showcase
   en el login**. Follow-up: cachear `/public/*` (SDD 7), `career_points`, backfill.
-- 🟢 **[SDD 13 — Rigor científico del contenido](docs/sdd-scientific-accuracy.md)**: **v1 hecho** —
-  propiedades físicas reales por planeta (gravedad/atmósfera/agua/insolación/temperatura + `canon` +
-  `sources`, NASA Fact Sheets) en el catálogo + modal de planeta; **restricciones físicas** (aviones
-  requieren atmósfera, barcos requieren agua). Follow-up: jerarquía **sistema estelar** + exosistemas
-  reales (Proxima/TRAPPIST-1), nivel `speculative`, **universos/spin-offs** (tipo *The Expanse*),
-  multiplicadores físicos.
+- 🟢 **[SDD 13 — Rigor científico del contenido](docs/sdd-scientific-accuracy.md)**: **v1+v2 hechos** —
+  v1: propiedades físicas reales + restricciones (aviones/atmósfera, barcos/agua). **v2**: campo
+  `system` (i18n), **exosistemas reales** (Proxima b, TRAPPIST-1e, `canon real`+sources+confidence)
+  y nivel **`speculative`** (`nova_terra`+rationale) — aditivo. Follow-up: jerarquía anidada real,
+  **universos/spin-offs** (*The Expanse*), multiplicadores físicos.
+- 📝 **[SDD 25 — Catch-up del recién llegado](docs/sdd-newcomer-catchup.md)**: al entrar a una partida
+  vieja, grant proporcional a días + baseline de pares (P40 de su galaxia), priorizando defensa,
+  capeado a ≤ baseline (nivela sin dar ventaja). Diseñado.
 
 ### Escalado / producción (diseñado, pendiente de implementar)
 - 🟢 **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: **v1 hecho** —

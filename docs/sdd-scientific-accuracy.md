@@ -145,10 +145,20 @@ Multiplicadores físicos opt-in (extender, no romper): `gravity_g` → costo/tie
 - **Tests**: `tests/test_science.py` (2 servicio) + 2 e2e (catálogo con campos físicos; barco
   bloqueado sin agua). 153 unit/e2e + 15 browser ✅.
 
-**Pendiente (follow-up, según §3 y §7)**: jerarquía **Galaxia → sistema estelar → planeta** y
-exosistemas reales (Proxima/TRAPPIST-1) en vez de Andrómeda ficticia; nivel `speculative` con
-`rationale`; **universos/spin-offs** (packs de contenido) seleccionables por partida; multiplicadores
-físicos (gravedad→costo, insolación→energía solar); `real`/`canon` en edificios/unidades restantes.
+## 5.quater Estado v2 (2026-06-24) — aditivo, sin romper jugadores
+- **Nivel `system`** (jerarquía sistema estelar) como campo por planeta (Sistema Solar para los 4;
+  sistemas ficticios para Andrómeda). Localizado ES/EN (`LOCALIZED_FIELDS`).
+- **Exosistemas REALES** (nueva región `solar_neighborhood`, `canon: real`): **Proxima Centauri b**
+  y **TRAPPIST-1e** con datos físicos publicados + `sources` + `confidence: low` (atmósfera/agua no
+  confirmadas). Es la "expansión" científica honesta (Andrómeda ficticia se mantiene, tagueada).
+- **Nivel `speculative`**: `nova_terra` (`canon: speculative` + `rationale`, sin `sources`) — demuestra
+  "inventar lo aún no descubierto" sin confundir dato con invento.
+- Expuesto en `/catalog` (+ `?lang=en`) y en el **modal de planeta** (system, canon, confidence,
+  rationale). Tests `tests/test_science.py` (exosistemas/speculative + sources/rationale + i18n).
+
+**Pendiente (follow-up)**: jerarquía anidada real (galaxy→system→planet en el árbol, no solo campo);
+**universos/spin-offs** (packs de contenido tipo *The Expanse*) seleccionables por partida;
+multiplicadores físicos (gravedad→costo, insolación→energía solar); `real`/`canon` en edificios/unidades.
 
 ## 6. Riesgos / decisiones
 - **Realismo vs. jugabilidad**: las restricciones físicas deben sumar, no frustrar → gating

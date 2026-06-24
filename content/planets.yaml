@@ -14,6 +14,8 @@ galaxies:
       - key: earth
         name: "Tierra"
         name_en: "Earth"
+        system: "Sistema Solar"
+        system_en: "Solar System"
         description: "Mundo equilibrado, rico en hierro y aluminio."
         description_en: "Balanced world, rich in iron and aluminum."
         canon: real
@@ -35,6 +37,8 @@ galaxies:
       - key: mars
         name: "Marte"
         name_en: "Mars"
+        system: "Sistema Solar"
+        system_en: "Solar System"
         description: "Mundo de oxido de hierro y azufre, duro y militarista."
         description_en: "World of iron oxide and sulfur, harsh and militaristic."
         canon: real
@@ -56,6 +60,8 @@ galaxies:
       - key: venus
         name: "Venus"
         name_en: "Venus"
+        system: "Sistema Solar"
+        system_en: "Solar System"
         description: "Mundo volcanico de basalto y azufre, alta tecnologia."
         description_en: "Volcanic world of basalt and sulfur, high technology."
         canon: real
@@ -77,6 +83,8 @@ galaxies:
       - key: mercury
         name: "Mercurio"
         name_en: "Mercury"
+        system: "Sistema Solar"
+        system_en: "Solar System"
         description: "Mundo abrasador, denso en hierro y silicio; sin lunas ni atmosfera."
         description_en: "Scorching world, dense in iron and silicon; no moons, no atmosphere."
         canon: real
@@ -105,6 +113,8 @@ galaxies:
       - key: vega_prime
         name: "Vega Prime"
         name_en: "Vega Prime"
+        system: "Sistema Vega (ficción)"
+        system_en: "Vega System (fiction)"
         description: "Mundo oceanico rico en titanio y aluminio."
         description_en: "Oceanic world rich in titanium and aluminum."
         canon: fiction
@@ -125,6 +135,8 @@ galaxies:
       - key: nyx
         name: "Nyx"
         name_en: "Nyx"
+        system: "Sistema Nyx (ficción)"
+        system_en: "Nyx System (fiction)"
         description: "Mundo sombrio y volcanico, abundante en azufre y basalto."
         description_en: "Dark volcanic world, abundant in sulfur and basalt."
         canon: fiction
@@ -141,4 +153,84 @@ galaxies:
           sulfur: 1.6
           magnesium: 1.0
           basalt: 1.5
+        moons: []
+  - key: solar_neighborhood
+    name: "Vecindario solar"
+    name_en: "Solar Neighborhood"
+    # Sistemas estelares REALES cercanos (Vía Láctea) con exoplanetas catalogados (NASA Exoplanet
+    # Archive). Datos = mejores estimaciones publicadas; `confidence: low` donde la atmósfera/agua
+    # no están confirmadas. Es la "expansión" científica (reemplaza el rol que tenía Andrómeda).
+    canon: real
+    planets:
+      - key: proxima_b
+        name: "Proxima Centauri b"
+        name_en: "Proxima Centauri b"
+        system: "Proxima Centauri"
+        system_en: "Proxima Centauri"
+        description: "Exoplaneta rocoso en zona habitable de la estrella mas cercana (~4.24 al)."
+        description_en: "Rocky exoplanet in the habitable zone of the nearest star (~4.24 ly)."
+        canon: real
+        confidence: low
+        gravity_g: 1.1
+        mean_temp_c: -39
+        atmosphere: thin
+        has_liquid_water: false
+        insolation: 0.65
+        sources: ["NASA Exoplanet Archive: Proxima Centauri b", "ESO 2016"]
+        abundance:
+          iron: 1.2
+          silicon: 1.1
+          aluminum: 0.9
+          titanium: 0.8
+          sulfur: 0.7
+          magnesium: 1.0
+          basalt: 1.1
+        moons: []
+      - key: trappist_1e
+        name: "TRAPPIST-1e"
+        name_en: "TRAPPIST-1e"
+        system: "TRAPPIST-1"
+        system_en: "TRAPPIST-1"
+        description: "Mundo rocoso templado del sistema de 7 planetas TRAPPIST-1 (~40 al)."
+        description_en: "Temperate rocky world of the 7-planet TRAPPIST-1 system (~40 ly)."
+        canon: real
+        confidence: low
+        gravity_g: 0.82
+        mean_temp_c: -27
+        atmosphere: thin
+        has_liquid_water: false
+        insolation: 0.6
+        sources: ["NASA: TRAPPIST-1e", "Gillon et al. 2017"]
+        abundance:
+          iron: 1.1
+          silicon: 1.2
+          aluminum: 1.0
+          titanium: 0.9
+          sulfur: 0.8
+          magnesium: 1.1
+          basalt: 1.0
+        moons: []
+      - key: nova_terra
+        name: "Nova Terra"
+        name_en: "Nova Terra"
+        system: "Frontera (hipotetico)"
+        system_en: "Frontier (hypothetical)"
+        description: "Mundo habitable hipotetico, aun no descubierto: un gemelo plausible de la Tierra."
+        description_en: "Hypothetical habitable world, not yet discovered: a plausible Earth twin."
+        canon: speculative
+        rationale: "Es estadisticamente esperable un analogo terrestre en zona habitable; aun no catalogado."
+        rationale_en: "An Earth-analog in the habitable zone is statistically expected; not yet catalogued."
+        gravity_g: 1.0
+        mean_temp_c: 14
+        atmosphere: thick
+        has_liquid_water: true
+        insolation: 1.0
+        abundance:
+          iron: 1.2
+          silicon: 1.2
+          aluminum: 1.2
+          titanium: 0.9
+          sulfur: 0.7
+          magnesium: 0.9
+          basalt: 0.9
         moons: []

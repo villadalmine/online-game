@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 13 v2: jerarquía `system` + exosistemas reales + nivel `speculative`
+- `content/planets.yaml`: campo **`system`** por planeta (Sistema Solar / sistemas de Andrómeda),
+  nueva región **`solar_neighborhood`** (`canon: real`) con **Proxima Centauri b** y **TRAPPIST-1e**
+  (datos publicados + `sources` + `confidence: low`), y un planeta **`speculative`** (`nova_terra` +
+  `rationale`). Aditivo (no se removió nada → no rompe jugadores existentes).
+- `registry`: `system`/`rationale` se localizan (ES/EN). Modal de planeta muestra system/canon/
+  confidence/rationale. Tests `tests/test_science.py`.
+
+### 2026-06-24 — SDD 25 diseñado: catch-up del recién llegado (nivelar sin dar ventaja)
+- Doc `docs/sdd-newcomer-catchup.md`: al entrar a una partida vieja, grant proporcional a días +
+  baseline de pares (P40 de su galaxia, leyendo `PlayerStats`/score), **priorizando defensa**,
+  capeado a ≤ baseline (equalizar, no boostear). Una vez por cuenta. En la cola.
+
 ## [1.3.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 24: landing pública /game (bilingüe, social-share)
