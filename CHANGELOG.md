@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 34 diseñado: estrategia de combate (fórmula + calculadora + IA)
+- Doc `docs/sdd-combat-strategy.md`: documenta la **fórmula exacta** de `resolve_combat`
+  (attack_score vs defense_score; multiplicadores boons×tech×alianza; flat defense de torretas;
+  pérdidas proporcionales), la **matriz de stats** de unidades, y los **cálculos** para atacar/defender
+  (fuerza mínima para ganar, pérdidas según margen 2-3×, defensa necesaria). Diseña una **calculadora**
+  (`/combat/simulate` + `/combat/plan`, deterministas) y **cómo la IA lo sabe sin alucinar** (cálculo
+  server-side + grounding, patrón SDD 1/2). Nota: `hp` aún no se usa. Solo especificación.
+
 ### 2026-06-24 — SDD 33 diseñado: seguridad (pods sin root + RBAC/sandbox + defensa IA)
 - Doc `docs/sdd-security-hardening.md`: modelo de amenaza + estrategias. **Pods sin root**
   (Dockerfile `USER` + `securityContext`: runAsNonRoot/drop caps/seccomp/readOnlyRootFs), **RBAC
