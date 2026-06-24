@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — fix(deps): aiosqlite en runtime (lo necesita el smoke --selftest)
+- El smoke (SDD 22 capa 2) levanta la app en SQLite efímero → necesita `aiosqlite`, que estaba
+  solo en `[dev]`. Agregado a las deps principales (es el driver default de dev; inofensivo en prod
+  con Postgres). 2do falso positivo del gate, ya cubierto.
+
 ### 2026-06-24 — fix(packaging): `pip install .` instalaba un paquete incompleto (faltaba app.api)
 - `pyproject` listaba `packages=["app","clients"]` (solo top-level) → la instalación no traía los
   subpaquetes (`app.api`, `app.services`, …). El runtime no lo notaba (corre desde el fuente), pero

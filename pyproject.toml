@@ -8,6 +8,7 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "sqlalchemy[asyncio]>=2.0",
     "asyncpg>=0.29",
+    "aiosqlite>=0.20",  # driver SQLite async: default de dev + lo usa el smoke --selftest (SDD 22)
     "alembic>=1.13",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
