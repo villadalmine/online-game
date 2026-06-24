@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-06-24
+
 ### 2026-06-24 — /tech bilingüe ES/EN + ollama GPU dedicado (SDD 9)
 - `/tech`: ahora **bilingüe** (toggle 🌐 ES/EN con dict + persistencia, sin CDNs). vCluster marcado
   como **(planeado)** — es futuro (igual que el bot hermes); el diagrama suma el path IA
