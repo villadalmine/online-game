@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 28: end_user verificado + DCGM-exporter (GPU física)
+- LiteLLM: `enable_end_user_cost_tracking_prometheus_only: true` (vía Ansible) — sin él, `end_user`
+  no aparecía. **Verificado**: tokens/spend/requests **por usuario** ya se loguean.
+- **DCGM-exporter** en `infra-ai` (`make dcgm`, idempotente): utilización física real por placa
+  (util%/VRAM/temp/watts), sin pasar por HAMI. Verificado (M4000 58 °C / P4 88 °C). Dashboard Grafana.
+
 ## [1.13.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 28 v1: métricas de uso LLM por usuario (monetización) + GPU + dashboard

@@ -80,11 +80,31 @@ el costo). No duplicar el cálculo de costo en la app.
   (verificable contra `/metrics` de litellm en un test de integración manual).
 - **Dashboards**: cargan en Grafana (JSON válido); paneles devuelven datos con tráfico real.
 
+## 5.ter DCGM-exporter (uso físico de GPU) — plan + estado (2026-06-24)
+**Coexistencia con HAMI:** no chocan, leen capas distintas — HAMI = **asignación lógica** (lo
+reservado por pod/placa); DCGM = **utilización física** (NVML/DCGM: util%, VRAM real, temp, watts).
+**Regla:** DCGM-exporter **NO pide `nvidia.com/gpu`** → no consume vGPU ni pasa por HAMI (lee el
+driver directo: DaemonSet `runtimeClassName: nvidia` + privileged). Solo telemetría read-only.
+
+**Placas viejas:** P4 (6.1) y M4000 (5.2) soportan los campos `DCGM_FI_DEV_*` (util/VRAM/temp/power),
+**no** los `DCGM_FI_PROF_*` (Volta+). → CSV custom recortado a `DEV_*` para no hacer ruido.
+
+**Estado: HECHO** (en `infra-ai`, no en el chart del juego — es infra de cluster):
+- Rol `install-dcgm-exporter` (idempotente, `kubernetes.core.k8s`) + DaemonSet/Service/ServiceMonitor
+  (`release: kube-prometheus-stack`) + dashboard "GPU — DCGM (vivo)". Target **`make dcgm`**.
+- Verificado en vivo: `DCGM_FI_DEV_GPU_UTIL/FB_USED/GPU_TEMP/POWER_USAGE` por placa
+  (M4000 58 °C / Tesla P4 88 °C, VRAM ~4.7 GB c/u). Labels `gpu`, `modelName`.
+- **Foto completa**: DCGM (uso real) + HAMI (`hami_gpu_*`, asignado) + LiteLLM (`end_user`, por usuario).
+
 ## 5.bis Estado de implementación (2026-06-24) — v1
 - **App**: `app/services/llm.py:llm_chat(..., user=...)` manda el campo OpenAI `user`; el asistente
   pasa `player:<username>` (`advisor.py`) y los NPCs `npc:<username>` (`npc.py`, vía `state["__user"]`
-  que NO se filtra al prompt). → LiteLLM puebla `end_user`. Tests: `test_npc.py` (payload lleva `user`;
-  `__user` fuera del prompt).
+  que NO se filtra al prompt). Tests: `test_npc.py` (payload lleva `user`; `__user` fuera del prompt).
+- **LiteLLM (vía Ansible, infra-ai):** el campo `user` **NO** surfacea `end_user` con la config previa.
+  Hizo falta `litellm_settings.enable_end_user_cost_tracking_prometheus_only: true` (el flag
+  `disable_...` no alcanza). **Verificado 2026-06-24**: con el flag, `end_user="player:…"` aparece en
+  `litellm_{input,output,total}_tokens_metric_total`, `litellm_spend_metric_total`,
+  `litellm_requests_metric_total` y latencias → atribución/billing por usuario y backend real.
 - **Dashboard**: `deploy/helm/dashboards/llm-usage.json` (ConfigMap `grafana_dashboard`): in-flight,
   requests/s por `requested_model` (backend), tokens/s por `model`, **tabla tokens por usuario (24h)**,
   **tabla spend por usuario × backend (24h)**, fallbacks/s → free, y **GPU por placa** (HAMI:
