@@ -127,6 +127,20 @@ Migración Alembic aditiva (`server_default` en SQLite, ver CLAUDE.md).
 - **Determinismo de tests:** la capa estratégica es inyectable (fake decide) como el `LlmBrain` actual.
 - **Privacidad:** el scoreboard usa nick/score público (SDD 12), nunca email (SDD 20).
 
+## 9.bis Estado de implementación (2026-06-24) — v1
+- **Modelo**: `Player.npc_posture`/`npc_target_id`/`npc_strategy`/`npc_strategy_updated_at` + migración.
+- **`npc.py`**: `npc_scoreboard` (galaxia-scoped, con `delta`), `_llm_strategy` (LLM estratégico
+  inyectable), `decide_strategy` (cadencia por tiempo `npc_strategy_interval_seconds`; sin LLM o
+  fallo → mantiene la postura previa; valida `POSTURES`). Enganchado en `run_npc_turn`.
+- **Táctico**: `_npc_state` expone `posture` y marca `enemies[].is_target`; el prompt táctico la
+  respeta; `RuleBasedBrain` prioriza `npc_target_id` al atacar (mejora también el modo reglas).
+- **Métricas**: la capa estratégica va atribuida a `npc:<nombre>` (SDD 28) → tokens/spend por NPC.
+- **Config**: `npc_strategy_enabled`, `npc_strategy_interval_seconds` (1800), `npc_strategy_max_tokens`.
+- **Tests**: `tests/test_npc_strategy.py` (scoreboard scope+delta+leader; postura/objetivo seteados;
+  postura inválida ignorada; sin LLM mantiene postura; cadencia no recalcula) + e2e (el tick corre la
+  capa sin romper). **226 verdes.**
+- **Pendiente**: fase 2 reflexión post-batalla; tunear cadencia/posturas con datos reales.
+
 ## 10. Implementación (orden sugerido)
 1. Modelo + migración (campos `npc_*`). 
 2. `npc_scoreboard` (galaxia-scoped, con `delta`). 

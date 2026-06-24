@@ -292,6 +292,18 @@ async def test_physics_extreme_planet_regenerates_less_energy(client, monkeypatc
     assert 0 < mars < earth  # Marte regenera menos que la Tierra
 
 
+async def test_npc_strategy_runs_in_tick(client):
+    # SDD 29: el tick corre la capa estratégica de NPCs; sin LLM la NPC mantiene 'opportunist'
+    # (postura persistida, el path estratégico corre sin romper el tick).
+    h = await _register(client.http, "ticker")
+    await _onboard(client.http, h)
+    r = await client.http.post("/api/v1/admin/tick", headers=h)
+    assert r.status_code == 200
+    async with client.session_maker() as s:
+        npc = (await s.execute(select(Player).where(Player.is_npc.is_(True)))).scalars().first()
+        assert npc is not None and npc.npc_posture == "opportunist"
+
+
 async def test_catalog_graph(client):
     r = await client.http.get("/api/v1/catalog/graph?race=martian&planet=mars")
     assert r.status_code == 200

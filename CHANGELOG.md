@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 29 v1: inteligencia estratégica de NPCs (cerebro de 2 capas)
+- NPCs que **cada ~30 min leen el scoreboard de su galaxia** (score + crecimiento `delta`) y sus
+  recursos → fijan una **postura** persistida (`aggressive`/`defensive`/`expand`/`raid`/`opportunist`)
+  + objetivo, que **sesga la capa táctica** (LLM y reglas: prioriza atacar al objetivo). Campos nuevos
+  en `Player` + migración. Capa estratégica medible por `npc:<nombre>` (SDD 28) y con **fallback** a la
+  postura previa si el LLM falla (SDD 9). Config `npc_strategy_*`. Tests servicio + e2e. **226 verdes.**
+
 ### 2026-06-24 — SDD 29 diseñado: inteligencia estratégica de NPCs (cerebro de 2 capas)
 - Doc `docs/sdd-npc-strategic-intelligence.md`: NPCs que **cada tanto leen el scoreboard de su galaxia
   + su trayectoria de recursos** y fijan una **postura** (agresivo/defensivo/expansión/raid) persistida,

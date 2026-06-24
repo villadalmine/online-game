@@ -42,6 +42,15 @@ class Player(Base):
 
     # NPC short-term memory: JSON list of recent action descriptions (last N).
     npc_memory: Mapped[str] = mapped_column(Text, default="[]")
+    # NPC strategic brain (SDD 29): postura persistente decidida cada tanto leyendo el scoreboard.
+    npc_posture: Mapped[str] = mapped_column(
+        String(20), default="opportunist", server_default="opportunist"
+    )
+    npc_target_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    npc_strategy: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
+    npc_strategy_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Personal AI assistant: emergency "hack" budget, reset lazily once a day (SDD 2).
     assistant_hacks_used: Mapped[int] = mapped_column(Integer, default=0, server_default="0")

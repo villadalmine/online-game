@@ -265,8 +265,11 @@ class RuleBasedBrain:
                     owner = await session.get(Player, b.player_id)
                     beatable.append((defense, owner, b))
             if beatable:
+                targeted = [b for (_d, o, b) in beatable if o.id == player.npc_target_id]
                 humans = [t for t in beatable if not t[1].is_npc]
-                if humans:
+                if targeted:  # SDD 29: respeta el objetivo de la postura estratégica
+                    target = targeted[0]
+                elif humans:
                     scored = [(await player_score(session, o), b) for (_d, o, b) in humans]
                     scored.sort(key=lambda x: x[0], reverse=True)  # strongest rival first
                     target = scored[0][1]
@@ -367,6 +370,7 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
             {
                 "target_base_id": b.id,
                 "is_human": not owner.is_npc,
+                "is_target": owner.id == player.npc_target_id,  # SDD 29: objetivo estratégico
                 "units": await player_units(session, b.player_id),
                 "defense_estimate": round(await _base_defense_estimate(session, b), 1),
             }
@@ -392,6 +396,7 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
         "race": player.race_key,
         "planet": player.planet_key,
         "personality": content.races[player.race_key].get("personality", ""),
+        "posture": player.npc_posture,  # SDD 29: estrategia vigente (sesga la decisión táctica)
         "energy": round(_current_energy(player), 1),
         "minerals": {k: round(v, 1) for k, v in stocks.items()},
         "units": units,
@@ -444,6 +449,129 @@ async def _recent_battles(session: AsyncSession, player: Player) -> list[dict]:
     return out
 
 
+# --------------------------------------------------------------------------- #
+# Strategic layer (SDD 29): periodic, scoreboard-aware posture
+# --------------------------------------------------------------------------- #
+POSTURES = {"aggressive", "defensive", "expand", "raid", "opportunist"}
+
+
+def _load_strategy(player: Player) -> dict:
+    try:
+        return json.loads(player.npc_strategy or "{}")
+    except (ValueError, TypeError):
+        return {}
+
+
+def _strategy_due(player: Player, now: datetime, interval: int) -> bool:
+    last = player.npc_strategy_updated_at
+    if last is None:
+        return True
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=UTC)
+    return (now - last).total_seconds() >= interval
+
+
+async def npc_scoreboard(session: AsyncSession, player: Player) -> list[dict]:
+    """Ranking de la galaxia de la NPC (SDD 8/12), con `delta` de score vs la última evaluación —
+    para inferir 'cómo vienen los demás'. Excluye a la propia NPC."""
+    res = await session.execute(
+        select(Player).where(Player.galaxy_key == player.galaxy_key, Player.id != player.id)
+    )
+    prev = _load_strategy(player).get("scores", {})
+    scored = [(await player_score(session, p), p) for p in res.scalars()]
+    scored.sort(key=lambda x: x[0], reverse=True)
+    board = []
+    for rank, (score, p) in enumerate(scored, start=1):
+        board.append(
+            {
+                "id": p.id,
+                "name": p.username,
+                "is_human": not p.is_npc,
+                "score": score,
+                "rank": rank,
+                "delta": score - int(prev.get(p.username, score)),
+                "is_leader": rank == 1,
+            }
+        )
+    return board
+
+
+async def _llm_strategy(state: dict) -> dict:
+    """LLM estratégico: lee scoreboard+recursos y elige una postura ({posture,target,why})."""
+    settings = get_settings()
+    user = state.pop("__user", None)
+    system = (
+        "You are the STRATEGIST of an NPC race in a turn-based space strategy game. "
+        f"Stay in character: {state.get('personality', '')} "
+        "Analyze the scoreboard (others' score and growth `delta`) and your own resources/score. "
+        "Choose ONE posture for the next while: "
+        "'aggressive' (hunt a rival, prefer the leading or fastest-growing human), "
+        "'raid' (hit weak rich neighbors), 'defensive' (you are weak/threatened), "
+        "'expand' (grow economy), or 'opportunist' (mixed). "
+        "If a human clearly leads or grows much faster than you, lean aggressive against them. "
+        "If you are weak or under threat, go defensive. "
+        'Respond with ONLY JSON: {"posture":"<one>","target":"<rival name|null>","why":"<short>"}.'
+    )
+    content = await llm_chat(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": json.dumps(state)},
+        ],
+        max_tokens=settings.npc_strategy_max_tokens,
+        json_mode=settings.llm_json_mode,
+        user=user,
+    )
+    return _extract_json(content)
+
+
+async def decide_strategy(
+    session: AsyncSession, player: Player, *, now: datetime | None = None, strategize=None
+) -> str:
+    """Recalcula (cada tanto) la postura estratégica leyendo el scoreboard. Devuelve la postura
+    vigente. Ante cualquier fallo (sin LLM, red, JSON inválido) MANTIENE la postura previa."""
+    settings = get_settings()
+    if not settings.npc_strategy_enabled:
+        return player.npc_posture
+    now = now or datetime.now(UTC)
+    if not _strategy_due(player, now, settings.npc_strategy_interval_seconds):
+        return player.npc_posture
+    strategize = strategize or _llm_strategy
+    if strategize is _llm_strategy and not settings.llm_key:
+        return player.npc_posture  # sin LLM, no estrategia LLM (mantiene postura/reglas)
+
+    pid = player.id
+    try:
+        board = await npc_scoreboard(session, player)
+        state = {
+            "personality": get_content().races.get(player.race_key, {}).get("personality", ""),
+            "my_score": await player_score(session, player),
+            "my_minerals": await player_stocks(session, player.id),
+            "my_units": await player_units(session, player.id),
+            "previous_posture": player.npc_posture,
+            "scoreboard": board,
+            "under_attack": bool(await _incoming_attacks(session, player)),
+            "__user": f"npc:{player.username}",
+        }
+        out = await strategize(state)
+        posture = str(out.get("posture", "")).strip()
+        if posture not in POSTURES:
+            return player.npc_posture
+        target_name = out.get("target")
+        target_id = next((b["id"] for b in board if b["name"] == target_name), None)
+        player.npc_posture = posture
+        player.npc_target_id = target_id
+        player.npc_strategy = json.dumps(
+            {"why": str(out.get("why", ""))[:200], "scores": {b["name"]: b["score"] for b in board}}
+        )
+        player.npc_strategy_updated_at = now
+        await session.commit()
+        return posture
+    except Exception:
+        await session.rollback()
+        fresh = await session.get(Player, pid)
+        return fresh.npc_posture if fresh else "opportunist"
+
+
 def _extract_json(text: str) -> dict:
     text = text.strip()
     text = re.sub(r"^```(?:json)?|```$", "", text, flags=re.MULTILINE).strip()
@@ -466,6 +594,9 @@ async def _llm_decide(state: dict) -> dict:
         "(build a turret to defend, or recall a fleet from my_missions). Only attack an enemy "
         "your force clearly outguns; among those, prefer a human rival (enemies[].is_human=true) "
         "over an NPC, to gang up on the leading player. "
+        "Honor your `posture`: 'aggressive'/'raid' -> prioritize attacking a beatable enemy "
+        "(prefer enemies[].is_target=true, then is_human=true); 'defensive' -> turret/recall; "
+        "'expand' -> mines/buildings/expedition. "
         "Given your state, choose exactly ONE affordable action consistent with your personality. "
         'Respond with ONLY JSON, one of: '
         '{"action":"build","building":"<key>","mineral":"<key|null>"} (mineral only for a mine), '
@@ -533,6 +664,7 @@ def get_brain() -> NpcBrain:
 async def run_npc_turn(session: AsyncSession, player: Player) -> str | None:
     """Advance the NPC's state, let its brain act, and record the action in memory."""
     await advance(session, player)  # brings economy/queues up to date (commits internally)
+    await decide_strategy(session, player)  # SDD 29: refresca la postura cada tanto (scoreboard)
     action = await get_brain().act(session, player)
     # Re-fetch (act() may have rolled back/replaced the instance) before writing memory.
     player = await session.get(Player, player.id)

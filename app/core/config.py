@@ -72,6 +72,12 @@ class Settings(BaseSettings):
     catchup_percentile: float = 0.4
     catchup_min_peers: int = 3
 
+    # Inteligencia estratégica de NPCs (SDD 29): capa estratégica periódica que lee el scoreboard
+    # y fija una postura. Opt-in; cae a la postura previa si el LLM falla (SDD 9).
+    npc_strategy_enabled: bool = True
+    npc_strategy_interval_seconds: int = 1800   # recalcular la estrategia cada ~30 min/NPC
+    npc_strategy_max_tokens: int = 250
+
     # Multiplicadores físicos del planeta (SDD 13 §4). Opt-in: off ⇒ comportamiento actual. Anclados
     # a la Tierra=1.0; gravity_g→tiempo de construcción, insolation→regen de energía. Acotados.
     physics_enabled: bool = False
