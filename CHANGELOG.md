@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 13 v2: jerarquía `system` + exosistemas reales + nivel `speculative`
 - `content/planets.yaml`: campo **`system`** por planeta (Sistema Solar / sistemas de Andrómeda),
   nueva región **`solar_neighborhood`** (`canon: real`) con **Proxima Centauri b** y **TRAPPIST-1e**
