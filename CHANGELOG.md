@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-06-24
+
 ### 2026-06-24 — /tech refleja el stack de IA real (GPU dual)
 - `/tech`: la fila IA/LLM y el hardware ahora muestran el stack implementado — **LiteLLM → 2× Ollama
   (Tesla P4 + Quadro M4000, vGPU HAMI) con balanceo + fallback OpenRouter free**. ES/EN.
