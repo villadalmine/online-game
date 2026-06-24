@@ -230,6 +230,7 @@
     </div>
     <div class="card" data-panel="bases"><h2>Bases y edificios</h2><div id="bases"></div></div>
     <div class="card" data-panel="colas"><h2>Colas y flotas</h2><div id="queues"></div></div>
+    <div class="card" data-panel="combate"><h2>⚔ Reportes de combate</h2><div id="reports"></div></div>
     <div class="card" data-panel="temporada">
       <h2>📅 Temporada</h2>
       <div id="seasoninfo" class="muted">—</div>
@@ -478,7 +479,7 @@ document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-pan
 // i18n del chrome (ES/EN). El contenido del juego (nombres/descripciones) viene del catálogo ya
 // traducido; acá traducimos títulos de paneles y botones fijos. SDD docs/sdd-i18n.md
 const I18N={
-  es:{ panels:{acciones:"Acciones",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
+  es:{ panels:{acciones:"Acciones",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",combate:"⚔ Reportes de combate",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
     ui:{build:"🏗 Construir",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking",
       logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo.",targetbase:"objetivo base"},
     ph:{advmsg:"¿qué construyo? me falta algo…",regemail:"email invitado (para registrarte)",user:"usuario (mín. 3)",pass:"contraseña (mín. 6)",otpemail:"tu@email.com",otpcode:"código de 6 dígitos",chatmsg:"mensaje…"},
@@ -492,8 +493,9 @@ const I18N={
       iDepth:"profundidad",iConf:"confianza",iAsOf:"hace",iStale:"⚠ desactualizada — re-espiá",iShared:"🤝 aliado",
       planBtn:"📊 planear",planLoading:"calculando…",planLoss:"pierde",planDef:"defensa est.",planMargin:"margen",planNeed:"poder de ataque",planUse:"usar",
       youhave:"tenés",noattackunits:"no tenés unidades de ataque — entrená soldados/tanques primero",lowenergy:"poca energía",unitssel:"unidades",pickunits:"elegí cuántas unidades mandás",fleetsent:"🚀 Flota despachada, llega",trainfirst:"entrená {u} primero",
+      cNone:"nada",cYouAtk:"vos →",cAtkYou:"te atacó",cWon:"✓ ganaste",cLost:"✗ perdiste",cYouLost:"perdiste",cTheyLost:"perdió",cLoot:"botín",cLooted:"te saquearon",cNoReports:"todavía no hubo batallas",
       bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
-  en:{ panels:{acciones:"Actions",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
+  en:{ panels:{acciones:"Actions",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
     ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",
       logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it.",targetbase:"target base"},
     ph:{advmsg:"what should I build? I'm missing something…",regemail:"invited email (to register)",user:"username (min. 3)",pass:"password (min. 6)",otpemail:"you@email.com",otpcode:"6-digit code",chatmsg:"message…"},
@@ -507,6 +509,7 @@ const I18N={
       iDepth:"depth",iConf:"confidence",iAsOf:"as of",iStale:"⚠ stale — re-spy",iShared:"🤝 ally",
       planBtn:"📊 plan",planLoading:"calculating…",planLoss:"loses",planDef:"est. defense",planMargin:"margin",planNeed:"attack power",planUse:"use",
       youhave:"you have",noattackunits:"no attack units — train soldiers/tanks first",lowenergy:"low energy",unitssel:"units",pickunits:"pick how many units to send",fleetsent:"🚀 Fleet dispatched, arrives",trainfirst:"train {u} first",
+      cNone:"nothing",cYouAtk:"you →",cAtkYou:"attacked you",cWon:"✓ you won",cLost:"✗ you lost",cYouLost:"you lost",cTheyLost:"they lost",cLoot:"loot",cLooted:"looted from you",cNoReports:"no battles yet",
       bMines:"Shared bonus: +production/attack/defense for all members",bUnit:"Unit tech: each race shares its edge with the whole alliance",bDef:"Mutual defense: your allies help defend your base",bVis:"Shared vision: you see attacks your allies receive",bTrade:"Trade: transfer minerals between allies"} },
 };
 function tr(k){ const d=I18N[lang]||I18N.es; return (d.s&&d.s[k])||(I18N.es.s[k])||k; }
@@ -590,7 +593,7 @@ async function refresh(){
     b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
-  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed(); renderSeason();
+  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed(); loadReports(); renderSeason();
   renderCost(); renderTrainCost(); renderExpInfo(); renderForcePicker();
 }
 function renderResearch(){
@@ -723,6 +726,29 @@ async function loadWorld(){
   $("world").innerHTML=ev.map(e=>`<div class="item"><div class="top"><span>${esc(e.message)}</span>`+
     `<span class="muted">${new Date(e.created_at).toLocaleTimeString()}</span></div></div>`).join("")
     ||`<span class="muted">${esc(tr('noworld'))}</span>`;
+}
+
+// combat reports — detalle de cada batalla (qué llegó, contra qué, qué perdiste/perdió, botín)
+function pname(id){ const p=(players||[]).find(x=>x.id===id); return p?p.username:('#'+id); }
+function unitsStr(d){ const e=Object.entries(d||{}).filter(([,v])=>v>0);
+  return e.length?e.map(([k,v])=>`${esc(k)} ${v}`).join(", "):esc(tr('cNone')); }
+async function loadReports(){
+  let rs; try{ rs=await api("/api/v1/combat/reports"); }catch{ return; }
+  const me=state&&state.id;
+  $("reports").innerHTML = rs.length ? rs.map(r=>{
+    const iAtk=r.attacker_id===me, d=r.details||{};
+    const other=iAtk?pname(r.defender_id):pname(r.attacker_id);
+    const won=iAtk?(r.outcome==='attacker'):(r.outcome==='defender');
+    const myLoss=iAtk?d.attacker_losses:d.defender_losses;
+    const theirLoss=iAtk?d.defender_losses:d.attacker_losses;
+    const lootStr=Object.entries(d.loot||{}).filter(([,v])=>v>0).map(([k,v])=>`${esc(k)} ${Math.round(v)}`).join(", ");
+    const dir=iAtk?`⚔ ${esc(tr('cYouAtk'))} ${esc(other)}`:`🛡 ${esc(other)} ${esc(tr('cAtkYou'))}`;
+    const res=won?`<span class="ok">${esc(tr('cWon'))}</span>`:`<span class="bad">${esc(tr('cLost'))}</span>`;
+    return `<div class="item"><div class="top"><span>${dir} <span class="muted">#${r.target_base_id}</span></span>${res}</div>`+
+      `<div class="muted">${esc(tr('cYouLost'))}: ${unitsStr(myLoss)} · ${esc(tr('cTheyLost'))}: ${unitsStr(theirLoss)}`+
+      (lootStr?` · ${esc(iAtk&&won?tr('cLoot'):tr('cLooted'))}: ${lootStr}`:"")+`</div>`+
+      `<div class="muted" style="font-size:11px">⚔${Math.round(d.attack_score||0)} vs 🛡${Math.round(d.defense_score||0)} · ${new Date(r.created_at).toLocaleString()}</div></div>`;
+  }).join("") : `<span class="muted">${esc(tr('cNoReports'))}</span>`;
 }
 
 // alliance chat — its own card so the input survives the 4s refresh

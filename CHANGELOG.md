@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — Panel de reportes de combate (qué pasó en cada batalla)
+- Nueva tarjeta **⚔ Reportes de combate** que lee `GET /combat/reports`: por cada batalla muestra
+  si **atacaste o te atacaron** y contra quién, **ganaste/perdiste**, **qué perdiste vos** y **qué
+  perdió el otro**, **botín/saqueo**, los scores ⚔ vs 🛡 y la fecha. Antes solo se veía el evento
+  público del mundo; ahora tenés el detalle (incl. cuando tu flota fue aniquilada y no volvió nada).
+  Bilingüe ES/EN.
+
 ## [1.18.0] - 2026-06-24
 
 ### 2026-06-24 — UX: menú de ataque más fácil (sin escribir unidades a mano)
