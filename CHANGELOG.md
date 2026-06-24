@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — i18n del server: notificaciones en EN (SDD 4)
+- `GET /notifications?lang=en` (o `Accept-Language`) **re-renderiza** el mensaje desde `type`+`data`
+  (`notifications.localize`): building/training/research/expedition/incoming_attack/battle/attacked/
+  fleet_returned/season_end. Tipos sin data (npc_taunt/advisor_hack) o desconocidos → mensaje
+  original. La web manda `lang` en `loadFeed`. Empty-state del feed también traducido (`tr('nofeed')`).
+- Tests: `tests/test_notif_i18n.py` (3). **180 verdes.** Follow-up: errores (HTTPException) y el
+  `outcome` de combate (códigos) si se quiere traducir también.
+
 ### 2026-06-24 — SDD 21 v1: presencia (quién está online) + métricas por usuario/galaxia
 - **Presencia** (`app/services/presence.py`, Redis ZSET + fallback memoria): heartbeat en
   `/players/me`; `GET /public/online` (conteo) y `GET /admin/online` (lista de usernames, admin).

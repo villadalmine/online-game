@@ -148,9 +148,9 @@ contra el humano líder.)
 
 ## 💡 Backlog / ideas
 
-- **i18n EN del cliente: HECHO** (2026-06-24) — toda la UI web traduce con el toggle 🌐. **Queda
-  solo el texto generado por el SERVER** (notificaciones/combate/errores/asistente), que necesita
-  `lang` por request + traducir los mensajes del backend. *(Backlog: i18n server-side.)*
+- **i18n EN cliente + notificaciones del server: HECHO** (2026-06-24) — la UI web traduce con 🌐 y
+  `GET /notifications?lang=en` re-renderiza el feed. **Queda** traducir **errores** (HTTPException) y
+  el `outcome` de combate / mensajes del asistente. *(Backlog menor.)*
 - **Nickname editable / no derivar del email en alta OTP** (SDD 20): hoy el username OTP sale del
   local-part del email (insinúa el email). Permitir elegir/generar nickname neutro.
 - Tech `build_speed` (acelerar construcción/entrenamiento) — ya hay framework de efectos.

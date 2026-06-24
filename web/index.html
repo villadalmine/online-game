@@ -373,10 +373,10 @@ async function recall(id){ try{ await api(`/api/v1/combat/missions/${id}/recall`
 async function doTick(){ try{ const d=await api("/api/v1/admin/tick","POST"); msg("Tick: NPC jugaron"); refresh(); }catch(e){ msg(e.message,false);} }
 async function markRead(){ await api("/api/v1/notifications/read","POST",{}); await loadFeed(); refresh(); }
 async function loadFeed(){
-  try{ const ns=await api("/api/v1/notifications?unread=true");
+  try{ const ns=await api("/api/v1/notifications?unread=true&lang="+lang);
     $("feed").innerHTML = ns.length ? ns.map(n=>
       `<div class="note"><b>${esc(n.type)}</b> — ${esc(n.message)} <span class="muted">${new Date(n.created_at).toLocaleTimeString()}</span></div>`
-    ).join("") : '<span class="muted">sin notificaciones sin leer</span>';
+    ).join("") : `<span class="muted">${esc(tr('nofeed'))}</span>`;
   }catch(e){}
 }
 async function doResearch(k){ try{ await api("/api/v1/research","POST",{tech_key:k}); msg("Investigando "+k); refresh(); }catch(e){ msg(e.message,false);} }
@@ -438,7 +438,7 @@ const I18N={
     ui:{build:"🏗 Construir",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking",
       logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo."},
     ph:{advmsg:"¿qué construyo? me falta algo…",regemail:"email invitado (para registrarte)",user:"usuario (mín. 3)",pass:"contraseña (mín. 6)",otpemail:"tu@email.com",otpcode:"código de 6 dígitos",chatmsg:"mensaje…"},
-    s:{authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
+    s:{nofeed:"sin notificaciones sin leer",authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
       otphelp:"Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta. Una vez dentro, quedás logueado en este dispositivo (no te pide código cada vez).",
       advdefault:"Preguntá y te aconsejo según el grafo del juego.",noseason:"Sin temporada activa.",closesin:"cierra en",closing:"cerrando…",newbie:"🛡 Protección de novato",newbieend:"termina en {x}; atacar a un jugador la cancela",
       colplayer:"jugador",colrace:"raza",colscore:"score",nounits:"sin unidades",nobases:"sin colonias",noqueue:"nada en cola",noflights:"sin flotas en vuelo",nomsgs:"sin mensajes — escribí el primero",noworld:"todavía no pasó nada en la galaxia",noally:"no hay alianzas aún",nocols:"sin colonias todavía",nomoons:"sin lunas",ranklist:"ranking de temporada",
@@ -448,7 +448,7 @@ const I18N={
     ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",
       logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it."},
     ph:{advmsg:"what should I build? I'm missing something…",regemail:"invited email (to register)",user:"username (min. 3)",pass:"password (min. 6)",otpemail:"you@email.com",otpcode:"6-digit code",chatmsg:"message…"},
-    s:{authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
+    s:{nofeed:"no unread notifications",authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
       otphelp:"We send a <b>code</b> to your email. First time, it creates your account. Once in, you stay logged in on this device (no code each time).",
       advdefault:"Ask and I'll advise you based on the game's dependency graph.",noseason:"No active season.",closesin:"closes in",closing:"closing…",newbie:"🛡 Newbie protection",newbieend:"ends in {x}; attacking a player cancels it",
       colplayer:"player",colrace:"race",colscore:"score",nounits:"no units",nobases:"no colonies",noqueue:"nothing queued",noflights:"no fleets in flight",nomsgs:"no messages — write the first",noworld:"nothing has happened in the galaxy yet",noally:"no alliances yet",nocols:"no colonies yet",nomoons:"no moons",ranklist:"season ranking",

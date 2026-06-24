@@ -1,18 +1,24 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
 from app.api.deps import get_current_player
+from app.content.registry import normalize_lang
 from app.core import metrics
 from app.core.config import get_settings
 from app.core.db import get_session, get_sessionmaker
 from app.core.security import decode_token
 from app.models import Player
 from app.schemas import MarkReadRequest, NotificationOut
-from app.services.notifications import list_notifications, mark_read, stream_events
+from app.services.notifications import (
+    list_notifications,
+    localize,
+    mark_read,
+    stream_events,
+)
 
 router = APIRouter()
 
@@ -57,21 +63,27 @@ async def stream(
 @router.get("", response_model=list[NotificationOut])
 async def get_notifications(
     unread: bool = False,
+    lang: str | None = None,
+    accept_language: str | None = Header(default=None),
     player: Player = Depends(get_current_player),
     session: AsyncSession = Depends(get_session),
 ):
     items = await list_notifications(session, player.id, unread_only=unread)
-    return [
-        NotificationOut(
-            id=n.id,
-            type=n.type,
-            message=n.message,
-            data=json.loads(n.data or "{}"),
-            is_read=n.is_read,
-            created_at=n.created_at,
+    lg = normalize_lang(lang or accept_language)  # SDD 4: re-render del texto del server
+    out = []
+    for n in items:
+        data = json.loads(n.data or "{}")
+        out.append(
+            NotificationOut(
+                id=n.id,
+                type=n.type,
+                message=localize(n.type, data, n.message, lg),
+                data=data,
+                is_read=n.is_read,
+                created_at=n.created_at,
+            )
         )
-        for n in items
-    ]
+    return out
 
 
 @router.post("/read")

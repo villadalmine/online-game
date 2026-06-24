@@ -28,6 +28,33 @@ async def notify(
     await session.flush()
 
 
+# i18n del texto del server (SDD 4): re-render EN al leer, desde type+data. Tipos sin data
+# suficiente (npc_taunt, advisor_hack) o desconocidos caen al `message` original.
+_EN = {
+    "building_done": lambda d: f"Building ready: {d.get('building', '?')}",
+    "training_done": lambda d: f"{d.get('quantity', '?')} {d.get('unit', '?')} trained",
+    "research_done": lambda d: f"Research completed: {d.get('tech', '?')}",
+    "expedition_returned": lambda d: f"Expedition to {d.get('moon', '?')} returned",
+    "incoming_attack": lambda d: f"Incoming attack on your base {d.get('target_base_id', '?')}",
+    "battle_result": lambda d: f"Battle: {d.get('outcome', '?')}",
+    "attacked": lambda d: f"You were attacked: {d.get('outcome', '?')}",
+    "fleet_returned": lambda d: "Your fleet returned to base",
+    "season_end": lambda d: f"🏆 Season ended — you finished #{d.get('rank', '?')} "
+    "(you're in the Hall of Fame).",
+}
+
+
+def localize(type_: str, data: dict, message: str, lang: str) -> str:
+    """Mensaje de la notificación en `lang`. EN re-renderiza desde type+data; ES/otros usan el
+    original. Fallback al original si falta algún dato."""
+    if lang == "en" and type_ in _EN:
+        try:
+            return _EN[type_](data or {})
+        except Exception:
+            return message
+    return message
+
+
 async def list_notifications(
     session: AsyncSession, player_id: int, unread_only: bool = False, limit: int = 50
 ) -> list[Notification]:
