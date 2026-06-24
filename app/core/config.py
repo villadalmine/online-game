@@ -66,6 +66,12 @@ class Settings(BaseSettings):
     # Galaxy instances / shards (SDD 8): máx humanos por instancia de galaxia.
     galaxy_capacity: int = 50
 
+    # Catch-up del recién llegado (SDD 25): nivela al nuevo al percentil P40 de sus pares (sin
+    # ventaja), con energía full + defensa. Solo si hay ≥ min_peers en su galaxia.
+    catchup_enabled: bool = True
+    catchup_percentile: float = 0.4
+    catchup_min_peers: int = 3
+
     # Passwordless login por email + código OTP (SDD 6). El login usuario+contraseña sigue
     # existiendo (dev/CLI/tests). En prod este es el camino para el público.
     otp_secret: str = "change-me-otp-secret"   # HMAC del código; fuerte en prod (Secret)

@@ -57,6 +57,19 @@ Al onboardear (una sola vez por cuenta), calcular un paquete:
 - Idempotencia: no se otorga dos veces.
 - Por galaxia: el baseline usa solo los pares de **su** instancia (SDD 8).
 
+## 5.bis Estado de implementación (2026-06-24) — v1
+- `app/services/catchup.py:apply_catchup(session, player)`: pares = humanos de la **misma instancia
+  de galaxia** (SDD 8); si hay `< catchup_min_peers` (3) → no aplica (partida joven). Baseline =
+  **P40** del **stock total de minerales** de los pares. Si el nuevo está por debajo, se le **suma
+  hasta el P40** (nunca por encima → sin ventaja), repartido entre sus minerales de rol.
+  **Energía full** + asegura **mina + torreta** activas (defensa; nada ofensivo).
+- Hook en `onboarding.onboard_player` (después del stock inicial, solo no-NPC) → corre **una vez**.
+- Config: `catchup_enabled`, `catchup_percentile` (0.4), `catchup_min_peers` (3).
+- Tests `tests/test_catchup.py`: nivela al P40 (debajo de la mediana), defensa+energía full;
+  partida joven no aplica; nunca por encima del baseline. **195 verdes.**
+- **Pendiente**: factor explícito por **días** (hoy es implícito vía stock de pares); afinar P40 por
+  retención (métricas SDD 19/21); considerar score completo (no solo minerales) como baseline.
+
 ## 6. Riesgos / decisiones
 - **Abuso** (crear cuentas para farmear el grant): cap por percentil + una vez + invite-only (SDD 14)
   lo limitan.

@@ -125,9 +125,9 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   `system` (i18n), **exosistemas reales** (Proxima b, TRAPPIST-1e, `canon real`+sources+confidence)
   y nivel **`speculative`** (`nova_terra`+rationale) — aditivo. Follow-up: jerarquía anidada real,
   **universos/spin-offs** (*The Expanse*), multiplicadores físicos.
-- 📝 **[SDD 25 — Catch-up del recién llegado](docs/sdd-newcomer-catchup.md)**: al entrar a una partida
-  vieja, grant proporcional a días + baseline de pares (P40 de su galaxia), priorizando defensa,
-  capeado a ≤ baseline (nivela sin dar ventaja). Diseñado.
+- 🟢 **[SDD 25 — Catch-up del recién llegado](docs/sdd-newcomer-catchup.md)**: **v1 hecho** — al
+  entrar con ≥3 pares en su galaxia, top-up al **P40** del stock (sin pasar la mediana) + energía
+  full + mina/torreta (defensa). Hook en onboarding. Follow-up: factor explícito por días.
 
 ### Escalado / producción (diseñado, pendiente de implementar)
 - 🟢 **[SDD 7 — Capacidad y autoscaling](docs/sdd-capacity-autoscaling.md)**: **v1 hecho** —

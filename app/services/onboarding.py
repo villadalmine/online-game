@@ -59,4 +59,11 @@ async def onboard_player(
         stock = await get_or_create_stock(session, player.id, role)
         stock.amount = STARTING_STOCK
 
+    # Catch-up (SDD 25): si entrás a una partida vieja, te nivela al P40 de tus pares (energía full
+    # + defensa), sin pasarte de la mediana. No aplica para NPCs ni partidas jóvenes.
+    if not player.is_npc:
+        await session.flush()
+        from app.services.catchup import apply_catchup
+        await apply_catchup(session, player)
+
     return base

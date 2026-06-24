@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 25 v1: catch-up del recién llegado (nivelar sin dar ventaja)
+- `app/services/catchup.py` (hook en onboarding): a quien entra a una partida con ≥3 pares en su
+  galaxia, lo lleva al **P40 del stock de minerales** de los pares (top-up, nunca por encima →
+  sin ventaja), le da **energía full** y asegura **mina + torreta** (defensa; nada ofensivo).
+  Config `catchup_*`. Tests `tests/test_catchup.py` (P40 < mediana, partida joven no aplica). **195 verdes.**
+
 ## [1.4.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 13 v2: jerarquía `system` + exosistemas reales + nivel `speculative`
