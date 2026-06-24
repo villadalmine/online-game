@@ -78,7 +78,7 @@
     {
       "id": 10, "type": "timeseries", "title": "GPU — cores asignados por placa (HAMI, %)",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "fieldConfig": { "defaults": { "unit": "percent", "max": 100 }, "overrides": [] },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
       "targets": [ { "refId": "A", "expr": "hami_gpu_core_allocated_ratio", "legendFormat": "{{device_type}}" } ]
     },
