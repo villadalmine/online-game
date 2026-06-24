@@ -8,10 +8,35 @@
 
 Que **no se sirva una versión rota**: validar con tests **antes** y **durante** el rollout, y poder
 **revertir solo** si algo falla. Tres capas, de "barato y temprano" a "última línea":
-1. **Pre-imagen (CI/build)** — no construir/etiquetar una imagen que no pasa la suite.
-2. **At-rollout (initContainer smoke)** — el pod nuevo no queda Ready si un smoke falla → el rollout
-   se frena solo y los pods viejos siguen sirviendo.
-3. **Post-deploy (`helm test`)** — e2e contra la release viva; con `--atomic` revierte automático.
+1. **Pre-imagen (build)** — no construir una imagen que no pasa la suite. ✅ implementado.
+2. **At-rollout (initContainer smoke)** — el pod nuevo no arranca si un smoke falla → el rollout
+   se frena solo y los pods viejos siguen sirviendo. ✅ implementado (opt-in).
+3. **Post-deploy (`helm test`)** — e2e contra la release viva; con `--atomic` revierte automático. ✅.
+
+## 1.bis Resumen — qué garantiza (flujo)
+```
+git push ──▶ build de imagen
+                │  el stage `test` del Dockerfile corre los 186 unit/e2e
+                ├─ tests ROJOS  → el build FALLA → NO existe imagen nueva  (capa 1)
+                └─ tests VERDES → imagen publicada
+helm upgrade --atomic --timeout 5m ──▶ rolling update
+                │  initContainer `smoke` (--selftest, SQLite efímero) valida el código (capa 2)
+                ├─ smoke ROJO   → el pod no arranca → rollout frenado, pods viejos siguen
+                └─ smoke VERDE  → migra (initContainer migrate) y sirve; si no queda sano → --atomic ROLLBACK
+helm test galaxy ──▶ smoke a los endpoints VIVOS (health/catalog/auth)  (capa 3)
+```
+**Probado de verdad**: el primer build de `1.2.0` se cortó porque `test_site` fallaba (faltaban
+`docs/` en la imagen) → **no se publicó imagen**; se arregló y recién entonces salió. El gate
+funciona, no es teoría.
+
+## 1.ter Qué hace bien / qué NO hace
+**Hace bien:** obliga a pasar **toda la suite unit/e2e para siquiera generar la imagen** (capa 1);
+frena el rollout si el código nuevo no bootea (capa 2); valida endpoints vivos post-deploy (capa 3);
+revierte solo un deploy que no queda sano (`--atomic`). Portable (Kaniko/docker), runtime lean.
+**No hace (límites honestos):** no corre los tests de **navegador** (Playwright) en el build —van
+aparte (`make test-ui`); el `helm test`/selftest son **smoke livianos** (health/catalog/auth), no
+reemplazan la cobertura de la suite (esa la da la capa 1); el build tarda **~2 min más** (instala
+dev-deps + corre la suite) — es el costo del gate.
 
 ## 2. Capa 1 — tests antes de construir la imagen (lo más importante)
 La suite (`make test`: 180 unit/e2e + browser) ya corre local/CI. **Regla**: el build (SDD 15) solo
@@ -33,9 +58,12 @@ Agregar al Deployment un initContainer **`smoke`** (después de `migrate`) que c
 import de la app + migraciones + un puñado de endpoints (health/catalog/register/login). Si falla,
 el initContainer sale ≠0 → el pod no arranca → **el rollout queda frenado** (Deployment no progresa,
 los viejos siguen). Es la red de seguridad si algo se coló al build.
-- Implementación: `python scripts/smoke.py --selftest` (levanta la app en TestClient/SQLite y pega
-  a los endpoints) o `pytest -m smoke` (subconjunto marcado). Liviano (segundos), no la suite entera.
-- Opt-in `api.smokeInit.enabled` para no penalizar arranques si no se quiere.
+- **HECHO (2026-06-24, opt-in `api.smokeInit.enabled`)**: un initContainer `smoke` (antes de
+  `migrate`) corre `python scripts/smoke.py --selftest` con `DATABASE_URL=sqlite efímero`,
+  `REDIS_ENABLED=false`, `ALLOWED_EMAILS=""` (no toca Postgres/Redis prod). Levanta la app en
+  TestClient, aplica migraciones en SQLite y pega a health/catalog/register/me. Si falla, el
+  initContainer sale ≠0 → el pod no llega a Ready → el Deployment no progresa (rollout frenado),
+  los pods viejos siguen sirviendo. Liviano (segundos).
 
 ## 4. Capa 3 — `helm test` (e2e contra la release viva)
 Hook `helm.sh/hook: test`: un Pod que pega a los **endpoints reales** del Service de la release

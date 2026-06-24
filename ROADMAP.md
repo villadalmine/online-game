@@ -151,8 +151,9 @@ contra el humano líder.)
 - **i18n EN cliente + notificaciones + errores: HECHO** (2026-06-24) — UI web (🌐), feed
   (`/notifications?lang=en`) y errores conocidos (handler i18n). **Queda** el `outcome` de combate y
   mensajes dinámicos del asistente. *(Backlog menor.)*
-- 🟢 **[SDD 22 — Tests del deploy](docs/sdd-deploy-testing.md)**: **v1 hecho** — `helm test` (hook
-  smoke) + `scripts/smoke.py`. Follow-up: pytest pre-build (Kaniko), initContainer smoke, `--atomic`.
+- 🟢 **[SDD 22 — Tests del deploy](docs/sdd-deploy-testing.md)**: **completo** — capa 1 (gate de
+  tests en el build, Dockerfile multi-stage), capa 2 (initContainer smoke opt-in, frena el rollout),
+  capa 3 (`helm test` + `--atomic` rollback). Probado: un build con test rojo no produce imagen.
 - **Nickname editable / no derivar del email en alta OTP** (SDD 20): hoy el username OTP sale del
   local-part del email (insinúa el email). Permitir elegir/generar nickname neutro.
 - Tech `build_speed` (acelerar construcción/entrenamiento) — ya hay framework de efectos.

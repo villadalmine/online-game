@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 22 capa 2: initContainer smoke (gate de rollout) + doc completa
+- **initContainer `smoke`** (opt-in `api.smokeInit.enabled`): corre `scripts/smoke.py --selftest`
+  (app en SQLite efímero, sin tocar Postgres/Redis) **antes de migrar/servir**; si falla, el pod no
+  arranca → el rollout queda frenado y los pods viejos siguen. Cierra la capa 2 del SDD 22.
+- **SDD 22 documentado** a fondo: flujo build→upgrade→test, qué hace/qué NO, y la prueba real (el
+  build de 1.2.0 se cortó por un test rojo y no publicó imagen). Capas 1+2+3 implementadas.
+
 ### 2026-06-24 — SDD 22 capa 1: gate de tests en el build (Dockerfile multi-stage)
 - El `deploy/Dockerfile` ahora es **multi-stage** con un stage `test` que corre `pytest -q`
   (unit/e2e, browser excluido) **durante el build**; el `runtime` depende de él (`COPY --from=test`).

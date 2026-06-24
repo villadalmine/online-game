@@ -61,6 +61,10 @@ letsencrypt:
 api:
   replicas: 2
   port: 8000
+  # Gate de rollout (SDD 22 capa 2): initContainer que corre el smoke (--selftest, SQLite efímero)
+  # antes de servir; si falla, el pod no arranca y el rollout se frena. Opt-in.
+  smokeInit:
+    enabled: false
   # Resource requests/limits: SIN requests el HPA no puede escalar por CPU (SDD 7). Tunear
   # con un load test (tests/load/). requests = lo que reserva; limits = el techo por pod.
   resources:

@@ -24,6 +24,24 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
+        {{- if .Values.api.smokeInit.enabled }}
+        # Gate de rollout (SDD 22 capa 2): corre el smoke del CÓDIGO de esta imagen en SQLite
+        # efímero (sin tocar Postgres/Redis). Si falla, el pod no arranca → el rollout queda
+        # frenado y los pods viejos siguen sirviendo. Corre ANTES de migrar/servir.
+        - name: smoke
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "scripts/smoke.py", "--selftest"]
+          env:
+            - name: DATABASE_URL
+              value: "sqlite+aiosqlite:////tmp/smoke.db"
+            - name: ALLOWED_EMAILS
+              value: ""
+            - name: REDIS_ENABLED
+              value: "false"
+            - name: AUTO_TICK_SECONDS
+              value: "0"
+        {{- end }}
         # Apply DB migrations before serving. Retries (pod restart) until Postgres
         # is reachable — robust with the in-chart Postgres.
         - name: migrate
