@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 13 §4: multiplicadores físicos del planeta
 - `app/services/physics.py`: **gravedad → tiempo de construcción** (más gravedad ⇒ build más lento)
   e **insolación → regen de energía** (más sol ⇒ más energía). **Opt-in** (`PHYSICS_ENABLED`) y
