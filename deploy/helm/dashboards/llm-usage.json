@@ -73,14 +73,38 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
-      "targets": [ { "refId": "A", "expr": "hami_gpu_memory_allocated_bytes", "legendFormat": "{{deviceuuid}}{{nodename}}" } ]
+      "targets": [ { "refId": "A", "expr": "hami_gpu_memory_allocated_bytes", "legendFormat": "{{device_type}}" } ]
     },
     {
       "id": 10, "type": "timeseries", "title": "GPU — cores asignados por placa (HAMI, ratio)",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1 }, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
-      "targets": [ { "refId": "A", "expr": "hami_gpu_core_allocated_ratio", "legendFormat": "{{deviceuuid}}{{nodename}}" } ]
+      "targets": [ { "refId": "A", "expr": "hami_gpu_core_allocated_ratio", "legendFormat": "{{device_type}}" } ]
+    },
+    {
+      "id": 11, "type": "table", "title": "Tokens por usuario × fuente — GPU vs nube (24h)",
+      "description": "source=gpu si el modelo servido es local (qwen → GPU); nube = OpenRouter (fallback/free/pago).",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user, source) (label_replace(label_replace(increase(litellm_total_tokens_metric_total[24h]), \"source\", \"nube\", \"model\", \".+\"), \"source\", \"gpu\", \"model\", \"qwen.*\")))" } ]
+    },
+    {
+      "id": 12, "type": "timeseries", "title": "Requests/s GPU vs nube",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "targets": [
+        { "refId": "A", "expr": "sum(rate(litellm_requests_metric_total{model=~\"qwen.*\"}[5m]))", "legendFormat": "GPU (local)" },
+        { "refId": "B", "expr": "sum(rate(litellm_requests_metric_total{model!~\"qwen.*\",model!=\"\"}[5m]))", "legendFormat": "nube (OpenRouter)" }
+      ]
+    },
+    {
+      "id": 13, "type": "timeseries", "title": "Carga por instancia Ollama (P4 = ollama-a / M4000 = ollama-b)",
+      "description": "VRAM asignada por HAMI a cada pod Ollama (exported_pod) → qué instancia/placa está cargada.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 36 },
+      "targets": [ { "refId": "A", "expr": "hami_vgpu_memory_allocated_bytes{exported_pod=~\"ollama.*\"}", "legendFormat": "{{exported_pod}}" } ]
     }
   ]
 }
