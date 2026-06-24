@@ -7,8 +7,13 @@ Usos:
 """
 from __future__ import annotations
 
+import os
 import sys
 import uuid
+
+# Importar el CÓDIGO FUENTE (como hace el runtime con `uvicorn` desde /app), no el paquete
+# instalado: corremos desde scripts/ y `pip install .` puede dejar un paquete incompleto.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def _checks(client, base: str) -> None:

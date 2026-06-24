@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — fix(packaging): `pip install .` instalaba un paquete incompleto (faltaba app.api)
+- `pyproject` listaba `packages=["app","clients"]` (solo top-level) → la instalación no traía los
+  subpaquetes (`app.api`, `app.services`, …). El runtime no lo notaba (corre desde el fuente), pero
+  **rompió el initContainer smoke** (capa 2 de SDD 22) con `ModuleNotFoundError: app.api`. Fix:
+  `[tool.setuptools.packages.find] include=["app*","clients*"]`. Además `scripts/smoke.py` ahora
+  fuerza el fuente al `sys.path` (como uvicorn). **El gate capa 2 hizo su trabajo: frenó el rollout
+  y el pod viejo siguió sirviendo (sin downtime)** — fue un falso positivo por este bug de packaging.
+
 ### 2026-06-24 — SDD 22 capa 2: initContainer smoke (gate de rollout) + doc completa
 - **initContainer `smoke`** (opt-in `api.smokeInit.enabled`): corre `scripts/smoke.py --selftest`
   (app en SQLite efímero, sin tocar Postgres/Redis) **antes de migrar/servir**; si falla, el pod no
