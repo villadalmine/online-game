@@ -60,6 +60,25 @@ postgres:
 > Alternativas: **DB externa/managed** (`postgres.enabled=false` + `externalUrl`, SDD 10) o no fijar
 > Postgres a srv-t7910.
 
+## 5.bis Dos niveles de "replicación" de Postgres (no confundir)
+Estado: **no hay operador de Postgres** en el cluster — juego/tenants/leloir son StatefulSets de 1
+instancia. Para sobrevivir la caída de un nodo hay dos caminos:
+
+| | **A — Storage replicado (Longhorn)** | **B — HA Postgres (operador CNPG)** |
+|---|---|---|
+| Qué replica | el **volumen** (3 réplicas en RK1) | **el Postgres**: primary + standby(s) con streaming replication |
+| Caída de nodo | el pod **reagenda** y reengancha el volumen | **failover automático** a un standby |
+| Downtime | ~1-3 min (reschedule + restart) | ~segundos |
+| Complejidad | mínima (1 línea `storageClass`) | operador + CR `Cluster` |
+| Extra | — | **backups/PITR a object storage** incluidos (cierra follow-up SDD 10) |
+| App | `postgres.persistence.storageClass: longhorn` | `postgres.enabled=false` + `externalUrl` al Service del Cluster CNPG |
+
+**Recomendación:** para esta escala (DB chica, juego por turnos) **A (Longhorn) alcanza** y es lo más
+simple. Si se quiere **HA real** (failover en segundos) y/o **estandarizar Postgres + backups/PITR** en
+todo el homelab (tenants, leloir, juego), instalar **CloudNativePG** y apuntar el juego por
+`externalUrl` (sin tocar código). CNPG es el estándar k8s-native moderno (mejor que Zalando/Bitnami HA
+para la mayoría de los casos).
+
 ## 6. Runbook de apagado planificado de `srv-t7910`
 **Pre-requisito recomendado:** Postgres en Longhorn (§5). Si sigue en `local-path`, el apagado
 implica **downtime del juego** (la DB no se mueve) → avisar/ventana.
