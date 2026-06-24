@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 28 diseñado: métricas de uso LLM por usuario + GPU en vivo
+- Doc `docs/sdd-llm-usage-metrics.md`: cómo ver en **Grafana** el uso de GPU en tiempo real y
+  **atribuir el uso de LLM por jugador** (tokens/requests/spend por `end_user` y backend —
+  GPU/OpenRouter free/pago) para **monetizar**. Clave: LiteLLM ya emite Prometheus con `end_user`
+  (tracking ON) → **solo falta que el juego pase `user` en cada llamada** (`app/services/llm.py`).
+  GPU vía HAMI (vGPU por pod) + DCGM-exporter opcional (% cómputo). Solo especificación.
+
 ## [1.12.0] - 2026-06-24
 
 ### 2026-06-24 — /tech refleja el stack de IA real (GPU dual)
