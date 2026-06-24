@@ -99,6 +99,18 @@ async def test_register_login_and_duplicate(client):
     assert headers  # sanity
 
 
+async def test_error_message_i18n_en(client):
+    # SDD 4: el detail de errores conocidos se traduce a EN con ?lang=en (o Accept-Language).
+    en = await client.http.post(
+        "/api/v1/auth/login?lang=en", json={"username": "nadie", "password": "x"}
+    )
+    assert en.status_code == 401 and en.json()["detail"] == "Invalid credentials."
+    es = await client.http.post(
+        "/api/v1/auth/login", json={"username": "nadie", "password": "x"}
+    )
+    assert es.json()["detail"] == "Credenciales invalidas"  # default ES
+
+
 async def test_me_requires_auth(client):
     r = await client.http.get("/api/v1/players/me")
     assert r.status_code in (401, 403)  # missing bearer

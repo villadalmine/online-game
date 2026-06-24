@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 22: tests del deploy (helm test + smoke) + i18n de errores (SDD 4)
+- **i18n errores**: handler global traduce el `detail` de errores conocidos (auth/seguridad) a EN
+  con `?lang=en`/`Accept-Language` (`app/core/i18n_errors.py`); la web manda `lang` en
+  register/login/verify. Test `test_error_message_i18n_en`.
+- **SDD 22 — tests del deploy** (`docs/sdd-deploy-testing.md`): 3 capas (CI/build, initContainer
+  smoke, `helm test`). v1: `scripts/smoke.py` (health/catalog/register/me; `--selftest` levanta la
+  app en SQLite) + `COPY scripts` en el Dockerfile + **`helm test`** hook
+  (`templates/tests/smoke.yaml`) → `helm test galaxy`. Recomendado `helm upgrade --atomic` (rollback
+  auto). Tests `tests/test_smoke_script.py`. **183 verdes.**
+- Follow-up: step de pytest previo al build (Kaniko) + initContainer smoke opt-in + `--atomic` en el runbook.
+
 ### 2026-06-24 — i18n del server: notificaciones en EN (SDD 4)
 - `GET /notifications?lang=en` (o `Accept-Language`) **re-renderiza** el mensaje desde `type`+`data`
   (`notifications.localize`): building/training/research/expedition/incoming_attack/battle/attacked/

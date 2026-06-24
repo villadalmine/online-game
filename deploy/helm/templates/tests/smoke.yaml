@@ -1,0 +1,20 @@
+{{- /*
+  helm test (SDD 22): pega a los endpoints reales de la release viva con scripts/smoke.py.
+  Correr:  helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+  Auto-rollback: usar `helm upgrade --atomic --timeout 5m` (revierte si esto/health falla).
+*/}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}-smoke
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+{{ include "online-game.imagePullSecrets" . | indent 2 }}
+  containers:
+    - name: smoke
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      command: ["python", "scripts/smoke.py", "http://{{ .Release.Name }}-api"]

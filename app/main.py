@@ -5,6 +5,7 @@ import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import FileResponse, PlainTextResponse, Response
 
 from app.api.v1 import api_router
@@ -56,6 +57,23 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 app.include_router(api_router)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _i18n_http_exception(request: Request, exc: StarletteHTTPException):
+    """Traduce el `detail` de los errores conocidos a EN si el request pide inglés (SDD 4)."""
+    from fastapi.exception_handlers import http_exception_handler
+
+    from app.content.registry import normalize_lang
+    from app.core import i18n_errors
+
+    if isinstance(exc.detail, str):
+        lang = normalize_lang(
+            request.query_params.get("lang") or request.headers.get("accept-language")
+        )
+        if lang == "en":
+            exc.detail = i18n_errors.translate(exc.detail, "en")
+    return await http_exception_handler(request, exc)
 
 
 @app.middleware("http")

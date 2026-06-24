@@ -295,8 +295,8 @@ function msg(t,ok=true){ const m=$("msg"); m.textContent=t; m.className=ok?"ok":
 // auth
 function authErr(t){ const e=$("autherr"); e.textContent=t; e.className="bad"; }
 function remember(){ localStorage.setItem("lastuser",$("u").value); }
-async function register(){ try{ const body={...cred(), email:($("regemail").value||"").trim()||null}; const d=await api("/api/v1/auth/register","POST",body); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
-async function login(){ try{ const d=await api("/api/v1/auth/login","POST",cred()); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
+async function register(){ try{ const body={...cred(), email:($("regemail").value||"").trim()||null}; const d=await api("/api/v1/auth/register?lang="+lang,"POST",body); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
+async function login(){ try{ const d=await api("/api/v1/auth/login?lang="+lang,"POST",cred()); remember(); setToken(d.access_token); boot(); }catch(e){ authErr(e.message); } }
 function cred(){ return { username:$("u").value, password:$("p").value }; }
 // passwordless: email + código OTP (SDD 6)
 async function requestCode(){ const email=$("otpemail").value.trim(); if(!email){ authErr("Poné tu email."); return; }
@@ -305,7 +305,7 @@ async function requestCode(){ const email=$("otpemail").value.trim(); if(!email)
     authErr("Te mandamos un código a "+email+". Revisá tu correo (en dev, el log del server)."); }
   catch(e){ authErr(e.message); } }
 async function verifyCode(){ const email=$("otpemail").value.trim(), code=$("otpcode").value.trim();
-  try{ const d=await api("/api/v1/auth/verify-code","POST",{email,code}); setToken(d.access_token); boot(); }
+  try{ const d=await api("/api/v1/auth/verify-code?lang="+lang,"POST",{email,code}); setToken(d.access_token); boot(); }
   catch(e){ authErr(e.message); } }
 // showcase público de la página de login (SDD 12) — sin auth
 async function loadShowcase(){

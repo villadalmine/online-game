@@ -11,10 +11,11 @@ COPY app ./app
 COPY clients ./clients
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir .
 
-# Data-driven content + migrations + web (not part of the package; loaded by path).
+# Data-driven content + migrations + web + scripts (not part of the package; loaded by path).
 COPY content ./content
 COPY migrations ./migrations
 COPY web ./web
+COPY scripts ./scripts
 COPY alembic.ini ./alembic.ini
 
 EXPOSE 8000
