@@ -1,6 +1,8 @@
 image:
-  # La CI publica una imagen multi-arch (amd64+arm64) en GHCR. Para un cluster local
-  # (kind/minikube) podés override con --set image.repository=online-game image.tag=0.1.0
+  # El cluster real buildea in-cluster con Kaniko (deploy/build/online-game-kaniko.yaml) y
+  # publica en el registry interno → ver values-local.yaml (registry.registry:5000/online-game).
+  # Este default GHCR es solo para un cluster externo sin registry propio; para kind/minikube
+  # override con --set image.repository=online-game image.tag=0.1.0
   repository: ghcr.io/villadalmine/online-game
   tag: "latest"
   pullPolicy: Always
