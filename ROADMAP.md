@@ -144,9 +144,9 @@ contra el humano líder.)
 
 ## 💡 Backlog / ideas
 
-- **i18n EN incompleto** (SDD 4): al cambiar a inglés, parte del juego sigue en ES — falta el
-  **texto dinámico del server** (notis/combate/asistente/errores) y **chrome fijo** restante de la
-  web. Completar traducciones EN. *(Backlog, pedido 2026-06-23.)*
+- **i18n EN del cliente: HECHO** (2026-06-24) — toda la UI web traduce con el toggle 🌐. **Queda
+  solo el texto generado por el SERVER** (notificaciones/combate/errores/asistente), que necesita
+  `lang` por request + traducir los mensajes del backend. *(Backlog: i18n server-side.)*
 - **Nickname editable / no derivar del email en alta OTP** (SDD 20): hoy el username OTP sale del
   local-part del email (insinúa el email). Permitir elegir/generar nickname neutro.
 - Tech `build_speed` (acelerar construcción/entrenamiento) — ya hay framework de efectos.

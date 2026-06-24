@@ -95,35 +95,35 @@
     <button class="sec sm hidden" id="collapseall" onclick="collapseAllPanels(true)" title="Plegar todos los paneles">⊟</button>
     <button class="sec sm hidden" id="expandall" onclick="collapseAllPanels(false)" title="Expandir todos los paneles">⊞</button>
     <button class="sec sm" id="sound" onclick="toggleSound()" title="Sonido de eventos">🔊</button>
-    <button class="sec sm hidden" id="logout" onclick="logout()">salir</button>
+    <button class="sec sm hidden" id="logout" onclick="logout()" data-i18n="logout">salir</button>
   </div>
 </header>
 
 <!-- AUTH -->
 <div id="auth" class="card" style="max-width:460px;margin:48px auto;">
-  <h2>Crear cuenta / Entrar</h2>
-  <p class="muted">¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá
+  <h2 data-i18n="authtitle">Crear cuenta / Entrar</h2>
+  <p class="muted" data-i18n-html="authhelp">¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá
      <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>
      Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro
      dispositivo, y está todo igual.</p>
-  <div class="row"><input id="regemail" type="email" placeholder="email invitado (para registrarte)" style="flex:1" /></div>
-  <div class="row"><input id="u" placeholder="usuario (mín. 3)" style="flex:1" /></div>
-  <div class="row"><input id="p" type="password" placeholder="contraseña (mín. 6)" style="flex:1" /></div>
+  <div class="row"><input id="regemail" type="email" placeholder="email invitado (para registrarte)" data-i18n-ph="regemail" style="flex:1" /></div>
+  <div class="row"><input id="u" placeholder="usuario (mín. 3)" data-i18n-ph="user" style="flex:1" /></div>
+  <div class="row"><input id="p" type="password" placeholder="contraseña (mín. 6)" data-i18n-ph="pass" style="flex:1" /></div>
   <div class="row">
-    <button onclick="register()">✅ Registrar y jugar</button>
-    <button class="sec" onclick="login()">Entrar</button>
+    <button onclick="register()" data-i18n="regbtn">✅ Registrar y jugar</button>
+    <button class="sec" onclick="login()" data-i18n="enter">Entrar</button>
   </div>
 
   <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
-  <h2 style="margin-top:0">Entrar con email (sin contraseña)</h2>
-  <p class="muted">Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta.
+  <h2 style="margin-top:0" data-i18n="otptitle">Entrar con email (sin contraseña)</h2>
+  <p class="muted" data-i18n-html="otphelp">Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta.
      Una vez dentro, quedás logueado en este dispositivo (no te pide código cada vez).</p>
-  <div class="row"><input id="otpemail" type="email" placeholder="tu@email.com" style="flex:1" />
-    <button class="sec" onclick="requestCode()">Enviar código</button></div>
+  <div class="row"><input id="otpemail" type="email" placeholder="tu@email.com" data-i18n-ph="otpemail" style="flex:1" />
+    <button class="sec" onclick="requestCode()" data-i18n="sendcode">Enviar código</button></div>
   <div class="row hidden" id="otpcoderow">
-    <input id="otpcode" inputmode="numeric" placeholder="código de 6 dígitos" style="flex:1"
+    <input id="otpcode" inputmode="numeric" placeholder="código de 6 dígitos" data-i18n-ph="otpcode" style="flex:1"
            onkeydown="if(event.key==='Enter')verifyCode()" />
-    <button onclick="verifyCode()">Entrar</button>
+    <button onclick="verifyCode()" data-i18n="enter">Entrar</button>
   </div>
   <p id="autherr" class="muted"></p>
 
@@ -136,12 +136,12 @@
 
 <!-- ONBOARD -->
 <div id="onboard" class="card hidden" style="max-width:560px;margin:48px auto;">
-  <h2>Elegir imperio</h2>
+  <h2 data-i18n="onboardtitle">Elegir imperio</h2>
   <div id="races"></div>
   <div class="row">
-    <label>Planeta <select id="planet"></select></label>
-    <label>Raza <select id="race"></select></label>
-    <button onclick="onboard()">Comenzar 🚀</button>
+    <label><span data-i18n="planet">Planeta</span> <select id="planet"></select></label>
+    <label><span data-i18n="race">Raza</span> <select id="race"></select></label>
+    <button onclick="onboard()" data-i18n="start">Comenzar 🚀</button>
   </div>
 </div>
 
@@ -172,7 +172,7 @@
         <button class="sec" onclick="refresh()" data-i18n="refresh" title="Relee tu estado del servidor (como F5, pero sin recargar la página). Igual pasa solo cada 4s.">↻ Refrescar</button>
       </div>
       <p id="msg" class="muted"></p>
-      <p class="muted">El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.</p>
+      <p class="muted" data-i18n="worldtip">El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.</p>
     </div>
 
     <div class="card" data-panel="atacar">
@@ -182,7 +182,7 @@
         <input id="force" placeholder="tank:5,soldier:10" style="flex:1" />
         <button class="danger" onclick="attack()" data-i18n="attack">Lanzar flota</button>
       </div>
-      <p class="muted">Tip: tocá una base enemiga en el mapa para elegir objetivo.</p>
+      <p class="muted" data-i18n="attacktip">Tip: tocá una base enemiga en el mapa para elegir objetivo.</p>
     </div>
 
     <div class="card" data-panel="investigacion">
@@ -199,9 +199,9 @@
       <h2>💬 Chat de alianza</h2>
       <div id="chatfeed" style="max-height:32vh;overflow:auto"></div>
       <div class="row">
-        <input id="chatmsg" placeholder="mensaje…" maxlength="500" style="flex:1"
+        <input id="chatmsg" placeholder="mensaje…" data-i18n-ph="chatmsg" maxlength="500" style="flex:1"
                onkeydown="if(event.key==='Enter')sendAllyMsg()" />
-        <button class="sm" onclick="sendAllyMsg()">enviar</button>
+        <button class="sm" onclick="sendAllyMsg()" data-i18n="send">enviar</button>
       </div>
     </div>
   </div>
@@ -218,10 +218,10 @@
     </div>
     <div class="card" data-panel="imperio">
       <h2>Tu imperio</h2>
-      <div class="row"><span class="muted" style="width:58px">Energía</span>
+      <div class="row"><span class="muted" style="width:58px" data-i18n="energy">Energía</span>
         <div class="bar" style="flex:1"><div id="ebar"></div></div><span id="etxt" class="muted"></span></div>
-      <div style="margin:9px 0"><span class="muted">Minerales</span><div id="minerals" class="row"></div></div>
-      <div style="margin:9px 0"><span class="muted">Unidades</span><div id="units" class="row"></div></div>
+      <div style="margin:9px 0"><span class="muted" data-i18n="minerals">Minerales</span><div id="minerals" class="row"></div></div>
+      <div style="margin:9px 0"><span class="muted" data-i18n="units">Unidades</span><div id="units" class="row"></div></div>
       <div id="boons" class="row"></div>
     </div>
     <div class="card" data-panel="bases"><h2>Bases y edificios</h2><div id="bases"></div></div>
@@ -229,7 +229,7 @@
     <div class="card" data-panel="temporada">
       <h2>📅 Temporada</h2>
       <div id="seasoninfo" class="muted">—</div>
-      <div class="row"><button class="sec sm" onclick="loadSeasonRanking()">ver ranking de temporada</button></div>
+      <div class="row"><button class="sec sm" onclick="loadSeasonRanking()" data-i18n="seasonrank">ver ranking de temporada</button></div>
       <table id="seasonranking"></table>
     </div>
     <div class="card" data-panel="ranking">
@@ -258,7 +258,7 @@
       <div class="row"><input id="advmsg" placeholder="¿qué construyo? me falta algo…" data-i18n-ph="advmsg"
         onkeydown="if(event.key==='Enter')askAdvisor()">
         <button class="sm" onclick="askAdvisor()" data-i18n="ask">preguntar</button></div>
-      <div id="advreply" class="muted" style="white-space:pre-line;margin:6px 0">Preguntá y te aconsejo según el grafo del juego.</div>
+      <div id="advreply" class="muted" style="white-space:pre-line;margin:6px 0" data-i18n-html="advdefault">Preguntá y te aconsejo según el grafo del juego.</div>
       <div id="advsugs" class="row"></div>
     </div>
 
@@ -435,22 +435,37 @@ document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-pan
 // traducido; acá traducimos títulos de paneles y botones fijos. SDD docs/sdd-i18n.md
 const I18N={
   es:{ panels:{acciones:"Acciones",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
-    ui:{build:"🏗 Construir",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking"},
-    ph:{advmsg:"¿qué construyo? me falta algo…"} },
+    ui:{build:"🏗 Construir",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking",
+      logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo."},
+    ph:{advmsg:"¿qué construyo? me falta algo…",regemail:"email invitado (para registrarte)",user:"usuario (mín. 3)",pass:"contraseña (mín. 6)",otpemail:"tu@email.com",otpcode:"código de 6 dígitos",chatmsg:"mensaje…"},
+    s:{authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
+      otphelp:"Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta. Una vez dentro, quedás logueado en este dispositivo (no te pide código cada vez).",
+      advdefault:"Preguntá y te aconsejo según el grafo del juego.",noseason:"Sin temporada activa.",closesin:"cierra en",closing:"cerrando…",newbie:"🛡 Protección de novato",newbieend:"termina en {x}; atacar a un jugador la cancela",
+      colplayer:"jugador",colrace:"raza",colscore:"score",nounits:"sin unidades",nobases:"sin colonias",noqueue:"nada en cola",noflights:"sin flotas en vuelo",nomsgs:"sin mensajes — escribí el primero",noworld:"todavía no pasó nada en la galaxia",noally:"no hay alianzas aún",nocols:"sin colonias todavía",nomoons:"sin lunas",ranklist:"ranking de temporada",
+      live:"● en vivo",reconnect:"○ reconectando…",ready:"✓ lista",active:"✓ activo",research:"investigar",leave:"salir",create:"crear",join:"unirse",npcnojoin:"🤖 NPC (no unible)",benefits:"Beneficios:",members:"Miembros",notrade:"Este tipo no permite comercio.",trade:"Comercio",tradeto:"a",tradesend:"enviar",allyform:"Creá una alianza: elegí un tipo (define qué beneficios da) o unite a una de abajo.",existing:"Alianzas existentes",noagg:"Solo no-agresión (no se atacan entre sí).",allyattack:"⚠ aliados bajo ataque:",abundance:"Abundancia mineral",abundancesub:"(multiplicador de minas)",moons:"Lunas",colonies:"Colonias",attackbtn:"⚔ atacar",youtag:" (vos)",here:" · estás acá",guideminerals:"Minerales (in-game ↔ real):",guidereal:"real",incoming:"⚠ ataque entrante → base",recall:"↩ recall",returns:"vuelve",
+      bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
   en:{ panels:{acciones:"Actions",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
-    ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking"},
-    ph:{advmsg:"what should I build? I'm missing something…"} },
+    ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",
+      logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it."},
+    ph:{advmsg:"what should I build? I'm missing something…",regemail:"invited email (to register)",user:"username (min. 3)",pass:"password (min. 6)",otpemail:"you@email.com",otpcode:"6-digit code",chatmsg:"message…"},
+    s:{authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
+      otphelp:"We send a <b>code</b> to your email. First time, it creates your account. Once in, you stay logged in on this device (no code each time).",
+      advdefault:"Ask and I'll advise you based on the game's dependency graph.",noseason:"No active season.",closesin:"closes in",closing:"closing…",newbie:"🛡 Newbie protection",newbieend:"ends in {x}; attacking a player cancels it",
+      colplayer:"player",colrace:"race",colscore:"score",nounits:"no units",nobases:"no colonies",noqueue:"nothing queued",noflights:"no fleets in flight",nomsgs:"no messages — write the first",noworld:"nothing has happened in the galaxy yet",noally:"no alliances yet",nocols:"no colonies yet",nomoons:"no moons",ranklist:"season ranking",
+      live:"● live",reconnect:"○ reconnecting…",ready:"✓ done",active:"✓ active",research:"research",leave:"leave",create:"create",join:"join",npcnojoin:"🤖 NPC (can't join)",benefits:"Benefits:",members:"Members",notrade:"This type doesn't allow trade.",trade:"Trade",tradeto:"to",tradesend:"send",allyform:"Create an alliance: pick a type (defines its benefits) or join one below.",existing:"Existing alliances",noagg:"Non-aggression only (members don't attack each other).",allyattack:"⚠ allies under attack:",abundance:"Mineral abundance",abundancesub:"(mine multiplier)",moons:"Moons",colonies:"Colonies",attackbtn:"⚔ attack",youtag:" (you)",here:" · you're here",guideminerals:"Minerals (in-game ↔ real):",guidereal:"real",incoming:"⚠ incoming attack → base",recall:"↩ recall",returns:"returns",
+      bMines:"Shared bonus: +production/attack/defense for all members",bUnit:"Unit tech: each race shares its edge with the whole alliance",bDef:"Mutual defense: your allies help defend your base",bVis:"Shared vision: you see attacks your allies receive",bTrade:"Trade: transfer minerals between allies"} },
 };
+function tr(k){ const d=I18N[lang]||I18N.es; return (d.s&&d.s[k])||(I18N.es.s[k])||k; }
 function applyI18n(){ const d=I18N[lang]||I18N.es;
-  document.querySelectorAll('.card[data-panel] > h2').forEach(h=>{ const t=d.panels[h.closest('.card').dataset.panel]; if(t)h.textContent=t; });
-  document.querySelectorAll('[data-i18n]').forEach(el=>{ const t=d.ui[el.dataset.i18n]; if(t)el.textContent=t; });
-  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const t=d.ph[el.dataset.i18nPh]; if(t)el.placeholder=t; });
+  document.querySelectorAll('.card[data-panel] > h2').forEach(h=>{ const x=d.panels[h.closest('.card').dataset.panel]; if(x)h.textContent=x; });
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ const x=d.ui[el.dataset.i18n]; if(x)el.textContent=x; });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const x=d.ph[el.dataset.i18nPh]; if(x)el.placeholder=x; });
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>{ const x=(d.s&&d.s[el.dataset.i18nHtml])||I18N.es.s[el.dataset.i18nHtml]; if(x)el.innerHTML=x; });
   $("langtoggle").textContent="🌐 "+lang.toUpperCase();
 }
 async function toggleLang(){ lang=(lang==="es")?"en":"es"; localStorage.setItem("lang",lang); applyI18n(); if(token){ await loadCatalog(); await refresh(); } }
-function renderGuide(){
-  if(!catalog) return;
-  const mechanics = [
+const GUIDE_MECH={
+  es:[
     ["⚡ Energía","Se regenera por hora hasta un tope. Cada acción (construir, entrenar, atacar, investigar) cuesta energía."],
     ["⛏ Minerales","Recursos para construir y producir. Cada raza usa minerales distintos; las minas los extraen con el tiempo según la abundancia del planeta."],
     ["🏗 Edificios","Se construyen con minerales+energía y tardan. Minas producen; cuartel/fábrica/laboratorio habilitan unidades y ciencia; torreta defiende."],
@@ -459,27 +474,41 @@ function renderGuide(){
     ["⚔ Combate","Las flotas viajan (tarda según distancia), resuelven al llegar y vuelven con sobrevivientes+botín. Las torretas suman defensa."],
     ["🔬 Investigación","Desbloquea bonus permanentes (producción/ataque/defensa). Requiere laboratorio."],
     ["🤝 Alianzas","Jugadores agrupados que no se atacan entre sí. Las NPC forman su propia alianza."],
-  ];
-  const minerals = catalog.minerals.map(m=>`<div class="item"><b>${esc(m.name)}</b> <span class="muted">(real: ${esc(m.real||"-")})</span><br><span class="muted">${esc(m.description||"")}</span></div>`).join("");
+  ],
+  en:[
+    ["⚡ Energy","Regenerates hourly up to a cap. Every action (build, train, attack, research) costs energy."],
+    ["⛏ Minerals","Resources to build and produce. Each race uses different minerals; mines extract them over time based on planet abundance."],
+    ["🏗 Buildings","Built with minerals+energy and take time. Mines produce; barracks/factory/lab enable units and science; turret defends."],
+    ["👷 Units","People (worker/soldier/scientist) and heavy (tank/ship/aircraft/shuttle). Require their building active."],
+    ["🌙 Expeditions","Send a shuttle to a moon; it returns with premium resources and a temporary boon."],
+    ["⚔ Combat","Fleets travel (time by distance), resolve on arrival and return with survivors+loot. Turrets add defense."],
+    ["🔬 Research","Unlocks permanent bonuses (production/attack/defense). Requires a lab."],
+    ["🤝 Alliances","Grouped players who don't attack each other. NPCs form their own alliance."],
+  ],
+};
+function renderGuide(){
+  if(!catalog) return;
+  const mechanics = GUIDE_MECH[lang]||GUIDE_MECH.es;
+  const minerals = catalog.minerals.map(m=>`<div class="item"><b>${esc(m.name)}</b> <span class="muted">(${esc(tr('guidereal'))}: ${esc(m.real||"-")})</span><br><span class="muted">${esc(m.description||"")}</span></div>`).join("");
   $("guide").innerHTML =
     mechanics.map(([t,d])=>`<div class="item"><b>${t}</b><br><span class="muted">${esc(d)}</span></div>`).join("")+
-    `<div class="muted" style="margin:8px 0 4px">Minerales (in-game ↔ real):</div>`+minerals;
+    `<div class="muted" style="margin:8px 0 4px">${esc(tr('guideminerals'))}</div>`+minerals;
 }
 async function loadRanking(){ try{ const r=await api("/api/v1/players/ranking");
-  $("ranking").innerHTML="<tr><th>#</th><th>jugador</th><th>raza</th><th>score</th></tr>"+
+  $("ranking").innerHTML=`<tr><th>#</th><th>${esc(tr('colplayer'))}</th><th>${esc(tr('colrace'))}</th><th>${esc(tr('colscore'))}</th></tr>`+
     r.map(e=>`<tr><td>${e.rank}</td><td>${esc(e.username)}${e.is_npc?' 🤖':''}</td><td>${esc(e.race_key||'')}</td><td>${e.score}</td></tr>`).join(""); }catch(e){ msg(e.message,false);} }
 function prefill(id){ $("tbase").value=id; $("force").focus(); window.scrollTo({top:0,behavior:"smooth"}); }
 // temporadas (SDD 11)
-function cdDays(iso){ if(!iso)return "—"; let s=Math.floor((new Date(iso)-Date.now())/1000); if(s<=0)return "cerrando…";
+function cdDays(iso){ if(!iso)return "—"; let s=Math.floor((new Date(iso)-Date.now())/1000); if(s<=0)return tr('closing');
   const d=Math.floor(s/86400); s-=d*86400; const h=Math.floor(s/3600); s-=h*3600; const m=Math.floor(s/60);
   return (d?d+"d ":"")+h+"h "+m+"m"; }
 function renderSeason(){ if(!state) return; const s=state.season;
-  let html = s ? `<b>${esc(s.name)}</b> · cierra en <b>${cdDays(s.ends_at)}</b>` : "Sin temporada activa.";
+  let html = s ? `<b>${esc(s.name)}</b> · ${esc(tr('closesin'))} <b>${cdDays(s.ends_at)}</b>` : tr('noseason');
   if(state.protected_until && new Date(state.protected_until)>new Date())
-    html += `<br><span class="ok">🛡 Protección de novato</span> <span class="muted">(termina en ${cdDays(state.protected_until)}; atacar a un jugador la cancela)</span>`;
+    html += `<br><span class="ok">${esc(tr('newbie'))}</span> <span class="muted">(${esc(tr('newbieend').replace('{x}',cdDays(state.protected_until)))})</span>`;
   $("seasoninfo").innerHTML = html; }
 async function loadSeasonRanking(){ try{ const r=await api("/api/v1/seasons/current/ranking");
-  $("seasonranking").innerHTML="<tr><th>#</th><th>jugador</th><th>score</th></tr>"+
+  $("seasonranking").innerHTML=`<tr><th>#</th><th>${esc(tr('colplayer'))}</th><th>${esc(tr('colscore'))}</th></tr>`+
     r.map(e=>`<tr><td>${e.rank}</td><td>${esc(e.username)}</td><td>${e.score}</td></tr>`).join(""); }catch(e){ msg(e.message,false);} }
 
 // progress bar from a total duration + completion timestamp
@@ -494,7 +523,7 @@ async function refresh(){
   $("unread").textContent="🔔 "+state.unread_notifications;
   $("ebar").style.width=Math.min(100,100*state.energy/state.energy_max)+"%"; $("etxt").textContent=state.energy+"/"+state.energy_max;
   $("minerals").innerHTML=Object.entries(state.stocks).map(([k,v])=>`<span class="chip">${esc(k)}: ${Math.round(v)}</span>`).join("")||'<span class="muted">—</span>';
-  $("units").innerHTML=Object.entries(state.units).filter(([,v])=>v>0).map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join("")||'<span class="muted">sin unidades</span>';
+  $("units").innerHTML=Object.entries(state.units).filter(([,v])=>v>0).map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join("")||`<span class="muted">${esc(tr('nounits'))}</span>`;
   $("boons").innerHTML=(state.boons||[]).map(b=>`<span class="chip ok">boon ${esc(b.effect)} ×${b.magnitude}</span>`).join(" ");
   $("bases").innerHTML=state.bases.map(b=>`<div style="margin-bottom:8px"><b>${esc(b.name)}</b> <span class="muted">#${b.id} · ${esc(b.planet_key)}</span>`+
     b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
@@ -508,23 +537,17 @@ function renderResearch(){
   $("research").innerHTML=catalog.technologies.map(t=>{
     const order=(state.research||[]).find(r=>r.tech_key===t.key);
     let right;
-    if(done.has(t.key)) right='<span class="ok">✓ lista</span>';
+    if(done.has(t.key)) right=`<span class="ok">${esc(tr('ready'))}</span>`;
     else if(order) right=`<span class="warn">${cd(order.completes_at)}</span>`;
-    else right=`<button class="sm" onclick="doResearch('${t.key}')">investigar</button>`;
+    else right=`<button class="sm" onclick="doResearch('${t.key}')">${esc(tr('research'))}</button>`;
     return `<div class="item"><div class="top"><span title="${esc(t.description||'')}">${esc(t.name)} <span class="muted">(${esc(t.effect)} ×${t.magnitude})</span></span>${right}</div>${order?bar(t.research_seconds,order.completes_at):""}</div>`;
   }).join("");
 }
-const BENEFIT={
-  shared_bonus:"Bonus compartido: +producción/ataque/defensa para todos los miembros",
-  shared_unit_tech:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",
-  mutual_defense:"Defensa mutua: tus aliados ayudan a defender tu base",
-  shared_vision:"Visión compartida: ves los ataques que reciben tus aliados",
-  trade:"Comercio: transferir minerales entre aliados",
-};
+const BENEFIT_KEY={shared_bonus:"bMines",shared_unit_tech:"bUnit",mutual_defense:"bDef",shared_vision:"bVis",trade:"bTrade"};
 function allianceType(key){ return (catalog.alliance_types||[]).find(t=>t.key===key)||{}; }
 function benefitsHtml(keys){
-  if(!keys||!keys.length) return '<div class="muted">Solo no-agresión (no se atacan entre sí).</div>';
-  return keys.map(k=>`<div class="muted">• ${esc(BENEFIT[k]||k)}</div>`).join("");
+  if(!keys||!keys.length) return `<div class="muted">${esc(tr('noagg'))}</div>`;
+  return keys.map(k=>`<div class="muted">• ${esc(BENEFIT_KEY[k]?tr(BENEFIT_KEY[k]):k)}</div>`).join("");
 }
 function npcAllianceIds(){ return new Set((players||[]).filter(p=>p.is_npc&&p.alliance_id).map(p=>p.alliance_id)); }
 
@@ -537,31 +560,31 @@ function renderAlliances(){
 function renderMyAlliance(){
   const t=allianceType(state.alliance_type);
   const members=(players||[]).filter(p=>p.alliance_id===state.alliance_id);
-  let html=`<div class="item"><div class="top"><span>🤝 <b>${esc(state.alliance_name||"")}</b> <span class="muted">tipo: ${esc(t.name||state.alliance_type||"")}</span></span><button class="sm danger" onclick="allianceLeave()">salir</button></div>`+
-    `<div style="margin-top:6px"><b class="muted">Beneficios:</b>${benefitsHtml(t.benefits)}</div>`+
-    `<div style="margin-top:6px"><b class="muted">Miembros (${members.length}):</b> ${members.map(m=>esc(m.username)+(m.is_npc?' 🤖':'')).join(", ")||"-"}</div></div>`;
+  let html=`<div class="item"><div class="top"><span>🤝 <b>${esc(state.alliance_name||"")}</b> <span class="muted">${esc(t.name||state.alliance_type||"")}</span></span><button class="sm danger" onclick="allianceLeave()">${esc(tr('leave'))}</button></div>`+
+    `<div style="margin-top:6px"><b class="muted">${esc(tr('benefits'))}</b>${benefitsHtml(t.benefits)}</div>`+
+    `<div style="margin-top:6px"><b class="muted">${esc(tr('members'))} (${members.length}):</b> ${members.map(m=>esc(m.username)+(m.is_npc?' 🤖':'')).join(", ")||"-"}</div></div>`;
   if((state.alliance_incoming||[]).length)
-    html+=`<div class="item bad">⚠ aliados bajo ataque: ${state.alliance_incoming.map(m=>`base ${m.target_base_id} (${cd(m.arrives_at)})`).join(", ")}</div>`;
+    html+=`<div class="item bad">${esc(tr('allyattack'))} ${state.alliance_incoming.map(m=>`base ${m.target_base_id} (${cd(m.arrives_at)})`).join(", ")}</div>`;
   if((t.benefits||[]).includes("trade")){
     const allies=members.filter(p=>p.id!==state.id);
     if(allies.length){
       const allyOpts=allies.map(p=>`<option value="${p.id}">${esc(p.username)}</option>`).join("");
       const minOpts=catalog.minerals.map(m=>`<option value="${m.key}">${esc(m.name)}</option>`).join("");
-      html+=`<div class="item"><b class="muted">Comercio</b><div class="row">enviar <select id="trmin">${minOpts}</select><input id="tramt" type="number" value="100" style="width:64px"> a <select id="trto">${allyOpts}</select><button class="sm" onclick="allianceTransfer()">enviar</button></div></div>`;
+      html+=`<div class="item"><b class="muted">${esc(tr('trade'))}</b><div class="row">${esc(tr('tradesend'))} <select id="trmin">${minOpts}</select><input id="tramt" type="number" value="100" style="width:64px"> ${esc(tr('tradeto'))} <select id="trto">${allyOpts}</select><button class="sm" onclick="allianceTransfer()">${esc(tr('tradesend'))}</button></div></div>`;
     }
   } else {
-    html+=`<div class="muted">Este tipo no permite comercio.</div>`;
+    html+=`<div class="muted">${esc(tr('notrade'))}</div>`;
   }
   $("alliances").innerHTML=html;
 }
 function renderAllianceForm(){
   const typeOpts=(catalog.alliance_types||[]).map(t=>`<option value="${t.key}">${esc(t.name)}</option>`).join("");
   $("alliances").innerHTML=
-    `<div class="muted">Creá una alianza: elegí un tipo (define qué beneficios da) o unite a una de abajo.</div>`+
-    `<div class="row"><input id="aname" placeholder="nombre (mín 3)" style="flex:1"><input id="atag" placeholder="tag" style="width:60px"></div>`+
-    `<div class="row"><select id="atype" onchange="renderTypeHelp()">${typeOpts}</select><button class="sm" onclick="allianceCreate()">crear</button></div>`+
+    `<div class="muted">${esc(tr('allyform'))}</div>`+
+    `<div class="row"><input id="aname" placeholder="${esc(tr('create'))}…" style="flex:1"><input id="atag" placeholder="tag" style="width:60px"></div>`+
+    `<div class="row"><select id="atype" onchange="renderTypeHelp()">${typeOpts}</select><button class="sm" onclick="allianceCreate()">${esc(tr('create'))}</button></div>`+
     `<div id="atypehelp"></div>`+
-    `<div style="margin-top:8px"><b class="muted">Alianzas existentes</b></div><div id="ally-list"></div>`;
+    `<div style="margin-top:8px"><b class="muted">${esc(tr('existing'))}</b></div><div id="ally-list"></div>`;
   renderTypeHelp();
 }
 function renderTypeHelp(){
@@ -573,9 +596,9 @@ function renderAllianceList(){
   const npcIds=npcAllianceIds();
   $("ally-list").innerHTML=(alliances||[]).map(a=>{
     const isNpc=npcIds.has(a.id);
-    const right=isNpc?'<span class="muted">🤖 NPC (no unible)</span>':`<button class="sm" onclick="allianceJoin(${a.id})">unirse</button>`;
+    const right=isNpc?`<span class="muted">${esc(tr('npcnojoin'))}</span>`:`<button class="sm" onclick="allianceJoin(${a.id})">${esc(tr('join'))}</button>`;
     return `<div class="item"><div class="top"><span>[${esc(a.tag)}] ${esc(a.name)} <span class="muted">${esc((allianceType(a.type).name)||a.type)} · ${a.member_count}👥</span></span>${right}</div></div>`;
-  }).join("")||'<span class="muted">no hay alianzas aún</span>';
+  }).join("")||`<span class="muted">${esc(tr('noally'))}</span>`;
 }
 function renderQueues(){
   if(!state) return; const q=[];
@@ -584,9 +607,9 @@ function renderQueues(){
   (state.expeditions||[]).forEach(e=>{ const tot=((spec.moon[e.moon_key]||{}).expedition||{}).duration_seconds||0;
     q.push(`<div class="item"><div class="top"><span>🌙 ${esc(e.moon_key)}</span><span class="warn">${cd(e.completes_at)}</span></div>${bar(tot,e.completes_at)}</div>`); });
   (state.missions_outgoing||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span>🚀 → base ${m.target_base_id} ${esc(JSON.stringify(m.force))}</span>`+
-    `<span>${m.status==='outbound'?`<button class="sm danger" onclick="recall(${m.id})">↩ recall ${cd(m.arrives_at)}</button>`:`vuelve ${cd(m.returns_at)}`}</span></div></div>`));
-  (state.missions_incoming||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span class="bad">⚠ ataque entrante → base ${m.target_base_id}</span><span class="bad">${cd(m.arrives_at)}</span></div></div>`));
-  $("queues").innerHTML=q.join("")||'<span class="muted">nada en cola</span>';
+    `<span>${m.status==='outbound'?`<button class="sm danger" onclick="recall(${m.id})">${esc(tr('recall'))} ${cd(m.arrives_at)}</button>`:`${esc(tr('returns'))} ${cd(m.returns_at)}`}</span></div></div>`));
+  (state.missions_incoming||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span class="bad">${esc(tr('incoming'))} ${m.target_base_id}</span><span class="bad">${cd(m.arrives_at)}</span></div></div>`));
+  $("queues").innerHTML=q.join("")||`<span class="muted">${esc(tr('noqueue'))}</span>`;
 }
 const ORB=new Set(["earth","mars","venus","mercury","vega_prime","nyx"]);
 const clamp01=x=>Math.max(0,Math.min(1,x));
@@ -606,9 +629,9 @@ function renderMap(){
         const cls=me?'me':(b.home_base_id?'enemy':''); const clk=(!me&&b.home_base_id)?`onclick="prefill(${b.home_base_id})"`:'';
         return `<span class="base ${cls}" ${clk} title="base ${b.home_base_id??'-'}">${icon} ${esc(b.username)}${b.home_base_id?` <span class="muted">#${b.home_base_id}</span>`:''}</span>`;
       }).join("");
-      return `<div class="planet"><div class="head" onclick="openPlanet('${p.key}')" title="ver detalle"><div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><b>${esc(p.name)}</b></div><div>${bases||'<span class="muted">sin colonias</span>'}</div></div>`;
+      return `<div class="planet"><div class="head" onclick="openPlanet('${p.key}')" title="ver detalle"><div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><b>${esc(p.name)}</b></div><div>${bases||`<span class="muted">${esc(tr('nobases'))}</span>`}</div></div>`;
     }).join("");
-    return `<div class="galaxy-group ${here?'':'dim'}"><div class="gname">🌌 ${esc(g.name)}${here?' · estás acá':''}</div><div class="galaxy">${cards}</div></div>`;
+    return `<div class="galaxy-group ${here?'':'dim'}"><div class="gname">🌌 ${esc(g.name)}${here?esc(tr('here')):''}</div><div class="galaxy">${cards}</div></div>`;
   }).join("");
 }
 
@@ -638,7 +661,7 @@ async function loadWorld(){
   let ev; try{ ev=await api("/api/v1/world/events"); }catch{ return; }
   $("world").innerHTML=ev.map(e=>`<div class="item"><div class="top"><span>${esc(e.message)}</span>`+
     `<span class="muted">${new Date(e.created_at).toLocaleTimeString()}</span></div></div>`).join("")
-    ||'<span class="muted">todavía no pasó nada en la galaxia</span>';
+    ||`<span class="muted">${esc(tr('noworld'))}</span>`;
 }
 
 // alliance chat — its own card so the input survives the 4s refresh
@@ -652,9 +675,9 @@ async function loadAllyChat(){
 function renderAllyChat(){
   const f=$("chatfeed"); if(!f) return; const atBottom=f.scrollHeight-f.scrollTop-f.clientHeight<40;
   f.innerHTML=allyMsgs.map(m=>{ const me=m.sender_id===(state&&state.id);
-    return `<div class="item"><div class="top"><b class="${me?'ok':''}">${esc(m.sender_username)}${me?' (vos)':''}</b>`+
+    return `<div class="item"><div class="top"><b class="${me?'ok':''}">${esc(m.sender_username)}${me?esc(tr('youtag')):''}</b>`+
       `<span class="muted">${new Date(m.created_at).toLocaleTimeString()}</span></div>${esc(m.body)}</div>`;
-  }).join("")||'<span class="muted">sin mensajes — escribí el primero</span>';
+  }).join("")||`<span class="muted">${esc(tr('nomsgs'))}</span>`;
   if(atBottom) f.scrollTop=f.scrollHeight;
 }
 async function sendAllyMsg(){
@@ -672,18 +695,18 @@ function openPlanet(key){
     return `<div class="ab ${rich?'rich':'poor'}"><span>${esc(mineralName(k))}</span>`+
       `<span class="b"><div style="width:${pct.toFixed(0)}%"></div></span><span class="muted">×${v}</span></div>`;
   }).join("");
-  const moons=(p.moons||[]).map(m=>`<span class="chip">🌙 ${esc(moonName(m))}</span>`).join(" ")||'<span class="muted">sin lunas</span>';
+  const moons=(p.moons||[]).map(m=>`<span class="chip">🌙 ${esc(moonName(m))}</span>`).join(" ")||`<span class="muted">${esc(tr('nomoons'))}</span>`;
   const cols=colonies.map(c=>{ const me=c.id===state.id; const icon=me?'⭐':(c.is_npc?'🤖':'👤');
-    const clk=(!me&&c.home_base_id)?`<button class="sm" onclick="closePlanet();prefill(${c.home_base_id})">⚔ atacar</button>`:'';
+    const clk=(!me&&c.home_base_id)?`<button class="sm" onclick="closePlanet();prefill(${c.home_base_id})">${esc(tr('attackbtn'))}</button>`:'';
     return `<div class="item"><div class="top"><span>${icon} ${esc(c.username)}${c.home_base_id?` <span class="muted">#${c.home_base_id}</span>`:''}</span>${clk}</div></div>`;
-  }).join("")||'<span class="muted">sin colonias todavía</span>';
+  }).join("")||`<span class="muted">${esc(tr('nocols'))}</span>`;
   $("pbody").innerHTML=`<div class="head" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">`+
     `<div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><h2 style="margin:0;font-size:16px">${esc(p.name)}</h2></div>`+
     `<p class="muted">${esc(p.description||"")}</p>`+
     (p.gravity_g!=null?`<p class="muted">🪐 gravedad ${p.gravity_g}g · 🌡 ${p.mean_temp_c}°C · atmósfera ${esc(p.atmosphere||"?")} · ${p.has_liquid_water?"💧 agua líquida":"sin agua"} · ☀ ${p.insolation}× ${p.canon&&p.canon!=="real"?`· <span class="warn">${esc(p.canon)}</span>`:""}</p>`:"")+
-    `<h2>Abundancia mineral <span class="muted">(multiplicador de minas)</span></h2>${ab||'<span class="muted">—</span>'}`+
-    `<h2 style="margin-top:12px">Lunas</h2><div class="row">${moons}</div>`+
-    `<h2 style="margin-top:12px">Colonias (${colonies.length})</h2>${cols}`;
+    `<h2>${esc(tr('abundance'))} <span class="muted">${esc(tr('abundancesub'))}</span></h2>${ab||'<span class="muted">—</span>'}`+
+    `<h2 style="margin-top:12px">${esc(tr('moons'))}</h2><div class="row">${moons}</div>`+
+    `<h2 style="margin-top:12px">${esc(tr('colonies'))} (${colonies.length})</h2>${cols}`;
   $("pmodal").classList.remove("hidden");
 }
 function closePlanet(){ $("pmodal").classList.add("hidden"); }
@@ -722,7 +745,7 @@ function renderTransits(){
   (state.missions_incoming||[]).forEach(m=>{
     rows.push(transitRow('inc','☄','???',me+' #'+m.target_base_id,seenProg('i'+m.id,m.arrives_at),m.arrives_at));
   });
-  $("transits").innerHTML=rows.join("")||'<span class="muted">sin flotas en vuelo</span>';
+  $("transits").innerHTML=rows.join("")||`<span class="muted">${esc(tr('noflights'))}</span>`;
 }
 
 setInterval(()=>{ if(state) refresh(); },4000);              // pull state
@@ -732,8 +755,8 @@ setInterval(()=>{ renderQueues(); renderMap(); renderTransits(); },1000); // smo
 function startStream(){
   if(es) es.close();
   es=new EventSource(API+"/api/v1/notifications/stream?token="+encodeURIComponent(token)+"&interval=2");
-  es.onopen=()=>{ $("streamstate").textContent="● en vivo"; $("live").textContent="●"; $("live").className="ok"; };
-  es.onerror=()=>{ $("streamstate").textContent="○ reconectando…"; $("live").textContent="○"; $("live").className="muted"; };
+  es.onopen=()=>{ $("streamstate").textContent=tr('live'); $("live").textContent="●"; $("live").className="ok"; };
+  es.onerror=()=>{ $("streamstate").textContent=tr('reconnect'); $("live").textContent="○"; $("live").className="muted"; };
   es.onmessage=ev=>{ const n=JSON.parse(ev.data); playBeep(soundForType(n.type)); refresh(); };
 }
 

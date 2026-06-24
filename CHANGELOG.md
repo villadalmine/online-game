@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — i18n EN del cliente completo (SDD 4): toda la web traduce
+- El toggle 🌐 ahora pasa a inglés **toda la UI del cliente**: pantalla de login/registro/OTP,
+  onboarding, "tu imperio", tips, botones, y todos los strings generados en JS (alianzas, colas,
+  mapa, ranking/temporada, planeta, chat, stream, estados vacíos, guía). Helper `tr()` + dict plano
+  `s` (es/en) + `data-i18n-html`/`data-i18n-ph`; guía con array por idioma.
+- Browser test `test_language_toggle_to_english` + **aislamiento del `.env`** en el server de los
+  browser-tests (ALLOWED_EMAILS/ADMIN_EMAIL/MAIL_BACKEND por env) → herméticos. **16 browser verdes.**
+- Pendiente (backend, aparte): texto **generado por el server** (notis/combate/errores) sigue en ES.
+
 ### 2026-06-23 — SDD 18 v1: GitHub Pages auto-generado desde los SDDs
 - `scripts/build_site.py` (stdlib) genera `site/index.html` desde `docs/sdd-*.md` + CHANGELOG
   (features+estado+novedades+botón Jugar). **Guard de privacidad** que aborta si hay PII/secretos.

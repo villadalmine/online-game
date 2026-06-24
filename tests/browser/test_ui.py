@@ -416,3 +416,14 @@ def test_mark_read_clears_notifications_feed(page: Page, live_server, shots):
     expect(page.locator("#feed")).to_contain_text("sin notificaciones sin leer")
     expect(page.locator("#feed")).not_to_contain_text("NPC atacó tu base")
     _shot(page, shots / "10-notifs-after.png")
+
+
+def test_language_toggle_to_english(page: Page, live_server, shots):
+    """SDD 4 i18n: el toggle 🌐 pasa la UI a inglés (auth screen)."""
+    page.goto(live_server + "/")
+    expect(page.get_by_text("Crear cuenta / Entrar")).to_be_visible()
+    page.click("#langtoggle")  # es -> en
+    expect(page.get_by_text("Sign up / Log in")).to_be_visible()
+    expect(page.locator("button:has-text('Register and play')")).to_be_visible()
+    expect(page.locator("button:has-text('Log in')").first).to_be_visible()
+    _shot(page, shots / "11-en.png")

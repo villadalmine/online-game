@@ -31,6 +31,11 @@ def live_server(tmp_path_factory):
         "JWT_SECRET": "ui-tests-secret-at-least-32-bytes-long",
         "AUTO_TICK_SECONDS": "1",  # NPCs spawn/play so the scoreboard/alliances fill in
         "NPC_BRAIN": "rules",
+        # Aislar del .env local (pydantic lo lee del cwd): registro abierto, sin admin gate,
+        # mailer a consola (no Resend) → los browser-tests son herméticos.
+        "ALLOWED_EMAILS": "",
+        "ADMIN_EMAIL": "",
+        "MAIL_BACKEND": "console",
     }
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "app.main:app", "--port", str(port)],
