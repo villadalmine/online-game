@@ -29,6 +29,28 @@ fierro **no es nodo de storage**: usa `local-path` node-local).
 **Conclusión:** lo que NO molesta es la GPU (tiene fallback). **Lo que tira el juego es el Postgres
 en `local-path` sobre el fierro que apagás.**
 
+## 3.bis Blast-radius COMPLETO de apagar `srv-t7910` (no sólo el juego)
+`srv-t7910` no sólo hostea la IA y la DB del juego — corre **mucha plataforma**. Verificado
+2026-06-24 (`kubectl get pods -A --field-selector spec.nodeName=srv-t7910`):
+
+| Componente | Impacto al apagar | Severidad |
+|---|---|---|
+| **Juego: Postgres** | con el fix (SDD 32: Longhorn + `nodeSelector`) **reagenda a un RK1 (~40 s)** | ✅ resuelto |
+| **Juego: IA (ollama-a/b, dcgm)** | caen → LiteLLM → OpenRouter free | ✅ degradado |
+| **KubeVirt VMs** (`virt-launcher-*`: host-euw1/host-mgmt/mgmt-child control-plane+md) | esas **VMs mueren** → nodos/control-planes de tus clústers anidados (CAPI) caen | 🔴 **alto** (plataforma) |
+| **vcluster-tenant-a-\*** (acceptance/dev/prod: vcluster-0, tenant-postgres-0, coredns, external-secrets) | el **control-plane del tenant-a** y su Postgres en este nodo caen | 🔴 alto (tenant) |
+| **Longhorn** (instance-manager/csi/engine en srv-t7910) | volúmenes con réplica acá quedan **degraded** y rebuildan en otros nodos (dato a salvo si réplica ≥2) | 🟠 medio |
+| **HAMI** (device-plugin/scheduler) | scheduling de GPU del cluster se rehace al reagendar el scheduler | 🟠 medio |
+| **capi-controller-manager** | si es la única réplica, CAPI pausa reconciliación hasta reagendar | 🟠 medio |
+| **monitoring** (node-exporter/alloy/loki-canary) | se pierden métricas/logs **de ese nodo** | 🟢 bajo |
+| Cilium agent/envoy (DaemonSet) | ese nodo pierde red (esperado, está apagado) | 🟢 bajo |
+
+**Conclusión:** para el **juego** ya es seguro (Postgres reagenda, IA a nube). El **verdadero
+blast-radius está en la PLATAFORMA**: `srv-t7910` corre **VMs de KubeVirt que son control-planes de
+clústers anidados (CAPI) y vclusters de tenants**. Apagarlo planificado debería **drenar/migrar esas
+VMs primero** (KubeVirt live-migration o apagar los tenants) — fuera del alcance del juego, pero a
+tener en cuenta antes de cortar la corriente.
+
 ## 4. Cómo la app/LLM hace fallback "todo a OpenRouter free" (ya implementado)
 Cadena de detección → fallback (SDD 9/28):
 1. **LiteLLM** detecta el backend caído: `request_timeout`/`timeout` por modelo + `allowed_fails`/

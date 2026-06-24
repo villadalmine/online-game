@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — Resiliencia validada + fix nodeSelector Postgres (drill de apagado)
+- **Drill de "apagar el nodo"** (cordon srv-t7910 + borrar pod Postgres): reveló que un PVC Longhorn
+  **debe** fijarse a nodos Longhorn — si no, reagenda a un nodo sin Longhorn y cuelga
+  (`AttachVolume ... node.longhorn.io not found`). **Fix:** `postgres.nodeSelector: {storage:
+  rk1-longhorn}` en el chart. Re-drill OK: Postgres reagenda a un RK1 en ~40 s, **datos intactos**.
+- **SDD 30** ampliado con el **blast-radius completo** de srv-t7910 (además del juego: KubeVirt VMs =
+  control-planes de clústers anidados, vclusters de tenants, Longhorn, HAMI). **SDD 32** con el
+  registro de ejecución + la lección del nodeSelector.
+
 ### 2026-06-24 — SDD 32 EJECUTADO: Postgres del juego migrado a Longhorn
 - `galaxy-postgres` movido de `local-path` (node-local en srv-t7910) a **`longhorn`** (replicado).
   Procedimiento seguro: `pg_dump` verificado → **dry-run de restore en un Postgres Longhorn

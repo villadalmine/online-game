@@ -103,6 +103,26 @@ Si algo falla en el restore/verify:
   pérdida de datos**.
 - Para failover en **segundos** (sin reagende), el siguiente paso es **CNPG** (SDD 31).
 
+## 7.bis Registro de ejecución (2026-06-24)
+Ejecutado en prod con verificación previa (sin pérdida de datos):
+1. Baseline: `players=10`, `tablas=22`, `alembic=916dc21e5905`.
+2. `pg_dump` (87 KB) **verificado** (22 CREATE TABLE, COPY players, alembic_version, cierre).
+3. **Dry-run**: restauré el dump en un **Postgres Longhorn descartable** (`pgtest`) → 10/22 OK
+   **antes de tocar la base real**.
+4. Migración: suspendí tick + API→0; PV viejo a `Retain`; borré STS+PVC; `helm` con
+   `storageClass: longhorn` y API en 0; `DROP SCHEMA`+restore; verificado 10/22/head; API/tick arriba.
+5. **Hallazgo CRÍTICO en el drill de resiliencia:** al borrar el pod de Postgres, el scheduler lo
+   puso en **`srv-super6c-05` (nodo SIN Longhorn)** → `AttachVolume` falló (`node.longhorn.io ... not
+   found`) → `ContainerCreating` colgado. **Causa:** con storageClass Longhorn, el pod **sólo** puede
+   agendar en nodos que corren Longhorn (label `storage=rk1-longhorn`: los 4 RK1 + srv-t7910). **Fix:**
+   `postgres.nodeSelector: {storage: rk1-longhorn}` agregado al chart (`datastores.yaml`/`values.yaml`).
+6. **Drill OK tras el fix:** `cordon srv-t7910` + borrar pod → Postgres reagenda a **`srv-rk1-nvme-02`**
+   (Longhorn RK1), Ready en ~40 s, **datos intactos (players=10)**. `/health` y `/public/online` OK.
+- **Estado final:** Postgres en `storageClass=longhorn`, `nodeSelector=storage=rk1-longhorn`,
+  corriendo en un RK1. Redes de seguridad: dump + PV viejo retenido (`pvc-b23ba706…`, Released/Retain).
+- **Lección:** un PVC Longhorn **siempre** necesita `nodeSelector` a nodos Longhorn; si no, reagenda a
+  un nodo sin Longhorn y cuelga. (Igual aplicaría a cualquier StatefulSet sobre Longhorn.)
+
 ## 8. Validación / tests
 - **Drill en staging** antes de prod: correr este runbook end-to-end y luego `drain srv-t7910` →
   confirmar reagende de Postgres + juego OK + IA en nube.
