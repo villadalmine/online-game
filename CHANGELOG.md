@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 25 v1: catch-up del recién llegado (nivelar sin dar ventaja)
 - `app/services/catchup.py` (hook en onboarding): a quien entra a una partida con ≥3 pares en su
   galaxia, lo lleva al **P40 del stock de minerales** de los pares (top-up, nunca por encima →
