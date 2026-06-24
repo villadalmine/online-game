@@ -80,6 +80,19 @@ el costo). No duplicar el cálculo de costo en la app.
   (verificable contra `/metrics` de litellm en un test de integración manual).
 - **Dashboards**: cargan en Grafana (JSON válido); paneles devuelven datos con tráfico real.
 
+## 5.bis Estado de implementación (2026-06-24) — v1
+- **App**: `app/services/llm.py:llm_chat(..., user=...)` manda el campo OpenAI `user`; el asistente
+  pasa `player:<username>` (`advisor.py`) y los NPCs `npc:<username>` (`npc.py`, vía `state["__user"]`
+  que NO se filtra al prompt). → LiteLLM puebla `end_user`. Tests: `test_npc.py` (payload lleva `user`;
+  `__user` fuera del prompt).
+- **Dashboard**: `deploy/helm/dashboards/llm-usage.json` (ConfigMap `grafana_dashboard`): in-flight,
+  requests/s por `requested_model` (backend), tokens/s por `model`, **tabla tokens por usuario (24h)**,
+  **tabla spend por usuario × backend (24h)**, fallbacks/s → free, y **GPU por placa** (HAMI:
+  `hami_gpu_memory_allocated_bytes`, `hami_gpu_core_allocated_ratio`). Métricas verificadas en vivo
+  (`litellm_*_metric_total` con label `end_user`/`requested_model`/`model`; HAMI `hami_gpu_*`).
+- **Pendiente (follow-up)**: DCGM-exporter para % de cómputo real (HAMI da asignado, no utilización);
+  virtual keys de LiteLLM con budget por jugador (cortar/cobrar automático).
+
 ## 6. Riesgos / decisiones
 - **Cardinalidad**: `end_user` por jugador es alta cardinalidad en Prometheus. Mitigar: solo humanos
   (no por-NPC individual; agrupar NPCs en `npc:*`), y/o usar el cost-tracking de LiteLLM (DB) para el

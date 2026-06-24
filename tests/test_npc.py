@@ -231,6 +231,46 @@ async def test_llm_decide_posts_to_configured_endpoint_with_json_mode(monkeypatc
     assert captured["headers"]["Authorization"] == "Bearer secret"
 
 
+def _capturing_client(captured):
+    class FakeResp:
+        def raise_for_status(self): pass
+        def json(self): return {"choices": [{"message": {"content": '{"action":"none"}'}}]}
+
+    class FakeClient:
+        def __init__(self, *a, **k): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        async def post(self, url, headers=None, json=None):
+            captured.update(url=url, headers=headers, json=json)
+            return FakeResp()
+    return FakeClient
+
+
+async def test_llm_chat_sends_user_for_billing(monkeypatch):
+    # SDD 28: el campo `user` viaja en el payload → LiteLLM lo etiqueta end_user (monetización).
+    from app.services import llm as llm_mod
+    captured = {}
+    cfg = _settings(llm_base_url="http://x/v1", llm_model="m", llm_api_key="k")
+    monkeypatch.setattr(llm_mod.httpx, "AsyncClient", _capturing_client(captured))
+    monkeypatch.setattr(llm_mod, "get_settings", lambda: cfg)
+    await llm_mod.llm_chat([{"role": "user", "content": "hola"}], user="player:bob")
+    assert captured["json"]["user"] == "player:bob"
+
+
+async def test_npc_decide_attributes_user_and_keeps_it_out_of_prompt(monkeypatch):
+    # SDD 28: el NPC pasa user=npc:<nombre> SIN filtrarlo al prompt del modelo.
+    from app.services import llm as llm_mod
+    captured = {}
+    cfg = _settings(npc_brain="llm", llm_base_url="http://x/v1", llm_model="m", llm_api_key="k")
+    monkeypatch.setattr(llm_mod.httpx, "AsyncClient", _capturing_client(captured))
+    monkeypatch.setattr(llm_mod, "get_settings", lambda: cfg)
+    monkeypatch.setattr(npc_mod, "get_settings", lambda: cfg)
+    await npc_mod._llm_decide({"personality": "rudo", "__user": "npc:zorg"})
+    assert captured["json"]["user"] == "npc:zorg"
+    # __user no debe aparecer en el contenido enviado al modelo
+    assert "__user" not in captured["json"]["messages"][1]["content"]
+
+
 async def test_npc_taunts_human_on_attack(session):
     # An NPC attacking a human sends an in-character taunt notification.
     from app.content.registry import get_content

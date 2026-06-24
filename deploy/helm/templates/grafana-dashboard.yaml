@@ -10,4 +10,6 @@ metadata:
 data:
   online-game.json: |-
 {{ .Files.Get "dashboards/online-game.json" | indent 4 }}
+  llm-usage.json: |-
+{{ .Files.Get "dashboards/llm-usage.json" | indent 4 }}
 {{- end }}

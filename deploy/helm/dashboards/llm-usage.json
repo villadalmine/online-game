@@ -1,0 +1,86 @@
+{
+  "uid": "online-game-llm",
+  "title": "Online Galaxy War — LLM usage & GPU",
+  "tags": ["online-game", "llm", "gpu"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "LLM in-flight",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [ { "refId": "A", "expr": "sum(litellm_in_flight_requests)" } ]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Requests/s (5m)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [ { "refId": "A", "expr": "sum(rate(litellm_proxy_total_requests_metric_total[5m]))" } ]
+    },
+    {
+      "id": 3, "type": "stat", "title": "GPU VRAM asignada (total)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [ { "refId": "A", "expr": "sum(hami_gpu_memory_allocated_bytes)" } ]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Fallbacks/s → free (5m)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [ { "refId": "A", "expr": "sum(rate(litellm_deployment_successful_fallbacks_total[5m]))" } ]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Requests/s por backend (requested_model)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [ { "refId": "A", "expr": "sum by (requested_model) (rate(litellm_proxy_total_requests_metric_total[5m]))", "legendFormat": "{{requested_model}}" } ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Tokens de salida/s por modelo (backend real)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [ { "refId": "A", "expr": "sum by (model) (rate(litellm_output_tokens_metric_total[5m]))", "legendFormat": "{{model}}" } ]
+    },
+    {
+      "id": 7, "type": "table", "title": "Tokens por usuario (24h) — salida",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user) (increase(litellm_output_tokens_metric_total[24h])))", "legendFormat": "{{end_user}}" } ]
+    },
+    {
+      "id": 8, "type": "table", "title": "Spend por usuario × backend (24h) — monetización",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user, model) (increase(litellm_spend_metric_total[24h])))", "legendFormat": "{{end_user}} / {{model}}" } ]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "GPU — VRAM asignada por placa (HAMI)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "targets": [ { "refId": "A", "expr": "hami_gpu_memory_allocated_bytes", "legendFormat": "{{deviceuuid}}{{nodename}}" } ]
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "GPU — cores asignados por placa (HAMI, ratio)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "targets": [ { "refId": "A", "expr": "hami_gpu_core_allocated_ratio", "legendFormat": "{{deviceuuid}}{{nodename}}" } ]
+    }
+  ]
+}

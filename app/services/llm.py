@@ -18,8 +18,12 @@ async def llm_chat(
     max_tokens: int = 400,
     temperature: float = 0.0,
     json_mode: bool = False,
+    user: str | None = None,
 ) -> str:
-    """POST messages to the configured LLM and return the assistant message content."""
+    """POST messages to the configured LLM and return the assistant message content.
+
+    `user` viaja como el campo OpenAI `user` → LiteLLM lo etiqueta `end_user` en sus métricas
+    (atribución de tokens/costo por jugador y backend, SDD 28)."""
     settings = get_settings()
     if not settings.llm_key:
         raise RuntimeError("LLM no configurado (sin LLM_API_KEY/OPENROUTER_API_KEY)")
@@ -29,6 +33,8 @@ async def llm_chat(
         "max_tokens": max_tokens,
         "messages": messages,
     }
+    if user:
+        payload["user"] = user  # → end_user en LiteLLM (SDD 28)
     if json_mode:
         # Honored by OpenAI/LiteLLM/Ollama/vLLM; makes the reply parse-safe.
         payload["response_format"] = {"type": "json_object"}

@@ -257,7 +257,8 @@ async def _llm_or_fallback(session, player, message, snap, hits, reports) -> str
         for m in history:
             msgs.append({"role": m.role, "content": m.body})
         msgs.append({"role": "user", "content": f"{message}\n\nCONTEXTO:\n{json.dumps(context)}"})
-        return (await llm_chat(msgs, max_tokens=400)).strip() or _fallback_reply(reports)
+        reply = await llm_chat(msgs, max_tokens=400, user=f"player:{player.username}")  # SDD 28
+        return reply.strip() or _fallback_reply(reports)
     except Exception:
         return _fallback_reply(reports)
 

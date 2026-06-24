@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 28 v1: métricas de uso LLM por usuario (monetización) + GPU + dashboard
+- **App**: `llm_chat(user=...)` manda el campo OpenAI `user` (asistente `player:<id>`, NPCs
+  `npc:<id>`) → LiteLLM puebla `end_user` → tokens/requests/spend **por jugador y backend**
+  (GPU/free/pago). **Dashboard Grafana** `llm-usage.json` (uso LLM por usuario + spend + fallbacks +
+  GPU por placa vía HAMI). Tests del payload. 220 verdes.
+
 ### 2026-06-24 — SDD 28 diseñado: métricas de uso LLM por usuario + GPU en vivo
 - Doc `docs/sdd-llm-usage-metrics.md`: cómo ver en **Grafana** el uso de GPU en tiempo real y
   **atribuir el uso de LLM por jugador** (tokens/requests/spend por `end_user` y backend —

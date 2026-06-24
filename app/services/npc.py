@@ -482,6 +482,7 @@ async def _llm_decide(state: dict) -> dict:
         'a beatable enemy with is_human=true -> '
         '{"action":"attack","target_base_id":7,"force":{"tank":5}}.'
     )
+    user = state.pop("__user", None)  # SDD 28: atribución por usuario (no va en el prompt)
     content = await llm_chat(
         [
             {"role": "system", "content": system},
@@ -489,6 +490,7 @@ async def _llm_decide(state: dict) -> dict:
         ],
         max_tokens=120,
         json_mode=settings.llm_json_mode,
+        user=user,
     )
     return _extract_json(content)
 
@@ -511,6 +513,7 @@ class LlmBrain:
         player_id = player.id  # capture before any rollback expires the instance
         try:
             state = await _npc_state(session, player)
+            state["__user"] = f"npc:{player.username}"  # SDD 28: atribución de uso LLM por NPC
             action = await self._decide(state)
             return await dispatch_action(session, player, action)
         except Exception:
