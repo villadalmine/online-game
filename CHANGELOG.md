@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 37 diseñado: colonización (grafo raza × planeta)
+- Doc `docs/sdd-colonization.md`: colonizar otros planetas con un **grafo raza×planeta** — cada
+  planeta tiene atributos (ya existen, SDD 13) y cada raza sus `tolerances`; `compat(race,planet)`
+  (pura) da `habitability`, gate `can_colonize` (algunas combinaciones imposibles) y **modifiers**
+  (prod/energía/costo/defensa por colonia). `POST /colonize` + `GET /colonize/options` (la matriz/
+  grafo de veredictos para tu raza). Solo especificación.
+
+### 2026-06-24 — SDD 36 diseñado: eventos dinámicos ("happy hour")
+- Doc `docs/sdd-dynamic-events.md`: eventos globales temporales en horas aleatorias (todo más barato,
+  energía ×2, soldados gratis, +prod…) que **reusan el motor de multiplicadores** (boons/effects),
+  se schedulean en el tick (RNG sembrable), viven en DB (`WorldEvent`, lectura lazy) y se muestran en
+  un panel de anuncios dinámico con cuenta regresiva. `GET /events/active`. Solo especificación.
+
 ## [1.17.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 34: calculadora de combate (determinista + grounded en intel)
