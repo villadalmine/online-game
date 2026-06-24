@@ -84,6 +84,7 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    `/metrics` (stdlib) con RED + conectados en vivo (SSE) + signups/logins + players_total; token
    guard (no público); **ServiceMonitor** opt-in. Follow-up: counters de negocio restantes,
    histogram tick/LLM, dashboard Grafana, PrometheusRule (alertas).
+12. 📝 **[SDD 23 — Versionado (SemVer)](docs/sdd-versioning.md)**: versión por release (no por commit); cambios de solo env no versionan; tag=release + git tag. Diseñado.
 11. 🟢 **[SDD 21 — Presencia + métricas por usuario/galaxia](docs/sdd-presence-dimensional-metrics.md)**:
    **v1 hecho** — `/public/online` + `/admin/online` + `game_online_players` + opt-in
    `game_player_online{player,galaxy}`. Follow-up: label `galaxy` en counters agregados, presencia

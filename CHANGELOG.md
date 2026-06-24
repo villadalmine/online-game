@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 23 diseñado: estrategia de versionado (SemVer) + releases
+- Doc `docs/sdd-versioning.md`: MAJOR.MINOR.PATCH, **versión por release (no por commit)**, los
+  cambios de **solo env/config (allowlist) NO llevan versión ni rebuild**, tag de imagen = release,
+  `git tag vX.Y.Z`, y flujo CHANGELOG[Unreleased]→[X.Y.Z]. Follow-up: `make release V=`. (Motivado
+  por la ráfaga 0.2.0→1.2.3.)
+
 ### 2026-06-24 — fix(deps): aiosqlite en runtime (lo necesita el smoke --selftest)
 - El smoke (SDD 22 capa 2) levanta la app en SQLite efímero → necesita `aiosqlite`, que estaba
   solo en `[dev]`. Agregado a las deps principales (es el driver default de dev; inofensivo en prod
