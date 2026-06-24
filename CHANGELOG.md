@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 32 EJECUTADO: Postgres del juego migrado a Longhorn
+- `galaxy-postgres` movido de `local-path` (node-local en srv-t7910) a **`longhorn`** (replicado).
+  Procedimiento seguro: `pg_dump` verificado → **dry-run de restore en un Postgres Longhorn
+  descartable** (players=10/tablas=22 OK) → PV viejo a `Retain` → recrear STS+PVC en Longhorn (API en
+  0) → DROP SCHEMA + restore → verificado (players=10, tablas=22, alembic head) → API/tick reanudados,
+  `/health` y datos OK. Resultado: si se apaga/pierde el nodo GPU, **Postgres reagenda y el juego
+  sigue** (sólo la IA degrada a OpenRouter free, SDD 30). Cambio en `values-local` (gitignored).
+
 ### 2026-06-24 — SDD 31 + 32: HA/durabilidad de Postgres
 - **SDD 31** (`docs/sdd-postgres-ha-cnpg.md`): HA real con **CloudNativePG** (primary+réplicas,
   failover en segundos, backups/PITR) — opción "pro"/proyecto; el juego apunta por `externalUrl`
