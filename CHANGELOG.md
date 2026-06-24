@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 27 diseñado: sección de Anuncios / "Lo que viene"
+- Doc `docs/sdd-announcements.md`: sección pública **"📣 Anuncios / Lo que viene"** con anuncios
+  **tipados** (`content/announcements.yaml`) en categorías (`release`/`incoming`/`spinoff`/`season`/
+  `maintenance`) y `status` (`live`/`coming`/`planned`), bilingüe (SDD 4), servidos por
+  `GET /announcements`. Categoría **`spinoff`** ([SDD 26](docs/sdd-spinoff-universes.md)) con
+  `differences`/`standard_baseline`: explica qué trae cada universo y su diferencia con el estándar.
+  **Solo especificación** (se implementa después; editar el SDD para cambiar el modelo).
+
 ## [1.8.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 13 §4: refrigeración por temperatura (completa los multiplicadores físicos)

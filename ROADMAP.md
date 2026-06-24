@@ -128,6 +128,7 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   energía); opt-in (`PHYSICS_ENABLED`), anclados a Tierra=1.0 y acotados; encendido en prod.
   Follow-up: jerarquía anidada real, **universos/spin-offs** ([SDD 26](docs/sdd-spinoff-universes.md)).
 - 📝 **[SDD 26 — Universos spin-off](docs/sdd-spinoff-universes.md)**: packs de datos (Star Trek/BSG/Star Wars) tipados y fieles al canon (`fiction`+sources); solo spec, con nota IP (fan/no-comercial). Implementable editando el SDD.
+- 📝 **[SDD 27 — Anuncios / "Lo que viene"](docs/sdd-announcements.md)**: sección pública con anuncios tipados por categoría (`release`/`incoming`/`spinoff`/…) y `status`, bilingüe, `GET /announcements`; los `spinoff` explican qué trae cada universo y su diferencia con el estándar. Solo spec.
 - 🟢 **[SDD 25 — Catch-up del recién llegado](docs/sdd-newcomer-catchup.md)**: **v1 hecho** — al
   entrar con ≥3 pares en su galaxia, top-up al **P40** del stock (sin pasar la mediana) + energía
   full + mina/torreta (defensa). Hook en onboarding. Follow-up: factor explícito por días.
