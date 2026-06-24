@@ -109,9 +109,12 @@ La intel se revela **graduada** — el contraespionaje del defensor baja tu `dep
 - **API:** `POST /api/v1/spy`, `GET /api/v1/intel`, `GET /api/v1/intel/{target}`.
 - **Tests:** servicio (fórmula, payload graduado, ciclo completo, counter_intel baja depth + detecta) +
   e2e (lanzar → resolver → leer intel; error). **231 verdes.**
-- **Pendiente (follow-up):** UI web (click en player/NPC → ver intel + botón espiar); integrar la intel
-  en la calculadora de combate (SDD 34) y en el asistente IA (SDD 1/2); técnicas
-  `espionage`/`counter_espionage`; visión de alianza como intel base.
+- **UI web (hecho):** en el modal de planeta cada colonia enemiga muestra la intel guardada (depth,
+  confianza coloreada por antigüedad + aviso de desactualización, campos graduados) + botones
+  **🕵 espiar** (`POST /spy`) y **⚔ atacar**; la intel se recarga (`GET /intel`) en cada refresh.
+  Bilingüe ES/EN. Sin intel → solo info pública.
+- **Pendiente (follow-up):** integrar la intel en la calculadora de combate (SDD 34) y en el asistente
+  IA (SDD 1/2); técnicas `espionage`/`counter_espionage`; visión de alianza como intel base.
 
 ## 10. Riesgos / decisiones
 - **Balance:** `spy`/`counter_power`/half-life se afinan por YAML; arrancar conservador (que espiar

@@ -3,9 +3,11 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
-from app.models import Base_, IntelReport, Player, SpyMission, UnitStock
+from app.models import Base_, IntelReport, Player, PlayerTech, SpyMission, UnitStock
+from app.services.alliances import create_alliance, join_alliance
 from app.services.espionage import (
     graded_payload,
+    player_intel,
     process_spy_missions,
     resolve_spy,
     start_spy,
@@ -102,3 +104,59 @@ async def test_counter_intel_lowers_depth_and_detects(session):
     assert report.depth < 0.25      # 20/(20+100) ≈ 0.17 → ofuscado
     import json
     assert json.loads(m.details)["detected"] is True   # counter > spy → detectado
+
+
+async def test_espionage_techs_apply_as_multiplier(session):
+    """Las techs espionage/counter_espionage entran por el mismo effects.multiplier que usa
+    process_spy_missions (espionage sube spy_power; counter_espionage sube counter)."""
+    from app.services.effects import multiplier
+    p = await _player(session, "techer")
+    assert await multiplier(session, p.id, "espionage") == 1.0
+    assert await multiplier(session, p.id, "counter_espionage") == 1.0
+    session.add(PlayerTech(player_id=p.id, tech_key="espionage"))
+    session.add(PlayerTech(player_id=p.id, tech_key="counter_espionage"))
+    await session.commit()
+    assert round(await multiplier(session, p.id, "espionage"), 2) == 1.40
+    assert round(await multiplier(session, p.id, "counter_espionage"), 2) == 1.40
+
+
+async def test_shared_vision_pools_ally_intel(session):
+    """Una alianza con shared_vision comparte la red de espionaje: B ve la intel que consiguió A
+    (marcada shared), y A la ve como propia."""
+    a = await _player(session, "ally_a")
+    b = await _player(session, "ally_b")
+    rival = await _player(session, "rival")
+    al = await create_alliance(session, a, "Defensores", "DEF", "defensive")  # tiene shared_vision
+    await join_alliance(session, b, al.id)
+    await session.commit()
+
+    await _give(session, a, "spy", 5)
+    base = await _base_id(session, rival)
+    m = await start_spy(session, a, base, {"spy": 5})
+    m.arrives_at = datetime.now(UTC) - timedelta(seconds=1)
+    await session.commit()
+    await process_spy_missions(session, datetime.now(UTC), observer_id=a.id)
+
+    b_intel = [i for i in await player_intel(session, b) if i["target_id"] == rival.id]
+    assert b_intel and b_intel[0]["shared"] is True and b_intel[0]["via"] == "ally_a"
+    a_intel = [i for i in await player_intel(session, a) if i["target_id"] == rival.id]
+    assert a_intel and a_intel[0]["shared"] is False
+
+
+async def test_no_shared_vision_keeps_intel_private(session):
+    """Sin shared_vision (nonaggression), B NO ve la intel de A."""
+    a = await _player(session, "solo_a")
+    b = await _player(session, "solo_b")
+    rival = await _player(session, "rival2")
+    al = await create_alliance(session, a, "Sueltos", "SUE", "nonaggression")  # sin shared_vision
+    await join_alliance(session, b, al.id)
+    await session.commit()
+
+    await _give(session, a, "spy", 5)
+    base = await _base_id(session, rival)
+    m = await start_spy(session, a, base, {"spy": 5})
+    m.arrives_at = datetime.now(UTC) - timedelta(seconds=1)
+    await session.commit()
+    await process_spy_missions(session, datetime.now(UTC), observer_id=a.id)
+
+    assert not [i for i in await player_intel(session, b) if i["target_id"] == rival.id]

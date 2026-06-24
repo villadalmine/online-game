@@ -7,6 +7,29 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 35: tecnologías, visión de alianza e intel en el asistente
+- **Tecnologías** `espionage` (+40% poder de espías) y `counter_espionage` (+40% defensa de
+  espionaje), data-driven en `content/technologies.yaml`; entran por el mismo `effects.multiplier`
+  que ya usa `process_spy_missions` (espionage sube tu depth/baja detección; counter_espionage
+  ofusca tu info y detecta intrusos). Aparecen solas en el panel 🔬 Investigación.
+- **Visión de alianza (`shared_vision`) = red de espionaje compartida:** `GET /intel` fusiona tu
+  intel con la de tus aliados (gana la mejor confianza por objetivo; la propia siempre pisa).
+  Marcada `shared`/`via` en API y en la web (chip 🤝). Sin `shared_vision` la intel queda privada.
+- **Asistente IA usa tu intel (grounded):** el contexto del LLM incluye un resumen de tu intel
+  (depth/confianza/antigüedad/datos); el prompt le exige no inventar datos del rival y recomendar
+  re-espiar si la intel es vieja/poco confiable.
+- Tests: servicio (techs como multiplicador, pooling con/sin shared_vision) + e2e
+  (`test_shared_vision_shares_intel_e2e`). **235 verdes.**
+
+### 2026-06-24 — SDD 35 v1: UI web de intel (click → ver + espiar)
+- En el modal de planeta, cada colonia enemiga muestra ahora la **intel guardada** (profundidad,
+  confianza con color por antigüedad, "hace Xh", aviso ⚠ desactualizada) con los campos **graduados**
+  que devuelve el server (score, ataque/defensa, minerales, torretas, edificios, unidades — en rangos o
+  exacto según depth) + botones **🕵 espiar** y **⚔ atacar**. "🕵 espiar" pide cuántos espías y llama
+  `POST /api/v1/spy`; la intel se recarga (`GET /api/v1/intel`) en cada refresh. Bilingüe ES/EN.
+  Sin objetivo espiado → "sin intel — espialo para ver qué tiene" (solo info pública). Front-only
+  sobre el backend ya testeado (e2e `test_spy_and_intel_e2e`).
+
 ## [1.15.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 35 v1: espionaje e inteligencia (backend)

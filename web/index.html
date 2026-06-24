@@ -279,7 +279,7 @@
 const API="";
 let token=localStorage.getItem("token")||"";
 let lang=localStorage.getItem("lang")||"es";
-let catalog=null, es=null, state=null, players=[], alliances=[];
+let catalog=null, es=null, state=null, players=[], alliances=[], intel={};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -443,6 +443,9 @@ const I18N={
       advdefault:"Preguntá y te aconsejo según el grafo del juego.",noseason:"Sin temporada activa.",closesin:"cierra en",closing:"cerrando…",newbie:"🛡 Protección de novato",newbieend:"termina en {x}; atacar a un jugador la cancela",
       colplayer:"jugador",colrace:"raza",colscore:"score",nounits:"sin unidades",nobases:"sin colonias",noqueue:"nada en cola",noflights:"sin flotas en vuelo",nomsgs:"sin mensajes — escribí el primero",noworld:"todavía no pasó nada en la galaxia",noally:"no hay alianzas aún",nocols:"sin colonias todavía",nomoons:"sin lunas",ranklist:"ranking de temporada",
       live:"● en vivo",reconnect:"○ reconectando…",ready:"✓ lista",active:"✓ activo",research:"investigar",leave:"salir",create:"crear",join:"unirse",npcnojoin:"🤖 NPC (no unible)",benefits:"Beneficios:",members:"Miembros",notrade:"Este tipo no permite comercio.",trade:"Comercio",tradeto:"a",tradesend:"enviar",allyform:"Creá una alianza: elegí un tipo (define qué beneficios da) o unite a una de abajo.",existing:"Alianzas existentes",noagg:"Solo no-agresión (no se atacan entre sí).",allyattack:"⚠ aliados bajo ataque:",abundance:"Abundancia mineral",abundancesub:"(multiplicador de minas)",moons:"Lunas",colonies:"Colonias",attackbtn:"⚔ atacar",youtag:" (vos)",here:" · estás acá",guideminerals:"Minerales (in-game ↔ real):",guidebuildings:"Edificios (in-game ↔ real):",guideunits:"Unidades (in-game ↔ real):",guidereal:"real",incoming:"⚠ ataque entrante → base",recall:"↩ recall",returns:"vuelve",
+      spyBtn:"🕵 espiar",nointel:"sin intel — espialo para ver qué tiene",spyPrompt:"¿Cuántos espías mandás a",spySent:"🕵 Espías despachados, llegan",
+      iScore:"score",iAtk:"⚔ ataque",iDef:"🛡 defensa",iMin:"⛏ minerales",iTurrets:"🔫 torretas",iBuildings:"🏗 edificios",iUnits:"👥 unidades",
+      iDepth:"profundidad",iConf:"confianza",iAsOf:"hace",iStale:"⚠ desactualizada — re-espiá",iShared:"🤝 aliado",
       bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
   en:{ panels:{acciones:"Actions",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
     ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",
@@ -453,6 +456,9 @@ const I18N={
       advdefault:"Ask and I'll advise you based on the game's dependency graph.",noseason:"No active season.",closesin:"closes in",closing:"closing…",newbie:"🛡 Newbie protection",newbieend:"ends in {x}; attacking a player cancels it",
       colplayer:"player",colrace:"race",colscore:"score",nounits:"no units",nobases:"no colonies",noqueue:"nothing queued",noflights:"no fleets in flight",nomsgs:"no messages — write the first",noworld:"nothing has happened in the galaxy yet",noally:"no alliances yet",nocols:"no colonies yet",nomoons:"no moons",ranklist:"season ranking",
       live:"● live",reconnect:"○ reconnecting…",ready:"✓ done",active:"✓ active",research:"research",leave:"leave",create:"create",join:"join",npcnojoin:"🤖 NPC (can't join)",benefits:"Benefits:",members:"Members",notrade:"This type doesn't allow trade.",trade:"Trade",tradeto:"to",tradesend:"send",allyform:"Create an alliance: pick a type (defines its benefits) or join one below.",existing:"Existing alliances",noagg:"Non-aggression only (members don't attack each other).",allyattack:"⚠ allies under attack:",abundance:"Mineral abundance",abundancesub:"(mine multiplier)",moons:"Moons",colonies:"Colonies",attackbtn:"⚔ attack",youtag:" (you)",here:" · you're here",guideminerals:"Minerals (in-game ↔ real):",guidebuildings:"Buildings (in-game ↔ real):",guideunits:"Units (in-game ↔ real):",guidereal:"real",incoming:"⚠ incoming attack → base",recall:"↩ recall",returns:"returns",
+      spyBtn:"🕵 spy",nointel:"no intel — spy them to see what they have",spyPrompt:"How many spies do you send to",spySent:"🕵 Spies dispatched, arriving",
+      iScore:"score",iAtk:"⚔ attack",iDef:"🛡 defense",iMin:"⛏ minerals",iTurrets:"🔫 turrets",iBuildings:"🏗 buildings",iUnits:"👥 units",
+      iDepth:"depth",iConf:"confidence",iAsOf:"as of",iStale:"⚠ stale — re-spy",iShared:"🤝 ally",
       bMines:"Shared bonus: +production/attack/defense for all members",bUnit:"Unit tech: each race shares its edge with the whole alliance",bDef:"Mutual defense: your allies help defend your base",bVis:"Shared vision: you see attacks your allies receive",bTrade:"Trade: transfer minerals between allies"} },
 };
 function tr(k){ const d=I18N[lang]||I18N.es; return (d.s&&d.s[k])||(I18N.es.s[k])||k; }
@@ -522,6 +528,7 @@ function cd(iso){ if(!iso)return "—"; const ms=new Date(iso)-Date.now(); if(ms
 // render
 async function refresh(){
   try{ state=await api("/api/v1/players/me"); players=await api("/api/v1/players"); alliances=await api("/api/v1/alliances"); }catch{ return; }
+  loadIntel();
   $("who").textContent=state.username+(state.race_key?" · "+state.race_key:"")+(state.galaxy_instance?" · "+state.galaxy_instance.name:"");
   $("energy").textContent="⚡ "+state.energy+"/"+state.energy_max;
   $("unread").textContent="🔔 "+state.unread_notifications;
@@ -691,6 +698,38 @@ async function sendAllyMsg(){
 }
 function mineralName(key){ const m=(catalog&&catalog.minerals||[]).find(x=>x.key===key); return m?m.name:key; }
 function moonName(key){ return (spec.moon[key]||{}).name||key; }
+// ── Espionaje / inteligencia (SDD 35) ─────────────────────────────────────────
+async function loadIntel(){ try{ const rs=await api("/api/v1/intel"); intel={}; rs.forEach(r=>intel[r.target_id]=r); }catch{} }
+function ageStr(iso){ if(!iso)return "—"; let s=Math.floor((Date.now()-new Date(iso))/1000); if(s<60)return s+"s";
+  const m=Math.floor(s/60); if(m<60)return m+"m"; const h=Math.floor(m/60); if(h<24)return h+"h "+(m%60)+"m"; return Math.floor(h/24)+"d "+(h%24)+"h"; }
+function confClass(c){ return c>=0.6?"ok":(c>=0.3?"warn":"bad"); }
+function fmtVal(v){ return Array.isArray(v) ? `${Math.round(v[0])}–${Math.round(v[1])}` : (typeof v==="number"?Math.round(v):esc(String(v))); }
+function intelHtml(playerId){
+  const r=intel[playerId];
+  if(!r) return `<div class="muted">${esc(tr('nointel'))}</div>`;
+  const p=r.payload||{};
+  const rows=[];
+  const add=(label,val)=>{ if(val!==undefined&&val!==null) rows.push(`<div class="ab"><span>${esc(label)}</span><span class="muted">${fmtVal(val)}</span></div>`); };
+  add(tr('iScore'),p.score);
+  add(tr('iAtk'),p.army_attack); add(tr('iDef'),p.army_defense);
+  add(tr('iMin'),p.minerals_total); add(tr('iTurrets'),p.turrets);
+  if(Array.isArray(p.buildings)&&p.buildings.length) rows.push(`<div class="ab"><span>${esc(tr('iBuildings'))}</span><span class="muted">${p.buildings.map(b=>esc(b)).join(", ")}</span></div>`);
+  if(p.units&&Object.keys(p.units).length) rows.push(`<div class="ab"><span>${esc(tr('iUnits'))}</span><span class="muted">${Object.entries(p.units).map(([k,v])=>`${esc(k)}:${fmtVal(v)}`).join(", ")}</span></div>`);
+  const stale=r.confidence<0.3?` <span class="bad">${esc(tr('iStale'))}</span>`:"";
+  const shared=r.shared?` <span class="pill" style="font-size:10px">${esc(tr('iShared'))}${r.via?" "+esc(r.via):""}</span>`:"";
+  return `<div class="muted" style="margin:4px 0">🕵 ${esc(tr('iDepth'))} <b>${Math.round(r.depth*100)}%</b>${shared} · `+
+    `${esc(tr('iConf'))} <b class="${confClass(r.confidence)}">${Math.round(r.confidence*100)}%</b> · `+
+    `${esc(tr('iAsOf'))} ${ageStr(r.as_of)}${stale}</div>${rows.join("")}`;
+}
+async function spy(targetBaseId, username){
+  const def=localStorage.getItem("lastspies")||"5";
+  const n=prompt(tr('spyPrompt')+(username?` "${username}"`:"")+":", def);
+  if(n===null) return; const q=Math.max(1,parseInt(n,10)||0); if(!q) return;
+  localStorage.setItem("lastspies",String(q));
+  try{ const d=await api("/api/v1/spy","POST",{target_base_id:targetBaseId,spies:{spy:q}});
+    msg(tr('spySent')+" "+new Date(d.arrives_at).toLocaleTimeString()); refresh();
+  }catch(e){ msg(e.message,false); }
+}
 function openPlanet(key){
   const p=(catalog.planets||[]).find(x=>x.key===key); if(!p) return;
   const colonies=(players||[]).filter(pl=>pl.planet_key===key);
@@ -701,8 +740,11 @@ function openPlanet(key){
   }).join("");
   const moons=(p.moons||[]).map(m=>`<span class="chip">🌙 ${esc(moonName(m))}</span>`).join(" ")||`<span class="muted">${esc(tr('nomoons'))}</span>`;
   const cols=colonies.map(c=>{ const me=c.id===state.id; const icon=me?'⭐':(c.is_npc?'🤖':'👤');
-    const clk=(!me&&c.home_base_id)?`<button class="sm" onclick="closePlanet();prefill(${c.home_base_id})">${esc(tr('attackbtn'))}</button>`:'';
-    return `<div class="item"><div class="top"><span>${icon} ${esc(c.username)}${c.home_base_id?` <span class="muted">#${c.home_base_id}</span>`:''}</span>${clk}</div></div>`;
+    const enemy=!me&&c.home_base_id;
+    const acts=enemy?`<button class="sm sec" onclick="spy(${c.home_base_id},'${esc(c.username)}')">${esc(tr('spyBtn'))}</button>`+
+      ` <button class="sm" onclick="closePlanet();prefill(${c.home_base_id})">${esc(tr('attackbtn'))}</button>`:'';
+    return `<div class="item"><div class="top"><span>${icon} ${esc(c.username)}${c.home_base_id?` <span class="muted">#${c.home_base_id}</span>`:''}</span>${acts}</div>`+
+      (enemy?`<div style="margin-top:6px">${intelHtml(c.id)}</div>`:'')+`</div>`;
   }).join("")||`<span class="muted">${esc(tr('nocols'))}</span>`;
   $("pbody").innerHTML=`<div class="head" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">`+
     `<div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><h2 style="margin:0;font-size:16px">${esc(p.name)}</h2></div>`+

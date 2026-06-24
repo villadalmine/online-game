@@ -113,6 +113,8 @@ class IntelReportOut(BaseModel):
     confidence: float
     as_of: datetime
     payload: dict
+    shared: bool = False      # intel aportada por un aliado (shared_vision), no espiada por vos
+    via: str | None = None    # aliado que la consiguió (si shared)
 
 
 class AttackRequest(BaseModel):

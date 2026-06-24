@@ -225,19 +225,41 @@ async def process_spy_missions(
 
 
 async def player_intel(session: AsyncSession, observer: Player) -> list[dict]:
-    res = await session.execute(
-        select(IntelReport).where(IntelReport.observer_id == observer.id)
-    )
+    """Intel del jugador, fusionada con la de sus aliados si la alianza tiene `shared_vision`
+    (red de espionaje compartida): por cada objetivo gana la mejor confianza; la propia siempre
+    pisa a la del aliado para que espiar vos mismo siempre valga la pena."""
+    # Local import: alliances no importa espionage, pero espionage<->alliances cerrarían ciclo.
+    from app.services.alliances import has_benefit, members
+
     now = datetime.now(UTC)
-    out = []
+    observer_ids = {observer.id}
+    if observer.alliance_id and await has_benefit(session, observer.id, "shared_vision"):
+        observer_ids = {m.id for m in await members(session, observer.alliance_id)}
+
+    res = await session.execute(
+        select(IntelReport).where(IntelReport.observer_id.in_(observer_ids))
+    )
+    best: dict[int, dict] = {}
     for r in res.scalars():
+        if r.target_id in observer_ids:
+            continue  # no muestres intel sobre vos mismo ni sobre tus aliados
+        conf = intel_confidence(r, now)
+        prev = best.get(r.target_id)
+        mine = r.observer_id == observer.id
+        # gana: la propia, o (si ninguna es propia) la de mayor confianza
+        if prev and (prev["_mine"] or (not mine and prev["confidence"] >= conf)):
+            continue
         target = await session.get(Player, r.target_id)
-        out.append({
+        ally = None if mine else await session.get(Player, r.observer_id)
+        best[r.target_id] = {
             "target_id": r.target_id,
             "target": target.username if target else None,
             "depth": round(r.depth, 3),
-            "confidence": intel_confidence(r, now),
+            "confidence": conf,
             "as_of": r.as_of,
             "payload": json.loads(r.payload),
-        })
-    return out
+            "shared": not mine,
+            "via": ally.username if ally else None,
+            "_mine": mine,
+        }
+    return [{k: v for k, v in d.items() if k != "_mine"} for d in best.values()]

@@ -343,6 +343,49 @@ async def test_spy_and_intel_e2e(client):
     assert bad.status_code == 400
 
 
+async def test_shared_vision_shares_intel_e2e(client):
+    # SDD 35: una alianza con shared_vision comparte la intel — B ve lo que espió A.
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import SpyMission, UnitStock
+
+    ha = await _register(client.http, "vis_a")
+    await _onboard(client.http, ha)
+    hb = await _register(client.http, "vis_b")
+    await _onboard(client.http, hb)
+    hr = await _register(client.http, "vis_rival")
+    sr = await _onboard(client.http, hr)
+    rival_base = sr["bases"][0]["id"]
+
+    # alianza con shared_vision (defensive): A crea, B se une
+    al = (await client.http.post(
+        "/api/v1/alliances", headers=ha,
+        json={"name": "Vigias", "tag": "VIG", "type": "defensive"},
+    )).json()
+    j = await client.http.post(f"/api/v1/alliances/{al['id']}/join", headers=hb)
+    assert j.status_code in (200, 201), j.text
+
+    async with client.session_maker() as s:
+        a = (await s.execute(select(Player).where(Player.username == "vis_a"))).scalar_one()
+        s.add(UnitStock(player_id=a.id, unit_key="spy", quantity=4))
+        await s.commit()
+
+    r = await client.http.post(
+        "/api/v1/spy", headers=ha, json={"target_base_id": rival_base, "spies": {"spy": 4}}
+    )
+    assert r.status_code == 201, r.text
+    async with client.session_maker() as s:
+        m = (await s.execute(select(SpyMission))).scalars().first()
+        m.arrives_at = datetime.now(UTC) - timedelta(seconds=1)
+        await s.commit()
+    await client.http.get("/api/v1/players/me", headers=ha)
+
+    # B ve la intel compartida (shared=True, via vis_a) sin haber espiado
+    intel = (await client.http.get("/api/v1/intel", headers=hb)).json()
+    shared = [i for i in intel if i["target"] == "vis_rival"]
+    assert shared and shared[0]["shared"] is True and shared[0]["via"] == "vis_a"
+
+
 async def test_catalog_graph(client):
     r = await client.http.get("/api/v1/catalog/graph?race=martian&planet=mars")
     assert r.status_code == 200

@@ -212,7 +212,10 @@ async def ask(session: AsyncSession, player: Player, message: str) -> AdvisorRep
         targets = [t for t in _all_targets() if t not in snap.active_buildings][:6]
     reports = [depgraph.analyze(snap, t) for t in targets]
 
-    reply_text = await _llm_or_fallback(session, player, message, snap, hits, reports)
+    from app.services.espionage import player_intel  # local: evita ciclo de imports
+    intel = await player_intel(session, player)
+
+    reply_text = await _llm_or_fallback(session, player, message, snap, hits, reports, intel)
     suggestions = _suggestions(reports, snap, message)
     left = hacks_left(player)
     hackable = ("mineral", "not_producible", "energy")
@@ -234,8 +237,25 @@ async def ask(session: AsyncSession, player: Player, message: str) -> AdvisorRep
     )
 
 
-async def _llm_or_fallback(session, player, message, snap, hits, reports) -> str:
-    """Prose from the LLM grounded on retrieved docs + blockers; deterministic fallback."""
+def _intel_for_context(intel: list[dict], now: datetime) -> list[dict]:
+    """Resumen compacto de la intel del jugador para el LLM (top por confianza)."""
+    out = []
+    for r in sorted(intel, key=lambda x: x["confidence"], reverse=True)[:5]:
+        as_of = r["as_of"]
+        as_of = as_of if getattr(as_of, "tzinfo", None) else as_of.replace(tzinfo=UTC)
+        out.append({
+            "target": r["target"],
+            "depth": r["depth"],
+            "confidence": r["confidence"],
+            "age_hours": round((now - as_of).total_seconds() / 3600, 1),
+            "shared": r.get("shared", False),
+            "data": r["payload"],
+        })
+    return out
+
+
+async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=None) -> str:
+    """Prose from the LLM grounded on retrieved docs + blockers + spy intel; det. fallback."""
     try:
         history = await list_messages(session, player, HISTORY_LEN)
         context = {
@@ -245,13 +265,19 @@ async def _llm_or_fallback(session, player, message, snap, hits, reports) -> str
             "active_buildings": sorted(snap.active_buildings),
             "knowledge": [{"id": d["id"], "text": d["text"]} for d in hits],
             "blockers": [r.model_dump() for r in reports if not r.buildable],
+            "intel": _intel_for_context(intel or [], datetime.now(UTC)),
         }
         system = (
             "Sos el asistente personal de un jugador en un juego de estrategia espacial por "
             "turnos. Tu conocimiento del juego es SOLO el grafo que te paso en 'knowledge' y los "
             "'blockers' (qué le falta y cuánto). Respondé en español, breve y concreto: explicá "
             "qué le falta y cómo conseguirlo (mina local, expedición, saqueo, comercio). No "
-            "inventes recursos ni reglas que no estén en el contexto."
+            "inventes recursos ni reglas que no estén en el contexto. "
+            "'intel' es lo que tus espías saben de rivales (depth=profundidad, "
+            "confidence=confianza, age_hours=antigüedad): para aconsejar ataques usá SOLO esos "
+            "datos; NO inventes "
+            "unidades/defensas del rival que no estén ahí. Si la confianza es baja o la intel es "
+            "vieja, recomendá espiar de nuevo antes de atacar."
         )
         msgs = [{"role": "system", "content": system}]
         for m in history:
