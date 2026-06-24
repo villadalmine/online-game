@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 30 diseñado: mantenimiento/resiliencia (apagar el fierro GPU)
+- Doc `docs/sdd-maintenance-resilience.md`: impacto de apagar `srv-t7910` (GPU/amd64). La **IA cae
+  sola a OpenRouter free** (LiteLLM fallback + fallback del juego, ya implementado). **Punto crítico:**
+  `galaxy-postgres-0` está en `local-path` sobre ese nodo → no reagenda → juego caído. **Fix:** mover
+  Postgres a **Longhorn** (replicado) → reagenda y sobrevive. Runbook cordon/drain + backup; tabla
+  "qué sobrevive". Solo especificación.
+
 ## [1.14.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 29 v1: inteligencia estratégica de NPCs (cerebro de 2 capas)
