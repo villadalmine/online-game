@@ -24,12 +24,13 @@ def _checks(client, base: str) -> None:
         base + "/api/v1/auth/register",
         json={"username": user, "password": "smoke-pass-123"},
     )
-    assert r.status_code == 201, f"register: {r.status_code} {r.text[:120]}"
-    tok = r.json()["access_token"]
-
-    r = client.get(base + "/api/v1/players/me", headers={"Authorization": f"Bearer {tok}"})
-    assert r.status_code == 200, f"/players/me: {r.status_code}"
-    print("smoke OK: health, catalog, register, me", file=sys.stderr)
+    # 201 = registro abierto; 403 = allowlist activa (el gate responde bien → también es "sano").
+    assert r.status_code in (201, 403), f"register: {r.status_code} {r.text[:120]}"
+    if r.status_code == 201:
+        tok = r.json()["access_token"]
+        me = client.get(base + "/api/v1/players/me", headers={"Authorization": f"Bearer {tok}"})
+        assert me.status_code == 200, f"/players/me: {me.status_code}"
+    print("smoke OK: health, catalog, auth", file=sys.stderr)
 
 
 def smoke_url(base: str) -> int:

@@ -13,6 +13,10 @@ metadata:
 spec:
   restartPolicy: Never
 {{ include "online-game.imagePullSecrets" . | indent 2 }}
+  {{- with .Values.nodeSelector }}
+  nodeSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   containers:
     - name: smoke
       image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
