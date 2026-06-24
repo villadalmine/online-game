@@ -386,6 +386,57 @@ async def test_shared_vision_shares_intel_e2e(client):
     assert shared and shared[0]["shared"] is True and shared[0]["via"] == "vis_a"
 
 
+async def test_combat_simulate_and_plan_e2e(client):
+    # SDD 34: /combat/simulate (determinista) y /combat/plan (estima defensa desde tu intel).
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import SpyMission, UnitStock
+
+    ha = await _register(client.http, "calc_a")
+    await _onboard(client.http, ha)
+    ht = await _register(client.http, "calc_t")
+    st = await _onboard(client.http, ht)
+    tbase = st["bases"][0]["id"]
+
+    # simulate: 10 tanks (300) vs 5 ships (150) + 80 flat → gana el atacante
+    sim = await client.http.post(
+        "/api/v1/combat/simulate", headers=ha,
+        json={"attacker_force": {"tank": 10}, "defender_force": {"ship": 5},
+              "defender_flat_defense": 80},
+    )
+    assert sim.status_code == 200, sim.text
+    assert sim.json()["outcome"] == "attacker"
+
+    # plan sin intel → 400 (espiá primero)
+    blind = await client.http.post(
+        "/api/v1/combat/plan", headers=ha, json={"target_base_id": tbase}
+    )
+    assert blind.status_code == 400
+
+    # darle espías + defensa al objetivo, espiar, resolver y planear
+    async with client.session_maker() as s:
+        a = (await s.execute(select(Player).where(Player.username == "calc_a"))).scalar_one()
+        t = (await s.execute(select(Player).where(Player.username == "calc_t"))).scalar_one()
+        s.add(UnitStock(player_id=a.id, unit_key="spy", quantity=8))
+        s.add(UnitStock(player_id=t.id, unit_key="ship", quantity=4))
+        await s.commit()
+    await client.http.post(
+        "/api/v1/spy", headers=ha, json={"target_base_id": tbase, "spies": {"spy": 8}}
+    )
+    async with client.session_maker() as s:
+        m = (await s.execute(select(SpyMission))).scalars().first()
+        m.arrives_at = datetime.now(UTC) - timedelta(seconds=1)
+        await s.commit()
+    await client.http.get("/api/v1/players/me", headers=ha)
+
+    plan = await client.http.post(
+        "/api/v1/combat/plan", headers=ha, json={"target_base_id": tbase, "margin": 2}
+    )
+    assert plan.status_code == 200, plan.text
+    body = plan.json()
+    assert body["estimated_defense"] > 0 and body["options"]
+
+
 async def test_catalog_graph(client):
     r = await client.http.get("/api/v1/catalog/graph?race=martian&planet=mars")
     assert r.status_code == 200

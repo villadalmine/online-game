@@ -446,6 +446,7 @@ const I18N={
       spyBtn:"🕵 espiar",nointel:"sin intel — espialo para ver qué tiene",spyPrompt:"¿Cuántos espías mandás a",spySent:"🕵 Espías despachados, llegan",
       iScore:"score",iAtk:"⚔ ataque",iDef:"🛡 defensa",iMin:"⛏ minerales",iTurrets:"🔫 torretas",iBuildings:"🏗 edificios",iUnits:"👥 unidades",
       iDepth:"profundidad",iConf:"confianza",iAsOf:"hace",iStale:"⚠ desactualizada — re-espiá",iShared:"🤝 aliado",
+      planBtn:"📊 planear",planLoading:"calculando…",planLoss:"pierde",planDef:"defensa est.",planMargin:"margen",planNeed:"poder de ataque",
       bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
   en:{ panels:{acciones:"Actions",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
     ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",
@@ -459,6 +460,7 @@ const I18N={
       spyBtn:"🕵 spy",nointel:"no intel — spy them to see what they have",spyPrompt:"How many spies do you send to",spySent:"🕵 Spies dispatched, arriving",
       iScore:"score",iAtk:"⚔ attack",iDef:"🛡 defense",iMin:"⛏ minerals",iTurrets:"🔫 turrets",iBuildings:"🏗 buildings",iUnits:"👥 units",
       iDepth:"depth",iConf:"confidence",iAsOf:"as of",iStale:"⚠ stale — re-spy",iShared:"🤝 ally",
+      planBtn:"📊 plan",planLoading:"calculating…",planLoss:"loses",planDef:"est. defense",planMargin:"margin",planNeed:"attack power",
       bMines:"Shared bonus: +production/attack/defense for all members",bUnit:"Unit tech: each race shares its edge with the whole alliance",bDef:"Mutual defense: your allies help defend your base",bVis:"Shared vision: you see attacks your allies receive",bTrade:"Trade: transfer minerals between allies"} },
 };
 function tr(k){ const d=I18N[lang]||I18N.es; return (d.s&&d.s[k])||(I18N.es.s[k])||k; }
@@ -721,6 +723,16 @@ function intelHtml(playerId){
     `${esc(tr('iConf'))} <b class="${confClass(r.confidence)}">${Math.round(r.confidence*100)}%</b> · `+
     `${esc(tr('iAsOf'))} ${ageStr(r.as_of)}${stale}</div>${rows.join("")}`;
 }
+async function planAttack(baseId){
+  const el=$("plan_"+baseId); if(!el) return; el.textContent=tr('planLoading');
+  try{ const p=await api("/api/v1/combat/plan","POST",{target_base_id:baseId,margin:2});
+    const opts=p.options.filter(o=>o.qty>0).slice(0,4).map(o=>
+      `<div class="ab"><span>${esc(o.unit)}</span><span class="muted">×${o.qty} · ${esc(tr('planLoss'))} ~${o.est_attacker_loss_pct}%${o.wins?'':' <span class="bad">✗</span>'}</span></div>`
+    ).join("")||`<span class="muted">—</span>`;
+    el.innerHTML=`<div class="muted" style="margin-top:4px">📊 ${esc(tr('planDef'))} ~${Math.round(p.estimated_defense)} · `+
+      `${esc(tr('planMargin'))} ${p.margin}× · ${esc(tr('planNeed'))} <b>${Math.round(p.attack_power_needed)}</b></div>${opts}`;
+  }catch(e){ el.innerHTML=`<span class="bad">${esc(e.message)}</span>`; }
+}
 async function spy(targetBaseId, username){
   const def=localStorage.getItem("lastspies")||"5";
   const n=prompt(tr('spyPrompt')+(username?` "${username}"`:"")+":", def);
@@ -741,10 +753,11 @@ function openPlanet(key){
   const moons=(p.moons||[]).map(m=>`<span class="chip">🌙 ${esc(moonName(m))}</span>`).join(" ")||`<span class="muted">${esc(tr('nomoons'))}</span>`;
   const cols=colonies.map(c=>{ const me=c.id===state.id; const icon=me?'⭐':(c.is_npc?'🤖':'👤');
     const enemy=!me&&c.home_base_id;
+    const plan=(enemy&&intel[c.id])?` <button class="sm sec" onclick="planAttack(${c.home_base_id})">${esc(tr('planBtn'))}</button>`:'';
     const acts=enemy?`<button class="sm sec" onclick="spy(${c.home_base_id},'${esc(c.username)}')">${esc(tr('spyBtn'))}</button>`+
-      ` <button class="sm" onclick="closePlanet();prefill(${c.home_base_id})">${esc(tr('attackbtn'))}</button>`:'';
+      plan+` <button class="sm" onclick="closePlanet();prefill(${c.home_base_id})">${esc(tr('attackbtn'))}</button>`:'';
     return `<div class="item"><div class="top"><span>${icon} ${esc(c.username)}${c.home_base_id?` <span class="muted">#${c.home_base_id}</span>`:''}</span>${acts}</div>`+
-      (enemy?`<div style="margin-top:6px">${intelHtml(c.id)}</div>`:'')+`</div>`;
+      (enemy?`<div style="margin-top:6px">${intelHtml(c.id)}</div><div id="plan_${c.home_base_id}" class="muted"></div>`:'')+`</div>`;
   }).join("")||`<span class="muted">${esc(tr('nocols'))}</span>`;
   $("pbody").innerHTML=`<div class="head" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">`+
     `<div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><h2 style="margin:0;font-size:16px">${esc(p.name)}</h2></div>`+

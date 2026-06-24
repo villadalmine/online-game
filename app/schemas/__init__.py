@@ -139,6 +139,50 @@ class IncomingAttackOut(BaseModel):
     arrives_at: datetime
 
 
+class CombatSimRequest(BaseModel):
+    attacker_force: dict[str, int]
+    defender_force: dict[str, int] = {}
+    attacker_atk_mult: float = 1.0
+    defender_def_mult: float = 1.0
+    defender_flat_defense: float = 0.0
+
+
+class CombatSimOut(BaseModel):
+    outcome: str
+    attack_score: float
+    defense_score: float
+    attacker_losses: dict[str, int] = {}
+    defender_losses: dict[str, int] = {}
+
+
+class CombatPlanRequest(BaseModel):
+    target_base_id: int
+    margin: float = 2.0
+
+
+class CombatPlanOption(BaseModel):
+    unit: str
+    qty: int
+    attack_score: float
+    est_attacker_loss_pct: int
+    est_defender_loss_pct: int
+    wins: bool
+
+
+class CombatPlanOut(BaseModel):
+    target: str | None
+    target_base_id: int
+    depth: float
+    confidence: float
+    as_of: datetime
+    shared: bool = False
+    estimated_defense: float
+    atk_mult: float
+    margin: float
+    attack_power_needed: float
+    options: list[CombatPlanOption]
+
+
 class CombatLogOut(BaseModel):
     id: int
     attacker_id: int

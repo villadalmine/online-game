@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 34: calculadora de combate (determinista + grounded en intel)
+- Servicio `combat_calc.py` con helpers **puros** (`loss_ratios`, `min_attack_power`,
+  `units_for_power`, `defense_needed`) sobre la **misma fórmula** que `resolve_combat`.
+- `POST /api/v1/combat/simulate` — calculadora determinista (mismo resultado que el combate real).
+- `POST /api/v1/combat/plan` — plan contra una base real **estimando su defensa desde TU intel**
+  (SDD 35): sin intel → "espiá primero"; con intel da defensa estimada, tu multiplicador de
+  ataque efectivo, poder necesario (margen 2×) y por cada unidad cuántas llevar + pérdidas
+  estimadas. No filtra el estado exacto del rival (usa la intel graduada).
+- Web: botón **📊 planear** en el panel de intel (al lado de 🕵 espiar / ⚔ atacar) que muestra
+  el plan en vivo. Bilingüe ES/EN.
+- Tests: helpers vs la matriz del SDD, `simulate`==`resolve_combat`, plan requiere intel y la
+  fuerza sugerida gana al simularla; e2e `test_combat_simulate_and_plan_e2e`. **242 verdes.**
+
 ## [1.16.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 35: tecnologías, visión de alianza e intel en el asistente

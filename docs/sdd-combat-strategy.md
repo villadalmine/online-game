@@ -103,6 +103,20 @@ combate real. Medible/atribuible por `player:<id>` (SDD 28).
 - **IA:** el asistente, dado un objetivo, devuelve un plan cuyos números **coinciden** con
   `/combat/simulate` (no inventados).
 
+## 7.bis Estado de implementación (2026-06-24) — v1
+- **Servicio `app/services/combat_calc.py`:** helpers puros `loss_ratios`, `min_attack_power`,
+  `units_for_power`, `defense_needed` (sobre la misma fórmula que `resolve_combat`) + `attack_mult`
+  (raza × tech × boons × alianza) + `plan_attack` (estima la defensa **desde el IntelReport** del
+  atacante, no del estado real — SDD 35; cota alta = conservadora).
+- **API:** `POST /combat/simulate` (determinista, == `resolve_combat`) y `POST /combat/plan`
+  (`{target_base_id, margin}` → defensa estimada, tu `atk_mult`, poder necesario y opciones por
+  unidad con pérdidas; 400 si no espiaste el objetivo).
+- **Web:** botón 📊 planear en el panel de intel (modal de planeta).
+- **Tests:** helpers vs la matriz, `simulate`==combate real, plan requiere intel + gana al simular;
+  e2e. **242 verdes.**
+- **Pendiente (follow-up):** que el asistente IA llame a `/combat/plan` y narre el resultado
+  (hoy ya tiene tu intel en contexto, SDD 35); calculadora web con sliders (`/combat/simulate`).
+
 ## 8. Riesgos / decisiones
 - **`hp` sin usar:** dejar claro en la calculadora que hoy decide el poder (attack/defense), no hp; si
   se agrega daño por rondas (backlog), la fórmula y la calculadora cambian → actualizar este SDD.

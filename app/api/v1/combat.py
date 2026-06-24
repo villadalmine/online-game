@@ -10,10 +10,54 @@ from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.redis import get_redis, rate_limited
 from app.models import CombatLog, Player
-from app.schemas import AttackMissionOut, AttackRequest, CombatLogOut
-from app.services.combat import CombatError, recall_mission, start_attack
+from app.schemas import (
+    AttackMissionOut,
+    AttackRequest,
+    CombatLogOut,
+    CombatPlanOut,
+    CombatPlanRequest,
+    CombatSimOut,
+    CombatSimRequest,
+)
+from app.services.combat import CombatError, recall_mission, resolve_combat, start_attack
+from app.services.combat_calc import PlanError, plan_attack
 
 router = APIRouter()
+
+
+@router.post("/simulate", response_model=CombatSimOut)
+async def simulate(
+    body: CombatSimRequest,
+    player: Player = Depends(get_current_player),
+):
+    """Calculadora determinista (SDD 34): mismo `resolve_combat` que el combate real."""
+    r = resolve_combat(
+        body.attacker_force,
+        body.defender_force,
+        body.attacker_atk_mult,
+        body.defender_def_mult,
+        body.defender_flat_defense,
+    )
+    return CombatSimOut(
+        outcome=r.outcome,
+        attack_score=round(r.attack_score, 2),
+        defense_score=round(r.defense_score, 2),
+        attacker_losses=r.attacker_losses,
+        defender_losses=r.defender_losses,
+    )
+
+
+@router.post("/plan", response_model=CombatPlanOut)
+async def plan(
+    body: CombatPlanRequest,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Plan contra una base real estimando su defensa **desde tu intel** (espiá primero)."""
+    try:
+        return CombatPlanOut(**await plan_attack(session, player, body.target_base_id, body.margin))
+    except PlanError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 
 
 @router.post("/attack", response_model=AttackMissionOut, status_code=status.HTTP_201_CREATED)
