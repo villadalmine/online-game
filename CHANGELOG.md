@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 33 diseñado: seguridad (pods sin root + RBAC/sandbox + defensa IA)
+- Doc `docs/sdd-security-hardening.md`: modelo de amenaza + estrategias. **Pods sin root**
+  (Dockerfile `USER` + `securityContext`: runAsNonRoot/drop caps/seccomp/readOnlyRootFs), **RBAC
+  mínimo** (`automountServiceAccountToken:false`, SA sin permisos), **NetworkPolicy** default-deny, y
+  **vCluster** como aislamiento fuerte (futuro). Análisis del miedo "hablar con la IA → exploit": la
+  IA del juego **no tiene tools** (texto + hack capeado + acciones NPC validadas + salida `textContent`
+  sin XSS) → blast-radius bajo; el poder real está en los agentes de ops (hermes/holmes), separados.
+  Solo especificación.
+
 ### 2026-06-24 — Resiliencia validada + fix nodeSelector Postgres (drill de apagado)
 - **Drill de "apagar el nodo"** (cordon srv-t7910 + borrar pod Postgres): reveló que un PVC Longhorn
   **debe** fijarse a nodos Longhorn — si no, reagenda a un nodo sin Longhorn y cuelga

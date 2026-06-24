@@ -134,6 +134,7 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
 - 🟢 **[SDD 29 — Inteligencia estratégica de NPCs](docs/sdd-npc-strategic-intelligence.md)**: **v1 hecho** — cerebro de 2 capas (estratégico periódico lee scoreboard+recursos y fija postura; táctico la ejecuta, también en reglas). Medible por NPC (SDD 28), fallback a reglas. Follow-up: reflexión post-batalla.
 - 📝 **[SDD 30 — Mantenimiento/resiliencia (apagar el fierro)](docs/sdd-maintenance-resilience.md)**: impacto de apagar el nodo GPU; IA cae sola a OpenRouter free; **Postgres en local-path = juego caído → mover a Longhorn**; runbook drain+backup. Diseñado.
 - 📝 **[SDD 31 — Postgres HA (CloudNativePG)](docs/sdd-postgres-ha-cnpg.md)**: failover real primary+réplicas + PITR; juego por externalUrl. Diseño (proyecto).
+- 📝 **[SDD 33 — Seguridad (pods sin root + RBAC/sandbox + IA)](docs/sdd-security-hardening.md)**: hardening de pods (no-root, securityContext, NetworkPolicy, SA mínima) + análisis de exploits vía la IA (sin tools → blast-radius bajo). Diseño.
 - 🟢 **[SDD 32 — Migración Postgres → Longhorn](docs/sdd-postgres-longhorn-migration.md)**: **EJECUTADO** — Postgres del juego en `longhorn` (replicado); dry-run en instancia descartable + verificación antes de tocar la base. Reagenda al apagar el fierro.
 - 🟢 **[SDD 25 — Catch-up del recién llegado](docs/sdd-newcomer-catchup.md)**: **v1 hecho** — al
   entrar con ≥3 pares en su galaxia, top-up al **P40** del stock (sin pasar la mediana) + energía
