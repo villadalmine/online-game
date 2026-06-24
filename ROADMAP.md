@@ -84,6 +84,9 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
    `/metrics` (stdlib) con RED + conectados en vivo (SSE) + signups/logins + players_total; token
    guard (no público); **ServiceMonitor** opt-in. Follow-up: counters de negocio restantes,
    histogram tick/LLM, dashboard Grafana, PrometheusRule (alertas).
+11. 📝 **[SDD 21 — Presencia + métricas por usuario/galaxia](docs/sdd-presence-dimensional-metrics.md)**:
+   quién está online (`/admin/online`, `/public/online`, gauge) + labels `galaxy` (seguro) y
+   `player` (opt-in, por cardinalidad) para filtrar en Grafana. Diseñado; falta implementar.
 10. 📝 **[SDD 20 — Usuarios](docs/sdd-users.md)**: define el modelo `Player`, sus campos, e
    identidad **nickname público / email privado** (entrás por email, te ven por nickname). Documenta
    el modelo vigente + el fix de no derivar el username del email en alta OTP. Ref.

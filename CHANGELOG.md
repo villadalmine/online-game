@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 21 diseñado: presencia (quién está online) + métricas por usuario/galaxia
+- Doc `docs/sdd-presence-dimensional-metrics.md`: presencia vía Redis (SSE + last-seen),
+  `/public/online` (conteo) y `/admin/online` (lista, admin); label **`galaxy`** (seguro) y
+  **`player`** (opt-in por cardinalidad) para filtrar en Grafana; cómo lo consulta el bot. En la cola.
+
 ### 2026-06-24 — i18n EN del cliente completo (SDD 4): toda la web traduce
 - El toggle 🌐 ahora pasa a inglés **toda la UI del cliente**: pantalla de login/registro/OTP,
   onboarding, "tu imperio", tips, botones, y todos los strings generados en JS (alianzas, colas,
