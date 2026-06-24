@@ -1,5 +1,9 @@
-# Ollama en GPU (SDD 9). Corre FUERA del chart del juego. Reserva 1 GPU entera (no se
-# fracciona entre pods). Ajustá nodeSelector/storageClass a tu cluster.
+# Ollama en GPU para online-game (SDD 9). Dedicado a esta infra (control propio de quién lo usa).
+# Corre FUERA del chart del juego. Patrón HAMI verificado (ver nebul-idp/bonus/ollama-gpu.yaml):
+#   - nvidia.com/gpu: 2  → un slice por placa física (HAMI ubica solo, SIN nodeSelector ni runtimeClass)
+#   - gpumem/gpucores son caps HARD POR device (MiB / %); OLLAMA_SCHED_SPREAD reparte el modelo en ambas
+#   - los pesos viven en un PVC → reiniciar el pod NO re-descarga
+# Todo idempotente: `kubectl apply -f` se puede repetir sin efectos colaterales.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -14,8 +18,8 @@ spec:
   accessModes: ["ReadWriteOnce"]
   resources:
     requests:
-      storage: 20Gi   # pesos de los modelos
-  # storageClassName: ""   # default del cluster
+      storage: 12Gi          # pesos de los modelos (varios modelos chicos)
+  storageClassName: local-path
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -23,35 +27,32 @@ metadata:
   name: ollama
   namespace: gpu-llm
 spec:
-  replicas: 1            # una GPU = una instancia; escalar IA = más GPUs/nodos, no más réplicas
+  replicas: 1                 # una instancia = una cola; escalar IA = más GPUs, no más réplicas
   selector:
     matchLabels: { app: ollama }
   template:
     metadata:
       labels: { app: ollama }
     spec:
-      nodeSelector:
-        gpu: nvidia-p4   # etiquetá el nodo de la P4/Quadro
       containers:
         - name: ollama
           image: ollama/ollama:latest
-          ports:
-            - containerPort: 11434
+          ports: [{ containerPort: 11434 }]
           env:
-            - name: OLLAMA_KEEP_ALIVE
-              value: "24h"          # mantené el modelo cargado (no pagar el reload)
-            - name: OLLAMA_NUM_PARALLEL
-              value: "1"            # 8 GB: 1-2; comparten VRAM/cómputo
+            - { name: OLLAMA_KEEP_ALIVE, value: "24h" }  # mantené el modelo cargado
           resources:
+            requests: { cpu: "500m", memory: 1Gi }
             limits:
-              nvidia.com/gpu: 1     # reserva la GPU entera
+              cpu: "2"
+              memory: 4Gi
+              nvidia.com/gpu: "1"        # 1 slice en 1 placa (HAMI elige M4000 o P4)
+              nvidia.com/gpumem: "4096"  # cap HARD: 4 GB (entra en cualquiera; aloja 1.5b+3b)
+              nvidia.com/gpucores: "40"  # cap HARD: 40% cómputo
           volumeMounts:
-            - name: models
-              mountPath: /root/.ollama
+            - { name: models, mountPath: /root/.ollama }
       volumes:
         - name: models
-          persistentVolumeClaim:
-            claimName: ollama-models
+          persistentVolumeClaim: { claimName: ollama-models }
 ---
 apiVersion: v1
 kind: Service
@@ -61,6 +62,32 @@ metadata:
 spec:
   selector: { app: ollama }
   ports:
-    - port: 11434
-      targetPort: 11434
-# El juego (si va directo a Ollama): llm.baseUrl=http://ollama.gpu-llm.svc:11434/v1
+    - { port: 11434, targetPort: 11434 }
+---
+# Job idempotente: baja el/los modelo(s) al PVC vía la API del server (no usa exec).
+# ollama no re-descarga si el modelo ya está. Re-aplicar el Job: borralo y volvé a crearlo.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-pull
+  namespace: gpu-llm
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: pull
+          image: curlimages/curl:latest
+          env:
+            - { name: OLLAMA, value: "http://ollama.gpu-llm.svc:11434" }
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "esperando ollama..."
+              until curl -sf "$OLLAMA/api/tags" >/dev/null 2>&1; do sleep 3; done
+              for m in qwen2.5:1.5b llama3.2:3b; do
+                echo "pull $m"
+                curl -s -X POST "$OLLAMA/api/pull" -d "{\"model\":\"$m\"}" | tail -c 200; echo
+              done
+              echo "modelos:"; curl -s "$OLLAMA/api/tags"

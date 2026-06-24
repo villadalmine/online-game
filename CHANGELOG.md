@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — /tech bilingüe ES/EN + ollama GPU dedicado (SDD 9)
+- `/tech`: ahora **bilingüe** (toggle 🌐 ES/EN con dict + persistencia, sin CDNs). vCluster marcado
+  como **(planeado)** — es futuro (igual que el bot hermes); el diagrama suma el path IA
+  (LiteLLM → GPU/Rockchip/OpenRouter).
+- `deploy/gpu-llm/ollama.yaml`: Ollama **dedicado** a online-game con el patrón HAMI correcto
+  (`nvidia.com/gpu: 1` + caps por device `gpumem`/`gpucores`, **sin nodeSelector**, PVC `local-path`,
+  Job idempotente de pull). Benchmark: **`llama3.2:3b` en GPU ~2-4s** (a la par de OpenRouter, pero
+  self-hosted) vs Rockchip NPU ~30s — el GPU vale la pena para asistente y NPCs.
+
 ## [1.10.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 13: `real`/`sources` en edificios y unidades

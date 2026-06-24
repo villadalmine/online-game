@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Online Galaxy War — Arquitectura / Tech (PoC self-hosted)</title>
-<meta name="description" content="PoC 100% self-hosted: FastAPI API-first sobre k3s (arm64), Cilium Gateway API detrás de HAProxy con SNI passthrough, builds in-cluster con Kaniko/Argo. El stack y el flujo de tráfico, explicado.">
+<meta name="description" content="PoC 100% self-hosted: FastAPI API-first sobre k3s (arm64), desplegado en su propio vCluster, Cilium Gateway API detrás de HAProxy con SNI passthrough, builds in-cluster con Kaniko/Argo. El stack y el flujo de tráfico, explicado (ES/EN).">
 <style>
   :root{
     --bg:#0a0e17; --panel:#111726; --panel2:#0d1320; --line:#1e2942;
@@ -46,180 +46,277 @@
   footer{margin-top:50px;color:var(--dim);font-size:13px;border-top:1px solid var(--line);padding-top:18px}
   .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;font:600 12px var(--mono);color:var(--dim)}
   .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  #lang{position:fixed;top:14px;right:16px;z-index:9;font:600 12px var(--mono);color:#cfe6ff;
+    background:#13203a;border:1px solid var(--line);padding:7px 12px;border-radius:999px;cursor:pointer}
+  #lang:hover{border-color:var(--accent)}
 </style>
 </head>
 <body>
+<button id="lang" onclick="toggleLang()">🌐 EN</button>
 <div class="wrap">
 
   <header>
-    <h1><span class="g">Online Galaxy War</span> — Arquitectura</h1>
-    <p class="sub">Un PoC <strong>100% self-hosted</strong> y <strong>API-first</strong>: cómo está
-      construido y cómo fluye el tráfico, de punta a punta.</p>
+    <h1><span class="g">Online Galaxy War</span> — <span data-i18n="h_arch">Arquitectura</span></h1>
+    <p class="sub" data-i18n="h_sub">Un PoC <strong>100% self-hosted</strong> y <strong>API-first</strong>: cómo está construido y cómo fluye el tráfico, de punta a punta.</p>
     <div class="badges">
-      <span class="badge ok">PoC · self-hosted</span>
-      <span class="badge ok">100% en casa · sin nube</span>
+      <span class="badge ok" data-i18n="b1">PoC · self-hosted</span>
+      <span class="badge ok" data-i18n="b2">100% en casa · sin nube</span>
       <span class="badge">API-first · FastAPI</span>
       <span class="badge">k3s · Kubernetes</span>
+      <span class="badge">vCluster</span>
       <span class="badge">arm64 · bare-metal</span>
       <span class="badge">Cilium · Gateway API</span>
-      <span class="badge">builds in-cluster</span>
     </div>
   </header>
 
-  <p>Esto <strong>no</strong> corre en ningún proveedor cloud. Todo el juego vive en un clúster
-    <span class="mono">k3s</span> casero sobre placas <strong>ARM</strong> (bare-metal), detrás de la
-    infra de red propia. La misma imagen de contenedor corre idéntica en la laptop y en el clúster;
-    la configuración entra por variables de entorno (12-factor) y el contenido del juego es
-    <em>data-as-code</em> en YAML. La premisa de diseño: <strong>toda la lógica detrás de
-    <code>/api/v1</code></strong> — web, CLI y futuros clientes son consumidores delgados.</p>
+  <p data-i18n="intro">Esto <strong>no</strong> corre en ningún proveedor cloud. Todo el juego vive en un clúster <span class="mono">k3s</span> casero sobre placas <strong>ARM</strong> (bare-metal), y se desplegará (planeado) en <strong>su propio vCluster</strong> para aislarlo y poder crear más objetos sin tocar el clúster anfitrión. La misma imagen de contenedor corre idéntica en la laptop y en el clúster; la configuración entra por variables de entorno (12-factor) y el contenido del juego es <em>data-as-code</em> en YAML. La premisa: <strong>toda la lógica detrás de <code>/api/v1</code></strong> — web, CLI y futuros clientes son consumidores delgados.</p>
 
-  <h2>Flujo de tráfico <small>internet → pod</small></h2>
-  <p>El borde es un <strong>HAProxy</strong> propio que hace <strong>SNI passthrough</strong>: no
-    termina TLS, sólo mira el <code>ServerName</code> del handshake y reenvía el byte-stream cifrado al
-    <strong>backend = la VIP del Cilium Gateway</strong> en la LAN. El TLS se termina recién en el
-    Gateway, con el certificado que emite <strong>cert-manager</strong> (Let's Encrypt, reto DNS-01).</p>
+  <h2><span data-i18n="s_flow">Flujo de tráfico</span> <small data-i18n="s_flow_sm">internet → pod</small></h2>
+  <p data-i18n="flow_p">El borde es un <strong>HAProxy</strong> propio que hace <strong>SNI passthrough</strong>: no termina TLS, sólo mira el <code>ServerName</code> del handshake y reenvía el byte-stream cifrado al <strong>backend = la VIP del Cilium Gateway</strong> en la LAN. El TLS se termina recién en el Gateway, con el certificado que emite <strong>cert-manager</strong> (Let's Encrypt, reto DNS-01). El Gateway enruta al <code>Service</code> del juego, que vive dentro de su <strong>vCluster</strong>.</p>
 
-  <svg class="flow" viewBox="0 0 920 560" role="img" aria-label="Diagrama de flujo de tráfico">
+  <svg class="flow" viewBox="0 0 920 600" role="img" aria-label="Diagrama de flujo de tráfico">
     <defs>
       <marker id="arr" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
         <path d="M0,0 L7,3 L0,6 Z" fill="#5cc8ff"/>
       </marker>
       <style>
-        .b{fill:#0e1626;stroke:#26365a;stroke-width:1.5;rx:12}
+        .b{fill:#0e1626;stroke:#26365a;stroke-width:1.5}
         .t{fill:#eaf2ff;font:600 15px system-ui}
         .s{fill:#8aa0c4;font:12px ui-monospace,Menlo,monospace}
         .e{stroke:#3a4d78;stroke-width:2;fill:none;marker-end:url(#arr)}
         .lbl{fill:#7df0c0;font:11px ui-monospace,Menlo,monospace}
-        .zone{fill:#0c1322;stroke:#1c2742;stroke-width:1;stroke-dasharray:5 5;rx:14}
+        .zone{fill:#0c1322;stroke:#1c2742;stroke-width:1;stroke-dasharray:5 5}
+        .vz{fill:#0c1726;stroke:#2b6f6a;stroke-width:1.3;stroke-dasharray:6 4}
         .ztt{fill:#5b7099;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.5px}
+        .vtt{fill:#7df0c0;font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.5px}
       </style>
     </defs>
 
-    <!-- zones -->
-    <rect class="zone" x="8" y="86" width="904" height="120"/>
-    <text class="ztt" x="22" y="104">RED PROPIA (EDGE)</text>
-    <rect class="zone" x="8" y="220" width="904" height="320"/>
-    <text class="ztt" x="22" y="238">CLÚSTER k3s · CNI Cilium</text>
+    <rect class="zone" x="8" y="86" width="904" height="120" rx="14"/>
+    <text class="ztt" id="z_edge" x="22" y="104">RED PROPIA (EDGE)</text>
+    <rect class="zone" x="8" y="220" width="904" height="360" rx="14"/>
+    <text class="ztt" id="z_host" x="22" y="238">CLÚSTER k3s (HOST) · CNI Cilium</text>
+    <!-- vcluster nested zone -->
+    <rect class="vz" x="296" y="350" width="604" height="216" rx="12"/>
+    <text class="vtt" id="z_vc" x="312" y="370">vCluster: online-game (planeado)</text>
 
-    <!-- internet -->
     <rect class="b" x="380" y="14" width="160" height="48" rx="12"/>
     <text class="t" x="460" y="38" text-anchor="middle">🌐 Internet</text>
-    <text class="s" x="460" y="54" text-anchor="middle">cliente / navegador</text>
+    <text class="s" id="n_inet" x="460" y="54" text-anchor="middle">cliente / navegador</text>
 
-    <!-- haproxy -->
     <rect class="b" x="330" y="112" width="260" height="70" rx="12"/>
     <text class="t" x="460" y="140" text-anchor="middle">HAProxy</text>
-    <text class="s" x="460" y="160" text-anchor="middle">SNI passthrough (no termina TLS)</text>
-    <text class="s" x="460" y="175" text-anchor="middle">lee ServerName → reenvía cifrado</text>
+    <text class="s" id="n_hap1" x="460" y="160" text-anchor="middle">SNI passthrough (no termina TLS)</text>
+    <text class="s" id="n_hap2" x="460" y="175" text-anchor="middle">lee ServerName → reenvía cifrado</text>
 
-    <!-- gateway -->
     <rect class="b" x="330" y="250" width="260" height="74" rx="12"/>
     <text class="t" x="460" y="278" text-anchor="middle">Cilium Gateway</text>
-    <text class="s" x="460" y="297" text-anchor="middle">Gateway API · VIP en LAN</text>
-    <text class="s" x="460" y="312" text-anchor="middle">termina TLS (cert de cert-manager)</text>
+    <text class="s" id="n_gw1" x="460" y="297" text-anchor="middle">Gateway API · VIP en LAN</text>
+    <text class="s" id="n_gw2" x="460" y="312" text-anchor="middle">termina TLS (cert de cert-manager)</text>
 
-    <!-- httproute -->
-    <rect class="b" x="330" y="356" width="260" height="60" rx="12"/>
-    <text class="t" x="460" y="382" text-anchor="middle">HTTPRoute</text>
-    <text class="s" x="460" y="400" text-anchor="middle">match por host → Service</text>
+    <rect class="b" x="330" y="384" width="260" height="56" rx="12"/>
+    <text class="t" x="460" y="408" text-anchor="middle">HTTPRoute</text>
+    <text class="s" id="n_route" x="460" y="426" text-anchor="middle">match por host → Service</text>
 
-    <!-- service -->
-    <rect class="b" x="330" y="446" width="260" height="56" rx="12"/>
-    <text class="t" x="460" y="470" text-anchor="middle">Service (ClusterIP)</text>
-    <text class="s" x="460" y="488" text-anchor="middle">galaxy-api : 80</text>
+    <rect class="b" x="330" y="470" width="260" height="56" rx="12"/>
+    <text class="t" x="460" y="494" text-anchor="middle">Service (ClusterIP)</text>
+    <text class="s" x="460" y="512" text-anchor="middle">galaxy-api : 80</text>
 
-    <!-- pods -->
-    <rect class="b" x="650" y="440" width="240" height="68" rx="12"/>
-    <text class="t" x="770" y="466" text-anchor="middle">Pod · FastAPI</text>
-    <text class="s" x="770" y="485" text-anchor="middle">uvicorn · /api/v1</text>
-    <text class="s" x="770" y="499" text-anchor="middle">HPA (escala horizontal)</text>
+    <rect class="b" x="650" y="464" width="232" height="68" rx="12"/>
+    <text class="t" x="766" y="490" text-anchor="middle">Pod · FastAPI</text>
+    <text class="s" x="766" y="509" text-anchor="middle">uvicorn · /api/v1</text>
+    <text class="s" id="n_pod" x="766" y="523" text-anchor="middle">HPA (escala horizontal)</text>
 
-    <!-- cert-manager side -->
     <rect class="b" x="40" y="250" width="200" height="74" rx="12"/>
     <text class="t" x="140" y="276" text-anchor="middle">cert-manager</text>
     <text class="s" x="140" y="295" text-anchor="middle">Let's Encrypt</text>
-    <text class="s" x="140" y="310" text-anchor="middle">reto DNS-01</text>
+    <text class="s" id="n_cm" x="140" y="310" text-anchor="middle">reto DNS-01</text>
 
-    <!-- edges -->
     <line class="e" x1="460" y1="62" x2="460" y2="110"/>
     <text class="lbl" x="470" y="98">:443 TLS (SNI)</text>
     <line class="e" x1="460" y1="182" x2="460" y2="248"/>
-    <text class="lbl" x="470" y="222">TCP cifrado → VIP del GW</text>
-    <line class="e" x1="460" y1="324" x2="460" y2="354"/>
-    <line class="e" x1="460" y1="416" x2="460" y2="444"/>
-    <line class="e" x1="590" y1="474" x2="648" y2="474"/>
-    <text class="lbl" x="600" y="466">HTTP</text>
+    <text class="lbl" id="e_vip" x="470" y="222">TCP cifrado → VIP del GW</text>
+    <line class="e" x1="460" y1="324" x2="460" y2="382"/>
+    <line class="e" x1="460" y1="440" x2="460" y2="468"/>
+    <line class="e" x1="590" y1="498" x2="648" y2="498"/>
+    <text class="lbl" x="600" y="490">HTTP</text>
     <line class="e" x1="240" y1="287" x2="328" y2="287"/>
-    <text class="lbl" x="246" y="279">emite cert</text>
+    <text class="lbl" id="e_cert" x="246" y="279">emite cert</text>
   </svg>
   <div class="legend">
-    <span><i style="background:#0e1626;border:1px solid #26365a"></i>componente</span>
-    <span><i style="background:#3a4d78"></i>flujo de datos</span>
-    <span style="color:#7df0c0">━ anotación de protocolo</span>
+    <span><i style="background:#0e1626;border:1px solid #26365a"></i><span data-i18n="lg1">componente</span></span>
+    <span><i style="background:#3a4d78"></i><span data-i18n="lg2">flujo de datos</span></span>
+    <span><i style="background:#0c1726;border:1px solid #2b6f6a"></i><span data-i18n="lg3">vCluster</span></span>
   </div>
 
-  <ol class="steps">
-    <li>El cliente abre <code>https://&lt;dominio&gt;</code>; el handshake TLS lleva el host en el SNI.</li>
-    <li><strong>HAProxy</strong> (edge propio) hace <em>passthrough</em>: no descifra, reenvía el TCP
-      cifrado a la <strong>VIP del Cilium Gateway</strong> en la LAN.</li>
-    <li>El <strong>Gateway</strong> (Gateway API sobre Cilium) <strong>termina el TLS</strong> con el
-      certificado que mantiene <strong>cert-manager</strong>.</li>
-    <li>Un <strong>HTTPRoute</strong> matchea por <em>hostname</em> y enruta al <code>Service</code>.</li>
-    <li>El <code>Service</code> (ClusterIP) balancea a los <strong>pods</strong> de
-      <code>galaxy-api</code> (FastAPI/uvicorn), escalables por HPA.</li>
-  </ol>
+  <ol class="steps" id="steps"></ol>
 
-  <h2>Stack por capa <small>qué y para qué</small></h2>
+  <h2><span data-i18n="s_stack">Stack por capa</span> <small data-i18n="s_stack_sm">qué y para qué</small></h2>
   <div class="panel">
   <table>
-    <tr><th>Capa</th><th>Tecnología</th><th>Rol</th></tr>
-    <tr><td>Edge</td><td><code>HAProxy</code></td><td>SNI passthrough hacia la VIP del Gateway (no termina TLS).</td></tr>
-    <tr><td>Ingress</td><td><code>Cilium</code> + <code>Gateway API</code></td><td>GatewayClass <code>cilium</code>; termina TLS; HTTPRoute por host.</td></tr>
-    <tr><td>TLS</td><td><code>cert-manager</code></td><td>Let's Encrypt vía reto DNS-01; renovación automática.</td></tr>
-    <tr><td>Orquestación</td><td><code>k3s</code> (Kubernetes)</td><td>Clúster bare-metal multi-nodo, mayormente <strong>arm64</strong>.</td></tr>
-    <tr><td>App</td><td><code>FastAPI</code> · <code>uvicorn</code></td><td>API-first <code>/api/v1</code>; estado <em>lazy</em> por timestamp (sin cron por usuario).</td></tr>
-    <tr><td>Datos</td><td><code>PostgreSQL 16</code> (StatefulSet+PVC)</td><td>Fuente de verdad; migraciones Alembic al arrancar.</td></tr>
-    <tr><td>Cache</td><td><code>Redis 7</code></td><td>Cache de catálogo, rate-limit y <strong>locks distribuidos</strong> por jugador.</td></tr>
-    <tr><td>Mundo</td><td><code>CronJob</code> (tick */5)</td><td>Avanza el mundo y corre los turnos de las NPC.</td></tr>
-    <tr><td>Build</td><td><code>Argo Workflows</code> + <code>Kaniko</code></td><td>Builds <strong>dentro del clúster</strong> (arm64) → registry interno; gate de tests en el Dockerfile.</td></tr>
-    <tr><td>Deploy</td><td><code>Helm</code> (<code>--atomic</code>)</td><td>initContainers <em>migrate</em>+<em>smoke</em>, <code>helm test</code>, rollback automático.</td></tr>
-    <tr><td>Observabilidad</td><td><code>Prometheus</code> · <code>Grafana</code> · <code>Alertmanager</code></td><td>ServiceMonitor + dashboards + alertas a un bot de Telegram.</td></tr>
+    <tr><th data-i18n="th_layer">Capa</th><th data-i18n="th_tech">Tecnología</th><th data-i18n="th_role">Rol</th></tr>
+    <tr><td data-i18n="l_edge">Edge</td><td><code>HAProxy</code></td><td data-i18n="r_edge">SNI passthrough hacia la VIP del Gateway (no termina TLS).</td></tr>
+    <tr><td data-i18n="l_ing">Ingress</td><td><code>Cilium</code> + <code>Gateway API</code></td><td data-i18n="r_ing">GatewayClass <code>cilium</code>; termina TLS; HTTPRoute por host.</td></tr>
+    <tr><td>TLS</td><td><code>cert-manager</code></td><td data-i18n="r_tls">Let's Encrypt vía reto DNS-01; renovación automática.</td></tr>
+    <tr><td data-i18n="l_orch">Orquestación</td><td><code>k3s</code> + <code>vCluster</code></td><td data-i18n="r_orch">Clúster bare-metal multi-nodo (arm64); el juego corre en su <strong>vCluster</strong> (planeado).</td></tr>
+    <tr><td>App</td><td><code>FastAPI</code> · <code>uvicorn</code></td><td data-i18n="r_app">API-first <code>/api/v1</code>; estado <em>lazy</em> por timestamp (sin cron por usuario).</td></tr>
+    <tr><td data-i18n="l_data">Datos</td><td><code>PostgreSQL 16</code> (StatefulSet+PVC)</td><td data-i18n="r_data">Fuente de verdad; migraciones Alembic al arrancar.</td></tr>
+    <tr><td>Cache</td><td><code>Redis 7</code></td><td data-i18n="r_cache">Cache de catálogo, rate-limit y <strong>locks distribuidos</strong> por jugador.</td></tr>
+    <tr><td data-i18n="l_world">Mundo</td><td><code>CronJob</code> (tick */5)</td><td data-i18n="r_world">Avanza el mundo y corre los turnos de las NPC.</td></tr>
+    <tr><td>IA / LLM</td><td><code>LiteLLM</code> → <code>Ollama</code> (Tesla P4) / OpenRouter</td><td data-i18n="r_llm">Proxy OpenAI-compatible: GPU local primaria + fallback hosted.</td></tr>
+    <tr><td>Build</td><td><code>Argo Workflows</code> + <code>Kaniko</code></td><td data-i18n="r_build">Builds <strong>dentro del clúster</strong> (arm64) → registry interno; gate de tests en el Dockerfile.</td></tr>
+    <tr><td>Deploy</td><td><code>Helm</code> (<code>--atomic</code>)</td><td data-i18n="r_deploy">initContainers <em>migrate</em>+<em>smoke</em>, <code>helm test</code>, rollback automático.</td></tr>
+    <tr><td data-i18n="l_obs">Observabilidad</td><td><code>Prometheus</code> · <code>Grafana</code> · <code>Alertmanager</code></td><td data-i18n="r_obs">ServiceMonitor + dashboards + alertas a un bot de Telegram.</td></tr>
   </table>
   </div>
 
-  <h2>Pipeline de build &amp; deploy <small>git → registry → clúster</small></h2>
+  <h2><span data-i18n="s_pipe">Pipeline de build &amp; deploy</span> <small data-i18n="s_pipe_sm">git → registry → vCluster</small></h2>
   <div class="grid">
-    <div class="card"><div class="k">1 · push</div><h3>Commit a main</h3><p>SemVer (<code>make release</code>): mueve el CHANGELOG, fija appVersion y el tag de imagen, taggea git.</p></div>
-    <div class="card"><div class="k">2 · build</div><h3>Kaniko / Argo</h3><p>Build <em>in-cluster</em> en un nodo arm64, sin Docker daemon. El Dockerfile multi-stage <strong>corre la suite de tests</strong>: si algo falla, no hay imagen.</p></div>
-    <div class="card"><div class="k">3 · registry</div><h3>Registry interno</h3><p>La imagen se publica en el registry del propio clúster (nada sale a internet).</p></div>
-    <div class="card"><div class="k">4 · deploy</div><h3>Helm --atomic</h3><p>initContainer <em>migrate</em> (Alembic) + <em>smoke</em>; <code>helm test</code>; si el rollout no queda sano, <strong>rollback solo</strong>.</p></div>
+    <div class="card"><div class="k">1 · push</div><h3 data-i18n="p1h">Commit a main</h3><p data-i18n="p1p">SemVer (<code>make release</code>): mueve el CHANGELOG, fija appVersion y el tag de imagen, taggea git.</p></div>
+    <div class="card"><div class="k">2 · build</div><h3 data-i18n="p2h">Kaniko / Argo</h3><p data-i18n="p2p">Build <em>in-cluster</em> en un nodo arm64, sin Docker daemon. El Dockerfile multi-stage <strong>corre la suite de tests</strong>: si algo falla, no hay imagen.</p></div>
+    <div class="card"><div class="k">3 · registry</div><h3 data-i18n="p3h">Registry interno</h3><p data-i18n="p3p">La imagen se publica en el registry del propio clúster (nada sale a internet).</p></div>
+    <div class="card"><div class="k">4 · deploy</div><h3 data-i18n="p4h">Helm → vCluster</h3><p data-i18n="p4p"><code>helm upgrade --atomic</code> dentro del vCluster del juego; initContainer <em>migrate</em>+<em>smoke</em>, <code>helm test</code> y rollback solo si algo falla.</p></div>
   </div>
-  <p class="note">Defensa en profundidad del deploy: el gate de tests vive en el <em>build</em> (no se
-    produce imagen rota), el <em>smoke</em> frena el rollout antes de exponerlo, y <code>--atomic</code>
-    revierte si algo sale mal. Los secretos van por <code>Secret</code> de k8s; en prod, el arranque
-    <strong>aborta</strong> si un secreto quedó en su valor por defecto.</p>
+  <p class="note" data-i18n="note_deploy">Defensa en profundidad del deploy: el gate de tests vive en el <em>build</em> (no se produce imagen rota), el <em>smoke</em> frena el rollout antes de exponerlo, y <code>--atomic</code> revierte si algo sale mal. Los secretos van por <code>Secret</code> de k8s; en prod, el arranque <strong>aborta</strong> si un secreto quedó en su valor por defecto.</p>
 
-  <h2>Por qué escala (siendo casero) <small>turn-based asíncrono</small></h2>
+  <h2><span data-i18n="s_scale">Por qué escala (siendo casero)</span> <small>turn-based</small></h2>
   <div class="grid">
-    <div class="card"><div class="k">stateless</div><h3>API horizontal</h3><p>Los pods no guardan estado → réplicas detrás del Service, HPA por carga.</p></div>
-    <div class="card"><div class="k">lazy state</div><h3>Sin cron por usuario</h3><p>Energía y producción se calculan desde <code>*_updated_at</code> al leer; el costo no crece con usuarios inactivos.</p></div>
-    <div class="card"><div class="k">async</div><h3>Por turnos</h3><p>Sin requisitos de baja latencia → muchísimo más barato de escalar que tiempo real.</p></div>
-    <div class="card"><div class="k">degradación</div><h3>Redis opcional</h3><p>Si Redis no está, cache/locks degradan a no-op: el juego sigue corriendo.</p></div>
+    <div class="card"><div class="k">stateless</div><h3 data-i18n="sc1h">API horizontal</h3><p data-i18n="sc1p">Los pods no guardan estado → réplicas detrás del Service, HPA por carga.</p></div>
+    <div class="card"><div class="k">lazy state</div><h3 data-i18n="sc2h">Sin cron por usuario</h3><p data-i18n="sc2p">Energía y producción se calculan desde <code>*_updated_at</code> al leer; el costo no crece con usuarios inactivos.</p></div>
+    <div class="card"><div class="k">async</div><h3 data-i18n="sc3h">Por turnos</h3><p data-i18n="sc3p">Sin requisitos de baja latencia → muchísimo más barato de escalar que tiempo real.</p></div>
+    <div class="card"><div class="k">vCluster</div><h3 data-i18n="sc4h">Aislamiento</h3><p data-i18n="sc4p">El juego corre en su propio vCluster: API propia, RBAC y CRDs sin tocar el clúster anfitrión.</p></div>
   </div>
 
-  <h2>Hardware <small>bare-metal en casa</small></h2>
-  <p>Clúster <code>k3s</code> multi-nodo sobre placas <strong>ARM</strong> de bajo consumo
-    (Raspberry Pi + Turing RK1 + Super6c) y un nodo x86 para tareas puntuales. Almacenamiento
-    persistente en disco local del clúster (PVC). <strong>Cero dependencia de nube.</strong></p>
+  <h2><span data-i18n="s_hw">Hardware</span> <small data-i18n="s_hw_sm">bare-metal en casa</small></h2>
+  <p data-i18n="hw_p">Clúster <code>k3s</code> multi-nodo sobre placas <strong>ARM</strong> de bajo consumo (Raspberry Pi + Turing RK1 + Super6c) y un nodo x86 con <strong>GPU Tesla P4</strong> para la IA local. Almacenamiento persistente en disco del clúster (PVC). <strong>Cero dependencia de nube.</strong></p>
 
-  <p class="note">Por seguridad, esta página describe la <em>arquitectura</em> y los protocolos, pero
-    omite el direccionamiento exacto (IPs privadas LAN, hostnames de nodos, endpoints internos).</p>
+  <p class="note" data-i18n="note_sec">Por seguridad, esta página describe la <em>arquitectura</em> y los protocolos, pero omite el direccionamiento exacto (IPs privadas LAN, hostnames de nodos, endpoints internos).</p>
 
   <footer>
-    Online Galaxy War — PoC self-hosted. ¿Querés jugar? → <a href="/game">/game</a> ·
-    API en <a href="/docs">/docs</a> · código abierto (MIT).
+    <span data-i18n="foot">Online Galaxy War — PoC self-hosted. ¿Querés jugar?</span>
+    → <a href="/game">/game</a> · API <a href="/docs">/docs</a> · <span data-i18n="foot2">código abierto (MIT)</span>.
   </footer>
 
 </div>
+
+<script>
+const T = {
+  es: {
+    h_arch:"Arquitectura",
+    h_sub:"Un PoC <strong>100% self-hosted</strong> y <strong>API-first</strong>: cómo está construido y cómo fluye el tráfico, de punta a punta.",
+    b1:"PoC · self-hosted", b2:"100% en casa · sin nube",
+    intro:"Esto <strong>no</strong> corre en ningún proveedor cloud. Todo el juego vive en un clúster <span class='mono'>k3s</span> casero sobre placas <strong>ARM</strong> (bare-metal), y se desplegará (planeado) en <strong>su propio vCluster</strong> para aislarlo y poder crear más objetos sin tocar el clúster anfitrión. La misma imagen corre idéntica en la laptop y en el clúster; la config entra por variables de entorno (12-factor) y el contenido del juego es <em>data-as-code</em> en YAML. La premisa: <strong>toda la lógica detrás de <code>/api/v1</code></strong> — web, CLI y futuros clientes son consumidores delgados.",
+    s_flow:"Flujo de tráfico", s_flow_sm:"internet → pod",
+    flow_p:"El borde es un <strong>HAProxy</strong> propio que hace <strong>SNI passthrough</strong>: no termina TLS, sólo mira el <code>ServerName</code> del handshake y reenvía el byte-stream cifrado al <strong>backend = la VIP del Cilium Gateway</strong> en la LAN. El TLS se termina recién en el Gateway, con el certificado que emite <strong>cert-manager</strong> (Let's Encrypt, reto DNS-01). El Gateway enruta al <code>Service</code> del juego, que vive dentro de su <strong>vCluster</strong>.",
+    lg1:"componente", lg2:"flujo de datos", lg3:"vCluster",
+    z_edge:"RED PROPIA (EDGE)", z_host:"CLÚSTER k3s (HOST) · CNI Cilium", z_vc:"vCluster: online-game (planeado)",
+    n_inet:"cliente / navegador", n_hap1:"SNI passthrough (no termina TLS)", n_hap2:"lee ServerName → reenvía cifrado",
+    n_gw1:"Gateway API · VIP en LAN", n_gw2:"termina TLS (cert de cert-manager)", n_route:"match por host → Service",
+    n_pod:"HPA (escala horizontal)", n_cm:"reto DNS-01", e_vip:"TCP cifrado → VIP del GW", e_cert:"emite cert",
+    step1:"El cliente abre <code>https://&lt;dominio&gt;</code>; el handshake TLS lleva el host en el SNI.",
+    step2:"<strong>HAProxy</strong> (edge propio) hace <em>passthrough</em>: no descifra, reenvía el TCP cifrado a la <strong>VIP del Cilium Gateway</strong> en la LAN.",
+    step3:"El <strong>Gateway</strong> (Gateway API sobre Cilium) <strong>termina el TLS</strong> con el certificado de <strong>cert-manager</strong>.",
+    step4:"Un <strong>HTTPRoute</strong> matchea por <em>hostname</em> y enruta al <code>Service</code> (sincronizado desde el vCluster del juego).",
+    step5:"El <code>Service</code> balancea a los <strong>pods</strong> de <code>galaxy-api</code> (FastAPI/uvicorn), escalables por HPA.",
+    s_stack:"Stack por capa", s_stack_sm:"qué y para qué",
+    th_layer:"Capa", th_tech:"Tecnología", th_role:"Rol",
+    l_edge:"Edge", r_edge:"SNI passthrough hacia la VIP del Gateway (no termina TLS).",
+    l_ing:"Ingress", r_ing:"GatewayClass <code>cilium</code>; termina TLS; HTTPRoute por host.",
+    r_tls:"Let's Encrypt vía reto DNS-01; renovación automática.",
+    l_orch:"Orquestación", r_orch:"Clúster bare-metal multi-nodo (arm64); el juego corre en su <strong>vCluster</strong> (planeado).",
+    r_app:"API-first <code>/api/v1</code>; estado <em>lazy</em> por timestamp (sin cron por usuario).",
+    l_data:"Datos", r_data:"Fuente de verdad; migraciones Alembic al arrancar.",
+    r_cache:"Cache de catálogo, rate-limit y <strong>locks distribuidos</strong> por jugador.",
+    l_world:"Mundo", r_world:"Avanza el mundo y corre los turnos de las NPC.",
+    r_llm:"Proxy OpenAI-compatible: GPU local primaria + fallback hosted.",
+    r_build:"Builds <strong>dentro del clúster</strong> (arm64) → registry interno; gate de tests en el Dockerfile.",
+    r_deploy:"initContainers <em>migrate</em>+<em>smoke</em>, <code>helm test</code>, rollback automático.",
+    l_obs:"Observabilidad", r_obs:"ServiceMonitor + dashboards + alertas a un bot de Telegram.",
+    s_pipe:"Pipeline de build & deploy", s_pipe_sm:"git → registry → vCluster",
+    p1h:"Commit a main", p1p:"SemVer (<code>make release</code>): mueve el CHANGELOG, fija appVersion y el tag de imagen, taggea git.",
+    p2h:"Kaniko / Argo", p2p:"Build <em>in-cluster</em> en un nodo arm64, sin Docker daemon. El Dockerfile multi-stage <strong>corre la suite de tests</strong>: si algo falla, no hay imagen.",
+    p3h:"Registry interno", p3p:"La imagen se publica en el registry del propio clúster (nada sale a internet).",
+    p4h:"Helm → vCluster", p4p:"<code>helm upgrade --atomic</code> dentro del vCluster del juego; initContainer <em>migrate</em>+<em>smoke</em>, <code>helm test</code> y rollback solo si algo falla.",
+    note_deploy:"Defensa en profundidad del deploy: el gate de tests vive en el <em>build</em> (no se produce imagen rota), el <em>smoke</em> frena el rollout antes de exponerlo, y <code>--atomic</code> revierte si algo sale mal. Los secretos van por <code>Secret</code> de k8s; en prod, el arranque <strong>aborta</strong> si un secreto quedó en su valor por defecto.",
+    s_scale:"Por qué escala (siendo casero)",
+    sc1h:"API horizontal", sc1p:"Los pods no guardan estado → réplicas detrás del Service, HPA por carga.",
+    sc2h:"Sin cron por usuario", sc2p:"Energía y producción se calculan desde <code>*_updated_at</code> al leer; el costo no crece con usuarios inactivos.",
+    sc3h:"Por turnos", sc3p:"Sin requisitos de baja latencia → muchísimo más barato de escalar que tiempo real.",
+    sc4h:"Aislamiento", sc4p:"El juego corre en su propio vCluster: API propia, RBAC y CRDs sin tocar el clúster anfitrión.",
+    s_hw:"Hardware", s_hw_sm:"bare-metal en casa",
+    hw_p:"Clúster <code>k3s</code> multi-nodo sobre placas <strong>ARM</strong> de bajo consumo (Raspberry Pi + Turing RK1 + Super6c) y un nodo x86 con <strong>GPU Tesla P4</strong> para la IA local. Almacenamiento persistente en disco del clúster (PVC). <strong>Cero dependencia de nube.</strong>",
+    note_sec:"Por seguridad, esta página describe la <em>arquitectura</em> y los protocolos, pero omite el direccionamiento exacto (IPs privadas LAN, hostnames de nodos, endpoints internos).",
+    foot:"Online Galaxy War — PoC self-hosted. ¿Querés jugar?", foot2:"código abierto (MIT)",
+  },
+  en: {
+    h_arch:"Architecture",
+    h_sub:"A <strong>100% self-hosted</strong>, <strong>API-first</strong> PoC: how it's built and how traffic flows, end to end.",
+    b1:"PoC · self-hosted", b2:"100% at home · no cloud",
+    intro:"This does <strong>not</strong> run on any cloud provider. The whole game lives on a home <span class='mono'>k3s</span> cluster on <strong>ARM</strong> boards (bare-metal), and will be deployed (planned) in <strong>its own vCluster</strong> to isolate it and let us create more objects without touching the host cluster. The same image runs identically on a laptop and on the cluster; config comes from env vars (12-factor) and game content is <em>data-as-code</em> in YAML. The premise: <strong>all logic behind <code>/api/v1</code></strong> — web, CLI and future clients are thin consumers.",
+    s_flow:"Traffic flow", s_flow_sm:"internet → pod",
+    flow_p:"The edge is our own <strong>HAProxy</strong> doing <strong>SNI passthrough</strong>: it doesn't terminate TLS, it just reads the handshake <code>ServerName</code> and forwards the encrypted byte-stream to the <strong>backend = the Cilium Gateway VIP</strong> on the LAN. TLS is terminated at the Gateway, with a certificate issued by <strong>cert-manager</strong> (Let's Encrypt, DNS-01 challenge). The Gateway routes to the game's <code>Service</code>, which lives inside its <strong>vCluster</strong>.",
+    lg1:"component", lg2:"data flow", lg3:"vCluster",
+    z_edge:"OWN NETWORK (EDGE)", z_host:"k3s CLUSTER (HOST) · Cilium CNI", z_vc:"vCluster: online-game (planned)",
+    n_inet:"client / browser", n_hap1:"SNI passthrough (no TLS termination)", n_hap2:"reads ServerName → forwards encrypted",
+    n_gw1:"Gateway API · LAN VIP", n_gw2:"terminates TLS (cert-manager cert)", n_route:"host match → Service",
+    n_pod:"HPA (horizontal scaling)", n_cm:"DNS-01 challenge", e_vip:"encrypted TCP → GW VIP", e_cert:"issues cert",
+    step1:"The client opens <code>https://&lt;domain&gt;</code>; the TLS handshake carries the host in SNI.",
+    step2:"<strong>HAProxy</strong> (our edge) does <em>passthrough</em>: no decryption, forwards the encrypted TCP to the <strong>Cilium Gateway VIP</strong> on the LAN.",
+    step3:"The <strong>Gateway</strong> (Gateway API on Cilium) <strong>terminates TLS</strong> with the <strong>cert-manager</strong> certificate.",
+    step4:"An <strong>HTTPRoute</strong> matches by <em>hostname</em> and routes to the <code>Service</code> (synced from the game's vCluster).",
+    step5:"The <code>Service</code> balances across <code>galaxy-api</code> <strong>pods</strong> (FastAPI/uvicorn), scalable via HPA.",
+    s_stack:"Stack by layer", s_stack_sm:"what & why",
+    th_layer:"Layer", th_tech:"Technology", th_role:"Role",
+    l_edge:"Edge", r_edge:"SNI passthrough to the Gateway VIP (no TLS termination).",
+    l_ing:"Ingress", r_ing:"GatewayClass <code>cilium</code>; terminates TLS; per-host HTTPRoute.",
+    r_tls:"Let's Encrypt via DNS-01 challenge; auto-renewal.",
+    l_orch:"Orchestration", r_orch:"Multi-node bare-metal cluster (arm64); the game runs in its <strong>vCluster</strong> (planned).",
+    r_app:"API-first <code>/api/v1</code>; <em>lazy</em> state by timestamp (no per-user cron).",
+    l_data:"Data", r_data:"Source of truth; Alembic migrations on startup.",
+    r_cache:"Catalog cache, rate-limit and per-player <strong>distributed locks</strong>.",
+    l_world:"World", r_world:"Advances the world and runs NPC turns.",
+    r_llm:"OpenAI-compatible proxy: local GPU primary + hosted fallback.",
+    r_build:"<strong>In-cluster</strong> builds (arm64) → internal registry; test gate in the Dockerfile.",
+    r_deploy:"<em>migrate</em>+<em>smoke</em> initContainers, <code>helm test</code>, auto rollback.",
+    l_obs:"Observability", r_obs:"ServiceMonitor + dashboards + alerts to a Telegram bot.",
+    s_pipe:"Build & deploy pipeline", s_pipe_sm:"git → registry → vCluster",
+    p1h:"Commit to main", p1p:"SemVer (<code>make release</code>): moves the CHANGELOG, sets appVersion and image tag, git-tags.",
+    p2h:"Kaniko / Argo", p2p:"<em>In-cluster</em> build on an arm64 node, no Docker daemon. The multi-stage Dockerfile <strong>runs the test suite</strong>: if anything fails, no image.",
+    p3h:"Internal registry", p3p:"The image is published to the cluster's own registry (nothing leaves to the internet).",
+    p4h:"Helm → vCluster", p4p:"<code>helm upgrade --atomic</code> inside the game's vCluster; <em>migrate</em>+<em>smoke</em> initContainer, <code>helm test</code> and rollback only if something fails.",
+    note_deploy:"Defense-in-depth deploy: the test gate lives in the <em>build</em> (no broken image is produced), <em>smoke</em> stops the rollout before exposing it, and <code>--atomic</code> reverts on failure. Secrets go through k8s <code>Secret</code>; in prod, startup <strong>aborts</strong> if a secret is left at its default value.",
+    s_scale:"Why it scales (while self-hosted)",
+    sc1h:"Horizontal API", sc1p:"Pods are stateless → replicas behind the Service, HPA by load.",
+    sc2h:"No per-user cron", sc2p:"Energy and production are computed from <code>*_updated_at</code> on read; cost doesn't grow with idle users.",
+    sc3h:"Turn-based", sc3p:"No low-latency requirements → far cheaper to scale than real-time.",
+    sc4h:"Isolation", sc4p:"The game runs in its own vCluster: own API, RBAC and CRDs without touching the host cluster.",
+    s_hw:"Hardware", s_hw_sm:"bare-metal at home",
+    hw_p:"Multi-node <code>k3s</code> cluster on low-power <strong>ARM</strong> boards (Raspberry Pi + Turing RK1 + Super6c) plus an x86 node with a <strong>Tesla P4 GPU</strong> for local AI. Persistent storage on cluster disk (PVC). <strong>Zero cloud dependency.</strong>",
+    note_sec:"For security, this page describes the <em>architecture</em> and protocols but omits exact addressing (private LAN IPs, node hostnames, internal endpoints).",
+    foot:"Online Galaxy War — self-hosted PoC. Want to play?", foot2:"open source (MIT)",
+  },
+};
+const SVG_IDS = ["z_edge","z_host","z_vc","n_inet","n_hap1","n_hap2","n_gw1","n_gw2","n_route","n_pod","n_cm","e_vip","e_cert"];
+function applyLang(lang){
+  const d = T[lang] || T.es;
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const k = el.getAttribute("data-i18n");
+    if(d[k]!=null) el.innerHTML = d[k];
+  });
+  SVG_IDS.forEach(id=>{ const el=document.getElementById(id); if(el&&d[id]!=null) el.textContent=d[id]; });
+  const steps = ["step1","step2","step3","step4","step5"].map(k=>`<li>${d[k]}</li>`).join("");
+  document.getElementById("steps").innerHTML = steps;
+  document.getElementById("lang").textContent = lang==="es" ? "🌐 EN" : "🌐 ES";
+  try{ localStorage.setItem("tech_lang", lang); }catch(e){}
+}
+function toggleLang(){ applyLang((document.documentElement.lang==="es")?"en":"es"); }
+(function(){
+  let lang="es";
+  try{ lang = localStorage.getItem("tech_lang") || (navigator.language||"es").slice(0,2); }catch(e){}
+  if(lang!=="en") lang="es";
+  applyLang(lang);
+})();
+</script>
 </body>
 </html>
