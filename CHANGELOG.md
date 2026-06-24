@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 35 diseñado: espionaje e inteligencia
+- Doc `docs/sdd-espionage-intel.md`: espías + contraespías + edificio/tech de contraespionaje, con
+  **fórmula** `depth = spy/(spy+counter)` (rendimientos decrecientes → mandar de más es al pedo) y
+  detección. **Intel persistida por objetivo** (`IntelReport`), revelada **graduada** según depth
+  (rangos→exacto = ofuscación) y que **se desactualiza** (confianza decae → seguir espiando). Se ve al
+  clickear un player/NPC; alimenta la **calculadora de combate** (SDD 34) y al **asistente** (grounded,
+  no inventa datos del rival). Solo especificación.
+
 ### 2026-06-24 — SDD 34 diseñado: estrategia de combate (fórmula + calculadora + IA)
 - Doc `docs/sdd-combat-strategy.md`: documenta la **fórmula exacta** de `resolve_combat`
   (attack_score vs defense_score; multiplicadores boons×tech×alianza; flat defense de torretas;
