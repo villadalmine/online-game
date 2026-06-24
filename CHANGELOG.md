@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — IA self-hosted vía LiteLLM + GPU dual (SDD 9 v2)
+- **SDD 9 v2** (`docs/sdd-local-gpu-llm.md`): arquitectura final — un LiteLLM compartido enruta
+  `local-gpu` a un **tier Ollama dual** (1 por placa: Tesla P4 + Quadro M4000, vía HAMI
+  `use-gputype`) con `least_busy` + **fallback OpenRouter free** (`timeout: 8`). **Rockchip NPU
+  descartado** (formato roto + lento). Documentada la **decisión técnica** (2 Ollama `gpu:1` vs 1
+  `gpu:2`: PCIe sin NVLink, paralelismo por workers, aislamiento HAMI), el **benchmark**
+  (`local-gpu` 0.9s caliente, JSON válido) y el **análisis de capacidad** (5-60 jugadores/juego →
+  sizing `gpumem 3000`/`gpucores 40%`, `KEEP_ALIVE=24h`).
+- **Deploy idempotente** en `infra-ai/infra`: rol `install-gpu-ollama` + `make gpu-ollama` (aislado);
+  ruteo en el rol `install-litellm-proxy`. El juego apunta a `local-gpu` (env-only, `values-local`).
+
 ## [1.11.0] - 2026-06-24
 
 ### 2026-06-24 — /tech bilingüe ES/EN + ollama GPU dedicado (SDD 9)

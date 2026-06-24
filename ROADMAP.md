@@ -143,10 +143,12 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   con `capacity` (overflow a nueva instancia); aislamiento humano↔humano (no atacás otra galaxia,
   scoreboard filtrado), NPCs ambientales, `GET /galaxies`. Follow-up: NPCs/ranking/temporada por
   instancia y tick por shard.
-- 🟢 **[SDD 9 — LLM local en GPU](docs/sdd-local-gpu-llm.md)**: **v1 hecho** — timeout del LLM
-  configurable + rate-limit del asistente (app); ejemplos `deploy/gpu-llm/` (Ollama en GPU +
-  LiteLLM proxy con cola/fallback, fuera del chart). Follow-up: benchmark real de tok/s por
-  modelo en P4/Maxwell + prueba de saturación.
+- 🟢 **[SDD 9 — LLM local en GPU](docs/sdd-local-gpu-llm.md)**: **v1+v2 hechos** — v1: timeout LLM
+  configurable + rate-limit del asistente. **v2**: arquitectura final — LiteLLM compartido →
+  **tier Ollama dual** (1 por placa, P4+M4000 vía HAMI) + **fallback OpenRouter free**; **Rockchip
+  descartado**; benchmark (`local-gpu` 0.9s) + análisis de capacidad + sizing HAMI. Deploy
+  idempotente en `infra-ai` (`make gpu-ollama`); el juego usa `local-gpu`. Follow-up: prueba de
+  saturación real con 2 juegos + monitoreo de fallbacks (Grafana litellm).
 - 🟢 **[SDD 10 — Durabilidad / backup / restore](docs/sdd-durability-backup-restore.md)**:
   **hecho lo crítico** — Postgres es `StatefulSet`+PVC (pod muere ≠ pérdida), soporte de DB externa
   (managed/operador), backup `pg_dump` opt-in. Follow-up: backup offsite cifrado + PITR + runbook/

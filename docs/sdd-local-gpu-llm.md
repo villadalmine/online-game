@@ -102,6 +102,71 @@ antes de encolar. Por eso:
   P4/Maxwell (NPC 120 tok / asistente 400 tok) → elegir modelo y `max_tokens`; prueba de
   saturación (N asistentes → encolado + fallback); fallback a hosted vía LiteLLM bajo carga.
 
+## 7.ter Estado v2 (2026-06-24) — tier dual por las 2 placas + LiteLLM + benchmark real
+
+### Hardware real (HAMI vGPU)
+Nodo `srv-t7910` con **2 placas** (HAMI las virtualiza con caps HARD por device):
+**NVIDIA Quadro M4000** (8192 MiB, Maxwell cc5.2) y **NVIDIA Tesla P4** (7680 MiB, Pascal cc6.1).
+HAMI expone `nvidia.com/gpu` (slices) + `nvidia.com/gpumem` (MiB/device) + `nvidia.com/gpucores`
+(%/device). Se fija una instancia por placa con la anotación `nvidia.com/use-gputype`.
+
+### Arquitectura (decidida)
+```
+juego-1 ─┐
+         ├─► LiteLLM (ai/litellm-proxy, compartido con hermes/openclaw/holmes)
+juego-2 ─┘        model "local-gpu" (least_busy) ─┬─► ollama-a  (Tesla P4)
+                  └─ fallback ─► OpenRouter free   └─► ollama-b  (Quadro M4000)
+```
+- **Un solo LiteLLM** (el que ya existe) como gateway de TODO: balanceo, métricas, fallback. Cada
+  pod tiene su token OpenRouter ahí.
+- **Tier Ollama DUAL**: 2 procesos, **1 por placa**, mismo modelo (`qwen2.5:1.5b`), `least_busy`
+  balancea → las 2 placas se usan en paralelo, compartidas por ambos juegos.
+- **Fallback a OpenRouter free** con `timeout: 8` por backend → si la GPU tarda/cae, no se rompe.
+- **Rockchip NPU descartado**: el benchmark dio formato roto (`<unk>…`) y 6-20s. Fuera del juego.
+
+### Decisión técnica: 2 Ollama (gpu:1) en vez de 1 Ollama (gpu:2)
+No es limitación de HAMI (un pod puede pedir `gpu:2`). Es de inferencia:
+1. **Modelos chicos entran en 1 placa** → partirlos no aporta.
+2. **M4000/P4 sin NVLink** → partir por PCIe agrega latencia por token; 1 modelo en 1 placa es más rápido.
+3. **Paralelismo de requests** (2 juegos a la vez) sale de **2 workers** que LiteLLM balancea, no de
+   1 Ollama viendo 2 GPUs (sigue siendo 1 cola).
+4. **HAMI**: `gpu:1` reserva 1 placa y **deja el resto libre** para otra cosa; `gpu:2` bloquea VRAM
+   en ambas. → 1 Ollama con `gpu:2` solo conviene para un modelo que NO entra en una placa (p.ej. 70B).
+
+### Benchmark (vía LiteLLM, 2026-06-24)
+| Ruta | Latencia | Formato OpenAI | JSON NPC | Veredicto |
+|---|---|---|---|---|
+| `local-gpu` (Ollama→GPU, qwen2.5:1.5b) | **0.9s** caliente | ✅ | ✅ | 🏆 mejor (asistente+NPC) |
+| `rk1-npu-local` (Rockchip) | 6.8-20.5s | ✅ | ❌ basura | descartado |
+| OpenRouter reasoning (gpt-oss/nemotron) | 2-3s | ✅ | ❌ vacío con max_tokens bajo | solo con tokens altos |
+> El cold-start (1ª carga) fue ~50s; con `OLLAMA_KEEP_ALIVE=24h` el modelo queda residente → ~1s.
+
+### Análisis de capacidad (sizing del cap HAMI)
+Juego **por turnos** ⇒ llamadas LLM esporádicas (asistente on-click + NPCs en el tick), NO una por
+jugador. Con servicio caliente ≈1s (Little: in-flight ≈ λ×S):
+
+| Jugadores/juego | req/s | in-flight | ×2 juegos |
+|---|---|---|---|
+| 5/10/15/20 | 0.03-0.11 | ~0 | ≤0.22 |
+| 40 | 0.22 | ~0-1 | 0.44 |
+| 60 | 0.33 | ~0-1 (ráfagas 2-3) | **0.66** |
+
+Incluso a 60×2 = **0.66 req/s**, 1 instancia (`NUM_PARALLEL=4` ≈ 3-4 req/s) sobra; 2 instancias ≈ 6-8
+req/s. **La demanda nunca satura**; ráfagas/cold-start caen al free por `timeout`.
+- **VRAM a reservar**: `qwen2.5:1.5b` ~1 GB + KV(×4) → **gpumem 3000 MiB**; `gpucores 40%`. Quedan
+  ~5 GB y ~60% **libres por placa** para otra cosa (objetivo HAMI). `KEEP_ALIVE=24h` fija la reserva
+  (modelo residente, sin cold-start).
+
+### Deploy (idempotente, sin `kubectl apply`)
+- **Tier Ollama** (repo `infra-ai/infra`): rol `install-gpu-ollama` (`kubernetes.core.k8s`, idempotente)
+  + manifest `roles/install-gpu-ollama/files/ollama-dual.yaml` (2 Deployments fijados por
+  `use-gputype`, caps HAMI, PVC `local-path` c/u, Job de pull). Target: **`make gpu-ollama`**
+  (tag `gpu-ollama`), aislado para no tocar el resto.
+- **Ruteo LiteLLM** (rol `install-litellm-proxy`, vía Ansible): `local-gpu` = 2 backends
+  (`ollama-a`/`ollama-b`, `timeout: 8`) + `fallbacks: local-gpu → free`.
+- **Juego**: `LLM_BASE_URL=http://litellm-proxy.ai.svc.cluster.local:4000/v1`, `LLM_MODEL=local-gpu`,
+  `LLM_API_KEY=<litellm master key>` (en `values-local.yaml`, gitignored).
+
 ## 8. Riesgos / decisiones
 - **Maxwell viejo**: puede quedar sin soporte en builds nuevas de CUDA/llama.cpp; el **P4** es la
   apuesta segura. Si ninguna alcanza la latencia deseada en 7B, **bajar a 3–4B**.
