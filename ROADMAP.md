@@ -125,6 +125,7 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   `system` (i18n), **exosistemas reales** (Proxima b, TRAPPIST-1e, `canon real`+sources+confidence)
   y nivel **`speculative`** (`nova_terra`+rationale) — aditivo. Follow-up: jerarquía anidada real,
   **universos/spin-offs** (*The Expanse*), multiplicadores físicos.
+- 📝 **[SDD 26 — Universos spin-off](docs/sdd-spinoff-universes.md)**: packs de datos (Star Trek/BSG/Star Wars) tipados y fieles al canon (`fiction`+sources); solo spec, con nota IP (fan/no-comercial). Implementable editando el SDD.
 - 🟢 **[SDD 25 — Catch-up del recién llegado](docs/sdd-newcomer-catchup.md)**: **v1 hecho** — al
   entrar con ≥3 pares en su galaxia, top-up al **P40** del stock (sin pasar la mediana) + energía
   full + mina/torreta (defensa). Hook en onboarding. Follow-up: factor explícito por días.

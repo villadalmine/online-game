@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 26 diseñado: universos spin-off (Star Trek / BSG / Star Wars)
+- Doc `docs/sdd-spinoff-universes.md`: packs de datos **tipados** (mismo modelo de objetos del
+  contenido) con mundos/naves/materiales **fieles al canon** de cada franquicia (`canon: fiction` +
+  `universe` + `sources` de wikis). **Solo especificación** (es la fuente; se edita el SDD para
+  cambiar datos; se implementa cuando se decida). Incluye **nota legal/IP** (fan/no-comercial; modo
+  genérico recomendado para publicar). Selección de universo por galaxy instance/temporada (SDD 8/11/13).
+
 ## [1.5.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 25 v1: catch-up del recién llegado (nivelar sin dar ventaja)
