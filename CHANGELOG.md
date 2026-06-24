@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-06-24
+
 ### 2026-06-24 — Página técnica /tech (PoC self-hosted + flujo de tráfico)
 - `web/tech.html` + ruta `GET /tech`: página pública que explica el stack (k3s arm64 bare-metal,
   FastAPI API-first, Cilium Gateway API, cert-manager, Postgres/Redis, Kaniko/Argo in-cluster,
