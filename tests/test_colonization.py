@@ -159,3 +159,50 @@ async def test_orbital_build_costs_more_than_home(session):
     cost_home = await _build_cost(home)
     cost_orbital = await _build_cost(orbital)
     assert cost_orbital > cost_home   # órbita: ×1.5
+
+
+async def test_lunar_base_needs_robotics_and_creates_on_moon(session):
+    # SDD 37: base lunar requiere Robótica orbital; se crea sobre la luna.
+    p = await _terran(session, "luner")
+    p.energy = 999.0
+    session.add(UnitStock(player_id=p.id, unit_key="shuttle", quantity=2))
+    await session.commit()
+    try:
+        await found_colony(session, p, "luna", mode="lunar")
+        raise AssertionError("lunar debía requerir Robótica orbital")
+    except ColonizeError as e:
+        assert "rob" in str(e).lower()
+    session.add(PlayerTech(player_id=p.id, tech_key="orbital_robotics"))
+    await session.commit()
+    base = await found_colony(session, p, "luna", mode="lunar")
+    await session.commit()
+    assert base.base_type == "lunar" and base.planet_key == "luna"
+
+
+async def test_lunar_mine_produces_moon_grant(session):
+    # SDD 37: una mina en la base lunar produce el recurso premium de la luna (He-3).
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import Building
+    from app.services.economy import collect_mines, player_stocks
+
+    p = await _terran(session, "luner2")
+    p.energy = 99999.0
+    session.add(PlayerTech(player_id=p.id, tech_key="orbital_robotics"))
+    session.add(UnitStock(player_id=p.id, unit_key="shuttle", quantity=1))
+    await session.commit()
+    base = await found_colony(session, p, "luna", mode="lunar")   # luna concede helium3
+    await session.commit()
+
+    now = datetime.now(UTC)
+    session.add(Building(
+        base_id=base.id, building_key="mine", production_mineral="helium3", status="active",
+        completes_at=now - timedelta(hours=2), last_collected_at=now - timedelta(hours=2),
+    ))
+    await session.commit()
+
+    before = (await player_stocks(session, p.id)).get("helium3", 0.0)
+    await collect_mines(session, p, now)
+    await session.commit()
+    after = (await player_stocks(session, p.id)).get("helium3", 0.0)
+    assert after > before   # extrajo He-3 de la Luna

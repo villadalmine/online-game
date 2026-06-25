@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 37: bases lunares (minar recursos premium de las lunas)
+- `POST /colonize {mode:"lunar"}`: fundás una **base lunar** sobre una luna (requiere **Robótica
+  orbital**); sus minas extraen los **recursos premium de la luna** (He-3, tierras raras, hielo de
+  agua) que los planetas no tienen — `abundance = grant/100 × orbital_yield`. Botón **🌙 Base lunar**
+  en la sección lunas del modal de planeta; el panel de bases marca 🌙. Tests + 273 verdes. Con esto
+  **SDD 37 queda completo** (superficie + orbital + lunar + tech-gating + producción/costo por-colonia).
+
 ## [1.29.0] - 2026-06-25
 
 ### 2026-06-25 — SDD 40: métricas del asistente por jugador + energía de nivelado por ranking

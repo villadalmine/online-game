@@ -102,10 +102,14 @@ async def collect_mines(
             continue
         planet, btype = base_info.get(b.base_id, (home, "surface"))
         since = _aware(b.last_collected_at or b.completes_at)
-        abundance = content.planet_abundance(planet, b.production_mineral)
+        if btype == "lunar":   # base lunar: rinde los `grants` de la luna (He-3, hielo…) / 100
+            grants = content.moons.get(planet, {}).get("grants", {})
+            abundance = grants.get(b.production_mineral, 0) / 100.0
+        else:
+            abundance = content.planet_abundance(planet, b.production_mineral)
         output = compute_mine_output(since, now, spec.get("base_output_per_hour", 0), abundance)
         amount = output * prod_mult
-        if btype == "orbital":   # robots: rinde fijo, sin importar habitabilidad
+        if btype in ("orbital", "lunar"):   # robots: rinde fijo, sin habitabilidad
             amount *= orbital_yield
         elif planet != home:     # colonia de superficie: rinde según habitabilidad raza×planeta
             if planet not in colony_mult:

@@ -134,6 +134,9 @@ tecnología sci-fi que vence lo "imposible":
 - **Árbol de tecnologías** de colonización más profundo: antigravedad, escudos/cúpulas presurizadas,
   regulación térmica, **robótica autónoma** (base orbital), terraformación parcial. Cada una habilita
   un eje o un tipo de base; encadenadas, vuelven colonizable casi cualquier mundo.
+- **Bases lunares (HECHO):** `found_colony(mode="lunar")` sobre una luna (requiere `orbital_robotics`);
+  sus minas extraen los **`grants` premium** de la luna (He-3, tierras raras, hielo) — `abundance =
+  grant/100 × orbital_yield`. Botón 🌙 en el modal de planeta (sección lunas).
 - **Por raza:** además de `tolerances`, **descuentos/precondiciones** de tech (algunas razas traen una
   colonización "gratis" o más barata; otras necesitan más ciencia). Data-driven.
 - **Exploración:** explorar un sistema/luna **revela** sus atributos antes de poder colonizar (link con
