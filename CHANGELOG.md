@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.24.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 37 v1: grafo de colonización (raza × planeta, read-only)
 - `compat(race, planet)` determinista: a partir de los atributos del planeta (gravedad, temperatura,
   atmósfera, agua) y las `tolerances` de la raza, da **habitabilidad**, **veredicto**
