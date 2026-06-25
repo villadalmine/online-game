@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.44.0] - 2026-06-25
+
 ### 2026-06-25 — Asistente en GPU local: subgrafo indexado + budget por usuario (SDD 9)
 - **Índice del grafo** (`depgraph._graph_index`, cacheado por raza×planeta): pre-tokeniza el corpus
   una vez; `retrieve` ya no re-tokeniza todo en cada consulta.
