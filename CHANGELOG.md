@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Construir en colonias/bases orbitales (selector de base)
+- El form de Acciones siempre construía en la base **principal** (no se podía elegir colonia/órbita).
+  Ahora hay un **selector de base** (aparece si tenés más de una) con su 🌙/🛰/🪐 y planeta. Así
+  construís en la **base orbital** del otro planeta (lo que aparecía pero no se podía usar).
+- `renderCost` ahora calcula contra el **stock del planeta de esa base** (SDD 42: el material debe
+  estar ahí) y aplica el **×1.5** de las bases orbitales (SDD 37) → la disponibilidad ya no engaña.
+  Si falta material en ese planeta, hay que **transportarlo** (panel Mercado → 🚚). Solo frontend.
+
 ## [1.54.0] - 2026-06-25
 
 ### 2026-06-25 — Fix: layout de la consola de admin

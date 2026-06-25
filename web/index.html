@@ -179,6 +179,7 @@
       <h2>Acciones</h2>
       <div class="row">
         <button onclick="build()" data-i18n="build">🏗 Construir</button>
+        <select id="buildbase" onchange="renderCost()" title="en qué base"></select>
         <select id="building" onchange="renderCost()"></select>
         <select id="mineral" class="hidden"></select>
       </div>
@@ -450,15 +451,22 @@ async function loadCatalog(){
 function raceRoles(){ const r=(catalog.races||[]).find(x=>x.key===(state&&state.race_key)); return r?r.resource_roles:{}; }
 function resolveCost(roleCost){ const roles=raceRoles(); const out={}; for(const[role,amt]of Object.entries(roleCost||{})){ const m=roles[role]; if(m&&amt) out[m]=(out[m]||0)+amt; } return out; }
 function costStr(mc){ return Object.entries(mc).map(([m,a])=>`${m} ${Math.round(a)}`).join(", ")||"gratis"; }
-function affordText(mc, energyCost){
+function affordText(mc, energyCost, planet){
   if(!state) return "";
+  // el material se chequea EN EL PLANETA de la base (SDD 42); la energía es global del jugador
+  const stocks=(planet&&planet!==state.planet_key)?((state.stocks_by_planet||{})[planet]||{}):state.stocks;
   const lacks=[];
-  for(const[m,a]of Object.entries(mc)){ if((state.stocks[m]||0)<a) lacks.push(`${m}`); }
+  for(const[m,a]of Object.entries(mc)){ if((stocks[m]||0)<a) lacks.push(`${m}`); }
   if(energyCost && state.energy<energyCost) lacks.push("⚡energía");
   return lacks.length? ` — <span class="bad">⚠ te falta: ${lacks.join(", ")}</span>` : ` — <span class="ok">✓ alcanza</span>`;
 }
 function renderCost(){ const b=spec.build[$("building").value]; if(!b) return; $("mineral").classList.toggle("hidden",b.category!=="mine");
-  const mc=resolveCost(b.cost); $("buildcost").innerHTML=`costo ${costStr(mc)} · ⚡${b.energy_cost} · ${b.build_seconds}s${affordText(mc,b.energy_cost)}`; }
+  const base=(state&&state.bases||[]).find(x=>String(x.id)===String(($("buildbase")||{}).value))||(state&&state.bases&&state.bases[0]);
+  let mc=resolveCost(b.cost);
+  if(base&&base.base_type==='orbital'){ const m2={}; for(const k in mc) m2[k]=Math.round(mc[k]*1.5); mc=m2; }  // SDD 37: orbital cuesta 1.5×
+  const planet=base?base.planet_key:null;
+  const where=(base&&planet!==state.planet_key)?` · 📍${esc(planetName(planet))}`:"";
+  $("buildcost").innerHTML=`costo ${costStr(mc)} · ⚡${b.energy_cost} · ${b.build_seconds}s${where}${affordText(mc,b.energy_cost,planet)}`; }
 function renderTrainCost(){ const u=spec.unit[$("unit").value]; if(!u) return; const qty=Math.max(1,+$("qty").value||1);
   const mc=resolveCost(u.cost); for(const k in mc) mc[k]*=qty; const e=(u.energy_cost||0)*qty;
   const req=u.requires&&u.requires!=="headquarters"?` · requiere ${u.requires}`:"";
@@ -472,7 +480,7 @@ function renderExpInfo(){ const m=spec.moon[$("moon").value]; if(!m) return; con
 async function onboard(){ try{ await api("/api/v1/players/onboard","POST",{galaxy_key:"milky_way",planet_key:$("planet").value,race_key:$("race").value}); boot(); }catch(e){ msg(e.message,false);} }
 
 // actions
-const baseId=()=>(state&&state.bases[0])?state.bases[0].id:1;
+const baseId=()=>{ const v=+(($("buildbase")||{}).value); return v||((state&&state.bases[0])?state.bases[0].id:1); };
 async function build(){ try{ const k=$("building").value; const b={building_key:k}; if(k==="mine")b.target_mineral=$("mineral").value; await api(`/api/v1/bases/${baseId()}/build`,"POST",b); msg("Construyendo "+k); refresh(); }catch(e){ msg(e.message,false);} }
 async function train(){ try{ await api(`/api/v1/bases/${baseId()}/train`,"POST",{unit_key:$("unit").value,quantity:+$("qty").value}); msg("Entrenando"); refresh(); }catch(e){ msg(e.message,false);} }
 // attack force picker: a qty input per attack-capable unit you OWN (no más escribir a mano)
@@ -719,6 +727,14 @@ async function refresh(){
   $("units").innerHTML=Object.entries(state.units).filter(([,v])=>v>0).map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join("")||`<span class="muted">${esc(tr('nounits'))}</span>`;
   $("boons").innerHTML=(state.boons||[]).map(b=>`<span class="chip ok">boon ${esc(b.effect)} ×${b.magnitude}</span>`).join(" ");
   const baseTag=b=>b.base_type==='lunar'?'🌙':(b.base_type==='orbital'?'🛰':(b.planet_key!==state.planet_key?'🪐':'⭐'));
+  // selector de base para construir (incluye colonias/orbitales); preserva la elección
+  const bsel=$("buildbase");
+  if(bsel && state.bases.length){
+    const prev=bsel.value;
+    bsel.innerHTML=state.bases.map(b=>`<option value="${b.id}">${baseTag(b)} ${esc(planetName(b.planet_key))}</option>`).join("");
+    if(state.bases.some(b=>String(b.id)===prev)) bsel.value=prev;
+    bsel.style.display=state.bases.length>1?"":"none";   // si tenés 1 sola base, no hace falta
+  }
   const sbp=state.stocks_by_planet||{};
   const planetStock=p=>{const s=sbp[p]||{};const e=Object.entries(s).filter(([,v])=>v>0);
     return e.length?` <span class="muted" style="font-size:11px">⛏ ${e.map(([k,v])=>esc(k)+":"+Math.round(v)).join(", ")}</span>`:"";};
