@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.50.0] - 2026-06-25
+
 ### 2026-06-25 — Fixes de cuenta/admin + UX de espionaje
 - **Fix (importante): el navegador autocompletaba "nueva contraseña" en Perfil** → al cambiar solo el
   nick te cambiaba la clave sin querer. Ahora los campos llevan `autocomplete` correcto y el
