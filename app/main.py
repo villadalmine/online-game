@@ -154,10 +154,15 @@ async def health():
     return {"status": "ok", "app": settings.app_name, "db": settings.db_backend}
 
 
+# El HTML se sirve con `no-cache`: el navegador igual usa ETag para 304s, pero SIEMPRE revalida →
+# tras un deploy ves la versión nueva sin hard-refresh (antes quedaba cacheado el HTML viejo).
+_NOCACHE = {"Cache-Control": "no-cache"}
+
+
 @app.get("/", include_in_schema=False)
 async def web_client():
     """Minimal playable web UI (vanilla JS, talks to /api/v1)."""
-    return FileResponse(WEB_INDEX)
+    return FileResponse(WEB_INDEX, headers=_NOCACHE)
 
 
 @app.get("/game", include_in_schema=False)
@@ -165,14 +170,16 @@ async def landing():
     """Landing pública para compartir (SDD 24): bilingüe + Open Graph. Inyecta PUBLIC_URL para que
     og:url/og:image sean absolutas (preview en redes)."""
     html = (REPO_ROOT / "web" / "landing.html").read_text(encoding="utf-8")
-    return HTMLResponse(html.replace("__PUBLIC_URL__", settings.public_url.rstrip("/")))
+    return HTMLResponse(
+        html.replace("__PUBLIC_URL__", settings.public_url.rstrip("/")), headers=_NOCACHE
+    )
 
 
 @app.get("/tech", include_in_schema=False)
 async def tech_page():
     """Página técnica pública: stack del PoC self-hosted + flujo de tráfico (HAProxy SNI → Cilium
     Gateway → Service → Pod). Estática y sin dependencias externas (coherente con self-hosted)."""
-    return FileResponse(REPO_ROOT / "web" / "tech.html")
+    return FileResponse(REPO_ROOT / "web" / "tech.html", headers=_NOCACHE)
 
 
 @app.get("/og-image.png", include_in_schema=False)

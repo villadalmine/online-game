@@ -85,6 +85,14 @@ async def test_landing_page_and_og(client):
     assert img.status_code == 200 and img.headers["content-type"] == "image/png"
 
 
+async def test_html_served_with_no_cache(client):
+    # HTML con Cache-Control: no-cache → tras un deploy se ve lo nuevo sin hard-refresh.
+    for path in ("/", "/game", "/tech"):
+        r = await client.http.get(path)
+        assert r.status_code == 200, path
+        assert "no-cache" in r.headers.get("cache-control", ""), path
+
+
 async def test_tech_page(client):
     # Página técnica pública /tech: stack self-hosted + flujo de tráfico (HAProxy SNI → Gateway).
     r = await client.http.get("/tech")

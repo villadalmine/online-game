@@ -4,7 +4,7 @@
   "tags": ["online-game", "llm", "gpu"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
   "templating": {
@@ -105,6 +105,25 @@
       "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 36 },
       "targets": [ { "refId": "A", "expr": "hami_vgpu_memory_allocated_bytes{exported_pod=~\"ollama.*\"}", "legendFormat": "{{exported_pod}}" } ]
+    },
+    {
+      "id": 14, "type": "timeseries", "title": "Tokens de salida/s — usuarios vs NPC",
+      "description": "Separa por end_user: online-game:player:* (usuarios reales) vs online-game:npc:* (bots). Los NPC consultan al LLM cada tick; los usuarios solo cuando usan el asistente.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 },
+      "targets": [
+        { "refId": "A", "expr": "sum(rate(litellm_output_tokens_metric_total{end_user=~\"online-game:player:.*\"}[5m]))", "legendFormat": "usuarios" },
+        { "refId": "B", "expr": "sum(rate(litellm_output_tokens_metric_total{end_user=~\"online-game:npc:.*\"}[5m]))", "legendFormat": "NPC" }
+      ]
+    },
+    {
+      "id": 15, "type": "table", "title": "Consultas (24h) — usuarios vs NPC",
+      "description": "Conteo de requests por tipo en 24h (usuarios reales vs bots).",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 },
+      "targets": [
+        { "refId": "A", "format": "table", "instant": true, "expr": "sum by (kind) (label_replace(label_replace(increase(litellm_output_tokens_metric_total{end_user=~\"online-game:.*\"}[24h]), \"kind\", \"npc\", \"end_user\", \"online-game:npc:.*\"), \"kind\", \"usuario\", \"end_user\", \"online-game:player:.*\"))" }
+      ]
     }
   ]
 }

@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — HTML sin cache + métricas LLM separadas usuarios vs NPC
+- **Fix raíz del "sigo viendo lo viejo"**: el HTML (`/`, `/game`, `/tech`) se sirve con
+  `Cache-Control: no-cache` → tras cada deploy ves la versión nueva **sin hard-refresh** (antes el
+  navegador cacheaba el HTML por heurística de ETag). Por eso el link viejo de Novedades persistía
+  aunque el fix ya estaba deployado.
+- **Dashboard LLM**: nuevos paneles **usuarios vs NPC** (split por `end_user` =
+  `online-game:player:*` vs `online-game:npc:*`): tokens/s y consultas 24h por tipo. Aclara que los
+  NPC consultan al LLM cada tick y los usuarios solo al usar el asistente (por eso domina NPC).
+- Test e2e: `test_html_served_with_no_cache`.
+
 ## [1.52.0] - 2026-06-25
 
 ### 2026-06-25 — Consola de admin (ABM de cuentas) + fix de links de Novedades
