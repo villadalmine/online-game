@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.30.0] - 2026-06-25
+
 ### 2026-06-25 — SDD 37: bases lunares (minar recursos premium de las lunas)
 - `POST /colonize {mode:"lunar"}`: fundás una **base lunar** sobre una luna (requiere **Robótica
   orbital**); sus minas extraen los **recursos premium de la luna** (He-3, tierras raras, hielo de
