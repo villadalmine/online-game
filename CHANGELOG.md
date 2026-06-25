@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.28.0] - 2026-06-25
+
 ### 2026-06-25 — Perfil: cambiar nick y contraseña (sin validar) + reset por OTP
 - `POST /api/v1/players/me/profile` `{username?, password?}`: el jugador autenticado cambia su
   **nick** y/o **contraseña** sin validar email (valida unicidad del nick + longitudes). Devuelve un
