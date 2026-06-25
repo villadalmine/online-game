@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.26.0] - 2026-06-25
+
 ### 2026-06-25 — SDD 37 v2: bases orbitales con robots (colonizar mundos letales)
 - Tecnología **Robótica orbital** + tipo de base **orbital** (`Base_.base_type`): una estación con
   robots que **extrae recursos de mundos letales** (Mercurio sin atmósfera, etc.) sin habitarlos —
