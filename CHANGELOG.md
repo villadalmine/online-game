@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Transporte: muestra el stock disponible en el origen
+- El form de transporte no decía cuánto tenías del mineral en el **planeta de origen**. Ahora muestra
+  **"disponible en origen: N @planeta"** en vivo (al cambiar origen/mineral/cantidad) y avisa **cuánto
+  falta** si pedís más de lo que hay. Solo frontend.
+
 ### 2026-06-25 — Sync de estados de los SDD con la realidad
 - Auditoría CHANGELOG ↔ SDD ↔ código: el CHANGELOG estaba fiel, pero el campo **Estado** de casi
   todos los SDD seguía en "propuesto" pese a estar en producción. Reescritos los 42: **36
