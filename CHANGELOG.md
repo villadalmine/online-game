@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.60.0] - 2026-06-25
+
 ### 2026-06-25 — Hub y mercado negro: naves + escolta + riesgo pirata determinístico
 - Comprar en el **hub** o trocar en el **mercado negro** ahora exige **naves de carga** (1 por cada
   capacidad de cargo) y expone el cargamento a **piratas** con un **riesgo DETERMINÍSTICO** según la
