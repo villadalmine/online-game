@@ -1,6 +1,6 @@
 # SDD 42 — Mercado, comercio y economía por-planeta
 
-> **Estado:** propuesto (SOLO especificación — NO implementar todavía) · **Fecha:** 2026-06-25
+> **Estado:** IMPLEMENTADO — Fases 1, 2 y 3 completas (1.30.0–1.40.0) · **Fecha:** 2026-06-25
 > **Relacionado:** [SDD 37 colonización](sdd-colonization.md) (bases por planeta), [SDD 13 precisión
 > científica](sdd-scientific-accuracy.md) (abundancia/ubicaciones reales), `app/services/alliances.py`
 > (benefit `trade`), `app/services/economy.py` (stocks/minas), `content/planets.yaml` (abundancia),
@@ -125,12 +125,20 @@ scarcity(p, mineral)     = 1 / max(abundance(p, mineral), ε)   # caro donde esc
   precio por **oferta/demanda** (comprar sube, vender baja, reversión al intrínseco en el tick, banda
   de clamp). `hub_trade` (requiere `cargo_ship`, paga/cobra energía, acredita al natal); precio
   intrínseco = base/abundancia-media (premium caros). API `GET /market/hub` (tu galaxia + **todas**,
-  consulta inter-galaxia) y `POST /market/hub/{buy|sell}`; panel web 🛰 Hub. **Pendiente de Fase 3:**
-  black market (trueque con materiales + viaje), `protocol_ship`, aparcamiento/hangar y robos/escolta.
-- **Fase 3 (resto):** `MarketPrice` por oferta/demanda;
-  cuevas ilegales (pagás con materiales, viajás); **slot único** en mercados de planeta + upgrade
-  `hangar` (más slots), aparcamiento **infinito** en el hub; **piratería/saqueo** de convoyes →
-  escolta militar (reusa `resolve_combat`); precios inter-galaxia (consultar otros hubs).
+  consulta inter-galaxia) y `POST /market/hub/{buy|sell}`; panel web 🛰 Hub.
+- **Fase 3 (resto) — COMPLETA (2026-06-25):**
+  - **Black market** (1.38.0): `POST /market/blackmarket` — **trueque** material-por-material a
+    precios del hub con premium ilegal (`black_market_rate`), **sin energía**, requiere `cargo_ship`;
+    sin los límites del mercado natal (el riesgo del contrabando). Journal `black_market`. UI 🕶.
+  - **Piratería/escolta** (1.39.0): `raid_convoys` en el tick — los piratas emboscan convoyes
+    (`pirate_raid_chance`, poder ∝ carga); `transport` acepta `escort` militar que defiende con la
+    misma lógica de pérdidas que `resolve_combat`; si pierde, roban hasta `pirate_loss_cap`. Columna
+    `transport_missions.escort`. Journal `convoy_raided`/`convoy_defended`. UI 🛡.
+  - **Hangar/aparcamiento** (1.40.0): edificio `hangar` → cada uno sube el cupo de naves por ventana
+    (`market_transport_ships_per_hangar`). Las que no salen "quedan en el hangar".
+  - **`protocol_ship`: descartado** — los precios locales (`GET /market/prices?planet=`) y de los hubs
+    (`GET /market/hub`, **todas** las galaxias) ya son **públicos y consultables sin presencia**, así
+    que una nave de scouting de precios no agrega nada. El "viaje" real lo exige operar (cargo_ship).
 
 ## 10. Tests / validación (por fase)
 - Precios: `planet_price` barato donde abunda, caro donde escasea; `base_energy_price` == costo real.
