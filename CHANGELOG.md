@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.27.0] - 2026-06-25
+
 ### 2026-06-25 — Colonias: costo de construcción por-colonia + tipo visible
 - Construir en una **colonia hostil** cuesta más (modificador `build_cost` de `compat` según
   habitabilidad) y en una **base orbital** cuesta ×1.5 (los robots construir es caro). El mundo natal
