@@ -65,8 +65,14 @@ async def register(body: RegisterRequest, session: AsyncSession = Depends(get_se
 
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, session: AsyncSession = Depends(get_session)):
-    res = await session.execute(select(Player).where(Player.username == body.username))
-    player = res.scalar_one_or_none()
+    # SDD 6/14: aceptar usuario O email (si renombraste el nick, igual entrás con tu email).
+    ident = (body.username or "").strip()
+    res = await session.execute(
+        select(Player).where(
+            (Player.username == ident) | (Player.email == ident.lower())
+        )
+    )
+    player = res.scalars().first()
     if player is None or not verify_password(body.password, player.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Credenciales invalidas")
     metrics.LOGINS.inc(method="password")

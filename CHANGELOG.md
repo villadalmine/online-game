@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Login por email o usuario + vitrina de universos spin-off (SDD 26)
+- **Login por email O usuario**: `POST /auth/login` acepta el username **o** el email + contraseña.
+  Resuelve quedarse afuera tras renombrar el nick (el login era solo por username). Placeholder y
+  ayuda actualizados ("usuario o email").
+- **Universos spin-off — vitrina (SDD 26, showcase)**: `content/universes.yaml` (data-as-code,
+  bilingüe, **genérico/homenaje** — nombres alterados). Primer pack: **"Guerra de las Colonias"**
+  (homenaje a Battlestar Galactica): materiales (tilio), mundos y naves (coloniales vs autómatas) +
+  en qué **difiere del estándar**. Endpoint público `GET /universes` y `GET /universes/{key}`
+  (localizado). Panel **🌌 Universos** en el cliente. *No jugable aún* — es la maqueta para la página.
+- **Panel admin — reset de clave**: buscador de usuario/email + botón 🔑 que llama
+  `/admin/players/{id}/reset-password` y muestra la temporal.
+- Tests: `test_login_by_username_or_email`, `test_universes_showcase_public`.
+
 ## [1.50.0] - 2026-06-25
 
 ### 2026-06-25 — Fixes de cuenta/admin + UX de espionaje

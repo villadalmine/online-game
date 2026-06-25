@@ -1020,8 +1020,38 @@ async def test_admin_approval_flow_e2e(client, monkeypatch):
     assert ob2.status_code == 201, ob2.text
 
 
+async def test_login_by_username_or_email(client):
+    # SDD 6/14: tras renombrar el nick, podés entrar con el USUARIO o con el EMAIL + tu clave.
+    r = await client.http.post("/api/v1/auth/register",
+        json={"username": "renamed_user", "password": "secret123", "email": "me@dom.com"})
+    assert r.status_code == 201, r.text
+    by_user = await client.http.post("/api/v1/auth/login",
+        json={"username": "renamed_user", "password": "secret123"})
+    assert by_user.status_code == 200
+    by_email = await client.http.post("/api/v1/auth/login",
+        json={"username": "me@dom.com", "password": "secret123"})
+    assert by_email.status_code == 200
+    # clave mal → 401
+    assert (await client.http.post("/api/v1/auth/login",
+        json={"username": "me@dom.com", "password": "nope"})).status_code == 401
+
+
+async def test_universes_showcase_public(client):
+    # SDD 26: vitrina pública de universos spin-off (genérico/homenaje), bilingüe.
+    r = await client.http.get("/api/v1/universes")
+    assert r.status_code == 200, r.text
+    lst = r.json()
+    assert lst and any(u["key"] == "colonial_war" for u in lst)
+    full = (await client.http.get("/api/v1/universes/colonial_war?lang=en")).json()
+    assert full["name"] == "The Colonial War" and full["homage_to"]
+    assert full["ships"] and full["worlds"] and full["materials"]
+    assert full["ships"][0]["name"] == "Star Battleship"   # localizado EN
+    assert "name_en" not in full   # helper *_en dropped
+    assert (await client.http.get("/api/v1/universes/nope")).status_code == 404
+
+
 async def test_admin_reset_password_e2e(client, monkeypatch):
-    # SDD 14: el admin resetea la clave de un jugador → temp de un solo uso → el jugador entra con ella.
+    # SDD 14: el admin resetea la clave → temp de un solo uso → el jugador entra con ella.
     from app.core.config import get_settings
     monkeypatch.setattr(get_settings(), "admin_email", "boss@rp.com")
     # jugador olvidadizo

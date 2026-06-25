@@ -49,6 +49,7 @@ class GameContent:
         }
         self.events: dict[str, dict] = {e["key"]: e for e in _load("events.yaml")["events"]}
         self.announcements: list[dict] = _load("announcements.yaml")["announcements"]  # SDD 27
+        self.universes: list[dict] = _load("universes.yaml")["universes"]  # SDD 26 (showcase)
 
     def resolve_role(self, race_key: str, role: str) -> str | None:
         """Map an abstract resource role (structural/energetic/advanced) to a mineral key."""
@@ -101,8 +102,8 @@ def get_content() -> GameContent:
 # `<field>_en` sibling holds the English variant. Adding a language = editing YAML.
 # --------------------------------------------------------------------------- #
 SUPPORTED_LANGS = ("es", "en")
-LOCALIZED_FIELDS = ("name", "description", "real", "system", "rationale",
-                    "title", "summary", "standard_baseline", "differences")  # +SDD 13, +SDD 27
+LOCALIZED_FIELDS = ("name", "description", "real", "system", "rationale", "title", "summary",
+                    "standard_baseline", "differences", "tagline", "role")  # +SDD 13/27/26
 
 
 def normalize_lang(lang: str | None) -> str:

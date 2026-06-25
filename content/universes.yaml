@@ -1,0 +1,112 @@
+# SDD 26 — Universos spin-off (SHOWCASE / mock). Data-as-code, tipado y bilingüe (ES + *_en).
+# Modo GENÉRICO/HOMENAJE: nombres propios alterados (no marcas registradas), manteniendo el espíritu.
+# Esto es una VITRINA (no jugable todavía): se sirve por GET /universes para mostrar en la página.
+# canon: fiction | licensing: fan-noncommercial | homage_to declara el homenaje honestamente.
+universes:
+  - key: colonial_war
+    name: "Guerra de las Colonias"
+    name_en: "The Colonial War"
+    homage_to: "Battlestar Galactica"
+    canon: fiction
+    licensing: fan-noncommercial
+    tagline: "Doce colonias humanas huyen de las máquinas que ellas mismas crearon."
+    tagline_en: "Twelve human colonies flee the machines they themselves created."
+    standard_baseline: "Universo estándar: planetas y materiales reales (Sistema Solar / exosistemas)."
+    standard_baseline_en: "Standard universe: real planets and materials (Solar System / exosystems)."
+    differences:
+      - "Dos bandos: las Colonias humanas vs los Autómatas (IA rebelde)."
+      - "Salto FTL: las flotas saltan instantáneo en vez de viajar — combate de persecución."
+      - "Material clave: tilio, el único combustible del salto FTL (escaso = estratégico)."
+      - "Naves capitales que cargan cazas (porta-naves), no solo flotas sueltas."
+    differences_en:
+      - "Two sides: the human Colonies vs the Automata (rogue AI)."
+      - "FTL jump: fleets jump instantly instead of traveling — pursuit-style combat."
+      - "Key material: tylium, the only FTL-jump fuel (scarce = strategic)."
+      - "Capital ships that carry fighters (carriers), not just loose fleets."
+    sources: ["Homenaje a Battlestar Galactica (2004) — nombres alterados, fan no comercial"]
+    materials:
+      - key: tylium
+        name: "Tilio"
+        name_en: "Tylium"
+        role: "Combustible del salto FTL"
+        role_en: "FTL-jump fuel"
+        description: "Mineral raro que refinado permite el salto instantáneo entre estrellas."
+        description_en: "Rare ore that, refined, enables instant star-to-star jumps."
+      - key: colonial_alloy
+        name: "Aleación colonial"
+        name_en: "Colonial alloy"
+        role: "Blindaje de cascos"
+        role_en: "Hull armor"
+        description: "Aleación resistente para los cascos de las naves capitales."
+        description_en: "Tough alloy for capital-ship hulls."
+    worlds:
+      - key: capital_colony
+        name: "Colonia Capital"
+        name_en: "Capital Colony"
+        gravity_g: 1.0
+        mean_temp_c: 16
+        atmosphere: thick
+        description: "El mundo más poblado de las Colonias; centro político y militar."
+        description_en: "The most populated Colony world; political and military hub."
+      - key: frozen_refuge
+        name: "Refugio Helado"
+        name_en: "Frozen Refuge"
+        gravity_g: 0.9
+        mean_temp_c: -40
+        atmosphere: thin
+        description: "Luna helada usada como escondite de la flota en fuga."
+        description_en: "Icy moon used as a hideout for the fleeing fleet."
+      - key: ancestral_world
+        name: "Mundo Ancestral"
+        name_en: "Ancestral World"
+        gravity_g: 1.1
+        mean_temp_c: 22
+        atmosphere: thick
+        description: "Cuna mítica de la humanidad; objetivo final de la travesía."
+        description_en: "Mythic cradle of humanity; the journey's final goal."
+    ships:
+      - key: colonial_carrier
+        name: "Acorazado Estelar"
+        name_en: "Star Battleship"
+        category: capital
+        faction: colonial
+        propulsion: ftl_jump
+        stats: { attack: 80, defense: 95, hp: 500 }
+        description: "Porta-naves coloniales: aguanta castigo y lanza escuadrones de cazas."
+        description_en: "Colonial carrier: soaks damage and launches fighter squadrons."
+      - key: viper_fighter
+        name: "Caza Víbora"
+        name_en: "Viper Fighter"
+        category: fighter
+        faction: colonial
+        propulsion: sublight
+        stats: { attack: 45, defense: 25, hp: 90 }
+        description: "Caza ágil de un piloto; la espina dorsal de la defensa colonial."
+        description_en: "Agile single-pilot fighter; backbone of the colonial defense."
+      - key: scout_raptor
+        name: "Explorador"
+        name_en: "Scout"
+        category: support
+        faction: colonial
+        propulsion: ftl_jump
+        stats: { attack: 15, defense: 20, hp: 110 }
+        description: "Nave de reconocimiento y salto: explora antes de mover la flota."
+        description_en: "Recon-and-jump ship: scouts ahead before the fleet moves."
+      - key: enemy_raider
+        name: "Caza Autómata"
+        name_en: "Automaton Raider"
+        category: fighter
+        faction: automata
+        propulsion: sublight
+        stats: { attack: 50, defense: 20, hp: 80 }
+        description: "Caza no tripulado de los Autómatas; ataca en enjambre."
+        description_en: "Unmanned Automata fighter; attacks in swarms."
+      - key: enemy_basestar
+        name: "Nave Nodriza"
+        name_en: "Mothership"
+        category: capital
+        faction: automata
+        propulsion: ftl_jump
+        stats: { attack: 90, defense: 70, hp: 460 }
+        description: "Nave nodriza enemiga: fabrica y despliega enjambres de cazas autómatas."
+        description_en: "Enemy mothership: builds and deploys swarms of automaton fighters."
