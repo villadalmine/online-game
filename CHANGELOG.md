@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.53.0] - 2026-06-25
+
 ### 2026-06-25 — HTML sin cache + métricas LLM separadas usuarios vs NPC
 - **Fix raíz del "sigo viendo lo viejo"**: el HTML (`/`, `/game`, `/tech`) se sirve con
   `Cache-Control: no-cache` → tras cada deploy ves la versión nueva **sin hard-refresh** (antes el
