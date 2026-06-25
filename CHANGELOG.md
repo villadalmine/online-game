@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.48.0] - 2026-06-25
+
 ### 2026-06-25 — Anuncios / "Lo que viene" (SDD 27)
 - Contenido **data-as-code** en `content/announcements.yaml` (tipado, bilingüe): categorías
   `release|incoming|spinoff|season|maintenance` y estados `live|coming|planned`. Los spin-offs
