@@ -80,6 +80,7 @@ async def test_landing_page_and_og(client):
     assert 'property="og:title"' in b and 'name="twitter:card"' in b
     assert "Conquistá la galaxia" in b and "Conquer the galaxy" in b  # ES + EN
     assert "BYOD" in b
+    assert '/tech' in b   # enlace a la página técnica
     img = await client.http.get("/og-image.png")
     assert img.status_code == 200 and img.headers["content-type"] == "image/png"
 
@@ -91,6 +92,8 @@ async def test_tech_page(client):
     b = r.text
     assert "self-hosted" in b and "HAProxy" in b and "SNI passthrough" in b
     assert "Cilium" in b and "k3s" in b and "Gateway" in b
+    # sección "cómo usa la IA": GPU local + subgrafo + gemma-4 pago (no free)
+    assert "subgrafo" in b and "gemma-4" in b
     # no debe filtrar direccionamiento privado exacto
     assert "192.168." not in b
 

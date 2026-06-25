@@ -163,7 +163,7 @@
     <tr><td data-i18n="l_data">Datos</td><td><code>PostgreSQL 16</code> (StatefulSet+PVC)</td><td data-i18n="r_data">Fuente de verdad; migraciones Alembic al arrancar.</td></tr>
     <tr><td>Cache</td><td><code>Redis 7</code></td><td data-i18n="r_cache">Cache de catálogo, rate-limit y <strong>locks distribuidos</strong> por jugador.</td></tr>
     <tr><td data-i18n="l_world">Mundo</td><td><code>CronJob</code> (tick */5)</td><td data-i18n="r_world">Avanza el mundo y corre los turnos de las NPC.</td></tr>
-    <tr><td>IA / LLM</td><td><code>LiteLLM</code> → 2× <code>Ollama</code> (Tesla P4 + Quadro M4000) / OpenRouter</td><td data-i18n="r_llm">Gateway OpenAI-compatible: balancea entre las 2 GPUs (vGPU HAMI) y cae a OpenRouter free si tarda.</td></tr>
+    <tr><td>IA / LLM</td><td><code>LiteLLM</code> → 2× <code>Ollama</code> (Tesla P4 + Quadro M4000) / OpenRouter</td><td data-i18n="r_llm">Gateway OpenAI-compatible: balancea entre las 2 GPUs (vGPU HAMI); si la GPU tarda, cae a un modelo pago barato (gemma-4), no al free (que se bloquea por día).</td></tr>
     <tr><td>Build</td><td><code>Argo Workflows</code> + <code>Kaniko</code></td><td data-i18n="r_build">Builds <strong>dentro del clúster</strong> (arm64) → registry interno; gate de tests en el Dockerfile.</td></tr>
     <tr><td>Deploy</td><td><code>Helm</code> (<code>--atomic</code>)</td><td data-i18n="r_deploy">initContainers <em>migrate</em>+<em>smoke</em>, <code>helm test</code>, rollback automático.</td></tr>
     <tr><td data-i18n="l_obs">Observabilidad</td><td><code>Prometheus</code> · <code>Grafana</code> · <code>Alertmanager</code></td><td data-i18n="r_obs">ServiceMonitor + dashboards + alertas a un bot de Telegram.</td></tr>
@@ -185,6 +185,14 @@
     <div class="card"><div class="k">lazy state</div><h3 data-i18n="sc2h">Sin cron por usuario</h3><p data-i18n="sc2p">Energía y producción se calculan desde <code>*_updated_at</code> al leer; el costo no crece con usuarios inactivos.</p></div>
     <div class="card"><div class="k">async</div><h3 data-i18n="sc3h">Por turnos</h3><p data-i18n="sc3p">Sin requisitos de baja latencia → muchísimo más barato de escalar que tiempo real.</p></div>
     <div class="card"><div class="k">vCluster</div><h3 data-i18n="sc4h">Aislamiento</h3><p data-i18n="sc4p">El juego corre en su propio vCluster: API propia, RBAC y CRDs sin tocar el clúster anfitrión.</p></div>
+  </div>
+
+  <h2><span data-i18n="s_ai">Cómo usa la IA el juego</span> <small data-i18n="s_ai_sm">GPU propia primero</small></h2>
+  <div class="grid">
+    <div class="card"><div class="k">🖥️ GPU local</div><h3 data-i18n="ai1h">Tu GPU primero</h3><p data-i18n="ai1p">El asistente y las NPC corren en <strong>2 GPUs caseras</strong> (Ollama, modelo chico) vía LiteLLM. Gratis, sin tope diario y ~1–3 s. Cero dependencia de nube en el camino feliz.</p></div>
+    <div class="card"><div class="k">🧠 RAG / grafo</div><h3 data-i18n="ai2h">Subgrafo, no todo</h3><p data-i18n="ai2p">El asistente <strong>indexa el grafo</strong> del juego y manda solo el <em>subgrafo relevante</em> a tu pregunta — prompt chico que la GPU resuelve sin truncar. El razonamiento (qué te falta, prerequisitos) es <strong>determinista</strong>; la IA solo redacta.</p></div>
+    <div class="card"><div class="k">🔁 fallback</div><h3 data-i18n="ai3h">Cadena con red</h3><p data-i18n="ai3p">Si la GPU no llega, cae a un modelo <strong>pago barato</strong> (el <em>free</em> de la nube se bloquea por día). Si todo falla, responde con <strong>tips deterministas</strong>: el juego <strong>siempre</strong> contesta.</p></div>
+    <div class="card"><div class="k">🤖 NPC + budget</div><h3 data-i18n="ai4h">Coherente y barato</h3><p data-i18n="ai4p">Las NPC (atacar, comerciar, chatear en la alianza) usan la GPU y <em>toleran esperar</em>. Hay un <strong>presupuesto por jugador/día</strong> para que charlar no queme créditos.</p></div>
   </div>
 
   <h2><span data-i18n="s_hw">Hardware</span> <small data-i18n="s_hw_sm">bare-metal en casa</small></h2>
@@ -228,7 +236,7 @@ const T = {
     l_data:"Datos", r_data:"Fuente de verdad; migraciones Alembic al arrancar.",
     r_cache:"Cache de catálogo, rate-limit y <strong>locks distribuidos</strong> por jugador.",
     l_world:"Mundo", r_world:"Avanza el mundo y corre los turnos de las NPC.",
-    r_llm:"Gateway OpenAI-compatible: balancea entre las 2 GPUs (vGPU HAMI) y cae a OpenRouter free si tarda.",
+    r_llm:"Gateway OpenAI-compatible: balancea entre las 2 GPUs (vGPU HAMI); si la GPU tarda, cae a un modelo pago barato (gemma-4), no al free (que se bloquea por día).",
     r_build:"Builds <strong>dentro del clúster</strong> (arm64) → registry interno; gate de tests en el Dockerfile.",
     r_deploy:"initContainers <em>migrate</em>+<em>smoke</em>, <code>helm test</code>, rollback automático.",
     l_obs:"Observabilidad", r_obs:"ServiceMonitor + dashboards + alertas a un bot de Telegram.",
@@ -243,6 +251,11 @@ const T = {
     sc2h:"Sin cron por usuario", sc2p:"Energía y producción se calculan desde <code>*_updated_at</code> al leer; el costo no crece con usuarios inactivos.",
     sc3h:"Por turnos", sc3p:"Sin requisitos de baja latencia → muchísimo más barato de escalar que tiempo real.",
     sc4h:"Aislamiento", sc4p:"El juego corre en su propio vCluster: API propia, RBAC y CRDs sin tocar el clúster anfitrión.",
+    s_ai:"Cómo usa la IA el juego", s_ai_sm:"GPU propia primero",
+    ai1h:"Tu GPU primero", ai1p:"El asistente y las NPC corren en <strong>2 GPUs caseras</strong> (Ollama, modelo chico) vía LiteLLM. Gratis, sin tope diario y ~1–3 s. Cero dependencia de nube en el camino feliz.",
+    ai2h:"Subgrafo, no todo", ai2p:"El asistente <strong>indexa el grafo</strong> del juego y manda solo el <em>subgrafo relevante</em> a tu pregunta — prompt chico que la GPU resuelve sin truncar. El razonamiento (qué te falta, prerequisitos) es <strong>determinista</strong>; la IA solo redacta.",
+    ai3h:"Cadena con red", ai3p:"Si la GPU no llega, cae a un modelo <strong>pago barato</strong> (el <em>free</em> de la nube se bloquea por día). Si todo falla, responde con <strong>tips deterministas</strong>: el juego <strong>siempre</strong> contesta.",
+    ai4h:"Coherente y barato", ai4p:"Las NPC (atacar, comerciar, chatear en la alianza) usan la GPU y <em>toleran esperar</em>. Hay un <strong>presupuesto por jugador/día</strong> para que charlar no queme créditos.",
     s_hw:"Hardware", s_hw_sm:"bare-metal en casa",
     hw_p:"Clúster <code>k3s</code> multi-nodo sobre placas <strong>ARM</strong> de bajo consumo (Raspberry Pi + Turing RK1 + Super6c) y un nodo x86 con <strong>2 GPUs (Tesla P4 + Quadro M4000)</strong> para la IA local. Almacenamiento persistente en disco del clúster (PVC). <strong>Cero dependencia de nube.</strong>",
     note_sec:"Por seguridad, esta página describe la <em>arquitectura</em> y los protocolos, pero omite el direccionamiento exacto (IPs privadas LAN, hostnames de nodos, endpoints internos).",
@@ -275,7 +288,7 @@ const T = {
     l_data:"Data", r_data:"Source of truth; Alembic migrations on startup.",
     r_cache:"Catalog cache, rate-limit and per-player <strong>distributed locks</strong>.",
     l_world:"World", r_world:"Advances the world and runs NPC turns.",
-    r_llm:"OpenAI-compatible gateway: load-balances across both GPUs (HAMI vGPU), falls back to OpenRouter free on slow.",
+    r_llm:"OpenAI-compatible gateway: load-balances across both GPUs (HAMI vGPU); if the GPU is slow it falls back to a cheap paid model (gemma-4), not the free tier (daily-blocked).",
     r_build:"<strong>In-cluster</strong> builds (arm64) → internal registry; test gate in the Dockerfile.",
     r_deploy:"<em>migrate</em>+<em>smoke</em> initContainers, <code>helm test</code>, auto rollback.",
     l_obs:"Observability", r_obs:"ServiceMonitor + dashboards + alerts to a Telegram bot.",
@@ -290,6 +303,11 @@ const T = {
     sc2h:"No per-user cron", sc2p:"Energy and production are computed from <code>*_updated_at</code> on read; cost doesn't grow with idle users.",
     sc3h:"Turn-based", sc3p:"No low-latency requirements → far cheaper to scale than real-time.",
     sc4h:"Isolation", sc4p:"The game runs in its own vCluster: own API, RBAC and CRDs without touching the host cluster.",
+    s_ai:"How the game uses AI", s_ai_sm:"own GPU first",
+    ai1h:"Your GPU first", ai1p:"The assistant and the NPCs run on <strong>2 home GPUs</strong> (Ollama, small model) via LiteLLM. Free, no daily cap, ~1–3 s. Zero cloud dependency on the happy path.",
+    ai2h:"Subgraph, not all", ai2p:"The assistant <strong>indexes the game graph</strong> and sends only the <em>relevant subgraph</em> for your question — a small prompt the GPU handles without truncating. The reasoning (what you're missing, prerequisites) is <strong>deterministic</strong>; the AI only writes prose.",
+    ai3h:"Chain with a net", ai3p:"If the GPU can't keep up, it falls back to a <strong>cheap paid</strong> model (the cloud <em>free</em> tier gets daily-blocked). If everything fails, it answers with <strong>deterministic tips</strong>: the game <strong>always</strong> replies.",
+    ai4h:"Coherent and cheap", ai4p:"NPCs (attack, trade, alliance chat) use the GPU and <em>tolerate waiting</em>. There's a <strong>per-player daily budget</strong> so chatting doesn't burn credits.",
     s_hw:"Hardware", s_hw_sm:"bare-metal at home",
     hw_p:"Multi-node <code>k3s</code> cluster on low-power <strong>ARM</strong> boards (Raspberry Pi + Turing RK1 + Super6c) plus an x86 node with <strong>2 GPUs (Tesla P4 + Quadro M4000)</strong> for local AI. Persistent storage on cluster disk (PVC). <strong>Zero cloud dependency.</strong>",
     note_sec:"For security, this page describes the <em>architecture</em> and protocols but omits exact addressing (private LAN IPs, node hostnames, internal endpoints).",

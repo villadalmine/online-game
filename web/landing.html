@@ -36,7 +36,7 @@
 <body><div class="wrap">
  <header>
    <span class="brand">🌌 Online Galaxy War</span>
-   <span><button class="btn sec" id="lang" onclick="toggle()">🌐 EN</button> <a class="btn" href="/" data-i="play">Jugar</a></span>
+   <span><button class="btn sec" id="lang" onclick="toggle()">🌐 EN</button> <a class="btn sec" href="/tech" data-i="tech">🛠 Tech</a> <a class="btn" href="/" data-i="play">Jugar</a></span>
  </header>
 
  <section class="hero">
@@ -53,30 +53,31 @@
 
  <footer>
    <span data-i="foot">Hecho con ciencia real · Open source (MIT)</span> ·
+   <a href="/tech" data-i="techf">Cómo está hecho</a> ·
    <a href="https://github.com/villadalmine/online-game" target="_blank">GitHub</a>
  </footer>
 </div>
 <script>
 const T={
- es:{play:"Jugar",cta:"🚀 Jugar gratis",tagline:"Conquistá la galaxia.",
+ es:{play:"Jugar",tech:"🛠 Tech",techf:"Cómo está hecho",cta:"🚀 Jugar gratis",tagline:"Conquistá la galaxia.",
   sub:"Estrategia espacial por turnos con <b>galaxias y planetas reales</b>, flotas que viajan, NPCs con IA y un asistente que entiende el juego. Gratis y open source.",
   feat:"Qué tiene",modelt:"Modelo",foot:"Hecho con ciencia real · Open source (MIT)",
   features:[["🪐","Galaxias reales","Planetas, lunas y minerales basados en ciencia (NASA), con propiedades físicas."],
    ["🚀","Combate con viaje","Flotas que viajan, resuelven al llegar y vuelven con botín. Torretas y defensa de alianza."],
    ["🤖","NPCs con IA","Rivales controlados por LLM, con personalidad y memoria, que se coordinan."],
-   ["🧠","Asistente AI","Te dice qué construir y cómo destrabarte; entiende el grafo del juego."],
+   ["🧠","Asistente AI","Te dice qué construir y cómo destrabarte; entiende el grafo del juego. Corre en <b>GPU propia</b> (ver Tech)."],
    ["🤝","Alianzas","No-agresión, defensiva o plena: bonus compartido, comercio, visión y defensa mutua."],
    ["📅","Temporadas","Mundo persistente + temporadas con Hall of Fame y protección de novato."]],
   plans:[["Free","Gratis","Jugá gratis en la instancia pública (alta por invitación)."],
    ["BYOD","Open source","Es MIT: levantá tu propia instancia (Helm/Docker) y traé tu propia API key de LLM."],
    ["Pago","Por ahora, nada","Sin monetización hoy. A futuro, quizás algo cosmético opcional."]]},
- en:{play:"Play",cta:"🚀 Play free",tagline:"Conquer the galaxy.",
+ en:{play:"Play",tech:"🛠 Tech",techf:"How it's built",cta:"🚀 Play free",tagline:"Conquer the galaxy.",
   sub:"Turn-based space strategy with <b>real galaxies and planets</b>, traveling fleets, AI NPCs and an assistant that understands the game. Free and open source.",
   feat:"What you get",modelt:"Model",foot:"Built on real science · Open source (MIT)",
   features:[["🪐","Real galaxies","Planets, moons and minerals grounded in science (NASA), with physical properties."],
    ["🚀","Travel combat","Fleets travel, resolve on arrival and return with loot. Turrets and alliance defense."],
    ["🤖","AI NPCs","LLM-driven rivals with personality and memory that coordinate."],
-   ["🧠","AI assistant","Tells you what to build and how to get unblocked; understands the game's graph."],
+   ["🧠","AI assistant","Tells you what to build and how to get unblocked; understands the game's graph. Runs on <b>our own GPU</b> (see Tech)."],
    ["🤝","Alliances","Non-aggression, defensive or full: shared bonus, trade, vision and mutual defense."],
    ["📅","Seasons","Persistent world + seasons with a Hall of Fame and newbie protection."]],
   plans:[["Free","Free","Play for free on the public instance (invite-based signup)."],

@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Página Tech: cómo usa la IA el juego + enlace desde la landing
+- Nueva sección **"Cómo usa la IA el juego"** en `/tech`: GPU local primero (Ollama × 2), asistente con
+  **subgrafo indexado** (RAG, razonamiento determinista + IA solo redacta), **cadena con red** (si la
+  GPU no llega → modelo pago barato gemma-4, porque el free se bloquea por día → tips deterministas) y
+  **NPC + budget por jugador/día**. Actualizada la fila IA/LLM del stack (gemma-4 pago, no free).
+- La **landing** (`/game`) ahora enlaza a **🛠 Tech** (header + footer, ES/EN) y la card del asistente
+  aclara que corre en **GPU propia**.
+- Tests e2e ampliados: la landing enlaza `/tech`; `/tech` muestra la sección de IA (subgrafo + gemma-4).
+
 ## [1.44.0] - 2026-06-25
 
 ### 2026-06-25 — Asistente en GPU local: subgrafo indexado + budget por usuario (SDD 9)
