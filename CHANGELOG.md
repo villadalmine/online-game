@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.52.0] - 2026-06-25
+
 ### 2026-06-25 — Consola de admin (ABM de cuentas) + fix de links de Novedades
 - **Consola de admin (SDD 14)**: al loguearte como admin ves una **vista dedicada** (el admin no
   juega, solo administra). ABM completo de cuentas: buscar, **editar** usuario/email/estado
