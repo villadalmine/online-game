@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.49.0] - 2026-06-25
+
 ### 2026-06-25 — Alta con aprobación de admin + panel (SDD 14)
 - Nuevo `Player.status` (`active` default | `pending` | `suspended` | `rejected`) + `approved_at/by`
   (migración aditiva, `server_default='active'` → no rompe cuentas/tests). Flag
