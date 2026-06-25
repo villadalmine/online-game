@@ -338,3 +338,32 @@ async def test_rule_brain_ganks_the_leading_human(session):
     action = await RuleBasedBrain().act(session, npc)
     leader_base = await _base_of(session, leader)
     assert action == f"attack base {leader_base.id}"
+
+
+async def test_best_meta_unit_picks_high_winrate(session):
+    # SDD 41: la NPC elige la unidad con mejor win-rate (con muestra suficiente).
+    import json
+
+    from app.models import GameEvent
+    from app.services.insights import compute_meta
+    from app.services.npc import _best_meta_unit
+
+    assert await _best_meta_unit(session) is None   # sin datos → None (cae al default)
+
+    win = json.dumps({"force": {"aircraft": 5}, "outcome": "attacker"})
+    for _ in range(6):   # aircraft domina
+        session.add(GameEvent(type="battle_resolved", payload=win))
+    session.add(GameEvent(type="battle_resolved",
+                          payload=json.dumps({"force": {"tank": 5}, "outcome": "defender"})))
+    await session.commit()
+    await compute_meta(session)
+    await session.commit()
+    assert await _best_meta_unit(session) == "aircraft"
+
+
+def test_unit_ready_checks_required_building():
+    from app.content.registry import get_content
+    from app.services.npc import _unit_ready
+    c = get_content()
+    assert _unit_ready("aircraft", {"factory"}, c)        # factory activo
+    assert not _unit_ready("aircraft", {"barracks"}, c)   # falta factory

@@ -116,3 +116,9 @@ def test_graph_documents_cover_every_node_type():
     docs = graph_documents("terran", "earth")
     types = {d["type"] for d in docs}
     assert {"mineral", "building", "unit", "tech"} <= types
+
+
+def test_retrieve_finds_energy_assist_mechanic():
+    # SDD 41: "ayudame con energía" debe encontrar la mecánica de nivelado (no delirar)
+    res = retrieve("martian", "mars", "ayudame con energía", k=4)
+    assert "mech_energy_assist" in [d["id"] for d in res]

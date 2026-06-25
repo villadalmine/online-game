@@ -884,7 +884,7 @@ function renderPlan(p, el, baseId){
 }
 async function assistEnergy(){
   try{ const r=await api("/api/v1/players/me/advisor/assist-energy","POST");
-    msg((r.bottom3?tr('lvlbottom'):tr('lvlok'))+" +"+Math.round(r.granted)+" ⚡ ("+esc(tr('lvlleft'))+" "+r.left+")");
+    msg("⚡ +"+Math.round(r.granted)+" — "+(r.message||"")+" ("+esc(tr('lvlleft'))+" "+r.left+")");
     refresh();
   }catch(e){ msg(e.message,false); }
 }

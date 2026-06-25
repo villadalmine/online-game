@@ -37,8 +37,9 @@ class VerifyCodeRequest(BaseModel):
 class AssistEnergyResult(BaseModel):
     granted: float
     energy: float
-    bottom3: bool
+    deficit: float          # 0..1: qué tan por debajo del promedio estás (0 = en/sobre el promedio)
     left: int
+    message: str = ""
 
 
 class ProfileUpdateRequest(BaseModel):

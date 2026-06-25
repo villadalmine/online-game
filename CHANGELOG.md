@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — NPCs juegan el meta + energía de nivelado matemática + el asistente la conoce
+- **NPCs juegan el meta (SDD 41)**: el cerebro rule-based entrena la **unidad con mejor win-rate**
+  (si hay muestra ≥5 y >50%) en vez del default tank/soldier; el cerebro LLM recibe el `meta` en su
+  estado. Cierra el círculo: la IA aprende del journal **y lo aplica**.
+- **Energía de nivelado ahora es proporcional (SDD 40/41)**: en vez de "los 3 últimos llenan / resto
+  +100", se calcula `deficit = (promedio_ranking − tu_score)/promedio` y la energía = `deficit × tope`
+  → cuanto más lejos del promedio, más recibís; quien está en o sobre el promedio **no recibe nada y
+  no gasta cupo** (parejo, sin saltos de ranking ni ventaja).
+- **El asistente conoce el nivelado**: se agregó la mecánica `mech_energy_assist` al grafo → cuando
+  preguntás "ayudame con energía" explica la regla y te manda al botón ⚡ Nivelar (antes deliraba
+  describiendo el contexto). Además se afinó la detección de preguntas de mecánica (no secuestra
+  "qué construyo"). Tests + 279 verdes.
+
 ## [1.31.0] - 2026-06-25
 
 ### 2026-06-25 — SDD 41: la IA aprende el meta de las partidas (insights del journal)

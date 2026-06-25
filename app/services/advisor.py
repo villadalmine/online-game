@@ -32,6 +32,9 @@ _MECH_WORDS = {
     "como", "cómo", "cuanto", "cuánto", "cuantos", "cuántos", "cuanta", "cuánta", "cuantas",
     "cuántas", "capacidad", "funciona", "funcionan", "sirve", "sirven", "caben", "cabe",
     "entran", "entra", "llevar", "llevo", "transporta", "transporte", "regla", "reglas",
+    # ayuda/energía (para que "ayudame con energía" explique el nivelado, SDD 41). NO ponemos
+    # "necesito"/"dame" acá: son ambiguos y secuestrarían "necesito una fábrica".
+    "ayuda", "ayudame", "ayúdame", "ayudar", "energia", "energía", "nivelar", "nivelado",
 }
 
 
@@ -224,9 +227,9 @@ async def ask(session: AsyncSession, player: Player, message: str) -> AdvisorRep
     # p.ej. "cuántos militares entran en un transbordador" → responder la regla, no construir).
     qtokens = set(depgraph._tokens(message))
     mech_top = any(d.get("type") == "mechanic" for d in hits[:3])
-    mechanics_q = bool(hits) and (
-        hits[0].get("type") == "mechanic" or (mech_top and bool(qtokens & _MECH_WORDS))
-    )
+    # es mecánica si una regla aparece arriba Y la pregunta usa una palabra de mecánica/ayuda
+    # (evita que "qué construyo" caiga acá: ahí no hay palabra de mecánica → va a blockers).
+    mechanics_q = bool(hits) and mech_top and bool(qtokens & _MECH_WORDS)
     if mechanics_q:
         targets = []                                  # "cómo funciona X" → responde desde knowledge
     elif matched:
@@ -394,8 +397,14 @@ def assist_energy_left(player: Player, now: datetime | None = None) -> int:
 
 
 async def grant_assist_energy(session: AsyncSession, player: Player) -> dict:
-    """Da energía según tu posición: si sos de los 3 últimos, te llena el pool (nivelás rápido);
-    si no, +100. Cap a energy_max y hasta N veces/día → sin snowball (la energía es transitoria)."""
+    """Energía de nivelado proporcional a qué tan lejos estás del promedio del ranking (SDD 40/41).
+
+    Fórmula (determinista, pareja, anti-ventaja):
+        deficit = clamp((avg - my) / max(avg, 1), 0, 1)   # 0 si estás en/sobre el promedio
+        grant   = clamp(deficit · energy_max, piso, energy_max)   # rezagado→lleno; promedio→nada
+        grant   = min(grant, headroom)                            # cap al pool
+    Los punteros (deficit 0) no reciben nada y NO gastan cupo → no hay snowball; la energía es
+    transitoria (regenera). Hasta N veces/día."""
     from app.services.scoring import player_score
 
     if not player.race_key:
@@ -417,26 +426,35 @@ async def grant_assist_energy(session: AsyncSession, player: Player) -> dict:
             )
         )
     ).scalars().all()
-    pairs = sorted([(await player_score(session, p), p.id) for p in peers])
-    bottom3 = {pid for _sc, pid in pairs[:3]}
-    is_bottom3 = len(peers) >= 4 and player.id in bottom3
+    scores = [await player_score(session, p) for p in peers]
+    my_score = await player_score(session, player)
+    avg = (sum(scores) / len(scores)) if scores else my_score
+    deficit = max(0.0, min(1.0, (avg - my_score) / max(avg, 1.0)))   # qué tan lejos del promedio
+
+    if deficit <= 0:   # estás en o sobre el promedio → no necesitás nivelar (no gasta cupo)
+        return {"granted": 0.0, "energy": round(player.energy, 1), "deficit": 0.0,
+                "left": assist_energy_left(player, now),
+                "message": "Estás en o sobre el promedio: no necesitás nivelar."}
 
     headroom = max(0.0, s.energy_max - player.energy)
-    grant = headroom if is_bottom3 else min(s.assist_energy_normal, headroom)
+    target = max(s.assist_energy_normal, deficit * s.energy_max)   # piso para los que están debajo
+    grant = round(min(target, s.energy_max, headroom), 1)
+
     player.energy = min(s.energy_max, player.energy + grant)
     player.energy_updated_at = now
-
     if not _same_day(player.assist_energy_reset_at, now):
         player.assist_energy_used = 0
         player.assist_energy_reset_at = now
     player.assist_energy_used += 1
 
     from app.services.journal import record
-    await record(session, "assist_energy", player.id, granted=round(grant, 1), bottom3=is_bottom3)
+    await record(session, "assist_energy", player.id,
+                 granted=grant, deficit=round(deficit, 3))
     await session.commit()
     return {
-        "granted": round(grant, 1),
+        "granted": grant,
         "energy": round(player.energy, 1),
-        "bottom3": is_bottom3,
+        "deficit": round(deficit, 3),
         "left": assist_energy_left(player, now),
+        "message": f"Estás {round(deficit * 100)}% por debajo del promedio.",
     }

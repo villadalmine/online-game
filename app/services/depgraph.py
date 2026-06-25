@@ -444,6 +444,22 @@ def mechanics_documents() -> list[dict]:
             "keywords": ["energia", "energía", "energy", "regenera", "tope", "costo", "acciones"],
         },
         {
+            "id": "mech_energy_assist", "type": "mechanic",
+            "text": (
+                "AYUDA DE ENERGÍA / NIVELADO (botón ⚡ Nivelar): el servidor te REGALA energía "
+                "proporcional a qué tan lejos estás del PROMEDIO del ranking — "
+                "deficit = (promedio − tu_score) / promedio; energía = deficit × tope. Los "
+                "rezagados reciben hasta llenar el pool; quien está en o sobre el promedio no "
+                "recibe nada (no hay ventaja ni saltos de ranking). Hasta 3 veces/día y es "
+                "transitoria "
+                "(regenera). Para pedirla, usá el botón ⚡ Nivelar (no la calcula el modelo, la "
+                "calcula el server)."
+            ),
+            "keywords": ["energia", "energía", "ayuda", "ayudame", "ayúdame", "nivelar", "nivelado",
+                         "regala", "regalar", "dame", "necesito", "ranking", "promedio", "rezagado",
+                         "energy", "help", "level"],
+        },
+        {
             "id": "mech_research", "type": "mechanic",
             "text": (
                 "INVESTIGACIÓN: requiere un laboratorio activo. Cada tecnología da un "

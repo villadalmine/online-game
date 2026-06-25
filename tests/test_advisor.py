@@ -171,14 +171,15 @@ async def test_advisor_ask_is_journaled(session, monkeypatch):
     assert evs
 
 
-async def test_assist_energy_bottom_fills_middle_gets_100_and_daily_cap(session):
-    # SDD 40: los 3 últimos llenan el pool; el resto +100; tope diario → 429.
+async def test_assist_energy_proportional_to_deficit_and_daily_cap(session):
+    # SDD 40/41: energía proporcional al déficit vs el promedio; el que está sobre el promedio no
+    # recibe nada (sin ventaja); tope diario → 429.
     from app.core.config import get_settings
     from app.services.economy import get_or_create_stock
     s = get_settings()
     players = [await _player(session, name=f"rank{i}") for i in range(4)]
     for i, p in enumerate(players):
-        (await get_or_create_stock(session, p.id, "iron")).amount = i * 50000.0
+        (await get_or_create_stock(session, p.id, "iron")).amount = i * 100000.0
     await session.commit()
     low, high = players[0], players[3]
     low.energy = 0.0
@@ -186,15 +187,19 @@ async def test_assist_energy_bottom_fills_middle_gets_100_and_daily_cap(session)
     await session.commit()
 
     r_low = await adv.grant_assist_energy(session, low)
-    assert r_low["bottom3"] and r_low["energy"] == s.energy_max          # llenó el pool
+    assert r_low["granted"] > 0 and r_low["deficit"] > 0   # rezagado → recibe, proporcional
 
     r_high = await adv.grant_assist_energy(session, high)
-    assert (not r_high["bottom3"]) and r_high["granted"] == s.assist_energy_normal
+    assert r_high["granted"] == 0.0 and r_high["deficit"] == 0.0   # sobre el promedio → nada
 
-    # tope diario: low ya usó 1; gastar el resto y el siguiente debe fallar
+    # tope diario del rezagado (high no gastó cupo): low ya usó 1; gastar el resto → 429
     for _ in range(s.assist_energy_per_day - 1):
+        low.energy = 0.0
+        await session.commit()
         await adv.grant_assist_energy(session, low)
     try:
+        low.energy = 0.0
+        await session.commit()
         await adv.grant_assist_energy(session, low)
         raise AssertionError("debía agotar el cupo diario")
     except adv.AdvisorError as e:

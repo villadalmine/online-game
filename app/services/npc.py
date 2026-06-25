@@ -184,6 +184,38 @@ class NpcBrain(Protocol):
     async def act(self, session: AsyncSession, player: Player) -> str | None: ...
 
 
+async def _meta_for_npc(session: AsyncSession) -> str:
+    """Texto del meta para el cerebro LLM (SDD 41). Vacío si no hay datos."""
+    try:
+        from app.services.insights import meta_summary_text
+        return await meta_summary_text(session)
+    except Exception:
+        return ""
+
+
+async def _best_meta_unit(session: AsyncSession, min_n: int = 5) -> str | None:
+    """Unidad con mejor win-rate (SDD 41), con muestra suficiente y >50%. None si no aplica."""
+    try:
+        from app.services.insights import get_insights
+        by_unit = (await get_insights(session)).get("winrate_by_unit", {}).get("payload", {})
+    except Exception:
+        return None
+    cands = [
+        (v["rate"], u) for u, v in by_unit.items()
+        if v.get("n", 0) >= min_n and v.get("rate", 0) > 0.5 and u in get_content().units
+    ]
+    if not cands:
+        return None
+    cands.sort(reverse=True)
+    return cands[0][1]
+
+
+def _unit_ready(unit: str, active: set, content) -> bool:
+    """¿La NPC puede fabricar esta unidad? (su edificio requerido está activo)."""
+    req = content.units.get(unit, {}).get("requires")
+    return not req or req == "headquarters" or req in active
+
+
 class RuleBasedBrain:
     """Deterministic, tactical priority heuristic over the existing game systems."""
 
@@ -245,7 +277,13 @@ class RuleBasedBrain:
             await start_build(session, player, base, "turret")
             return "build turret"
 
-        # 4) Train: prefer tanks (factory), else soldiers (barracks).
+        # 4) Train: SDD 41 — jugá el META (la unidad con mejor win-rate, si hay datos y la podés
+        #    fabricar); si no, el default tanks (factory) / soldiers (barracks).
+        meta_unit = await _best_meta_unit(session)
+        if (meta_unit and _unit_ready(meta_unit, active, content)
+                and afford_units(meta_unit, 1)):
+            await start_training(session, player, base, meta_unit, 1)
+            return f"train {meta_unit} (meta)"
         if "factory" in active and afford_units("tank", 1):
             await start_training(session, player, base, "tank", 1)
             return "train tank"
@@ -550,6 +588,7 @@ async def decide_strategy(
             "previous_posture": player.npc_posture,
             "scoreboard": board,
             "under_attack": bool(await _incoming_attacks(session, player)),
+            "meta": await _meta_for_npc(session),   # SDD 41: que la NPC juegue el meta aprendido
             "__user": f"npc:{player.username}",
         }
         out = await strategize(state)
