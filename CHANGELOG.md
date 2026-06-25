@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.46.0] - 2026-06-25
+
 ### 2026-06-25 — Métricas LLM separadas por app (dashboard ya no mezcla juegos)
 - El campo `user` que se manda a LiteLLM (→ `end_user`) ahora va **prefijado con la app**
   (`online-game:player:bob`, `online-game:npc:zorg`) — antes era `player:bob`. Como varios juegos
