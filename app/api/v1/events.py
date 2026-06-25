@@ -7,7 +7,7 @@ from app.content.registry import get_content, localize, normalize_lang
 from app.core.db import get_session
 from app.models import Player
 from app.schemas import ActiveEventOut
-from app.services.events import active_events_out, start_event
+from app.services.events import active_events_out, recent_events_out, start_event
 
 router = APIRouter()
 
@@ -19,6 +19,22 @@ async def active(
 ):
     """Eventos vigentes (con `ends_at` para la cuenta regresiva). Para el panel 📣 Eventos."""
     return [ActiveEventOut(**e) for e in await active_events_out(session)]
+
+
+@router.get("/feed")
+async def feed(
+    lang: str | None = None,
+    _: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Panel completo: activos ahora + los que pasaron (≤2 días) + los que pueden aparecer."""
+    chosen = normalize_lang(lang)
+    possible = [{**localize(e, chosen), "key": e["key"]} for e in get_content().events.values()]
+    return {
+        "active": await active_events_out(session),
+        "recent": await recent_events_out(session, days=2),
+        "possible": possible,
+    }
 
 
 @router.get("/catalog")

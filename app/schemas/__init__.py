@@ -139,6 +139,16 @@ class IncomingAttackOut(BaseModel):
     arrives_at: datetime
 
 
+class ColonizeRequest(BaseModel):
+    planet_key: str
+
+
+class ColonyOut(BaseModel):
+    base_id: int
+    planet_key: str
+    name: str
+
+
 class ColonizeOptionOut(BaseModel):
     planet: str
     name: str

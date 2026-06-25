@@ -109,6 +109,38 @@ can_colonize = atmo_ok-o-no-letal  AND  habitability >= min_habitability   # umb
   aplicar los **modifiers por-colonia** (producción/energía/costo por base) — es el cambio de
   por-jugador a por-base que marca el §8; se hace con el usuario presente.
 
+## 7.ter Estado v1.5 (2026-06-25) — fundar colonia + tech-gating
+- **Tech-gating (clave):** en el sistema solar **ningún** mundo no-natal es habitable sin tecnología
+  (Marte −63 °C, Venus 464 °C, Mercurio sin atmósfera). `compat(race, planet, techs)` ahora relaja
+  los límites con tecnologías de colonización investigadas: **Antigravedad** (gravedad ×3),
+  **Blindaje térmico** (temperatura ×4), **Cúpulas selladas** (cualquier atmósfera, incl. ninguna)
+  — en `content/technologies.yaml` (`effect: colonize`). Razas con `tolerances` más amplias
+  necesitan menos tech.
+- **Fundar colonia:** `POST /colonize {planet_key}` (`found_colony`): valida compat (con tus techs) +
+  galaxia + límite (`max_colonies`), consume 1 transbordador + energía (escala con nº de colonias),
+  crea la `Base_` (instantáneo en v1, sin viaje). Botón **🪐 Colonizar** en el modal de planeta.
+- **Producción por-colonia:** `collect_mines` produce según el **planeta de cada base** (antes usaba
+  el natal) × el modificador de habitabilidad de la colonia. El mundo natal queda idéntico
+  (compat no se aplica) → backward-compatible.
+- Tests: tech desbloquea mundos hostiles, cúpulas vencen "sin atmósfera", fundar requiere
+  tech+transbordador, e2e. **266 verdes.**
+
+## 7.quater Visión v2 (diseño, NO implementado) — colonización rica
+Idea (del usuario): la colonización se entrelaza con **edificios, investigación y exploración**, con
+tecnología sci-fi que vence lo "imposible":
+- **Tipos de base:** terrestre (hoy), **orbital** (estación que orbita el planeta) y **lunar** (sobre
+  una luna). La orbital + **robots** permite **extraer recursos sin habitabilidad** (nadie vive ahí;
+  naves van y vienen) → rinde menos y cuesta más, pero abre mundos letales.
+- **Árbol de tecnologías** de colonización más profundo: antigravedad, escudos/cúpulas presurizadas,
+  regulación térmica, **robótica autónoma** (base orbital), terraformación parcial. Cada una habilita
+  un eje o un tipo de base; encadenadas, vuelven colonizable casi cualquier mundo.
+- **Por raza:** además de `tolerances`, **descuentos/precondiciones** de tech (algunas razas traen una
+  colonización "gratis" o más barata; otras necesitan más ciencia). Data-driven.
+- **Exploración:** explorar un sistema/luna **revela** sus atributos antes de poder colonizar (link con
+  expediciones/espionaje) — colonizás lo que conocés.
+- **Modifiers por-colonia ampliados:** energía/costo/velocidad de cola/defensa por base (hoy solo
+  producción), reusando el patrón de `compat().modifiers`.
+
 ## 8. Riesgos / decisiones
 - **Multiplicador por-base vs por-jugador:** hoy es por-jugador; introducir por-base es el cambio
   estructural principal (decidir: `effects.multiplier(..., base_id=)` o factor de planeta en el punto

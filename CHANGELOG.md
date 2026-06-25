@@ -7,6 +7,23 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 37: fundar colonias + tech para mundos hostiles + producción por-colonia
+- **Tecnologías de colonización** (`antigravity`, `thermal_shielding`, `sealed_domes`): vencen
+  gravedad/temperatura/atmósfera → desbloquean colonizar mundos antes imposibles. `compat()` ahora
+  considera las techs investigadas (razas con tolerancias amplias necesitan menos). En el sistema
+  solar **sin tech no se puede** colonizar nada no-natal (científicamente fiel).
+- **`POST /colonize`**: funda una base en otro planeta (valida compat+galaxia+límite, consume
+  transbordador + energía). Botón **🪐 Colonizar** en el modal de planeta.
+- **Producción por-colonia**: cada mina rinde según el **planeta de su base** × habitabilidad (antes
+  todo usaba el mundo natal). El mundo natal queda idéntico → no rompe partidas.
+- Tests + e2e. Visión v2 (bases orbitales/lunares + robots + exploración + descuentos por raza)
+  documentada en el SDD.
+
+### 2026-06-25 — Eventos: el panel ahora muestra activos + pasados (2 días) + posibles
+- `GET /events/feed` y el panel **📣 Eventos** muestran lo **activo ahora**, lo que **pasó** (≤2 días)
+  y lo que **puede aparecer** (catálogo) → ya no queda vacío. Subida la frecuencia de aparición
+  (25%/tick, cooldown 30 min) para que haya movimiento.
+
 ## [1.24.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 37 v1: grafo de colonización (raza × planeta, read-only)

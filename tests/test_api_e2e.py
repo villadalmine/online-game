@@ -400,6 +400,41 @@ async def test_colonize_options_e2e(client):
     assert home and home[0]["verdict"] == "great"
 
 
+async def test_colonize_with_tech_e2e(client):
+    # SDD 37: con tech de colonización + transbordador, fundar una colonia en un mundo hostil.
+    from app.models import Player, PlayerTech, UnitStock
+
+    h = await _register(client.http, "settler")
+    await _onboard(client.http, h)   # terran/earth
+
+    # sin tech: Marte imposible → 400
+    blind = await client.http.post("/api/v1/colonize", headers=h, json={"planet_key": "earth"})
+    assert blind.status_code == 400
+
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "settler"))).scalar_one()
+        s.add(PlayerTech(player_id=p.id, tech_key="antigravity"))
+        s.add(PlayerTech(player_id=p.id, tech_key="thermal_shielding"))
+        s.add(UnitStock(player_id=p.id, unit_key="shuttle", quantity=1))
+        p.energy = 999.0
+        await s.commit()
+
+    r = await client.http.post("/api/v1/colonize", headers=h, json={"planet_key": "earth"})
+    assert r.status_code == 201, r.text
+    assert r.json()["planet_key"] == "earth"
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert any(b["planet_key"] == "earth" for b in me["bases"])
+
+
+async def test_events_feed_e2e(client):
+    # SDD 36: el panel muestra activos + recientes + lo que puede aparecer (nunca vacío).
+    h = await _register(client.http, "feeder")
+    await _onboard(client.http, h)
+    f = (await client.http.get("/api/v1/events/feed", headers=h)).json()
+    assert {"active", "recent", "possible"} <= set(f)
+    assert any(e["key"] == "happy_hour_build" for e in f["possible"])
+
+
 async def test_events_admin_start_and_active_e2e(client):
     # SDD 36: admin fuerza un evento → aparece en /events/active; catálogo público lista los tipos.
     h = await _register(client.http, "eventer")

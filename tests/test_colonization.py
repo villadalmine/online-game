@@ -36,3 +36,72 @@ def test_options_lists_galaxy_and_flags_home():
     # ordenado por habitabilidad desc
     habs = [o["habitability"] for o in opts]
     assert habs == sorted(habs, reverse=True)
+
+
+# --- tech-gating + fundar colonia (SDD 37 estructural) ---
+from sqlalchemy import select  # noqa: E402
+
+from app.models import Base_, Player, PlayerTech, UnitStock  # noqa: E402
+from app.services.colonization import ColonizeError, found_colony  # noqa: E402
+from app.services.onboarding import onboard_player  # noqa: E402
+
+
+def test_tech_unlocks_hostile_world():
+    # Marte es imposible para terrícolas… hasta investigar antigravedad + blindaje térmico.
+    assert compat("terran", "mars")["verdict"] == "impossible"
+    o = compat("terran", "mars", {"antigravity", "thermal_shielding"})
+    assert o["can_colonize"] and o["verdict"] != "impossible"
+
+
+def test_sealed_domes_overcome_no_atmosphere():
+    assert compat("terran", "mercury")["verdict"] == "impossible"
+    o = compat("terran", "mercury", {"antigravity", "thermal_shielding", "sealed_domes"})
+    assert o["can_colonize"]
+
+
+async def _terran(session, name):
+    p = Player(username=name, password_hash="x")
+    session.add(p)
+    await session.flush()
+    await onboard_player(session, p, "milky_way", "earth", "terran")
+    await session.commit()
+    return p
+
+
+async def test_found_colony_needs_tech_then_shuttle_then_creates_base(session):
+    p = await _terran(session, "colonist")
+    p.energy = 999.0
+    await session.commit()
+
+    # sin tech → Marte imposible
+    try:
+        await found_colony(session, p, "mars")
+        raise AssertionError("debía fallar sin tecnología")
+    except ColonizeError as e:
+        assert "colonizar" in str(e).lower()
+
+    session.add(PlayerTech(player_id=p.id, tech_key="antigravity"))
+    session.add(PlayerTech(player_id=p.id, tech_key="thermal_shielding"))
+    await session.commit()
+    # con tech pero sin transbordador → falla
+    try:
+        await found_colony(session, p, "mars")
+        raise AssertionError("debía fallar sin transbordador")
+    except ColonizeError as e:
+        assert "transbordador" in str(e).lower()
+
+    # con transbordador → funda la colonia en Marte
+    session.add(UnitStock(player_id=p.id, unit_key="shuttle", quantity=1))
+    await session.commit()
+    base = await found_colony(session, p, "mars")
+    await session.commit()
+    assert base.planet_key == "mars"
+    bases = (await session.execute(select(Base_).where(Base_.player_id == p.id))).scalars().all()
+    assert {b.planet_key for b in bases} == {"earth", "mars"}
+    # el transbordador se consumió
+    sh = (await session.execute(
+        select(UnitStock.quantity).where(
+            UnitStock.player_id == p.id, UnitStock.unit_key == "shuttle"
+        )
+    )).scalar_one()
+    assert sh == 0

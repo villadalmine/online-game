@@ -53,3 +53,12 @@ async def test_maybe_start_event_fires_then_respects_single_and_cooldown(session
     assert ev is not None
     # ya hay uno activo → no arranca otro
     assert await maybe_start_event(session, rng=random.Random(0)) is None
+
+
+async def test_recent_events_lists_past(session):
+    from app.services.events import recent_events_out
+    ev = await start_event(session, "mining_boom")
+    ev.ends_at = datetime.now(UTC) - timedelta(hours=1)   # ya terminó (dentro de 2 días)
+    await session.commit()
+    rec = await recent_events_out(session, days=2)
+    assert any(r["key"] == "mining_boom" for r in rec)

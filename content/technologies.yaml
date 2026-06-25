@@ -58,6 +58,44 @@ technologies:
     cost: { structural: 200, energetic: 180, advanced: 100 }
     effect: espionage
     magnitude: 1.40
+  # Tecnologías de colonización (SDD 37): cada una vence un límite ambiental → permite colonizar
+  # mundos antes imposibles. `effect: colonize` + `colonize: {axis, factor}` lo lee compat().
+  - key: antigravity
+    name: "Antigravedad"
+    name_en: "Antigravity"
+    description: "Plataformas antigravedad: tolerás gravedades muy distintas a tu mundo."
+    description_en: "Antigravity platforms: tolerate gravities far from your homeworld."
+    requires: research_lab
+    energy_cost: 40
+    research_seconds: 900
+    cost: { structural: 400, energetic: 300, advanced: 250 }
+    effect: colonize
+    colonize: { axis: gravity, factor: 3.0 }
+    magnitude: 1.0
+  - key: thermal_shielding
+    name: "Blindaje térmico"
+    name_en: "Thermal shielding"
+    description: "Cúpulas con regulación térmica: aguantás frío o calor extremos."
+    description_en: "Thermally-regulated domes: endure extreme cold or heat."
+    requires: research_lab
+    energy_cost: 40
+    research_seconds: 900
+    cost: { structural: 350, energetic: 350, advanced: 200 }
+    effect: colonize
+    colonize: { axis: temp, factor: 4.0 }
+    magnitude: 1.0
+  - key: sealed_domes
+    name: "Cúpulas selladas"
+    name_en: "Sealed domes"
+    description: "Hábitats presurizados con escudo: colonizás sin atmósfera respirable."
+    description_en: "Pressurized shielded habitats: colonize without breathable air."
+    requires: research_lab
+    energy_cost: 50
+    research_seconds: 1200
+    cost: { structural: 500, energetic: 300, advanced: 350 }
+    effect: colonize
+    colonize: { axis: atmosphere, factor: 1.0 }
+    magnitude: 1.0
   - key: counter_espionage
     name: "Contraespionaje"
     name_en: "Counter-espionage"

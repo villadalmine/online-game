@@ -135,19 +135,34 @@ async def grant_due_free_units(
     return granted
 
 
+def _event_out(e: WorldEvent) -> dict:
+    spec = get_content().events.get(e.key, {})
+    return {
+        "key": e.key,
+        "name": spec.get("name", e.key),
+        "description": spec.get("description", ""),
+        "icon": spec.get("icon", "📣"),
+        "effect": e.effect,
+        "magnitude": e.magnitude,
+        "ends_at": e.ends_at,
+    }
+
+
 async def active_events_out(session: AsyncSession, now: datetime | None = None) -> list[dict]:
     """Eventos activos para la API/UI (con i18n del catálogo y ends_at para la cuenta regresiva)."""
-    content = get_content()
-    out = []
-    for e in await active_events(session, now):
-        spec = content.events.get(e.key, {})
-        out.append({
-            "key": e.key,
-            "name": spec.get("name", e.key),
-            "description": spec.get("description", ""),
-            "icon": spec.get("icon", "📣"),
-            "effect": e.effect,
-            "magnitude": e.magnitude,
-            "ends_at": e.ends_at,
-        })
-    return out
+    return [_event_out(e) for e in await active_events(session, now)]
+
+
+async def recent_events_out(
+    session: AsyncSession, now: datetime | None = None, days: int = 2
+) -> list[dict]:
+    """Eventos que YA pasaron en los últimos `days` (para 'lo que pasó'). Más nuevos primero."""
+    now = now or datetime.now(UTC)
+    since = now - timedelta(days=days)
+    res = await session.execute(
+        select(WorldEvent)
+        .where(WorldEvent.ends_at <= now, WorldEvent.ends_at > since)
+        .order_by(WorldEvent.ends_at.desc())
+        .limit(20)
+    )
+    return [_event_out(e) for e in res.scalars()]

@@ -83,15 +83,32 @@ async def collect_mines(
     now = now or _now()
     content = get_content()
     prod_mult = await multiplier(session, player.id, "production", now)
+    # SDD 37: cada mina produce según el planeta de SU base (no el natal); las colonias además
+    # llevan el modificador de habitabilidad. El mundo natal queda idéntico (compat no se aplica).
+    from app.services.colonization import compat
+    from app.services.research import researched_techs
+    bres = await session.execute(select(Base_).where(Base_.player_id == player.id))
+    base_planet = {b.id: b.planet_key for b in bres.scalars()}
+    home = player.planet_key
+    has_colony = any(p != home for p in base_planet.values())
+    techs = await researched_techs(session, player.id) if has_colony else ()
+    colony_mult: dict[str, float] = {}
     gained: dict[str, float] = {}
     for b in await _player_buildings(session, player.id):
         spec = content.buildings[b.building_key]
         if b.status != "active" or spec["category"] != "mine" or not b.production_mineral:
             continue
+        planet = base_planet.get(b.base_id, home)
         since = _aware(b.last_collected_at or b.completes_at)
-        abundance = content.planet_abundance(player.planet_key, b.production_mineral)
+        abundance = content.planet_abundance(planet, b.production_mineral)
         output = compute_mine_output(since, now, spec.get("base_output_per_hour", 0), abundance)
         amount = output * prod_mult
+        if planet != home:  # colonia: rinde según habitabilidad raza×planeta
+            if planet not in colony_mult:
+                colony_mult[planet] = compat(
+                    player.race_key, planet, techs
+                )["modifiers"]["production"]
+            amount *= colony_mult[planet]
         if amount <= 0:
             continue
         stock = await get_or_create_stock(session, player.id, b.production_mineral)
