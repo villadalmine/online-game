@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.59.0] - 2026-06-25
+
 ### 2026-06-25 — Panel de Colas: research, transportes y espías con su ETA
 - El panel **Colas y flotas** ahora muestra, además de construcción/entrenamiento/ataques:
   **🔬 investigación** (con barra/ETA), **🚚 transportes** de minerales (carga, origen→destino, cuándo
