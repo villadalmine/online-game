@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.42.0] - 2026-06-25
+
 ### 2026-06-25 — Avisos centralizados: toasts apilables y descartables
 - Todos los resultados de acciones (construir, entrenar, vender, transportar, atacar, investigar,
   alianzas, etc.) ahora aparecen como **toasts** arriba a la derecha, **siempre visibles** sin
