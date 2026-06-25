@@ -558,6 +558,8 @@ async def _llm_strategy(state: dict) -> dict:
         max_tokens=settings.npc_strategy_max_tokens,
         json_mode=settings.llm_json_mode,
         user=user,
+        model=settings.npc_llm_model or None,        # SDD 9: NPC tolera esperar → GPU local
+        timeout=settings.npc_llm_timeout_seconds,
     )
     return _extract_json(content)
 
@@ -661,6 +663,8 @@ async def _llm_decide(state: dict) -> dict:
         max_tokens=120,
         json_mode=settings.llm_json_mode,
         user=user,
+        model=settings.npc_llm_model or None,        # SDD 9: NPC tolera esperar → GPU local
+        timeout=settings.npc_llm_timeout_seconds,
     )
     return _extract_json(content)
 

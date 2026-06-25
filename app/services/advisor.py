@@ -290,19 +290,42 @@ async def _meta_text(session) -> str:
         return ""
 
 
+async def _llm_calls_today(session: AsyncSession, player_id: int) -> int:
+    """Cuántas consultas al asesor hizo el jugador HOY (UTC), desde el journal (sin cron/Redis)."""
+    from sqlalchemy import func
+
+    from app.models import GameEvent
+    midnight = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    return (await session.execute(
+        select(func.count(GameEvent.id)).where(
+            GameEvent.player_id == player_id,
+            GameEvent.type == "advisor_ask",
+            GameEvent.created_at >= midnight,
+        )
+    )).scalar_one()
+
+
 async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=None) -> str:
     """Prose from the LLM grounded on retrieved docs + blockers + spy intel; det. fallback."""
+    s = get_settings()
+    # Presupuesto diario (SDD 9 / patrón shooter): pasado el cupo NO se llama al LLM (cero tokens/
+    # créditos) → tips deterministas. El asistente igual responde, solo que sin la prosa del modelo.
+    if await _llm_calls_today(session, player.id) >= s.advisor_llm_calls_per_day:
+        return _fallback_reply(reports, hits)
     try:
         history = await list_messages(session, player, HISTORY_LEN)
-        # CONOCIMIENTO COMPLETO: todo el grafo del juego (objetos + reglas), no solo lo que matchea.
-        # Así la IA "sabe todo" y puede DEDUCIR (cruzar objetos, prerequisitos, mecánicas).
-        full = depgraph.graph_documents(snap.race_key, snap.planet_key)
+        # SDD 9: en vez del grafo COMPLETO (~7k tokens → desborda/trunca la GPU local y cae a la
+        # nube free con tope diario), mandamos el SUBGRAFO relevante (top-k del índice) +
+        # los blockers (cálculo exacto). Prompt chico → la GPU lo lee entero en ~1-3s, sin truncar.
+        docs = depgraph.retrieve(snap.race_key, snap.planet_key, message, k=s.advisor_graph_k)
+        if not docs:   # pregunta genérica sin match → un corte acotado del grafo, no todo
+            docs = depgraph.graph_documents(snap.race_key, snap.planet_key)[: s.advisor_graph_k]
         context = {
             "you_play": {"race": snap.race_key, "planet": snap.planet_key},
             "minerals": {k: round(v, 1) for k, v in snap.minerals.items()},
             "energy": round(snap.energy, 1),
             "active_buildings": sorted(snap.active_buildings),
-            "knowledge": [{"id": d["id"], "type": d["type"], "text": d["text"]} for d in full],
+            "knowledge": [{"id": d["id"], "type": d["type"], "text": d["text"]} for d in docs],
             "relevant": [d["id"] for d in hits],   # nodos más cercanos a la pregunta (pista)
             "blockers": [r.model_dump() for r in reports if not r.buildable],
             "intel": _intel_for_context(intel or [], datetime.now(UTC)),
@@ -310,16 +333,16 @@ async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=
         }
         system = (
             "Sos el asistente personal de un jugador en un juego de estrategia espacial por "
-            "turnos. CONOCÉS TODO EL JUEGO: 'knowledge' es el grafo COMPLETO — todos los objetos "
-            "(minerales, edificios, unidades, tecnologías, cada uno con costo/requisitos/qué "
-            "habilita) y todas las MECÁNICAS/REGLAS (combate, flotas, expediciones, espionaje, "
-            "energía, investigación). DEDUCÍ la respuesta cruzando esos datos (prerequisitos, qué "
-            "edificio habilita qué unidad, qué mina da qué mineral, etc.). 'relevant' marca los "
-            "nodos más cercanos a la pregunta. 'blockers' es el CÁLCULO EXACTO (determinista) de "
-            "qué le falta y cuánto para construir/entrenar algo puntual: usalo si pregunta eso. "
-            "RESPONDÉ LA PREGUNTA: si es 'cómo funciona X' explicá la regla; si es 'qué necesito "
-            "para Y' deducí del grafo + blockers. Respondé en español, breve y concreto. NO "
-            "inventes objetos ni reglas fuera de 'knowledge'; si algo no está, decilo. "
+            "turnos. 'knowledge' es la PARTE DEL GRAFO relevante a la pregunta — objetos "
+            "(minerales, edificios, unidades, tecnologías, con costo/requisitos/qué habilita) y "
+            "MECÁNICAS/REGLAS (combate, flotas, expediciones, espionaje, energía, investigación). "
+            "DEDUCÍ la respuesta cruzando esos datos (prerequisitos, qué edificio habilita qué "
+            "unidad, qué mina da qué mineral, etc.). 'relevant' marca los nodos más cercanos a la "
+            "pregunta. 'blockers' es el CÁLCULO EXACTO (determinista) de qué falta y cuánto para "
+            "construir/entrenar algo puntual: usalo si pregunta eso. RESPONDÉ LA PREGUNTA: si es "
+            "'cómo funciona X' explicá la regla; si es 'qué necesito para Y' deducí del grafo + "
+            "blockers. Respondé en español, breve y concreto. NO inventes objetos ni reglas fuera "
+            "de 'knowledge'; si algo no está, decilo (quizá no esté en esta porción). "
             "'intel' es lo que tus espías saben de rivales (depth/confidence/age_hours): para "
             "ataques usá SOLO esos datos, no inventes la defensa del rival; si la intel es vieja o "
             "poco confiable, recomendá espiar de nuevo. "
@@ -330,7 +353,10 @@ async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=
         for m in history:
             msgs.append({"role": m.role, "content": m.body})
         msgs.append({"role": "user", "content": f"{message}\n\nCONTEXTO:\n{json.dumps(context)}"})
-        reply = await llm_chat(msgs, max_tokens=400, user=f"player:{player.username}")  # SDD 28
+        reply = await llm_chat(
+            msgs, max_tokens=400, user=f"player:{player.username}",   # SDD 28
+            model=s.assistant_llm_model or None, timeout=s.assistant_llm_timeout_seconds,
+        )
         return reply.strip() or _fallback_reply(reports, hits)
     except Exception:
         return _fallback_reply(reports, hits)

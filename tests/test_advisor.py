@@ -171,6 +171,48 @@ async def test_advisor_ask_is_journaled(session, monkeypatch):
     assert evs
 
 
+async def test_ask_sends_bounded_subgraph_not_full_graph(session, monkeypatch):
+    # SDD 9: el prompt lleva solo el SUBGRAFO relevante (≤ advisor_graph_k), no el grafo completo.
+    import json
+
+    from app.core.config import get_settings
+    from app.services import depgraph
+    p = await _player(session, name="subgraph")
+    full = len(depgraph.graph_documents(p.race_key, p.planet_key))
+    cap = get_settings().advisor_graph_k
+    captured = {}
+
+    async def fake_chat(messages, **kw):
+        ctx = json.loads(messages[-1]["content"].split("CONTEXTO:\n", 1)[1])
+        captured["n"] = len(ctx["knowledge"])
+        return "ok"
+
+    monkeypatch.setattr(adv, "llm_chat", fake_chat)
+    await adv.ask(session, p, "quiero una fábrica para tanques")
+    assert captured["n"] <= cap < full   # acotado y menor que el grafo completo
+
+
+async def test_ask_daily_budget_stops_calling_llm(session, monkeypatch):
+    # SDD 9 / patrón shooter: pasado el cupo diario NO se llama al LLM (cero créditos) → fallback.
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "advisor_llm_calls_per_day", 2)
+    p = await _player(session, name="budget")
+
+    calls = {"n": 0}
+
+    async def fake_chat(messages, **kw):
+        calls["n"] += 1
+        return "respuesta del modelo"
+
+    monkeypatch.setattr(adv, "llm_chat", fake_chat)
+    await adv.ask(session, p, "hola 1")
+    await adv.ask(session, p, "hola 2")
+    assert calls["n"] == 2
+    r3 = await adv.ask(session, p, "hola 3")   # pasado el cupo → no llama al LLM
+    assert calls["n"] == 2                       # no creció
+    assert r3.reply                              # igual responde (determinista)
+
+
 async def test_assist_energy_proportional_to_deficit_and_daily_cap(session):
     # SDD 40/41: energía proporcional al déficit vs el promedio; el que está sobre el promedio no
     # recibe nada (sin ventaja); tope diario → 429.

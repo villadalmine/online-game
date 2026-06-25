@@ -13,6 +13,7 @@ itself is deterministic and works with no LLM and no DB (analyze takes a plain s
 assistant always has a correct fallback. See docs/sdd-dependency-graph.md.
 """
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 from app.content.registry import GameContent, get_content
 from app.core.config import get_settings
@@ -487,19 +488,31 @@ def _tokens(text: str) -> list[str]:
     return [SYNONYMS.get(tok, tok) for tok in out]
 
 
+@lru_cache(maxsize=64)
+def _graph_index(race_key: str, planet_key: str) -> tuple[tuple[dict, frozenset, tuple], ...]:
+    """Índice invertido-liviano del grafo (objetos + mecánicas) por (raza, planeta): para cada doc,
+    pre-tokeniza keywords y body UNA vez. Cacheado → `retrieve` no re-tokeniza el corpus por query
+    (el contenido es estático). graph_documents ya trae objetos + mecánicas ('cómo funciona X')."""
+    docs = graph_documents(race_key, planet_key)
+    index = []
+    for doc in docs:
+        kw = frozenset(t for k_ in doc["keywords"] for t in _tokens(k_))
+        body = tuple(_tokens(doc["text"]))
+        index.append((doc, kw, body))
+    return tuple(index)
+
+
 def retrieve(race_key: str, planet_key: str, query: str, k: int = 6) -> list[dict]:
     """Top-k graph documents most relevant to `query` (deterministic lexical scoring).
 
     Score = keyword hits (×3) + body hits (×1), with a strong boost when the doc id appears.
-    This is the dependency-free default; an embeddings backend can replace it later behind the
-    same signature, falling back here on any failure."""
+    Lee del índice cacheado (`_graph_index`). Dependency-free; un backend de embeddings puede
+    reemplazarlo detrás de la misma firma, cayendo acá ante cualquier fallo."""
     q = set(_tokens(query))
     if not q:
         return []
     scored: list[tuple[float, dict]] = []
-    for doc in graph_documents(race_key, planet_key):
-        kw = set(t for k_ in doc["keywords"] for t in _tokens(k_))
-        body = _tokens(doc["text"])
+    for doc, kw, body in _graph_index(race_key, planet_key):
         score = 3.0 * len(q & kw) + sum(1 for t in body if t in q)
         if doc["id"] in q:
             score += 5.0

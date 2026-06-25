@@ -90,6 +90,19 @@ class Settings(BaseSettings):
 
     # Personal AI assistant (SDD 2): emergency "hack" budget per player per day.
     assistant_hacks_per_day: int = 3
+    # SDD 9: el asistente manda solo el SUBGRAFO relevante (no el grafo completo) → prompt chico →
+    # lo resuelve la GPU local (qwen 1.5b, ~1-3s) sin truncar ni caer a la nube free (tope diario).
+    advisor_graph_k: int = 14             # cuántos nodos del grafo (top-k) van al prompt del asesor
+    # Modelo/timeout por caso de uso: el ASISTENTE es interactivo (rápido, timeout corto); los NPCs
+    # toleran esperar (atacar/comerciar/chat de alianza) → timeout largo, prioriza GPU local (ahorra
+    # plata). Modelo vacío = usa LLM_MODEL global; seteá *_llm_model para apuntar a otro alias.
+    assistant_llm_timeout_seconds: float = 20.0
+    assistant_llm_model: str = ""
+    npc_llm_timeout_seconds: float = 60.0
+    npc_llm_model: str = ""
+    # Presupuesto del asesor por jugador/día (anti-quema de créditos): pasado el cupo NO se llama al
+    # LLM (cero tokens) y se cae a los tips deterministas. = patrón DAILY_CAP del repo shooter.
+    advisor_llm_calls_per_day: int = 40
 
     # Temporadas + protección de novatos (SDD 11).
     season_days: int = 28                 # duración de cada temporada

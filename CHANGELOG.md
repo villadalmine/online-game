@@ -7,6 +7,23 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Asistente en GPU local: subgrafo indexado + budget por usuario (SDD 9)
+- **Índice del grafo** (`depgraph._graph_index`, cacheado por raza×planeta): pre-tokeniza el corpus
+  una vez; `retrieve` ya no re-tokeniza todo en cada consulta.
+- **Opción B (el fix del "delira")**: el asistente manda solo el **SUBGRAFO relevante** a la pregunta
+  (top-k = `advisor_graph_k`=14) + los blockers, en vez del **grafo completo** (~7k tokens). Medido:
+  con el grafo completo la GPU local (qwen2.5:1.5b, ctx 4096 por defecto) **trunca y delira** o cae a
+  la nube free (con **tope diario 429**); con el subgrafo (~1–2k tokens) la **GPU responde en 1–3s**,
+  sin truncar y sin depender de la nube.
+- **Modelo/timeout por caso de uso**: el **asistente** es interactivo (timeout corto
+  `assistant_llm_timeout_seconds`=20s); los **NPCs** toleran esperar (atacar/comerciar/chat de
+  alianza) → `npc_llm_timeout_seconds`=60s, priorizan la **GPU local** (ahorra créditos). `llm_chat`
+  acepta `model`/`timeout` por llamada; `*_llm_model` permite apuntar a otro alias sin tocar código.
+- **Presupuesto del asesor por jugador/día** (`advisor_llm_calls_per_day`=40, patrón del repo
+  shooter): pasado el cupo **no se llama al LLM** (cero tokens/créditos) → tips deterministas. Se
+  cuenta desde el journal (`advisor_ask`), reset lazy a medianoche UTC.
+- Tests: `test_ask_sends_bounded_subgraph_not_full_graph`, `test_ask_daily_budget_stops_calling_llm`.
+
 ## [1.43.0] - 2026-06-25
 
 ### 2026-06-25 — Fix: el auto-refresh borraba lo que elegías en Mercado/Hub

@@ -19,6 +19,8 @@ async def llm_chat(
     temperature: float = 0.0,
     json_mode: bool = False,
     user: str | None = None,
+    model: str | None = None,
+    timeout: float | None = None,
 ) -> str:
     """POST messages to the configured LLM and return the assistant message content.
 
@@ -28,7 +30,7 @@ async def llm_chat(
     if not settings.llm_key:
         raise RuntimeError("LLM no configurado (sin LLM_API_KEY/OPENROUTER_API_KEY)")
     payload = {
-        "model": settings.llm_model_name,
+        "model": model or settings.llm_model_name,
         "temperature": temperature,
         "max_tokens": max_tokens,
         "messages": messages,
@@ -40,7 +42,7 @@ async def llm_chat(
         payload["response_format"] = {"type": "json_object"}
     _t0 = time.perf_counter()
     try:
-        async with httpx.AsyncClient(timeout=settings.llm_timeout_seconds) as client:
+        async with httpx.AsyncClient(timeout=timeout or settings.llm_timeout_seconds) as client:
             resp = await client.post(
                 f"{settings.llm_url}/chat/completions",
                 headers={
