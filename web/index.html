@@ -432,13 +432,14 @@ function setToken(t){ token=t; localStorage.setItem("token",t); }
 function logout(){ token=""; localStorage.removeItem("token"); if(es)es.close(); location.reload(); }
 
 // catalog
-const spec={ build:{}, unit:{}, moon:{} };
+const spec={ build:{}, unit:{}, moon:{}, tech:{} };
 function fill(id,pairs){ $(id).innerHTML=pairs.map(([v,t])=>`<option value="${v}">${esc(t)}</option>`).join(""); }
 async function loadCatalog(){
   catalog=await api("/api/v1/catalog?lang="+lang);
   catalog.buildings.forEach(b=>spec.build[b.key]=b);
   [...catalog.personnel,...catalog.heavy_units].forEach(u=>spec.unit[u.key]=u);
   catalog.moons.forEach(m=>spec.moon[m.key]=m);
+  (catalog.technologies||[]).forEach(t=>spec.tech[t.key]=t);
   fill("planet",catalog.planets.map(p=>[p.key,p.name]));
   fill("race",catalog.races.map(r=>[r.key,r.name]));
   fill("building",catalog.buildings.filter(b=>b.key!=="headquarters").map(b=>[b.key,b.name]));
@@ -847,6 +848,12 @@ function renderQueues(){
   (state.missions_outgoing||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span>🚀 → base ${m.target_base_id} ${esc(JSON.stringify(m.force))}</span>`+
     `<span>${m.status==='outbound'?`<button class="sm danger" onclick="recall(${m.id})">${esc(tr('recall'))} ${cd(m.arrives_at)}</button>`:`${esc(tr('returns'))} ${cd(m.returns_at)}`}</span></div></div>`));
   (state.missions_incoming||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span class="bad">${esc(tr('incoming'))} ${m.target_base_id}</span><span class="bad">${cd(m.arrives_at)}</span></div></div>`));
+  (state.research||[]).forEach(r=>{ const tot=((spec.tech&&spec.tech[r.tech_key])||{}).research_seconds||0;
+    q.push(`<div class="item"><div class="top"><span>🔬 ${esc(techName(r.tech_key))}</span><span class="warn">${cd(r.completes_at)}</span></div>${bar(tot,r.completes_at)}</div>`); });
+  (state.transports||[]).forEach(m=>{ const cargo=Object.entries(m.cargo||{}).map(([k,v])=>v+"×"+k).join(",");
+    q.push(`<div class="item"><div class="top"><span>🚚 ${esc(cargo)} ${esc(planetName(m.from_planet))}→${esc(planetName(m.to_planet))}</span><span class="warn">${cd(m.arrives_at)}</span></div></div>`); });
+  (state.spy_missions||[]).forEach(m=>{ const ret=m.status==='returning';
+    q.push(`<div class="item"><div class="top"><span>🕵 → base ${m.target_base_id}</span><span class="warn">${ret?esc(tr('returns'))+' '+cd(m.returns_at):cd(m.arrives_at)}</span></div></div>`); });
   $("queues").innerHTML=q.join("")||`<span class="muted">${esc(tr('noqueue'))}</span>`;
 }
 const ORB=new Set(["earth","mars","venus","mercury","vega_prime","nyx"]);

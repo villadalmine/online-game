@@ -185,6 +185,34 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
                 for m in ares.scalars()
             ]
 
+    # SDD 42/35: transportes y espías en curso (para el panel de Colas con su ETA).
+    import json as _json
+
+    from app.models import SpyMission, TransportMission
+    from app.schemas import SpyMissionOut, TransportMissionOut
+    transports_out = [
+        TransportMissionOut(
+            id=m.id, from_planet=m.from_planet, to_planet=m.to_planet,
+            cargo=_json.loads(m.cargo), escort=_json.loads(m.escort or "{}"),
+            ships=m.ships, status=m.status, arrives_at=m.arrives_at,
+        )
+        for m in (await session.execute(
+            select(TransportMission).where(
+                TransportMission.player_id == player.id, TransportMission.status == "outbound"
+            )
+        )).scalars()
+    ]
+    spy_out = [
+        SpyMissionOut(id=m.id, target_base_id=m.target_base_id, status=m.status,
+                      arrives_at=m.arrives_at, returns_at=m.returns_at)
+        for m in (await session.execute(
+            select(SpyMission).where(
+                SpyMission.observer_id == player.id,
+                SpyMission.status.in_(("outbound", "returning")),
+            )
+        )).scalars()
+    ]
+
     # SDD 14: admin por flag en DB O por ADMIN_EMAIL (igual que get_current_admin) → setear el env
     # alcanza para que una cuenta existente vea/use el panel sin tocar la base.
     _admin_email = settings.admin_email.strip().lower()
@@ -223,6 +251,8 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         protected_until=player.protected_until,
         season=await _current_season_out(session),
         galaxy_instance=await _galaxy_instance_out(session, player),
+        transports=transports_out,
+        spy_missions=spy_out,
     )
 
 

@@ -159,6 +159,7 @@ class SpyMissionOut(BaseModel):
     target_base_id: int
     status: str
     arrives_at: datetime
+    returns_at: datetime | None = None
 
 
 class IntelReportOut(BaseModel):
@@ -496,6 +497,8 @@ class PlayerStateOut(BaseModel):
     galaxy_instance: GalaxyInstanceOut | None = None  # tu shard de galaxia (SDD 8)
     is_admin: bool = False                            # SDD 14: muestra el panel de admin
     account_status: str = "active"                    # SDD 14: active | pending | suspended
+    transports: list[TransportMissionOut] = []        # SDD 42: envíos de minerales en curso
+    spy_missions: list[SpyMissionOut] = []            # SDD 35: espías en vuelo/volviendo
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

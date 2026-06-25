@@ -507,6 +507,10 @@ async def test_transport_with_escort_e2e(client):
     # la escolta partió con el convoy → queda 1 tank
     ts = (await client.http.get("/api/v1/market/transport", headers=h)).json()
     assert any(t["escort"] == {"tank": 1} for t in ts)
+    # /me lo expone para el panel de Colas (con ETA): ahí se ve el viaje y cuándo llega
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["transports"] and me["transports"][0]["to_planet"] == "mars"
+    assert me["transports"][0]["arrives_at"]
 
 
 async def test_hangar_raises_transport_cap_e2e(client):

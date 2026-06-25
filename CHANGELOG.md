@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Panel de Colas: research, transportes y espías con su ETA
+- El panel **Colas y flotas** ahora muestra, además de construcción/entrenamiento/ataques:
+  **🔬 investigación** (con barra/ETA), **🚚 transportes** de minerales (carga, origen→destino, cuándo
+  llega) y **🕵 espías** (ida y vuelta). Antes esos viajes no aparecían y no se veía cuánto tardaban.
+- `/players/me` ahora expone `transports` y `spy_missions` en curso (con `arrives_at`/`returns_at`).
+- Test e2e: el convoy aparece en `me.transports` con su `arrives_at`.
+
 ## [1.58.0] - 2026-06-25
 
 ### 2026-06-25 — Árbol de tecnología: edificios/unidades/research con prerequisitos (SDD 1)
