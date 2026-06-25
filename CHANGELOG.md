@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.39.0] - 2026-06-25
+
 ### 2026-06-25 — Piratería y escolta de convoyes (SDD 42 Fase 3 §8)
 - Los **convoyes** de transporte ahora pueden ser **emboscados por piratas** en vuelo: cada tick del
   mundo, con probabilidad `pirate_raid_chance`, un convoy es atacado. El poder pirata escala con el
