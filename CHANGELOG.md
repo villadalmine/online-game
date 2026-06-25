@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.36.0] - 2026-06-25
+
 ### 2026-06-25 — SDD 42 Fase 3: hub galáctico con precios dinámicos + inter-galaxia
 - **`MarketPrice` por (galaxia, mineral)** con precio por **oferta/demanda** (estilo stock market):
   comprar sube, vender baja, y en el tick **revierte** lento al precio intrínseco (base/abundancia-
