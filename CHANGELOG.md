@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.58.0] - 2026-06-25
+
 ### 2026-06-25 — Árbol de tecnología: edificios/unidades/research con prerequisitos (SDD 1)
 - **No todo se puede al inicio**: progresión científica (data-driven en YAML, enforce en servicio,
   🔒 en la UI).
