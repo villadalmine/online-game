@@ -97,6 +97,21 @@ def test_retrieve_ranks_relevant_docs_with_es_synonyms():
     assert scores == sorted(scores, reverse=True)
 
 
+def test_retrieve_finds_counter_intel_by_alias():
+    # "edificio contra inteligencia" debe encontrar counter_intel (nombre "Contraespionaje")
+    res = retrieve("martian", "mars", "necesito construir un edificio contra inteligencia", k=4)
+    assert "counter_intel" in [d["id"] for d in res]
+    # "espías" encuentra la unidad spy
+    res2 = retrieve("martian", "mars", "quiero entrenar espías", k=4)
+    assert "spy" in [d["id"] for d in res2]
+
+
+def test_graph_documents_include_mechanics_rules():
+    # el corpus incluye las MECÁNICAS (no solo objetos) → la IA sabe cómo funciona el juego
+    ids = {d["id"] for d in graph_documents("martian", "mars")}
+    assert {"mech_combat", "mech_espionage", "mech_energy"} <= ids
+
+
 def test_graph_documents_cover_every_node_type():
     docs = graph_documents("terran", "earth")
     types = {d["type"] for d in docs}

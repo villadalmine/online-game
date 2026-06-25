@@ -281,31 +281,34 @@ async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=
     """Prose from the LLM grounded on retrieved docs + blockers + spy intel; det. fallback."""
     try:
         history = await list_messages(session, player, HISTORY_LEN)
+        # CONOCIMIENTO COMPLETO: todo el grafo del juego (objetos + reglas), no solo lo que matchea.
+        # Así la IA "sabe todo" y puede DEDUCIR (cruzar objetos, prerequisitos, mecánicas).
+        full = depgraph.graph_documents(snap.race_key, snap.planet_key)
         context = {
             "you_play": {"race": snap.race_key, "planet": snap.planet_key},
             "minerals": {k: round(v, 1) for k, v in snap.minerals.items()},
             "energy": round(snap.energy, 1),
             "active_buildings": sorted(snap.active_buildings),
-            "knowledge": [{"id": d["id"], "text": d["text"]} for d in hits],
+            "knowledge": [{"id": d["id"], "type": d["type"], "text": d["text"]} for d in full],
+            "relevant": [d["id"] for d in hits],   # nodos más cercanos a la pregunta (pista)
             "blockers": [r.model_dump() for r in reports if not r.buildable],
             "intel": _intel_for_context(intel or [], datetime.now(UTC)),
         }
         system = (
             "Sos el asistente personal de un jugador en un juego de estrategia espacial por "
-            "turnos. Tu conocimiento del juego es SOLO lo que te paso en 'knowledge' (objetos del "
-            "juego — minerales, edificios, unidades, tecnologías — y MECÁNICAS/REGLAS: combate, "
-            "flotas, expediciones, espionaje, energía) y 'blockers' (qué le falta para construir "
-            "algo puntual). RESPONDÉ LA PREGUNTA que hace el jugador: si pregunta cómo funciona "
-            "algo (p.ej. cuántas unidades entran en una flota, cómo se ataca, cómo espiar), "
-            "explicá la regla usando 'knowledge' — NO la desvíes a qué construir. Usá 'blockers' "
-            "SOLO si la pregunta es sobre construir/qué le falta. Respondé en español, breve y "
-            "concreto. No inventes objetos ni reglas que no estén en 'knowledge' (si no está, "
-            "decí que no estás seguro). "
-            "'intel' es lo que tus espías saben de rivales (depth=profundidad, "
-            "confidence=confianza, age_hours=antigüedad): para aconsejar ataques usá SOLO esos "
-            "datos; NO inventes "
-            "unidades/defensas del rival que no estén ahí. Si la confianza es baja o la intel es "
-            "vieja, recomendá espiar de nuevo antes de atacar."
+            "turnos. CONOCÉS TODO EL JUEGO: 'knowledge' es el grafo COMPLETO — todos los objetos "
+            "(minerales, edificios, unidades, tecnologías, cada uno con costo/requisitos/qué "
+            "habilita) y todas las MECÁNICAS/REGLAS (combate, flotas, expediciones, espionaje, "
+            "energía, investigación). DEDUCÍ la respuesta cruzando esos datos (prerequisitos, qué "
+            "edificio habilita qué unidad, qué mina da qué mineral, etc.). 'relevant' marca los "
+            "nodos más cercanos a la pregunta. 'blockers' es el CÁLCULO EXACTO (determinista) de "
+            "qué le falta y cuánto para construir/entrenar algo puntual: usalo si pregunta eso. "
+            "RESPONDÉ LA PREGUNTA: si es 'cómo funciona X' explicá la regla; si es 'qué necesito "
+            "para Y' deducí del grafo + blockers. Respondé en español, breve y concreto. NO "
+            "inventes objetos ni reglas fuera de 'knowledge'; si algo no está, decilo. "
+            "'intel' es lo que tus espías saben de rivales (depth/confidence/age_hours): para "
+            "ataques usá SOLO esos datos, no inventes la defensa del rival; si la intel es vieja o "
+            "poco confiable, recomendá espiar de nuevo."
         )
         msgs = [{"role": "system", "content": system}]
         for m in history:

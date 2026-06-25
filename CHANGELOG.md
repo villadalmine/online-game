@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — Asistente IA: ve el grafo COMPLETO y deduce (no solo keyword-match)
+- El contexto del asistente ahora incluye **todo el grafo del juego** (todos los objetos con
+  costo/requisitos/qué habilitan + todas las mecánicas), no solo los ~6 nodos que matcheaban por
+  palabra. El prompt le pide **deducir** cruzando esos datos (prerequisitos, qué edificio habilita
+  qué unidad, etc.). Así "sabe todo el juego" de verdad. `relevant` marca los nodos más cercanos a
+  la pregunta y `blockers` da el cálculo exacto.
+- **Aliases de retrieval** (`ALIASES`): términos del jugador (sinónimos/errores) encuentran el nodo
+  correcto. Arregla "edificio contra inteligencia" → `counter_intel` (antes caía al fallback y
+  recomendaba una mina de aluminio sin sentido); "espías" → `spy`, etc.
+
 ## [1.21.0] - 2026-06-24
 
 ### 2026-06-24 — Calculadora de ataque visible en el panel ⚔ Atacar

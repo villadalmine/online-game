@@ -281,6 +281,20 @@ SYNONYMS: dict[str, str] = {
     "investigar": "tech", "tecnologia": "tech", "edificio": "building", "unidad": "unit",
 }
 
+# Alias extra por objeto: términos del jugador (ES, sinónimos, errores comunes) que deben
+# encontrar ese nodo aunque no coincidan con su nombre. Clave = id del objeto del contenido.
+# Resuelve casos como "edificio contra inteligencia" → counter_intel (cuyo nombre es
+# "Contraespionaje"), o "espías" → spy.
+ALIASES: dict[str, list[str]] = {
+    "counter_intel": ["contraespionaje", "contrainteligencia", "contra", "inteligencia",
+                      "espionaje", "espias", "espía", "espías", "intel", "proteccion",
+                      "antiespia", "antiespias"],
+    "spy": ["espia", "espía", "espias", "espías", "espionaje", "espionage", "inteligencia",
+            "intel", "infiltrar"],
+    "espionage": ["espionaje", "espias", "espía", "intel"],
+    "counter_espionage": ["contraespionaje", "contrainteligencia", "contraespias"],
+}
+
 
 def _cost_text(cost: Cost) -> str:
     parts = [f"{m} {a:g}" for m, a in cost.minerals.items()]
@@ -357,6 +371,12 @@ def graph_documents(race_key: str, planet_key: str) -> list[dict]:
             "keywords": [key, *t.get("name", "").lower().split(), "tech", "research",
                          "investigar", t.get("effect") or ""],
         })
+
+    # alias por objeto (sinónimos/errores comunes ES) para que el retrieval encuentre el nodo
+    for d in docs:
+        extra = ALIASES.get(d["id"])
+        if extra:
+            d["keywords"] = list(d["keywords"]) + extra
 
     return docs
 
