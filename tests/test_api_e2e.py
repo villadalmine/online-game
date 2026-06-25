@@ -386,6 +386,18 @@ async def test_shared_vision_shares_intel_e2e(client):
     assert shared and shared[0]["shared"] is True and shared[0]["via"] == "vis_a"
 
 
+async def test_events_admin_start_and_active_e2e(client):
+    # SDD 36: admin fuerza un evento → aparece en /events/active; catálogo público lista los tipos.
+    h = await _register(client.http, "eventer")
+    await _onboard(client.http, h)
+    r = await client.http.post("/api/v1/events/start/power_surge", headers=h)
+    assert r.status_code == 201, r.text
+    act = (await client.http.get("/api/v1/events/active", headers=h)).json()
+    assert any(e["key"] == "power_surge" for e in act)
+    cat = (await client.http.get("/api/v1/events/catalog")).json()
+    assert any(e["key"] == "happy_hour_build" for e in cat)
+
+
 async def test_journal_records_and_exports_e2e(client):
     # SDD 38: las acciones quedan en el journal; /journal (propio) + /journal/export (YAML).
     import yaml

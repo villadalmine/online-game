@@ -23,4 +23,7 @@ async def multiplier(
         if tech and tech.get("effect") == effect:
             m *= float(tech.get("magnitude", 1.0))
     m *= await alliance_multiplier(session, player_id, effect)
+    # Eventos dinámicos globales (SDD 36): apilan como un multiplicador más.
+    from app.services.events import event_multiplier
+    m *= await event_multiplier(session, effect, now)
     return m

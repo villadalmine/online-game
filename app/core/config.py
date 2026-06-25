@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     energy_max: float = 240.0
     energy_start: float = 60.0
 
+    # Eventos dinámicos "happy hour" (SDD 36): el tick puede arrancar uno en horas aleatorias.
+    event_chance_per_tick: float = 0.15   # prob. por tick (si no hay activo y pasó el cooldown)
+    event_cooldown_seconds: int = 3600    # mínimo entre eventos
+
     # Combat balance
     attack_energy_cost: float = 25.0
     loot_fraction: float = 0.2  # share of each defender mineral looted on a win

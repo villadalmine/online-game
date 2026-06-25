@@ -139,6 +139,16 @@ class IncomingAttackOut(BaseModel):
     arrives_at: datetime
 
 
+class ActiveEventOut(BaseModel):
+    key: str
+    name: str
+    description: str
+    icon: str
+    effect: str
+    magnitude: float
+    ends_at: datetime
+
+
 class JournalEventOut(BaseModel):
     seq: int
     at: datetime

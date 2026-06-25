@@ -54,6 +54,11 @@ async def start_build(
 
     # Charge minerals (role-based cost resolved to this race's minerals).
     cost = content.building_cost_in_minerals(player.race_key, building_key)
+    # Eventos "happy hour" (SDD 36): build_cost < 1 abarata la construcción.
+    from app.services.events import build_cost_multiplier
+    cm = await build_cost_multiplier(session, now)
+    if cm != 1.0:
+        cost = {m: a * cm for m, a in cost.items()}
     stocks = await player_stocks(session, player.id)
     for mineral, amount in cost.items():
         if stocks.get(mineral, 0.0) < amount:

@@ -72,6 +72,12 @@ async def run_tick(session: AsyncSession) -> dict:
         researched += await finalize_due_research(session, player)
     await session.commit()
 
+    # Eventos dinámicos "happy hour" (SDD 36): quizás arrancar uno en horas aleatorias.
+    # Se ve por GET /events/active (el front pollea) y queda en el journal/world feed.
+    from app.services.events import maybe_start_event
+    await maybe_start_event(session)
+    await session.commit()
+
     metrics.TICK_DURATION.observe(time.perf_counter() - _t0)  # SDD 19
     metrics.TICK_LAST_RUN.set(time.time())
     return {

@@ -8,6 +8,7 @@ from app.api.v1 import (
     bases,
     catalog,
     combat,
+    events,
     expeditions,
     galaxies,
     intel,
@@ -37,4 +38,5 @@ api_router.include_router(galaxies.router, prefix="/galaxies", tags=["galaxies"]
 api_router.include_router(public.router, prefix="/public", tags=["public"])
 api_router.include_router(intel.router, tags=["intel"])
 api_router.include_router(journal.router, tags=["journal"])
+api_router.include_router(events.router, prefix="/events", tags=["events"])
 api_router.include_router(advisor.router, prefix="/players/me/advisor", tags=["advisor"])

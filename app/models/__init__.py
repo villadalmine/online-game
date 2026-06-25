@@ -408,6 +408,33 @@ class Notification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class WorldEvent(Base):
+    """Evento dinámico activo del mundo (SDD 36, "happy hour"). Activo si starts_at ≤ now < ends_at.
+    `effect`/`magnitude` se leen perezosamente (apilan como un multiplicador más)."""
+
+    __tablename__ = "world_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    key: Mapped[str] = mapped_column(String(40), index=True)
+    effect: Mapped[str] = mapped_column(String(30))
+    magnitude: Mapped[float] = mapped_column(Float, default=1.0)
+    scope: Mapped[str] = mapped_column(String(40), default="all")
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    payload: Mapped[str] = mapped_column(Text, default="{}")
+
+
+class EventGrant(Base):
+    """Marca que un jugador ya reclamó un evento one-shot (p.ej. free_units), para no repetir."""
+
+    __tablename__ = "event_grants"
+    __table_args__ = (UniqueConstraint("player_id", "event_id", name="uq_event_grant"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    event_id: Mapped[int] = mapped_column(ForeignKey("world_events.id", ondelete="CASCADE"))
+
+
 class GameEvent(Base):
     """Append-only journal of everything players do (SDD 38): `id` = orden total (seq).
     Fuente de verdad para medir todo, exportar la partida a YAML y reproducirla."""

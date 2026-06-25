@@ -102,6 +102,25 @@ events:
 - **e2e:** `POST /admin/events {happy_hour_cheap}` → `GET /events/active` lo muestra → construir cuesta
   la mitad → tras `ends_at` (fast-forward) ya no aplica.
 
+## 7.bis Estado de implementación (2026-06-24) — v1
+- **Contenido:** `content/events.yaml` (happy_hour_build, power_surge, mining_boom, war_fervor,
+  fortify, conscription) + `registry.events`.
+- **Modelos + migración:** `WorldEvent` (activo si starts≤now<ends) + `EventGrant` (one-shot por
+  jugador).
+- **Servicio `events.py`:** `active_events`, `event_multiplier` (production/attack/defense/
+  energy_regen), `build_cost_multiplier`, `grant_due_free_units`, `maybe_start_event` (RNG sembrable,
+  un evento global a la vez + cooldown), `start_event`.
+- **Enganches:** `effects.multiplier` (prod/atk/def apilan el evento), `state.advance` (energía
+  ×evento + free_units), `build.py` (build_cost), `worker.run_tick` (scheduling). Config
+  `event_chance_per_tick`/`event_cooldown_seconds`.
+- **API:** `GET /events/active`, `GET /events/catalog`, `POST /events/start/{key}` (admin).
+- **Web:** panel **📣 Eventos** con cuenta regresiva (polleado). Journal registra
+  `world_event_started`.
+- **Tests:** multiplicador activo/expira, build_cost, free_units una vez, scheduling determinista +
+  e2e. **254 verdes.**
+- **Pendiente (follow-up):** scope por galaxia/planeta/raza; efectos de velocidad de colas; aviso
+  push al iniciar; panel Grafana de eventos.
+
 ## 8. Riesgos / decisiones
 - **Balance/abuso:** eventos cortos + cooldown; `free_units` cap por evento; multiplicadores acotados.
   Evitar que dos eventos se multipliquen sin techo (cap global opcional).

@@ -7,6 +7,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 36: eventos dinámicos "happy hour" (implementado)
+- Eventos globales temporales que se disparan en **horas aleatorias** desde el tick y aplican a
+  todos mientras duran: **todo más barato** (build_cost ×0.5), **energía ×2**, **+50% producción**,
+  **+30% ataque/defensa**, **soldados gratis** (una vez). Data-driven en `content/events.yaml`
+  (rebalancear = editar YAML).
+- Reusa el motor de multiplicadores: `effects.multiplier` apila el evento (prod/atk/def), la energía
+  y el costo de construir lo leen perezosamente, y los free_units se acreditan una vez por jugador en
+  `advance`. Modelos `WorldEvent`/`EventGrant` + migración. Scheduling determinista (RNG sembrable,
+  uno a la vez + cooldown).
+- API `GET /events/active` · `GET /events/catalog` · `POST /events/start/{key}` (admin). Panel web
+  **📣 Eventos** con cuenta regresiva. Journal registra `world_event_started`. Bilingüe. 254 verdes.
+
 ## [1.22.0] - 2026-06-24
 
 ### 2026-06-24 — Asistente IA: ve el grafo COMPLETO y deduce (no solo keyword-match)

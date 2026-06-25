@@ -47,6 +47,7 @@ class GameContent:
         self.alliance_types: dict[str, dict] = {
             t["key"]: t for t in _load("alliances.yaml")["types"]
         }
+        self.events: dict[str, dict] = {e["key"]: e for e in _load("events.yaml")["events"]}
 
     def resolve_role(self, race_key: str, role: str) -> str | None:
         """Map an abstract resource role (structural/energetic/advanced) to a mineral key."""

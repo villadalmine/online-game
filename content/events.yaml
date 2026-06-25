@@ -1,0 +1,75 @@
+# Eventos dinámicos del mundo ("happy hour", SDD 36). Se disparan en horas aleatorias desde el
+# tick y aplican a TODOS mientras duran (scope: all en v1). Rebalancear = editar este YAML.
+# effect: production | attack | defense | energy_regen | build_cost | free_units
+#   - production/attack/defense/energy_regen: multiplicador (×magnitude) mientras está activo.
+#   - build_cost: multiplica el costo de construir (magnitude < 1 = más barato).
+#   - free_units: regala `magnitude` unidades de `grant_unit` (una sola vez por jugador y evento).
+# i18n: name/description ES; *_en para inglés (SDD 4). weight = probabilidad relativa de salir.
+events:
+  - key: happy_hour_build
+    name: "Hora feliz: rebajas de construcción"
+    name_en: "Happy hour: build discounts"
+    description: "Construir cuesta la mitad de minerales."
+    description_en: "Building costs half the minerals."
+    icon: "🏷"
+    effect: build_cost
+    magnitude: 0.5
+    duration_seconds: 1800
+    weight: 3
+    scope: all
+  - key: power_surge
+    name: "Sobrecarga energética"
+    name_en: "Power surge"
+    description: "La energía se regenera al doble."
+    description_en: "Energy regenerates twice as fast."
+    icon: "⚡"
+    effect: energy_regen
+    magnitude: 2.0
+    duration_seconds: 1200
+    weight: 3
+    scope: all
+  - key: mining_boom
+    name: "Fiebre minera"
+    name_en: "Mining boom"
+    description: "+50% de producción de minerales."
+    description_en: "+50% mineral production."
+    icon: "⛏"
+    effect: production
+    magnitude: 1.5
+    duration_seconds: 1800
+    weight: 2
+    scope: all
+  - key: war_fervor
+    name: "Fervor bélico"
+    name_en: "War fervor"
+    description: "+30% de ataque para todas las flotas."
+    description_en: "+30% attack for all fleets."
+    icon: "⚔"
+    effect: attack
+    magnitude: 1.3
+    duration_seconds: 1200
+    weight: 2
+    scope: all
+  - key: fortify
+    name: "Fortificación"
+    name_en: "Fortification"
+    description: "+30% de defensa para todas las bases."
+    description_en: "+30% defense for all bases."
+    icon: "🛡"
+    effect: defense
+    magnitude: 1.3
+    duration_seconds: 1200
+    weight: 2
+    scope: all
+  - key: conscription
+    name: "Leva: soldados gratis"
+    name_en: "Conscription: free soldiers"
+    description: "Reclamá 5 soldados gratis (una vez)."
+    description_en: "Claim 5 free soldiers (once)."
+    icon: "🎖"
+    effect: free_units
+    magnitude: 5
+    grant_unit: soldier
+    duration_seconds: 900
+    weight: 1
+    scope: all
