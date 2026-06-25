@@ -248,6 +248,7 @@ class BaseOut(BaseModel):
     id: int
     name: str
     planet_key: str
+    base_type: str = "surface"   # surface | orbital (SDD 37)
     buildings: list[BuildingOut]
 
 

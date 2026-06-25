@@ -87,7 +87,8 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
             for b in bres.scalars()
         ]
         bases_out.append(
-            BaseOut(id=base.id, name=base.name, planet_key=base.planet_key, buildings=buildings)
+            BaseOut(id=base.id, name=base.name, planet_key=base.planet_key,
+                    base_type=base.base_type, buildings=buildings)
         )
 
     training_out: list[TrainingOrderOut] = []

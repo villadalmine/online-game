@@ -57,6 +57,15 @@ async def start_build(
     # Eventos "happy hour" (SDD 36): build_cost < 1 abarata la construcción.
     from app.services.events import build_cost_multiplier
     cm = await build_cost_multiplier(session, now)
+    # Colonia/órbita (SDD 37 v2): construir en mundos hostiles o en órbita cuesta más.
+    if base.planet_key != player.planet_key or base.base_type == "orbital":
+        if base.base_type == "orbital":
+            cm *= 1.5
+        else:
+            from app.services.colonization import compat
+            from app.services.research import researched_techs
+            techs = await researched_techs(session, player.id)
+            cm *= compat(player.race_key, base.planet_key, techs)["modifiers"]["build_cost"]
     if cm != 1.0:
         cost = {m: a * cm for m, a in cost.items()}
     stocks = await player_stocks(session, player.id)

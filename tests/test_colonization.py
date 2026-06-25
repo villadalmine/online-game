@@ -126,3 +126,36 @@ async def test_orbital_base_needs_robotics_and_opens_lethal_worlds(session):
     base = await found_colony(session, p, "mercury", mode="orbital")
     await session.commit()
     assert base.base_type == "orbital" and base.planet_key == "mercury"
+
+
+async def test_orbital_build_costs_more_than_home(session):
+    # SDD 37 v2: construir en una base orbital cuesta más minerales que en el mundo natal.
+    from app.content.registry import get_content
+    from app.services.build import start_build
+    from app.services.economy import get_or_create_stock, player_stocks
+
+    p = await _terran(session, "builder")
+    p.energy = 99999.0
+    session.add(PlayerTech(player_id=p.id, tech_key="orbital_robotics"))
+    session.add(UnitStock(player_id=p.id, unit_key="shuttle", quantity=1))
+    await session.commit()
+    for m in get_content().minerals:
+        (await get_or_create_stock(session, p.id, m)).amount = 100000.0
+    await session.commit()
+
+    home = (await session.execute(
+        select(Base_).where(Base_.player_id == p.id)
+    )).scalars().first()
+    orbital = await found_colony(session, p, "mercury", mode="orbital")
+    await session.commit()
+
+    async def _build_cost(base):
+        before = dict(await player_stocks(session, p.id))
+        await start_build(session, p, base, "power_plant")
+        await session.commit()
+        after = dict(await player_stocks(session, p.id))
+        return sum(before[m] - after.get(m, 0.0) for m in before)
+
+    cost_home = await _build_cost(home)
+    cost_orbital = await _build_cost(orbital)
+    assert cost_orbital > cost_home   # órbita: ×1.5

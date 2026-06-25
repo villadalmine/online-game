@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Colonias: costo de construcción por-colonia + tipo visible
+- Construir en una **colonia hostil** cuesta más (modificador `build_cost` de `compat` según
+  habitabilidad) y en una **base orbital** cuesta ×1.5 (los robots construir es caro). El mundo natal
+  queda igual.
+- El panel **Bases y edificios** ahora marca cada base: ⭐ natal · 🪐 colonia · 🛰 orbital
+  (`base_type` expuesto en `/players/me`). Tests + 268 verdes.
+
 ## [1.26.0] - 2026-06-25
 
 ### 2026-06-25 — SDD 37 v2: bases orbitales con robots (colonizar mundos letales)
