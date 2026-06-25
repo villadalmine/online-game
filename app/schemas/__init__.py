@@ -34,6 +34,12 @@ class VerifyCodeRequest(BaseModel):
     code: str = Field(min_length=4, max_length=12)
 
 
+class MarketTradeRequest(BaseModel):
+    planet_key: str
+    mineral_key: str
+    qty: int
+
+
 class AssistEnergyResult(BaseModel):
     granted: float
     energy: float

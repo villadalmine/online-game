@@ -44,6 +44,21 @@ buildings:
     cost:
       structural: 120
       energetic: 80
+  - key: market
+    name: "Mercado"
+    name_en: "Market"
+    real: "Mercado: centro de comercio de recursos."
+    real_en: "Market: resource trading hub."
+    sources: ["Wikipedia: Marketplace"]
+    category: economy
+    description: "Permite comprar y vender minerales a precios de este planeta (SDD 42)."
+    description_en: "Buy and sell minerals at this planet's prices (SDD 42)."
+    energy_cost: 15
+    build_seconds: 150
+    cost:
+      structural: 120
+      energetic: 80
+      advanced: 20
   - key: barracks
     name: "Cuartel"
     name_en: "Barracks"

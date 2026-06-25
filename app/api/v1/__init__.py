@@ -15,6 +15,7 @@ from app.api.v1 import (
     insights,
     intel,
     journal,
+    market,
     notifications,
     players,
     public,
@@ -43,4 +44,5 @@ api_router.include_router(journal.router, tags=["journal"])
 api_router.include_router(insights.router, tags=["insights"])
 api_router.include_router(events.router, prefix="/events", tags=["events"])
 api_router.include_router(colonize.router, prefix="/colonize", tags=["colonize"])
+api_router.include_router(market.router, prefix="/market", tags=["market"])
 api_router.include_router(advisor.router, prefix="/players/me/advisor", tags=["advisor"])

@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 42 Fase 1: mercado local (comprar/vender minerales con energía)
+- Edificio **`market`** + servicio de mercado: **precios por planeta derivados** (no hardcodeados)
+  = base / abundancia → barato donde abunda, caro donde escasea, **premium (He-3, etc.) lo más caro**.
+  `POST /market/buy|sell` (pagás/recibís **energía**, requiere un mercado activo en ese planeta;
+  spread en la venta). `GET /market/prices?planet=` + `GET /market/planets`. Panel web **💱 Mercado**.
+  Queda en el journal (`market_buy`/`market_sell`). Bilingüe. Tests + 283 verdes.
+- Diseño actualizado (SDD 42): el hub se **repite por galaxia** y desde el hub podés **consultar
+  precios de otras galaxias** (arbitraje informado). Fases 2 (inventario por-planeta + transporte) y 3
+  (hub dinámico + black market) pendientes.
+
 ### 2026-06-25 — SDD 42 diseñado: mercado, comercio y economía por-planeta
 - Doc `docs/sdd-market-trade.md`: mercado local por planeta (precios derivados del costo de
   producción × escasez/abundancia, no hardcodeados) + mercado **intergaláctico** por galaxia (hub en

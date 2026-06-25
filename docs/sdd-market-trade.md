@@ -67,6 +67,11 @@ scarcity(p, mineral)     = 1 / max(abundance(p, mineral), ε)   # caro donde esc
   el precio intrínseco). Determinista, sin LLM.
 - Pagás en **divisa de energía** al precio que pone el mercado. Necesitás nave para traer lo comprado.
 - (Se alimenta del journal SDD 38 → métricas de mercado + base para que la IA "juegue" el mercado.)
+- **El patrón se repite en CADA galaxia** (un hub por galaxia, precios independientes por oferta/demanda
+  local). Estando en el hub de tu galaxia podés **consultar precios de otras galaxias** ("mandar
+  mensajes" a los otros hubs): `GET /market/hub/{galaxy}/prices` → ves el precio de cada ítem en cada
+  hub → arbitraje informado (comprar barato en una galaxia y traer, si tenés cómo viajar). La consulta
+  de precios es **gratis/instantánea** (info); mover bienes entre galaxias sí cuesta viaje/nave.
 
 ## 6. Cuevas ilegales / black market
 - En el hub hay un **mercado negro**: pagás con **lo que quieras, incluso materiales** (trueque), a
@@ -90,9 +95,11 @@ scarcity(p, mineral)     = 1 / max(abundance(p, mineral), ε)   # caro donde esc
 
 ## 9. Fases (porque es grande)
 - **Fase 0 (datos):** `trade_policy` en alianzas (no-op), `market`/hub en content, `mineral_energy_value`.
-- **Fase 1 (precios + mercado local con pool actual):** `base_energy_price`/`planet_price`,
-  `GET /market/prices`, `POST /market/buy|sell` acreditando al **pool por-jugador** (sin per-planeta
-  todavía) → entrega valor rápido y testeable sin la refactor grande.
+- **Fase 1 (precios + mercado local con pool actual) — IMPLEMENTADA (2026-06-25):** edificio
+  `market`; `mineral_price(planet, mineral)` = base/abundancia (premium = caro); `GET /market/prices`,
+  `GET /market/planets`, `POST /market/buy|sell` (energía ↔ minerales, requiere market activo en ese
+  planeta); panel web 💱 Mercado; journal `market_buy`/`market_sell`. Acredita al **pool por-jugador**
+  (per-planeta = Fase 2).
 - **Fase 2 (inventario por-planeta + transporte):** `ResourceStock` con `planet_key` + migración +
   `TransportMission`; build/train/minería pasan a per-planeta. **La refactor estructural.**
 - **Fase 3 (hub dinámico + black market):** `MarketPrice` por oferta/demanda + cuevas ilegales +

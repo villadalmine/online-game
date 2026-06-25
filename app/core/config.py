@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     # Colonización (SDD 37): fundar bases en otros planetas.
     max_colonies: int = 3                 # máximo de colonias (además del mundo natal)
     colonize_energy_cost: float = 60.0    # energía por colonización (escala con nº de colonias)
+    # Mercado (SDD 42 Fase 1): precio = base × escasez (1/abundancia del planeta).
+    market_mineral_base_energy: float = 2.0   # energía por unidad de mineral (precio intrínseco)
+    market_scarcity_floor: float = 0.2        # piso de abundancia → tope de carestía (premium ~5×)
+    market_sell_spread: float = 0.7           # vendés al 70% del precio de compra (spread)
     app_version: str = "dev"              # SDD 41: versión del juego (se setea por env APP_VERSION)
     meta_compute_interval_seconds: int = 600   # cada cuánto recalcula el meta (en el tick)
     assist_energy_per_day: int = 3        # SDD 40: veces/día que podés pedir energía de nivelado

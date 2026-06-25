@@ -415,6 +415,19 @@ async def test_profile_update_nick_and_password_e2e(client):
     assert dup.status_code == 409
 
 
+async def test_market_prices_and_buy_guard_e2e(client):
+    # SDD 42: tabla de precios pública + comprar sin mercado → 400.
+    h = await _register(client.http, "shopper")
+    await _onboard(client.http, h)
+    pr = (await client.http.get("/api/v1/market/prices?planet=mars", headers=h)).json()
+    assert "prices" in pr and "iron" in pr["prices"]
+    r = await client.http.post(
+        "/api/v1/market/buy", headers=h,
+        json={"planet_key": "mars", "mineral_key": "iron", "qty": 5},
+    )
+    assert r.status_code == 400   # sin mercado construido
+
+
 async def test_colonize_options_e2e(client):
     # SDD 37: el grafo de opciones raza×planeta para tu imperio.
     h = await _register(client.http, "colonizer")
