@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.40.0] - 2026-06-25
+
 ### 2026-06-25 — Hangar: estacionar/despachar más naves (SDD 42 Fase 3)
 - Nuevo edificio **`hangar`** (categoría economía): cada hangar activo **sube el cupo** de naves de
   carga que podés despachar por ventana de 2h (`market_transport_ships_per_window` base +
