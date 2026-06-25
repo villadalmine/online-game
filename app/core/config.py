@@ -103,6 +103,10 @@ class Settings(BaseSettings):
     # Presupuesto del asesor por jugador/día (anti-quema de créditos): pasado el cupo NO se llama al
     # LLM (cero tokens) y se cae a los tips deterministas. = patrón DAILY_CAP del repo shooter.
     advisor_llm_calls_per_day: int = 40
+    # Selector de modelo del asistente (SDD 9): gpu (local) | cloud (pago barato) | byok (key del
+    # jugador). El modo cloud usa este alias; byok apunta a este base_url por defecto.
+    assistant_cloud_model: str = "gemma4-paid"
+    assistant_byok_base_url: str = "https://openrouter.ai/api/v1"
 
     # Temporadas + protección de novatos (SDD 11).
     season_days: int = 28                 # duración de cada temporada

@@ -213,6 +213,52 @@ async def test_ask_daily_budget_stops_calling_llm(session, monkeypatch):
     assert r3.reply                              # igual responde (determinista)
 
 
+async def test_ask_cloud_mode_uses_paid_alias(session, monkeypatch):
+    # SDD 9: modo 'cloud' → manda el alias pago barato (gemma4-paid), no el local.
+    from app.core.config import get_settings
+    p = await _player(session, name="cloudmode")
+    cap = {}
+
+    async def fake_chat(messages, **kw):
+        cap.update(kw)
+        return "ok nube"
+
+    monkeypatch.setattr(adv, "llm_chat", fake_chat)
+    await adv.ask(session, p, "qué construyo", mode="cloud")
+    assert cap["model"] == get_settings().assistant_cloud_model
+    assert cap.get("api_key") is None   # usa la key del server, no BYOK
+
+
+async def test_ask_byok_uses_player_key_and_skips_budget(session, monkeypatch):
+    # SDD 9: modo 'byok' → usa la key/modelo/base_url del jugador y NO consume el cupo del server.
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "advisor_llm_calls_per_day", 0)   # cupo agotado
+    p = await _player(session, name="byokmode")
+    cap = {}
+
+    async def fake_chat(messages, **kw):
+        cap.update(kw)
+        return "ok byok"
+
+    monkeypatch.setattr(adv, "llm_chat", fake_chat)
+    r = await adv.ask(session, p, "hola", mode="byok",
+                      byok_key="sk-or-xxx", byok_model="google/gemma-3-27b-it:free")
+    assert r.reply == "ok byok"                       # llamó al LLM aunque el cupo estaba en 0
+    assert cap["api_key"] == "sk-or-xxx"
+    assert cap["model"] == "google/gemma-3-27b-it:free"
+    assert cap["base_url"] == get_settings().assistant_byok_base_url
+
+
+async def test_ask_byok_requires_key_and_model(session):
+    from app.services.advisor import AdvisorError
+    p = await _player(session, name="byokbad")
+    try:
+        await adv.ask(session, p, "hola", mode="byok", byok_key="", byok_model="")
+        raise AssertionError("byok sin key/modelo debía fallar")
+    except AdvisorError as e:
+        assert e.status == 400
+
+
 async def test_assist_energy_proportional_to_deficit_and_daily_cap(session):
     # SDD 40/41: energía proporcional al déficit vs el promedio; el que está sobre el promedio no
     # recibe nada (sin ventaja); tope diario → 429.

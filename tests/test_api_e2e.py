@@ -722,6 +722,24 @@ async def test_advisor_ask_returns_blockers(client):
                                    json={"message": "hola"})).status_code == 401
 
 
+async def test_advisor_model_selector_e2e(client):
+    # SDD 9: selector de modelo gpu/cloud/byok. (Sin LLM configurado en tests cae al fallback det.)
+    h = await _register(client.http, "modelpicker")
+    await _onboard(client.http, h)
+    # modo cloud → 200 (responde con tips deterministas si no hay LLM)
+    rc = await client.http.post("/api/v1/players/me/advisor/ask", headers=h,
+                                json={"message": "qué hago", "model_mode": "cloud"})
+    assert rc.status_code == 200, rc.text
+    # byok sin key/modelo → 400
+    rb = await client.http.post("/api/v1/players/me/advisor/ask", headers=h,
+                                json={"message": "qué hago", "model_mode": "byok"})
+    assert rb.status_code == 400
+    # modo inválido → 422 (validación)
+    ri = await client.http.post("/api/v1/players/me/advisor/ask", headers=h,
+                                json={"message": "x", "model_mode": "otro"})
+    assert ri.status_code == 422
+
+
 async def test_advisor_hack_grants_and_exhausts_daily_budget(client):
     h = await _register(client.http, "hacker2")
     state = await _onboard(client.http, h)

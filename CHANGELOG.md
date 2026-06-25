@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Asistente: selector de modelo (GPU / nube / tu modelo BYOK) (SDD 9)
+- En el panel del asistente, un **selector** con 3 modos (tooltip al pasar el mouse):
+  - **🖥️ GPU local** (default): gratis, sin tope diario, rápido (modelo local).
+  - **☁️ Nube (free→pago)**: usa el alias pago barato (`assistant_cloud_model`=gemma4-paid), con el
+    **budget diario** por jugador para no abusar.
+  - **🔑 Tu modelo (BYOK)**: ventana para pegar **tu API key de OpenRouter + el modelo**; se usa esa
+    key **solo en esa request** (no se persiste en el server) y **no consume el cupo** del server
+    (lo pagás vos). La key/modelo se guardan en tu navegador (localStorage).
+- `POST /advisor/ask` acepta `model_mode` (`gpu|cloud|byok`) + `byok_key`/`byok_model`/`byok_base_url`.
+  `llm_chat` admite override de `api_key`/`base_url`. El budget diario aplica a gpu/cloud; byok exento.
+- Tests: `test_ask_cloud_mode_uses_paid_alias`, `test_ask_byok_uses_player_key_and_skips_budget`,
+  `test_ask_byok_requires_key_and_model` (servicio) y `test_advisor_model_selector_e2e` (HTTP:
+  cloud→200, byok sin key→400, modo inválido→422).
+
 ## [1.46.0] - 2026-06-25
 
 ### 2026-06-25 — Métricas LLM separadas por app (dashboard ya no mezcla juegos)

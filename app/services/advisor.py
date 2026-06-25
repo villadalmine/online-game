@@ -213,9 +213,14 @@ def _fallback_reply(reports: list[BlockerReport], hits: list[dict] | None = None
     return "Esto es lo que te traba ahora:\n" + "\n".join(lines)
 
 
-async def ask(session: AsyncSession, player: Player, message: str) -> AdvisorReply:
+async def ask(
+    session: AsyncSession, player: Player, message: str, *, mode: str = "gpu",
+    byok_key: str | None = None, byok_model: str | None = None, byok_base_url: str | None = None,
+) -> AdvisorReply:
     if not player.race_key:
         raise AdvisorError("Primero hacé el onboarding (elegí planeta y raza).", 400)
+    if mode == "byok" and not (byok_key and byok_model):
+        raise AdvisorError("Para 'tu modelo' poné tu API key y el modelo de OpenRouter.", 400)
     await advance(session, player)
     snap = await build_snapshot(session, player)
 
@@ -241,7 +246,10 @@ async def ask(session: AsyncSession, player: Player, message: str) -> AdvisorRep
     from app.services.espionage import player_intel  # local: evita ciclo de imports
     intel = await player_intel(session, player)
 
-    reply_text = await _llm_or_fallback(session, player, message, snap, hits, reports, intel)
+    reply_text = await _llm_or_fallback(
+        session, player, message, snap, hits, reports, intel,
+        mode=mode, byok_key=byok_key, byok_model=byok_model, byok_base_url=byok_base_url,
+    )
     suggestions = _suggestions(reports, snap, message)
     left = hacks_left(player)
     hackable = ("mineral", "not_producible", "energy")
@@ -305,12 +313,29 @@ async def _llm_calls_today(session: AsyncSession, player_id: int) -> int:
     )).scalar_one()
 
 
-async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=None) -> str:
-    """Prose from the LLM grounded on retrieved docs + blockers + spy intel; det. fallback."""
+async def _llm_or_fallback(
+    session, player, message, snap, hits, reports, intel=None, *,
+    mode: str = "gpu", byok_key=None, byok_model=None, byok_base_url=None,
+) -> str:
+    """Prose from the LLM grounded on retrieved docs + blockers + spy intel; det. fallback.
+
+    Modo (SDD 9): 'gpu' (local) | 'cloud' (alias pago barato) | 'byok' (key del jugador). El budget
+    diario aplica a los modos que gastan recursos del server (gpu/cloud); 'byok' lo paga el
+    jugador → exento."""
     s = get_settings()
+    # Resolución del backend según el modo elegido (key/base_url solo se overridean en BYOK).
+    model = s.assistant_llm_model or None
+    api_key = base_url = None
+    budgeted = True
+    if mode == "cloud":
+        model = s.assistant_cloud_model
+    elif mode == "byok":
+        model, api_key = byok_model, byok_key
+        base_url = byok_base_url or s.assistant_byok_base_url
+        budgeted = False   # lo paga el jugador con su key → no consume el cupo del server
     # Presupuesto diario (SDD 9 / patrón shooter): pasado el cupo NO se llama al LLM (cero tokens/
     # créditos) → tips deterministas. El asistente igual responde, solo que sin la prosa del modelo.
-    if await _llm_calls_today(session, player.id) >= s.advisor_llm_calls_per_day:
+    if budgeted and await _llm_calls_today(session, player.id) >= s.advisor_llm_calls_per_day:
         return _fallback_reply(reports, hits)
     try:
         history = await list_messages(session, player, HISTORY_LEN)
@@ -355,7 +380,8 @@ async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=
         msgs.append({"role": "user", "content": f"{message}\n\nCONTEXTO:\n{json.dumps(context)}"})
         reply = await llm_chat(
             msgs, max_tokens=400, user=f"player:{player.username}",   # SDD 28
-            model=s.assistant_llm_model or None, timeout=s.assistant_llm_timeout_seconds,
+            model=model, timeout=s.assistant_llm_timeout_seconds,
+            api_key=api_key, base_url=base_url,   # solo seteados en BYOK
         )
         return reply.strip() or _fallback_reply(reports, hits)
     except Exception:

@@ -37,7 +37,10 @@ async def ask(
             "Demasiadas consultas al asistente; espera un momento.",
         )
     try:
-        return await advisor.ask(session, player, body.message)
+        return await advisor.ask(
+            session, player, body.message, mode=body.model_mode,
+            byok_key=body.byok_key, byok_model=body.byok_model, byok_base_url=body.byok_base_url,
+        )
     except advisor.AdvisorError as e:
         raise HTTPException(e.status, str(e)) from e
 

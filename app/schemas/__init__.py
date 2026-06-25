@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -526,6 +527,11 @@ class BlockerReport(BaseModel):
 # ---- SDD 2: personal AI assistant -------------------------------------------
 class AdvisorAskRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
+    # Selector de modelo (SDD 9): gpu (local, default) | cloud (pago barato, con budget) | byok.
+    model_mode: Literal["gpu", "cloud", "byok"] = "gpu"
+    byok_key: str | None = Field(default=None, max_length=200)   # key del jugador (no se persiste)
+    byok_model: str | None = Field(default=None, max_length=120)   # ej "google/gemma-3-27b-it:free"
+    byok_base_url: str | None = Field(default=None, max_length=300)
 
 
 class Suggestion(BaseModel):

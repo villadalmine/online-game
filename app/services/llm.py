@@ -30,13 +30,18 @@ async def llm_chat(
     user: str | None = None,
     model: str | None = None,
     timeout: float | None = None,
+    api_key: str | None = None,
+    base_url: str | None = None,
 ) -> str:
     """POST messages to the configured LLM and return the assistant message content.
 
     `user` viaja como el campo OpenAI `user` → LiteLLM lo etiqueta `end_user` en sus métricas
-    (atribución de tokens/costo por jugador y backend, SDD 28)."""
+    (atribución de tokens/costo por jugador y backend, SDD 28). `api_key`/`base_url` apuntan a OTRO
+    endpoint con la key del jugador (BYOK, SDD 9): nunca se persiste, solo en esta request."""
     settings = get_settings()
-    if not settings.llm_key:
+    key = api_key or settings.llm_key
+    url = (base_url or settings.llm_url).rstrip("/")
+    if not key:
         raise RuntimeError("LLM no configurado (sin LLM_API_KEY/OPENROUTER_API_KEY)")
     payload = {
         "model": model or settings.llm_model_name,
@@ -52,9 +57,9 @@ async def llm_chat(
     try:
         async with httpx.AsyncClient(timeout=timeout or settings.llm_timeout_seconds) as client:
             resp = await client.post(
-                f"{settings.llm_url}/chat/completions",
+                f"{url}/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {settings.llm_key}",
+                    "Authorization": f"Bearer {key}",
                     "X-Title": "online-game",  # ignored by non-OpenRouter servers
                 },
                 json=payload,
