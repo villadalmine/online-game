@@ -1,6 +1,6 @@
 # SDD 1 — Grafo de dependencias de recursos y tecnologías
 
-> **Estado:** propuesto · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Depende de:** `content/*.yaml`, `app/content/registry.py`, `app/services/economy.py`
 > **Consumido por:** [SDD 2 — Asistente AI personal](sdd-ai-assistant.md) (lo usa como *skill*/grounding)
 

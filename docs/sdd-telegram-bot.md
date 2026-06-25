@@ -1,6 +1,6 @@
 # SDD 5 — Bot de Telegram (otro cliente sobre la misma API)
 
-> **Estado:** propuesto (implementación **bloqueada**: necesita un `TELEGRAM_BOT_TOKEN` real para
+> **Estado:** **bloqueado** — necesita un TELEGRAM_BOT_TOKEN real
 > verificar) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Ámbito:** un cliente nuevo, **consumidor delgado de `/api/v1`**. Sin reglas de juego nuevas.
 

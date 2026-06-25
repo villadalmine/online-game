@@ -1,6 +1,6 @@
 # SDD 8 — Límites de galaxia por usuarios (shards del mundo)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 7 — Capacidad/autoscaling](sdd-capacity-autoscaling.md) (el cap por
 > galaxia es la unidad de sharding del tick y de la carga).
 

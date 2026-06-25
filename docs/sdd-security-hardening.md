@@ -1,6 +1,6 @@
 # SDD 33 — Seguridad: pods sin root + RBAC/sandbox + defensa contra exploits vía la IA
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24
+> **Estado:** **implementado** (pods sin root + RBAC; defensa-IA parcial) · **Fecha:** 2026-06-24
 > **Relacionado:** SDD 9 (LLM), SDD 28 (métricas/rate-limit LLM), SDD 2 (asistente/hack), SDD 14
 > (allowlist), `deploy/Dockerfile`, `deploy/helm/templates/`, `app/services/{advisor,npc,llm}.py`,
 > `web/index.html`.

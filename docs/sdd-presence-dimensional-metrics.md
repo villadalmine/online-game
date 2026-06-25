@@ -1,6 +1,6 @@
 # SDD 21 — Presencia en vivo (quién está online) + métricas por usuario/galaxia
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 19 métricas](sdd-observability-metrics.md), [SDD 8 galaxias](sdd-galaxy-limits.md),
 > [SDD 12 stats](sdd-player-metrics-public.md), [SDD 20 usuarios](sdd-users.md).
 

@@ -1,6 +1,6 @@
 # SDD 38 — Journal de eventos: todo medible + reproducir la partida (YAML → "video")
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24
+> **Estado:** **parcial** — journal implementado; visor de replay pendiente · **Fecha:** 2026-06-24
 > **Relacionado:** [SDD 19 métricas Prometheus](sdd-observability-metrics.md),
 > [SDD 28 uso de IA por usuario](sdd-llm-usage-metrics.md), `app/services/stats.py` (`bump`),
 > `app/core/metrics.py`, `app/models` (`CombatLog`/`Notification` = registros parciales),

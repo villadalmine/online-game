@@ -1,6 +1,6 @@
 # SDD 15 — Build de la imagen (Kaniko + Argo Workflows, in-cluster, arm64)
 
-> **Estado:** implementado · **Fecha:** 2026-06-23 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-23 · **Autor:** equipo online-game
 > **Relacionado:** `deploy/Dockerfile`, `deploy/build/online-game-kaniko.yaml`, deploy del chart.
 
 ## 1. Objetivo

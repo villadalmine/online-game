@@ -1,6 +1,6 @@
 # SDD 11 — Inicio y final del juego: mundo persistente + temporadas (híbrido)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 8 — Límites de galaxia](sdd-galaxy-limits.md), `app/services/scoring.py`,
 > `app/services/combat.py`, `app/worker.py`. **Monetización: fuera de alcance** (decisión: por ahora no).
 

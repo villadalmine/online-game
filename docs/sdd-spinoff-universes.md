@@ -1,6 +1,6 @@
 # SDD 26 — Universos spin-off (Star Trek / Battlestar Galactica / Star Wars) como packs de datos
 
-> **Estado:** propuesto (SOLO especificación de datos — NO implementar todavía) · **Fecha:** 2026-06-24
+> **Estado:** **parcial** — vitrina/showcase implementada; universo jugable pendiente · **Fecha:** 2026-06-24
 > **Relacionado:** [SDD 13 §3.9 universos](sdd-scientific-accuracy.md), [SDD 4 i18n](sdd-i18n.md),
 > [SDD 8 galaxias](sdd-galaxy-limits.md), [SDD 11 temporadas](sdd-game-lifecycle.md),
 > `content/{planets,units,minerals,buildings}.yaml`.

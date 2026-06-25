@@ -1,6 +1,6 @@
 # SDD 19 — Métricas Prometheus + dashboard Grafana (observabilidad)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-23 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-23 · **Autor:** equipo online-game
 > **Relacionado:** API-first (`app/api/v1`), servicios (`app/services/*`), `worker.run_tick`,
 > SSE (`app/api/v1/notifications.py`), `app/services/llm.py`, [SDD 7 capacidad](sdd-capacity-autoscaling.md),
 > [SDD 12 métricas de jugador](sdd-player-metrics-public.md).

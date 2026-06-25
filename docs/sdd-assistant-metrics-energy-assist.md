@@ -1,6 +1,6 @@
 # SDD 40 — Métricas del asistente por jugador + asistencia de energía por ranking
 
-> **Estado:** propuesto · **Fecha:** 2026-06-25
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-25
 > **Relacionado:** [SDD 28 uso de IA por usuario](sdd-llm-usage-metrics.md),
 > [SDD 38 journal](sdd-event-journal-replay.md), [SDD 25 catch-up](sdd-newcomer-catchup.md),
 > `app/services/advisor.py`, `app/services/llm.py`, `app/services/stats.py` (leaderboard).

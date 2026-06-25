@@ -1,6 +1,6 @@
 # SDD 23 — Estrategia de versionado (SemVer) y releases
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 15 build](sdd-image-build-kaniko.md), [SDD 17 runbook](sdd-deploy-upgrade.md),
 > [SDD 22 tests del deploy](sdd-deploy-testing.md), `deploy/build/online-game-kaniko.yaml`, `Chart.yaml`.
 

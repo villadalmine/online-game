@@ -1,6 +1,6 @@
 # SDD 7 — Capacidad (usuarios concurrentes) y autoscaling en k8s
 
-> **Estado:** propuesto · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 8 — Límites de galaxia](sdd-galaxy-limits.md) (sharding del mundo y del
 > tick), [SDD 9 — LLM local en GPU](sdd-local-gpu-llm.md) (la IA no escala como la API).
 

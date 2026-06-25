@@ -1,6 +1,6 @@
 # SDD 14 — Alta con aprobación de admin (invitación) + panel de admin
 
-> **Estado:** propuesto (en cola) · **Fecha:** 2026-06-23 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-23 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 6 — Login email+OTP](sdd-auth-login.md) (el alta), [SDD 7 — Capacidad](sdd-capacity-autoscaling.md)
 > y `deploy/gateway-tls/` (exposición/red), [SDD 12](sdd-player-metrics-public.md) (no filtrar email).
 

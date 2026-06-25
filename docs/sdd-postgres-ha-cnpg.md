@@ -1,6 +1,6 @@
 # SDD 31 — Postgres HA con CloudNativePG (CNPG) — opción "pro" (proyecto)
 
-> **Estado:** propuesto (diseño · proyecto, no urgente) · **Fecha:** 2026-06-24
+> **Estado:** **pendiente** (infra/proyecto, no urgente) · **Fecha:** 2026-06-24
 > **Relacionado:** [SDD 30 mantenimiento/resiliencia](sdd-maintenance-resilience.md),
 > [SDD 10 durabilidad/backup](sdd-durability-backup-restore.md), `deploy/helm/values.yaml`
 > (`postgres.enabled`/`postgres.externalUrl`), repo `infra-ai/infra`.

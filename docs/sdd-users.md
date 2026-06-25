@@ -1,6 +1,6 @@
 # SDD 20 — Usuarios: qué es un usuario, qué campos tiene, identidad y privacidad
 
-> **Estado:** propuesto (documenta el modelo vigente + reglas) · **Fecha:** 2026-06-23
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-23
 > **Relacionado:** `app/models/__init__.py` (`Player`), [SDD 6 login OTP](sdd-auth-login.md),
 > [SDD 14 allowlist/admin](sdd-admin-approval.md), [SDD 12 métricas/showcase](sdd-player-metrics-public.md).
 

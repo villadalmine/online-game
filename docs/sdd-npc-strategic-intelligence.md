@@ -1,6 +1,6 @@
 # SDD 29 — Inteligencia estratégica de NPCs (cerebro de 2 capas + conciencia del scoreboard)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
 > **Relacionado:** `app/services/npc.py`, [SDD 12 métricas/score](sdd-player-metrics-public.md),
 > [SDD 8 galaxias](sdd-galaxy-limits.md), [SDD 9 LLM en GPU](sdd-local-gpu-llm.md),
 > [SDD 28 métricas LLM por usuario](sdd-llm-usage-metrics.md), `app/services/scoring.py`,

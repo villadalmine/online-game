@@ -1,6 +1,6 @@
 # SDD 18 — GitHub Pages del juego, auto-generado desde los SDDs
 
-> **Estado:** propuesto · **Fecha:** 2026-06-23 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-23 · **Autor:** equipo online-game
 > **Relacionado:** todos los `docs/sdd-*.md`, `ROADMAP.md`, `CHANGELOG.md`, [SDD 12 showcase](sdd-player-metrics-public.md).
 
 ## 1. Objetivo

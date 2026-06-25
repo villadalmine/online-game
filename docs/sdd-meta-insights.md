@@ -1,6 +1,6 @@
 # SDD 41 — Del journal a la inteligencia: capa de insights / meta (y futuro ML)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-25
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-25
 > **Relacionado:** [SDD 38 journal](sdd-event-journal-replay.md) (la materia prima),
 > [SDD 29 cerebro estratégico NPC](sdd-npc-strategic-intelligence.md),
 > [SDD 2 asistente](sdd-ai-assistant.md), [SDD 28 uso IA](sdd-llm-usage-metrics.md),

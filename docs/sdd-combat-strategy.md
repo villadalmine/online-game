@@ -1,6 +1,6 @@
 # SDD 34 — Estrategia de combate: fórmula, matriz y calculadora (para web + IA)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
 > **Relacionado:** `app/services/combat.py` (`resolve_combat`), `app/services/effects.py`
 > (`multiplier`), `content/units.yaml`, `content/buildings.yaml` (turret), SDD 1 (grafo/RAG),
 > SDD 2 (asistente), SDD 28 (uso IA).

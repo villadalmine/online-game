@@ -1,6 +1,6 @@
 # SDD 35 — Espionaje e inteligencia (espías, contraespías, intel persistida)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
 > **Relacionado:** SDD 34 (combate/calculadora), SDD 1/2 (grafo + asistente), SDD 28 (uso IA),
 > `app/services/{combat,effects,alliances}.py`, `app/models` (AttackMission/ExpeditionOrder como
 > patrón), `content/{units,buildings,technologies}.yaml`.

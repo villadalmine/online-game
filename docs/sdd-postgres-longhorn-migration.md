@@ -1,6 +1,6 @@
 # SDD 32 — Plan de migración del Postgres del juego a Longhorn (opción A, ejecutable)
 
-> **Estado:** plan a ejecutar (runbook) · **Fecha:** 2026-06-24
+> **Estado:** **pendiente** — plan a ejecutar (runbook) · **Fecha:** 2026-06-24
 > **Relacionado:** [SDD 30 mantenimiento](sdd-maintenance-resilience.md), [SDD 10 backup/restore](sdd-durability-backup-restore.md),
 > `deploy/helm/templates/datastores.yaml`, `deploy/helm/values.yaml` (`postgres.persistence.storageClass`).
 

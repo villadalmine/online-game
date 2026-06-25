@@ -1,6 +1,6 @@
 # SDD 27 — Anuncios / "Lo que viene" (sección de novedades en la página)
 
-> **Estado:** propuesto (SOLO especificación — NO implementar todavía) · **Fecha:** 2026-06-24
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
 > **Relacionado:** [SDD 24 landing /game](sdd-landing-page.md), [SDD 4 i18n](sdd-i18n.md),
 > [SDD 26 universos spin-off](sdd-spinoff-universes.md), [SDD 11 temporadas](sdd-game-lifecycle.md),
 > `CHANGELOG.md`, `ROADMAP.md`.

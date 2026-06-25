@@ -1,6 +1,6 @@
 # SDD 2 — Asistente AI personal (consejero + "hack" de emergencia)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Depende de:** [SDD 1 — Grafo de dependencias](sdd-dependency-graph.md), `app/services/npc.py`
 > (infra LLM), `app/services/economy.py`, `app/core/config.py` (`LLM_*`)
 

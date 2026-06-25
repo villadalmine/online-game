@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Sync de estados de los SDD con la realidad
+- Auditoría CHANGELOG ↔ SDD ↔ código: el CHANGELOG estaba fiel, pero el campo **Estado** de casi
+  todos los SDD seguía en "propuesto" pese a estar en producción. Reescritos los 42: **36
+  implementados**, **2 parciales** (26 spin-offs / 38 replay), **1 bloqueado** (5 Telegram), **3
+  pendientes de infra** (30/31/32).
+
 ## [1.56.0] - 2026-06-25
 
 ### 2026-06-25 — Novedades se alimentan del CHANGELOG (SDD 27)

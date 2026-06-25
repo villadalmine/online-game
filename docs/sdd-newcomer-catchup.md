@@ -1,6 +1,6 @@
 # SDD 25 — Catch-up del recién llegado (que no arranque en desventaja, sin dar ventaja)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 11 temporadas/newbie protection](sdd-game-lifecycle.md),
 > [SDD 12 PlayerStats](sdd-player-metrics-public.md), [SDD 8 galaxias](sdd-galaxy-limits.md),
 > [SDD 19 métricas](sdd-observability-metrics.md), `app/services/onboarding.py`.

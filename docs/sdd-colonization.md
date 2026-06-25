@@ -1,6 +1,6 @@
 # SDD 37 — Colonización multi-planeta (grafo raza × planeta × atributos)
 
-> **Estado:** propuesto (SOLO especificación — NO implementar todavía) · **Fecha:** 2026-06-24
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
 > **Relacionado:** [SDD 13 precisión científica](sdd-scientific-accuracy.md) (atributos físicos +
 > multiplicadores gravedad/insolación/temperatura), [SDD 8 límites de galaxia](sdd-galaxy-limits.md),
 > `content/planets.yaml` (gravity_g, mean_temp_c, atmosphere, has_liquid_water, insolation, abundance),

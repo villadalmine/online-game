@@ -1,6 +1,6 @@
 # SDD 42 — Mercado, comercio y economía por-planeta
 
-> **Estado:** IMPLEMENTADO — Fases 1, 2 y 3 completas (1.30.0–1.40.0) · **Fecha:** 2026-06-25
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-25
 > **Relacionado:** [SDD 37 colonización](sdd-colonization.md) (bases por planeta), [SDD 13 precisión
 > científica](sdd-scientific-accuracy.md) (abundancia/ubicaciones reales), `app/services/alliances.py`
 > (benefit `trade`), `app/services/economy.py` (stocks/minas), `content/planets.yaml` (abundancia),

@@ -1,6 +1,6 @@
 # SDD 17 — Runbook de deploy / upgrade (de código nuevo a producción)
 
-> **Estado:** implementado · **Fecha:** 2026-06-23 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-23 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 15 build Kaniko](sdd-image-build-kaniko.md),
 > [SDD 16 migraciones](sdd-migrations-deploy.md), [SDD 10 durabilidad](sdd-durability-backup-restore.md),
 > `deploy/helm`, `deploy/build/online-game-kaniko.yaml`.

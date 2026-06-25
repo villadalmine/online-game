@@ -1,6 +1,6 @@
 # SDD 12 — Métricas del jugador, historial de temporadas y showcase público
 
-> **Estado:** propuesto (en cola) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Depende de:** [SDD 11 — Inicio/final (temporadas + Hall of Fame)](sdd-game-lifecycle.md).
 > **Relacionado:** `app/services/scoring.py`, procesadores diferidos (combat/training/build/
 > expedition/economy), `app/api/v1/players.py` (ranking), [SDD 7 — Capacidad](sdd-capacity-autoscaling.md).

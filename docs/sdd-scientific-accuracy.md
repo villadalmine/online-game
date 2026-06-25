@@ -1,6 +1,6 @@
 # SDD 13 — Rigor científico del contenido (galaxias, sistemas, planetas, lunas, materiales, instalaciones, naves)
 
-> **Estado:** propuesto (en cola) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Ámbito:** **contenido data-driven** (`content/*.yaml`) + esquemas/validación. Aditivo, sin
 > reescribir motor. **Principio:** que galaxias, planetas, lunas, materiales, instalaciones, naves,
 > militares y científicos sean **científicamente correctos / reales**, fiel al espíritu del proyecto.

@@ -1,6 +1,6 @@
 # SDD 4 — i18n del juego (ES/EN)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Ámbito:** el **juego** (contenido visible + chrome del cliente web). **No** docs ni SDDs.
 
 ## 1. Objetivo

@@ -1,6 +1,6 @@
 # SDD 22 — Tests del deploy: gate pre-rollout + `helm test` (no publicar una imagen que falla)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 15 build Kaniko](sdd-image-build-kaniko.md), [SDD 16 migraciones](sdd-migrations-deploy.md),
 > [SDD 17 runbook upgrade](sdd-deploy-upgrade.md), `tests/`, `deploy/helm`.
 

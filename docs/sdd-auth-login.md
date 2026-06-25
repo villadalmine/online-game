@@ -1,6 +1,6 @@
 # SDD 6 — Login para producción (email + código OTP)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Motivación:** dejar el login listo **antes de publicar**. Hoy es usuario+contraseña; para
 > abrir al público queremos un login **passwordless por email + código** (OTP), más simple y
 > seguro de operar (no guardamos contraseñas de usuarios casuales).

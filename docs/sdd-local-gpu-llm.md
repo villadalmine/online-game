@@ -1,6 +1,6 @@
 # SDD 9 — LLM local en GPU (Tesla P4 / Quadro Maxwell) para NPCs y asistente
 
-> **Estado:** propuesto · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 2 — Asistente](sdd-ai-assistant.md), `app/services/llm.py`,
 > [SDD 7 — Capacidad](sdd-capacity-autoscaling.md). **La IA NO escala como la API.**
 

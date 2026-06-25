@@ -1,6 +1,6 @@
 # SDD 10 — Durabilidad: que un pod muera y nadie pierda datos (backup / restore)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Relacionado:** [SDD 7 — Capacidad](sdd-capacity-autoscaling.md), `deploy/helm/templates/`.
 > **🔴 Hallazgo bloqueante para publicar:** el Postgres del chart **no tiene volumen persistente**.
 

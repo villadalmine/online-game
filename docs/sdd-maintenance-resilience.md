@@ -1,6 +1,6 @@
 # SDD 30 — Mantenimiento y resiliencia: apagar el fierro GPU (`srv-t7910`)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24
+> **Estado:** **pendiente** (infra/ops) · **Fecha:** 2026-06-24
 > **Relacionado:** [SDD 9 LLM/GPU + fallback](sdd-local-gpu-llm.md), [SDD 10 durabilidad/backup](sdd-durability-backup-restore.md),
 > [SDD 28 métricas LLM/GPU](sdd-llm-usage-metrics.md), [SDD 7 capacidad](sdd-capacity-autoscaling.md),
 > `deploy/helm/templates/datastores.yaml`, `deploy/helm/values.yaml` (`postgres.persistence`).

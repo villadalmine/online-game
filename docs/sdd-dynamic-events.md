@@ -1,6 +1,6 @@
 # SDD 36 — Eventos dinámicos del mundo ("happy hour": modificadores temporales)
 
-> **Estado:** propuesto (SOLO especificación — NO implementar todavía) · **Fecha:** 2026-06-24
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
 > **Relacionado:** [SDD 27 anuncios](sdd-announcements.md), [SDD 13 precisión física](sdd-scientific-accuracy.md),
 > `app/services/effects.py` (`multiplier`), `app/services/boons.py` (`ActiveBoon` = multiplicador
 > temporal **ya existente**), `app/services/state.py` (`advance`), `app/worker.py` (tick),

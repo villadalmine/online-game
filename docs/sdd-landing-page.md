@@ -1,6 +1,6 @@
 # SDD 24 — Landing pública del juego en `/game` (bilingüe, para compartir en redes)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24 · **Autor:** equipo online-game
 > **Relacionado:** `web/`, `app/main.py` (rutas `/` y `/health`), [SDD 4 i18n](sdd-i18n.md),
 > [SDD 18 GitHub Pages](sdd-github-pages.md), [SDD 11 lifecycle/monetización](sdd-game-lifecycle.md).
 

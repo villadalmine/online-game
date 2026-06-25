@@ -1,6 +1,6 @@
 # SDD 3 — Paneles de la web colapsables (más espacio, ver lo que querés)
 
-> **Estado:** propuesto · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-22 · **Autor:** equipo online-game
 > **Ámbito:** SOLO cliente web (`web/index.html`). **Sin cambios de API ni de backend.**
 
 ## 1. Objetivo

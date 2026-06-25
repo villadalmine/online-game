@@ -1,6 +1,6 @@
 # SDD 16 — Migraciones de base de datos en build/deploy (qué pasa al rebuild/upgrade)
 
-> **Estado:** implementado (describe el comportamiento vigente) · **Fecha:** 2026-06-23
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-23
 > **Relacionado:** `migrations/`, `app/core/db.py:run_migrations`, `deploy/helm/templates/api.yaml`
 > (initContainer `migrate`), [SDD 10 durabilidad](sdd-durability-backup-restore.md),
 > [SDD 15 build Kaniko](sdd-image-build-kaniko.md).

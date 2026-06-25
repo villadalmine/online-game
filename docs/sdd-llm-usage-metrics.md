@@ -1,6 +1,6 @@
 # SDD 28 — Métricas de uso de LLM por usuario (monetización) + GPU en tiempo real
 
-> **Estado:** propuesto · **Fecha:** 2026-06-24
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
 > **Relacionado:** [SDD 9 LLM en GPU](sdd-local-gpu-llm.md), [SDD 19 métricas](sdd-observability-metrics.md),
 > [SDD 21 presencia/métricas por entidad](sdd-presence-dimensional-metrics.md), `app/services/llm.py`,
 > LiteLLM (`ai/litellm-proxy`), HAMI, Prometheus/Grafana.
