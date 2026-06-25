@@ -527,6 +527,12 @@ class BlockerReport(BaseModel):
 
 
 # ---- SDD 2: personal AI assistant -------------------------------------------
+class AdminPlayerEdit(BaseModel):
+    username: str | None = Field(default=None, min_length=3, max_length=50)
+    email: str | None = Field(default=None, max_length=254)
+    status: str | None = None
+
+
 class AdvisorAskRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     # Selector de modelo (SDD 9): gpu (local, default) | cloud (pago barato, con budget) | byok.

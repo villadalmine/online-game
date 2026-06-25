@@ -1020,6 +1020,45 @@ async def test_admin_approval_flow_e2e(client, monkeypatch):
     assert ob2.status_code == 201, ob2.text
 
 
+async def test_admin_account_abm_e2e(client, monkeypatch):
+    # SDD 14: ABM — el admin edita (nick/email/status) y borra cuentas, con guardas.
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "admin_email", "boss@abm.com")
+    # cuenta a administrar (con typo en el nick, como el caso real)
+    await client.http.post("/api/v1/auth/register",
+        json={"username": "villadamine_typo", "password": "secret123", "email": "typo@abm.com"})
+    ra = await client.http.post("/api/v1/auth/register",
+        json={"username": "boss_abm", "password": "secret123", "email": "boss@abm.com"})
+    atok = {"Authorization": f"Bearer {ra.json()['access_token']}"}
+
+    players = (await client.http.get("/api/v1/admin/players", headers=atok)).json()
+    pid = next(p["id"] for p in players if p["username"] == "villadamine_typo")
+
+    # Modificación: corregir el nick + estado
+    ed = await client.http.post(f"/api/v1/admin/players/{pid}/edit", headers=atok,
+        json={"username": "villadalmine_fixed", "status": "active"})
+    assert ed.status_code == 200 and ed.json()["username"] == "villadalmine_fixed"
+    # se puede loguear con el nick corregido
+    assert (await client.http.post("/api/v1/auth/login",
+        json={"username": "villadalmine_fixed", "password": "secret123"})).status_code == 200
+
+    # guardas: no borrarse a sí mismo, no borrar a otro admin
+    bid = next(p["id"] for p in players if p["username"] == "boss_abm")
+    no_self = await client.http.delete(f"/api/v1/admin/players/{bid}", headers=atok)
+    assert no_self.status_code == 400
+
+    # Baja: borrar la cuenta administrada
+    dl = await client.http.delete(f"/api/v1/admin/players/{pid}", headers=atok)
+    assert dl.status_code == 200
+    after = (await client.http.get("/api/v1/admin/players", headers=atok)).json()
+    assert not any(p["id"] == pid for p in after)
+    # no-admin no puede usar el ABM
+    nn = await client.http.post("/api/v1/auth/register",
+        json={"username": "rando_abm", "password": "secret123", "email": "r@abm.com"})
+    ntok = {"Authorization": f"Bearer {nn.json()['access_token']}"}
+    assert (await client.http.get("/api/v1/admin/players", headers=ntok)).status_code == 403
+
+
 async def test_login_by_username_or_email(client):
     # SDD 6/14: tras renombrar el nick, podés entrar con el USUARIO o con el EMAIL + tu clave.
     r = await client.http.post("/api/v1/auth/register",

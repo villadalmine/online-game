@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Consola de admin (ABM de cuentas) + fix de links de Novedades
+- **Consola de admin (SDD 14)**: al loguearte como admin ves una **vista dedicada** (el admin no
+  juega, solo administra). ABM completo de cuentas: buscar, **editar** usuario/email/estado
+  (`POST /admin/players/{id}/edit`), **resetear** clave (🔑) y **borrar** cuenta + imperio
+  (`DELETE /admin/players/{id}`, cascade). Guardas: no te borrás a vos ni a otro admin; valida
+  unicidad de nick/email. (Resuelve el lío de cuentas duplicadas/typo sin tocar la base a mano.)
+- **Fix**: los links de **Novedades** apuntaban a `docs/*.md` (no servidos por el juego → 404). Ahora
+  un helper manda los `docs/...` a **GitHub** y deja `/...`/externos como están.
+- Tests: `test_admin_account_abm_e2e` (editar nick→login con el nuevo, borrar, guardas, no-admin→403).
+- **Espionaje — feedback**: al despachar espías el toast muestra **cuánto tarda** (⏱) y avisa que el
+  intel llega a 🔔; y al resolverse **se avisa al que espió** ("intel lista, profundidad X%, perdiste
+  N espías") — antes solo se notificaba al detectado. Test: aviso `intel_ready` al observador.
+
 ## [1.51.0] - 2026-06-25
 
 ### 2026-06-25 — Login por email o usuario + vitrina de universos spin-off (SDD 26)

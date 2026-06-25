@@ -214,6 +214,15 @@ async def process_spy_missions(
             await record(session, "intel_gathered", observer.id,
                          target_id=target.id, depth=round(r.depth, 3),
                          detected=r.detect_prob >= 0.5, spies_lost=lost)
+            if not observer.is_npc:   # SDD 35: avisar al que espió QUÉ pasó (intel + bajas)
+                pct = int(round(r.depth * 100))
+                extra = f" Perdiste {lost} espía(s)." if lost else (
+                    " Volvieron todos." if survivors else "")
+                await notify(
+                    session, observer.id, "intel_ready",
+                    f"🕵 Intel de {target.username} lista (profundidad {pct}%).{extra}",
+                    {"target": target.username, "depth": round(r.depth, 3), "lost": lost},
+                )
             m.details = json.dumps({"depth": round(r.depth, 3), "detected": r.detect_prob >= 0.5,
                                     "lost": lost})
             m.force = json.dumps({"spy": survivors} if survivors else {})

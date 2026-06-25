@@ -76,6 +76,13 @@ async def test_spy_cycle_saves_intel_and_returns(session):
         select(IntelReport).where(IntelReport.observer_id == observer.id)
     )).scalar_one()
     assert report.target_id == target.id and report.depth == 1.0
+    # SDD 35: el que espía recibe una notificación de "qué pasó" (intel lista)
+    from app.models import Notification
+    notis = (await session.execute(
+        select(Notification).where(Notification.player_id == observer.id,
+                                   Notification.type == "intel_ready")
+    )).scalars().all()
+    assert notis
 
     # adelantar regreso → vuelven los 5 (no hubo detección)
     m2 = (await session.execute(select(SpyMission).where(SpyMission.id == m.id))).scalar_one()

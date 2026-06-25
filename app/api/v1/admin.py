@@ -9,6 +9,7 @@ from app.api.deps import get_current_admin
 from app.core.db import get_session
 from app.core.redis import get_redis
 from app.models import Player
+from app.schemas import AdminPlayerEdit
 from app.services import presence
 from app.worker import run_tick
 
@@ -73,6 +74,60 @@ async def suspend_player(
     session: AsyncSession = Depends(get_session),
 ):
     return await _moderate(session, admin, player_id, "suspended")
+
+
+@router.post("/players/{player_id}/edit")
+async def edit_player(
+    player_id: int, body: AdminPlayerEdit,
+    admin: Player = Depends(get_current_admin), session: AsyncSession = Depends(get_session),
+):
+    """ABM (Modificación): cambiar username/email/status. Valida unicidad. Solo admin."""
+    target = await session.get(Player, player_id)
+    if target is None or target.is_npc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Jugador no encontrado.")
+    if body.username and body.username != target.username:
+        clash = (await session.execute(
+            select(Player.id).where(Player.username == body.username)
+        )).first()
+        if clash:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Ese usuario ya existe.")
+        target.username = body.username
+    if body.email is not None:
+        email = body.email.strip().lower() or None
+        if email and email != (target.email or ""):
+            clash = (await session.execute(
+                select(Player.id).where(Player.email == email)
+            )).first()
+            if clash:
+                raise HTTPException(status.HTTP_409_CONFLICT, "Ese email ya tiene cuenta.")
+        target.email = email
+    if body.status:
+        if body.status not in ("active", "pending", "suspended", "rejected"):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Estado inválido.")
+        target.status = body.status
+    await session.commit()
+    return {"id": target.id, "username": target.username, "email": target.email,
+            "status": target.status}
+
+
+@router.delete("/players/{player_id}")
+async def delete_player(
+    player_id: int, admin: Player = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """ABM (Baja): borra una cuenta y todo su imperio (cascade). No te podés borrar a vos ni a otro
+    admin (sacale admin primero). Solo admin."""
+    target = await session.get(Player, player_id)
+    if target is None or target.is_npc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Jugador no encontrado.")
+    if target.id == admin.id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No te podés borrar a vos mismo.")
+    if target.is_admin:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se puede borrar a otro admin.")
+    username = target.username
+    await session.delete(target)
+    await session.commit()
+    return {"deleted": player_id, "username": username}
 
 
 @router.post("/players/{player_id}/reset-password")
