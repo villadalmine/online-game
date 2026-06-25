@@ -87,11 +87,24 @@ scarcity(p, mineral)     = 1 / max(abundance(p, mineral), ε)   # caro donde esc
   (`can_trade(seller, buyer)`), hoy devuelve `True`; mañana lee `trade_policy`. Reusa el benefit
   `trade` ya existente.
 
-## 8. Siempre necesitás nave (y calcularlo)
-- Toda compra que **trae bienes físicos** a tu planeta requiere una **nave** (shuttle) disponible y un
-  **viaje de vuelta** (tiempo por distancia desde el hub/planeta-vendedor). Pagar con **energía** no
-  evita el viaje de los **bienes** (salvo que compres en tu propio planeta). El cliente muestra el
-  costo total: precio + tiempo de viaje + nave requerida (como la calculadora de combate SDD 34).
+## 8. Naves, presencia, aparcamiento y robos (mecánica)
+**Presencia (dónde estás vs dónde comprás):**
+| situación | para VER precios | para COMPRAR y traer |
+|---|---|---|
+| tu propio planeta (tenés base) | nada | nada (lo comprado ya está en casa) |
+| otro planeta donde **ya tenés base** | nada (lo ves remoto) | solo **capacidad de almacenaje** para guardar lo comprado |
+| otro planeta **sin base** | **nave protocolar de ventas** (viaja, scoutea precios, vuelve) | **nave de cargo** (viaja, compra y vuelve con la mercadería) |
+
+- **Naves de comercio (content/units.yaml):** `protocol_ship` (barata, sin carga: viaja a ver precios
+  y vuelve → "ya tenés una idea") y `cargo_ship` (con bodega: compra y trae). Pagar con **energía** no
+  exige viaje de bienes si comprás en tu planeta; traer bienes de afuera **siempre** exige cargo+viaje.
+- **Aparcamiento:** el mercado de un planeta tiene **1 solo slot de nave**. Para estacionar más,
+  comprás **aparcamiento en los hangares** (edificio/upgrade `hangar` → +N slots). El **hub central de
+  la galaxia tiene aparcamiento INFINITO** (está en el espacio).
+- **Robos en el hub central:** hay **piratería** — un convoy comercial puede ser **atacado y SAQUEADO**
+  (no solo destruido): te roban la mercadería/unidades que llevás. Conviene llevar **escolta militar**
+  (naves + militares). Reusa `resolve_combat` (SDD 34): el convoy tiene defensa = escolta; si pierde,
+  el atacante saquea la carga. → comerciar en el hub tiene **riesgo** (gancho para PvP/economía).
 
 ## 9. Fases (porque es grande)
 - **Fase 0 (datos):** `trade_policy` en alianzas (no-op), `market`/hub en content, `mineral_energy_value`.
@@ -100,10 +113,14 @@ scarcity(p, mineral)     = 1 / max(abundance(p, mineral), ε)   # caro donde esc
   `GET /market/planets`, `POST /market/buy|sell` (energía ↔ minerales, requiere market activo en ese
   planeta); panel web 💱 Mercado; journal `market_buy`/`market_sell`. Acredita al **pool por-jugador**
   (per-planeta = Fase 2).
-- **Fase 2 (inventario por-planeta + transporte):** `ResourceStock` con `planet_key` + migración +
-  `TransportMission`; build/train/minería pasan a per-planeta. **La refactor estructural.**
-- **Fase 3 (hub dinámico + black market):** `MarketPrice` por oferta/demanda + cuevas ilegales +
-  viaje con nave.
+- **Fase 2 (inventario por-planeta + transporte + naves de comercio):** `ResourceStock` con
+  `planet_key` + migración + `TransportMission`; build/train/minería pasan a per-planeta. Naves
+  `protocol_ship`/`cargo_ship`; reglas de **presencia** (§8: en tu planeta nada; remoto con base solo
+  almacenaje; remoto sin base → protocolar/cargo). **La refactor estructural.**
+- **Fase 3 (hub dinámico + black market + aparcamiento + robos):** `MarketPrice` por oferta/demanda;
+  cuevas ilegales (pagás con materiales, viajás); **slot único** en mercados de planeta + upgrade
+  `hangar` (más slots), aparcamiento **infinito** en el hub; **piratería/saqueo** de convoyes →
+  escolta militar (reusa `resolve_combat`); precios inter-galaxia (consultar otros hubs).
 
 ## 10. Tests / validación (por fase)
 - Precios: `planet_price` barato donde abunda, caro donde escasea; `base_energy_price` == costo real.

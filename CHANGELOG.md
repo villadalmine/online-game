@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 42 diseño ampliado: naves de comercio, aparcamiento y robos
+- En tu planeta no necesitás nave; en otro con base solo almacenaje; en otro sin base viajás con
+  **nave protocolar** (ver precios) o **de cargo** (comprar y traer). Mercado de planeta = **1 slot**
+  de nave (más con **hangar**); el **hub central de la galaxia tiene aparcamiento infinito**. En el
+  hub hay **piratería**: los convoyes pueden ser **saqueados** (no solo destruidos) → conviene
+  **escolta militar** (reusa `resolve_combat`). Documentado en SDD 42 (Fases 2/3).
+
 ## [1.33.0] - 2026-06-25
 
 ### 2026-06-25 — SDD 42 Fase 1: mercado local (comprar/vender minerales con energía)
