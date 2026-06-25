@@ -185,10 +185,16 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
                 for m in ares.scalars()
             ]
 
+    # SDD 14: admin por flag en DB O por ADMIN_EMAIL (igual que get_current_admin) → setear el env
+    # alcanza para que una cuenta existente vea/use el panel sin tocar la base.
+    _admin_email = settings.admin_email.strip().lower()
+    is_admin = player.is_admin or (
+        bool(_admin_email) and (player.email or "").lower() == _admin_email
+    )
     return PlayerStateOut(
         id=player.id,
         username=player.username,
-        is_admin=player.is_admin,
+        is_admin=is_admin,
         account_status=player.status,
         galaxy_key=player.galaxy_key,
         planet_key=player.planet_key,

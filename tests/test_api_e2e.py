@@ -1020,6 +1020,52 @@ async def test_admin_approval_flow_e2e(client, monkeypatch):
     assert ob2.status_code == 201, ob2.text
 
 
+async def test_admin_reset_password_e2e(client, monkeypatch):
+    # SDD 14: el admin resetea la clave de un jugador → temp de un solo uso → el jugador entra con ella.
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "admin_email", "boss@rp.com")
+    # jugador olvidadizo
+    await client.http.post("/api/v1/auth/register",
+        json={"username": "forgetful", "password": "oldpass123", "email": "f@rp.com"})
+    # admin
+    ra = await client.http.post("/api/v1/auth/register",
+        json={"username": "boss_rp", "password": "secret123", "email": "boss@rp.com"})
+    atok = {"Authorization": f"Bearer {ra.json()['access_token']}"}
+    pid = next(p["id"] for p in
+               (await client.http.get("/api/v1/admin/players", headers=atok)).json()
+               if p["username"] == "forgetful")
+    rr = await client.http.post(f"/api/v1/admin/players/{pid}/reset-password", headers=atok)
+    assert rr.status_code == 200
+    temp = rr.json()["temp_password"]
+    assert temp
+    # la clave vieja ya no anda; la temporal sí
+    bad = await client.http.post("/api/v1/auth/login",
+        json={"username": "forgetful", "password": "oldpass123"})
+    assert bad.status_code == 401
+    ok = await client.http.post("/api/v1/auth/login",
+        json={"username": "forgetful", "password": temp})
+    assert ok.status_code == 200
+    # no-admin no puede resetear a otro
+    ntok = {"Authorization": f"Bearer {ok.json()['access_token']}"}
+    assert (await client.http.post(f"/api/v1/admin/players/{pid}/reset-password",
+                                   headers=ntok)).status_code == 403
+
+
+async def test_me_is_admin_by_email_without_db_flag(client, monkeypatch):
+    # SDD 14: setear ADMIN_EMAIL alcanza para que una cuenta EXISTENTE sea admin (panel + /admin/*),
+    # sin tocar la DB. /me refleja is_admin por flag O por coincidencia de email.
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "admin_email", "")   # se registra sin flag admin
+    r = await client.http.post("/api/v1/auth/register",
+        json={"username": "futureadmin", "password": "secret123", "email": "chief@x.com"})
+    h = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    assert (await client.http.get("/api/v1/players/me", headers=h)).json()["is_admin"] is False
+    # ahora ADMIN_EMAIL = su email → reconocido admin sin tocar la base
+    monkeypatch.setattr(get_settings(), "admin_email", "chief@x.com")
+    assert (await client.http.get("/api/v1/players/me", headers=h)).json()["is_admin"] is True
+    assert (await client.http.post("/api/v1/admin/tick", headers=h)).status_code == 200
+
+
 async def test_otp_request_rate_limited(client, monkeypatch):
     # SDD 6/14: rate-limit por IP del request-code (anti-abuso del endpoint).
     import fakeredis.aioredis

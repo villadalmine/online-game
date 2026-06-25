@@ -75,6 +75,29 @@ async def suspend_player(
     return await _moderate(session, admin, player_id, "suspended")
 
 
+@router.post("/players/{player_id}/reset-password")
+async def reset_password(
+    player_id: int, admin: Player = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 14: el admin no puede VER una password (está hasheada), pero sí RESETEARLA. Genera una
+    temporal, la guarda hasheada y la devuelve UNA vez para pasársela al jugador (que la cambia en
+    Perfil). Alternativa para el dueño: entrar con código por email (OTP) y cambiarla."""
+    import secrets
+
+    from app.core.security import hash_password
+    target = await session.get(Player, player_id)
+    if target is None or target.is_npc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Jugador no encontrado.")
+    temp = secrets.token_urlsafe(9)
+    target.password_hash = hash_password(temp)
+    from app.services.notifications import notify
+    await notify(session, target.id, "password_reset",
+                 "El admin reseteó tu contraseña; entrá con la temporal y cambiala en Perfil.")
+    await session.commit()
+    return {"id": target.id, "username": target.username, "temp_password": temp}
+
+
 @router.get("/online")
 async def online_players(
     _: Player = Depends(get_current_admin),

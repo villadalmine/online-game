@@ -7,6 +7,21 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Fixes de cuenta/admin + UX de espionaje
+- **Fix (importante): el navegador autocompletaba "nueva contraseña" en Perfil** → al cambiar solo el
+  nick te cambiaba la clave sin querer. Ahora los campos llevan `autocomplete` correcto y el
+  placeholder aclara "vacío = no cambiar". (El backend/front ya solo cambiaban la clave si mandabas
+  una; el culpable era el autofill.)
+- **Admin por `ADMIN_EMAIL`**: `/players/me` ahora reporta `is_admin` por flag en DB **o** por
+  coincidencia con `ADMIN_EMAIL` (igual que `get_current_admin`) → setear el env alcanza para que una
+  cuenta existente vea el panel 🛡 Admin, sin tocar la base.
+- **Reset de contraseña por admin**: `POST /admin/players/{id}/reset-password` genera una temporal,
+  la guarda hasheada y la devuelve una vez (el admin no puede *ver* claves, solo resetear). Panel
+  admin: buscador de usuario/email + botón 🔑 reset. (Recuperación del propio dueño: OTP por email.)
+- **Espionaje**: al espiar, el prompt ahora **carga tu máximo de espías** y avisa si no tenés (antes
+  arrancaba en 5 a ciegas).
+- Tests: `test_admin_reset_password_e2e`, `test_me_is_admin_by_email_without_db_flag`.
+
 ## [1.49.0] - 2026-06-25
 
 ### 2026-06-25 — Alta con aprobación de admin + panel (SDD 14)
