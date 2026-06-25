@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.32.0] - 2026-06-25
+
 ### 2026-06-25 — NPCs juegan el meta + energía de nivelado matemática + el asistente la conoce
 - **NPCs juegan el meta (SDD 41)**: el cerebro rule-based entrena la **unidad con mejor win-rate**
   (si hay muestra ≥5 y >50%) en vez del default tank/soldier; el cerebro LLM recibe el `meta` en su
