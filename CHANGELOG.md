@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.45.0] - 2026-06-25
+
 ### 2026-06-25 — Página Tech: cómo usa la IA el juego + enlace desde la landing
 - Nueva sección **"Cómo usa la IA el juego"** en `/tech`: GPU local primero (Ollama × 2), asistente con
   **subgrafo indexado** (RAG, razonamiento determinista + IA solo redacta), **cadena con red** (si la
