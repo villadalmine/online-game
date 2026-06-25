@@ -327,6 +327,15 @@ def _raid_outcome(escort: dict[str, int], total_cargo: int, s) -> tuple[str, dic
     return ("raided", losses, stolen)
 
 
+def trade_raid_risk(escort: dict[str, int], qty: int, s=None) -> float:
+    """Riesgo DETERMINÍSTICO de pirata al traer `qty` de mercadería a casa (hub/mercado negro):
+    fracción robada 0..pirate_loss_cap. La escolta (defensa) lo baja. Mismo cálculo que el asalto a
+    convoyes, pero fijo (no por dado) → la UI puede mostrar la chance exacta antes de operar."""
+    s = s or get_settings()
+    _r, _l, frac = _raid_outcome(escort or {}, qty, s)
+    return round(frac, 3)
+
+
 async def raid_convoys(
     session: AsyncSession, now: datetime | None = None, force: bool = False
 ) -> int:
@@ -419,15 +428,18 @@ def _clamp_hub(price: float, mineral_key: str) -> float:
 
 
 async def hub_trade(
-    session: AsyncSession, player: Player, mineral_key: str, qty: int, side: str
+    session: AsyncSession, player: Player, mineral_key: str, qty: int, side: str,
+    escort: dict[str, int] | None = None,
 ) -> dict:
-    """Comprar/vender en el hub de tu galaxia al precio dinámico. Requiere una nave de carga para
-    traer/llevar los bienes; pagás/cobrás energía; el precio se mueve con tu operación."""
+    """Comprar/vender en el hub de tu galaxia al precio dinámico. Traer la mercadería a casa pide
+    naves de carga (1 por `cargo` de capacidad) y la expone a **piratas** (riesgo determinístico por
+    cantidad); una `escort` militar opcional baja ese riesgo. Pagás/cobrás energía."""
     from app.services.training import player_units
 
     s = get_settings()
     now = datetime.now(UTC)
     qty = int(qty)
+    escort = {k: int(v) for k, v in (escort or {}).items() if v and int(v) > 0}
     if qty <= 0:
         raise MarketError("Cantidad inválida.")
     if mineral_key not in get_content().minerals:
@@ -435,8 +447,16 @@ async def hub_trade(
     galaxy = player.galaxy_key
     if not galaxy:
         raise MarketError("No estás en ninguna galaxia.")
-    if (await player_units(session, player.id)).get("cargo_ship", 0) < 1:
-        raise MarketError("Necesitás una nave de carga para operar en el hub.")
+    owned = await player_units(session, player.id)
+    cap = get_content().units.get("cargo_ship", {}).get("stats", {}).get("cargo", 0) or 1
+    ships_needed = -(-qty // cap)   # ceil
+    if owned.get("cargo_ship", 0) < ships_needed:
+        raise MarketError(f"Necesitás {ships_needed} nave(s) de carga para traer {qty}.")
+    for u, n in escort.items():
+        if u == "cargo_ship":
+            raise MarketError("Las naves de carga no escoltan; usá unidades militares.")
+        if owned.get(u, 0) < n:
+            raise MarketError(f"No tenés {n} de {u} para escoltar (tenés {owned.get(u, 0)}).")
 
     row = await _hub_row(session, galaxy, mineral_key)
     home = player.planet_key
@@ -444,9 +464,16 @@ async def hub_trade(
         cost = row.price * qty
         if not spend_energy(player, cost, now, effective_energy_regen(player, s), s.energy_max):
             raise MarketError(f"Energía insuficiente (cuesta {round(cost, 1)}).")
-        (await get_or_create_stock(session, player.id, mineral_key, home)).amount += qty
+        risk = trade_raid_risk(escort, qty, s)   # piratas: te roban parte del cargamento
+        lost = int(qty * risk)
+        (await get_or_create_stock(session, player.id, mineral_key, home)).amount += qty - lost
         row.price = _clamp_hub(row.price * (1 + s.market_hub_impact * qty), mineral_key)
-        result = {"bought": qty, "energy_spent": round(cost, 1)}
+        result = {"bought": qty - lost, "energy_spent": round(cost, 1),
+                  "pirate_risk": risk, "lost_to_pirates": lost}
+        if lost:
+            from app.services.journal import record as _rec
+            await _rec(session, "convoy_raided", player.id, from_planet="hub",
+                       to_planet=home, stolen={mineral_key: lost})
     else:  # sell
         stock = await get_or_create_stock(session, player.id, mineral_key, home)
         if stock.amount < qty:
@@ -467,15 +494,17 @@ async def hub_trade(
 
 
 async def black_market(
-    session: AsyncSession, player: Player, pay_mineral: str, pay_qty: int, get_mineral: str
+    session: AsyncSession, player: Player, pay_mineral: str, pay_qty: int, get_mineral: str,
+    escort: dict[str, int] | None = None,
 ) -> dict:
     """Mercado negro: **trueque** material-por-material (no se paga energía). Pagás con un mineral y
     recibís otro, valuados a los precios del hub de tu galaxia, pero con un *premium ilegal*
-    (`black_market_rate` < 1) → siempre te dan menos que el cambio justo. Requiere una nave de carga
-    (viajás con la mercancía) y no tiene los límites del mercado natal (el riesgo del contrabando).
-    La carga sale y entra de tu planeta natal."""
+    (`black_market_rate` < 1) → siempre te dan menos que el cambio justo. Requiere nave(s) de carga
+    y expone el cargamento a **piratas** (riesgo determinístico, lo baja la `escort`). Sin los
+    límites del mercado natal (el riesgo del contrabando). Carga sale/entra de tu planeta natal."""
     s = get_settings()
     pay_qty = int(pay_qty)
+    escort = {k: int(v) for k, v in (escort or {}).items() if v and int(v) > 0}
     if pay_qty <= 0:
         raise MarketError("Cantidad inválida.")
     if pay_mineral == get_mineral:
@@ -487,8 +516,16 @@ async def black_market(
     if not galaxy:
         raise MarketError("No estás en ninguna galaxia.")
     from app.services.training import player_units
-    if (await player_units(session, player.id)).get("cargo_ship", 0) < 1:
-        raise MarketError("Necesitás una nave de carga para llegar al mercado negro.")
+    owned = await player_units(session, player.id)
+    cap = get_content().units.get("cargo_ship", {}).get("stats", {}).get("cargo", 0) or 1
+    ships_needed = -(-pay_qty // cap)
+    if owned.get("cargo_ship", 0) < ships_needed:
+        raise MarketError(f"Necesitás {ships_needed} nave(s) de carga para el trueque.")
+    for u, n in escort.items():
+        if u == "cargo_ship":
+            raise MarketError("Las naves de carga no escoltan; usá unidades militares.")
+        if owned.get(u, 0) < n:
+            raise MarketError(f"No tenés {n} de {u} para escoltar (tenés {owned.get(u, 0)}).")
 
     home = player.planet_key
     stock = await get_or_create_stock(session, player.id, pay_mineral, home)
@@ -506,14 +543,17 @@ async def black_market(
     if get_qty <= 0:
         raise MarketError("El trueque no alcanza para 1 unidad. Subí la cantidad.")
 
+    risk = trade_raid_risk(escort, get_qty, s)   # piratas: roban parte de lo que traés
+    lost = int(get_qty * risk)
     stock.amount -= pay_qty
-    (await get_or_create_stock(session, player.id, get_mineral, home)).amount += get_qty
+    (await get_or_create_stock(session, player.id, get_mineral, home)).amount += get_qty - lost
 
     from app.services.journal import record
-    await record(session, "black_market", player.id, galaxy=galaxy,
-                 pay_mineral=pay_mineral, pay_qty=pay_qty, get_mineral=get_mineral, get_qty=get_qty)
-    return {"paid": pay_qty, "pay_mineral": pay_mineral, "received": get_qty,
-            "get_mineral": get_mineral, "rate": s.black_market_rate}
+    await record(session, "black_market", player.id, galaxy=galaxy, pay_mineral=pay_mineral,
+                 pay_qty=pay_qty, get_mineral=get_mineral, get_qty=get_qty - lost, lost=lost)
+    return {"paid": pay_qty, "pay_mineral": pay_mineral, "received": get_qty - lost,
+            "get_mineral": get_mineral, "rate": s.black_market_rate,
+            "pirate_risk": risk, "lost_to_pirates": lost}
 
 
 async def revert_hub_prices(session: AsyncSession) -> int:

@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Hub y mercado negro: naves + escolta + riesgo pirata determinístico
+- Comprar en el **hub** o trocar en el **mercado negro** ahora exige **naves de carga** (1 por cada
+  capacidad de cargo) y expone el cargamento a **piratas** con un **riesgo DETERMINÍSTICO** según la
+  cantidad (`pirate_strength`): sin escolta perdés hasta el `pirate_loss_cap` (50%); una **escolta**
+  militar opcional baja el riesgo (su defensa vs el poder pirata, misma fórmula que los convoyes).
+- La UI muestra, **antes de operar**, las naves necesarias y el **🏴‍☠️ riesgo %** (cae a 0 con
+  suficiente escolta); el resultado informa lo robado. `GET /market/hub` expone
+  `pirate_strength`/`pirate_loss_cap`/`cargo_capacity` para el preview. `hub_trade`/`black_market`
+  aceptan `escort`.
+- Tests: `test_hub_buy_pirate_risk_and_escort` (riesgo 50% sin escolta → 0 con escolta).
+
 ## [1.59.0] - 2026-06-25
 
 ### 2026-06-25 — Panel de Colas: research, transportes y espías con su ETA

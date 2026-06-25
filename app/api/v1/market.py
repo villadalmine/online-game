@@ -26,12 +26,19 @@ async def hub(
     session: AsyncSession = Depends(get_session),
 ):
     """Hub galáctico: precios dinámicos de TU galaxia + de las demás (consulta inter-galaxia)."""
+    from app.content.registry import get_content
     from app.core.config import get_settings
+    s = get_settings()
     return {
         "galaxy": player.galaxy_key,
         "prices": await market.hub_prices(session, player.galaxy_key) if player.galaxy_key else {},
         "galaxies": await market.hub_prices_all(session),
-        "black_market_rate": get_settings().black_market_rate,
+        "black_market_rate": s.black_market_rate,
+        # para que la UI muestre el riesgo de pirata determinístico antes de operar
+        "pirate_strength": s.pirate_strength,
+        "pirate_loss_cap": s.pirate_loss_cap,
+        "cargo_capacity": (get_content().units.get("cargo_ship", {})
+                           .get("stats", {}).get("cargo", 0)),
     }
 
 
@@ -46,7 +53,9 @@ async def hub_trade(
     if side not in ("buy", "sell"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "side debe ser buy o sell.")
     try:
-        res = await market.hub_trade(session, player, body.mineral_key, body.qty, side)
+        res = await market.hub_trade(
+            session, player, body.mineral_key, body.qty, side, escort=body.escort
+        )
     except market.MarketError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
     await session.commit()
@@ -62,7 +71,7 @@ async def blackmarket(
     """Mercado negro: trueque material-por-material (sin energía, premium ilegal, requiere nave)."""
     try:
         res = await market.black_market(
-            session, player, body.pay_mineral, body.pay_qty, body.get_mineral
+            session, player, body.pay_mineral, body.pay_qty, body.get_mineral, escort=body.escort
         )
     except market.MarketError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e

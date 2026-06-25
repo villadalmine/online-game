@@ -44,12 +44,14 @@ class MarketTradeRequest(BaseModel):
 class HubTradeRequest(BaseModel):
     mineral_key: str
     qty: int
+    escort: dict[str, int] | None = None
 
 
 class BlackMarketRequest(BaseModel):
     pay_mineral: str
     pay_qty: int
     get_mineral: str
+    escort: dict[str, int] | None = None
 
 
 class TransportRequest(BaseModel):

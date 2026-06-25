@@ -165,6 +165,32 @@ async def test_market_rate_limits_home_only(session):
     await _check_rate_limit(session, p, "mars", "iron", 99999, "sell", 10.0)
 
 
+async def test_hub_buy_pirate_risk_and_escort(session):
+    # SDD 42: comprar en el hub trae mercadería → riesgo determinístico de pirata; la escolta lo baja.
+    from app.models import UnitStock
+    from app.services.market import hub_trade, trade_raid_risk
+
+    p = await _player(session, "hubrisk")
+    p.energy = 999999.0
+    session.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=5))
+    session.add(UnitStock(player_id=p.id, unit_key="tank", quantity=3))   # tank def=25
+    await session.commit()
+
+    # sin escolta: pierde el tope (50%) → de 50 traés 25
+    assert trade_raid_risk({}, 50) == 0.5
+    r = await hub_trade(session, p, "iron", 50, "buy")
+    await session.commit()
+    assert r["pirate_risk"] == 0.5 and r["lost_to_pirates"] == 25 and r["bought"] == 25
+
+    # con escolta suficiente el riesgo es 0 → traés todo
+    p.energy = 999999.0
+    await session.commit()
+    assert trade_raid_risk({"tank": 3}, 50) == 0.0
+    r2 = await hub_trade(session, p, "iron", 50, "buy", escort={"tank": 3})
+    await session.commit()
+    assert r2["pirate_risk"] == 0.0 and r2["bought"] == 50
+
+
 async def test_black_market_barter(session):
     # Trueque material-por-material: paga hierro, recibe titanio al cambio del hub (premium ilegal).
     from app.models import UnitStock
