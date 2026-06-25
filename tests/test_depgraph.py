@@ -13,9 +13,9 @@ from app.services.depgraph import (
 
 
 def test_prerequisites_follow_requires():
-    assert prerequisites("tank") == ["factory"]
+    assert prerequisites("tank") == ["research_lab", "factory"]   # SDD 1: lab antes que fábrica
     assert "research_lab" in prerequisites("mining_efficiency")
-    assert prerequisites("mine") == []  # buildings have no prerequisite today
+    assert prerequisites("mine") == []  # los básicos no tienen prerequisito (HQ siempre presente)
 
 
 def test_cost_resolves_roles_per_race():

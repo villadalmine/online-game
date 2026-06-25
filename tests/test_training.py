@@ -40,9 +40,9 @@ async def test_train_worker_charges_and_enqueues(session):
 
 async def test_train_requires_building(session):
     p, base = await _onboarded(session)
-    # soldier needs an active barracks, which doesn't exist yet.
+    # tank needs an active factory (SDD 1 árbol), which doesn't exist yet.
     with pytest.raises(TrainingError):
-        await start_training(session, p, base, "soldier", 1)
+        await start_training(session, p, base, "tank", 1)
 
 
 async def test_training_delivers_units_after_timer(session):

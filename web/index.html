@@ -81,7 +81,8 @@
                width:min(560px,100%); max-height:88vh; overflow:auto; box-shadow:0 18px 60px #000a; }
   .modal.hidden{ display:none; }   /* gana a .modal{display:flex} cuando está oculto */
   .modal .x{ float:right; background:#33406e; }
-  .ab{ display:grid; grid-template-columns:90px 1fr 42px; gap:8px; align-items:center; margin:5px 0; font-size:12px; }
+  .ab{ display:grid; grid-template-columns:minmax(70px,auto) 1fr minmax(42px,auto); gap:8px; align-items:center; margin:5px 0; font-size:12px; }
+  .ab>span:last-child{ display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap; }
   .acrow{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); font-size:12px; }
   .acrow input{ flex:1 1 130px; min-width:110px; } .acrow select{ flex:0 0 auto; }
   .acrow .id{ flex:0 0 46px; color:var(--mut); } .acrow .acbtns{ display:flex; gap:6px; margin-left:auto; }
@@ -460,17 +461,31 @@ function affordText(mc, energyCost, planet){
   if(energyCost && state.energy<energyCost) lacks.push("⚡energía");
   return lacks.length? ` — <span class="bad">⚠ te falta: ${lacks.join(", ")}</span>` : ` — <span class="ok">✓ alcanza</span>`;
 }
+// SDD 1 (árbol de tech): muestra si falta edificio previo o investigación para hacer la cosa.
+function techName(k){ const t=(catalog&&catalog.technologies||[]).find(x=>x.key===k); return t?t.name:k; }
+function reqLock(o, base){
+  if(!state) return "";
+  const lacks=[];
+  const rb=o.requires;
+  if(rb && rb!=="headquarters"){
+    const has=base ? (base.buildings||[]).some(x=>x.building_key===rb && x.status==="active")
+                   : (state.bases||[]).some(bs=>(bs.buildings||[]).some(x=>x.building_key===rb && x.status==="active"));
+    if(!has) lacks.push("🏗 "+(spec.build[rb]?spec.build[rb].name:rb));
+  }
+  if(o.requires_tech && !(state.technologies||[]).includes(o.requires_tech))
+    lacks.push("🔬 "+techName(o.requires_tech));
+  return lacks.length? ` · <span class="bad">🔒 ${lacks.map(esc).join(" + ")}</span>` : "";
+}
 function renderCost(){ const b=spec.build[$("building").value]; if(!b) return; $("mineral").classList.toggle("hidden",b.category!=="mine");
   const base=(state&&state.bases||[]).find(x=>String(x.id)===String(($("buildbase")||{}).value))||(state&&state.bases&&state.bases[0]);
   let mc=resolveCost(b.cost);
   if(base&&base.base_type==='orbital'){ const m2={}; for(const k in mc) m2[k]=Math.round(mc[k]*1.5); mc=m2; }  // SDD 37: orbital cuesta 1.5×
   const planet=base?base.planet_key:null;
   const where=(base&&planet!==state.planet_key)?` · 📍${esc(planetName(planet))}`:"";
-  $("buildcost").innerHTML=`costo ${costStr(mc)} · ⚡${b.energy_cost} · ${b.build_seconds}s${where}${affordText(mc,b.energy_cost,planet)}`; }
+  $("buildcost").innerHTML=`costo ${costStr(mc)} · ⚡${b.energy_cost} · ${b.build_seconds}s${where}${reqLock(b,base)}${affordText(mc,b.energy_cost,planet)}`; }
 function renderTrainCost(){ const u=spec.unit[$("unit").value]; if(!u) return; const qty=Math.max(1,+$("qty").value||1);
   const mc=resolveCost(u.cost); for(const k in mc) mc[k]*=qty; const e=(u.energy_cost||0)*qty;
-  const req=u.requires&&u.requires!=="headquarters"?` · requiere ${u.requires}`:"";
-  $("traincost").innerHTML=`x${qty}: ${costStr(mc)} · ⚡${e}${req}${affordText(mc,e)}`; }
+  $("traincost").innerHTML=`x${qty}: ${costStr(mc)} · ⚡${e}${reqLock(u,null)}${affordText(mc,e)}`; }
 function renderExpInfo(){ const m=spec.moon[$("moon").value]; if(!m) return; const e=(m.expedition||{}).energy_cost||0;
   const grants=Object.entries(m.grants||{}).map(([k,v])=>`${k}+${v}`).join(", ");
   const req=(m.expedition||{}).requires_unit; const reach=(state&&state.galaxy_key)?"":"";

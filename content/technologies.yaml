@@ -22,6 +22,7 @@ technologies:
     description: "+25% de produccion adicional."
     description_en: "+25% additional production."
     requires: research_lab
+    requires_tech: mining_efficiency
     energy_cost: 30
     research_seconds: 600
     cost: { structural: 350, energetic: 250, advanced: 100 }
@@ -46,6 +47,7 @@ technologies:
     description: "+30% de defensa de tus bases."
     description_en: "+30% defense for your bases."
     requires: research_lab
+    requires_tech: weapons
     energy_cost: 25
     research_seconds: 480
     cost: { structural: 250, energetic: 150, advanced: 80 }
@@ -98,6 +100,7 @@ technologies:
     description: "Hábitats presurizados con escudo: colonizás sin atmósfera respirable."
     description_en: "Pressurized shielded habitats: colonize without breathable air."
     requires: research_lab
+    requires_tech: thermal_shielding
     energy_cost: 50
     research_seconds: 1200
     cost: { structural: 500, energetic: 300, advanced: 350 }
@@ -111,6 +114,7 @@ technologies:
     description: "Estaciones orbitales con robots: extraen recursos de mundos letales (nadie vive ahí; naves van y vienen). Rinde menos, cuesta más, pero abre cualquier mundo."
     description_en: "Orbital stations with robots: extract resources from lethal worlds (no one lives there; ships ferry). Lower yield, higher cost, but opens any world."
     requires: research_lab
+    requires_tech: antigravity
     energy_cost: 60
     research_seconds: 1500
     cost: { structural: 600, energetic: 400, advanced: 450 }
@@ -124,6 +128,7 @@ technologies:
     description: "+40% a tu defensa de espionaje (ofusca tu info y detecta intrusos)."
     description_en: "+40% to your espionage defense (obfuscates your info, detects intruders)."
     requires: research_lab
+    requires_tech: espionage
     energy_cost: 25
     research_seconds: 480
     cost: { structural: 220, energetic: 160, advanced: 100 }

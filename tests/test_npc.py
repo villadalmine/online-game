@@ -115,10 +115,15 @@ async def test_rule_brain_recalls_fleet_when_under_attack(session):
 
 
 async def test_rule_brain_builds_turret_when_under_attack_without_fleet(session):
+    from app.models import PlayerTech
     await ensure_npcs(session)
     npc = await _npc(session, "npc_martian")
     enemy = await _npc(session, "npc_terran")
     await _make_mission(session, enemy, npc)       # inbound attack, no fleet of ours
+    # SDD 1 (árbol): la torreta pide Laboratorio activo + investigar 'weapons'
+    base = (await session.execute(select(Base_).where(Base_.player_id == npc.id))).scalars().first()
+    session.add(Building(base_id=base.id, building_key="research_lab", status="active"))
+    session.add(PlayerTech(player_id=npc.id, tech_key="weapons"))
     await session.commit()
 
     action = await RuleBasedBrain().act(session, npc)

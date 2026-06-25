@@ -7,6 +7,23 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Árbol de tecnología: edificios/unidades/research con prerequisitos (SDD 1)
+- **No todo se puede al inicio**: progresión científica (data-driven en YAML, enforce en servicio,
+  🔒 en la UI).
+  - **Edificios**: `factory` pide **Laboratorio**; `hangar` pide fábrica; `turret` pide lab + tech
+    **armas**; `counter_intel` pide lab + **contraespionaje**. Los básicos (mina, planta, mercado,
+    cuartel, lab) siguen libres.
+  - **Unidades**: `tank/aircraft` piden fábrica + **armas**; `shuttle` pide fábrica + **antigravedad**;
+    `spy` pide lab + **espionaje**. **Mercenario (soldado) y trabajador: sin cuartel, baratos e
+    inmediatos** (ataque rápido). **Barco**: fábrica, sin tech (camino dinámico de ataque, lento).
+  - **Investigación encadenada**: deep_core←minería, escudos←armas, contraespionaje←espionaje,
+    robótica_orbital←antigravedad, domos←blindaje_térmico.
+  - **Mundos hostiles**: la **base orbital** (orbital_robotics) habilita construir ahí (ya estaba).
+- Enforce en `build.py`/`training.py`/`research.py` (rechazo claro si falta edificio o tech). La UI
+  de Acciones muestra **🔒 requiere 🏗edificio / 🔬investigación** en el costo. El **cerebro NPC** se
+  hizo tech-aware (laboratorio → investiga armas → fábrica → torreta; no intenta lo que no puede).
+- Tests: `test_tech_tree_gates_buildings_and_research_e2e` + ajustados depgraph/training/science/npc.
+
 ## [1.57.0] - 2026-06-25
 
 ### 2026-06-25 — Transporte: muestra el stock disponible en el origen

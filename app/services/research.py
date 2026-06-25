@@ -99,6 +99,9 @@ async def start_research(session: AsyncSession, player, tech_key: str) -> Resear
     required = tech.get("requires")
     if required and not await _building_active(session, player.id, required):
         raise ResearchError(f"Requiere el edificio activo: {required}")
+    rtech = tech.get("requires_tech")   # SDD 1: cadena de research — pide la tech previa
+    if rtech and rtech not in await researched_techs(session, player.id):
+        raise ResearchError(f"Requiere investigar antes: {rtech}")
 
     if not spend_energy(
         player,

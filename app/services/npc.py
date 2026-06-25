@@ -236,16 +236,31 @@ class RuleBasedBrain:
         keys = {b.building_key for b in buildings}
         active = {b.building_key for b in buildings if b.status == "active"}
         turrets = sum(1 for b in buildings if b.building_key == "turret")
+        from app.services.research import researched_techs  # SDD 1: árbol de tech
+        techs = await researched_techs(session, player.id)
+
+        def _gated(spec: dict) -> bool:
+            """Cumple el árbol: edificio previo activo + investigación requerida."""
+            req = spec.get("requires")
+            if req and req != "headquarters" and req not in active:
+                return False
+            rt = spec.get("requires_tech")
+            return not (rt and rt not in techs)
 
         def afford_building(key: str) -> bool:
             spec = content.buildings[key]
+            if not _gated(spec):
+                return False
             cost = content.building_cost_in_minerals(player.race_key, key)
             return _can_afford(stocks, energy, cost, spec.get("energy_cost", 0))
 
         def afford_units(unit_key: str, qty: int) -> bool:
+            spec = content.units[unit_key]
+            if not _gated(spec):
+                return False
             unit_cost = content.unit_cost_in_minerals(player.race_key, unit_key)
             cost = {m: a * qty for m, a in unit_cost.items()}
-            e = content.units[unit_key].get("energy_cost", 0) * qty
+            e = spec.get("energy_cost", 0) * qty
             return _can_afford(stocks, energy, cost, e)
 
         # 0) THREAT RESPONSE: under attack -> recall a roaming fleet, then fortify.
@@ -264,15 +279,33 @@ class RuleBasedBrain:
                 await start_build(session, player, base, "mine", target_mineral=mineral)
                 return f"build mine ({mineral})"
 
-        # 2) Military buildings: barracks, then a factory for heavy units.
+        # 2) Ciencia + industria (árbol de tech): laboratorio → investigar → fábrica.
+        if "research_lab" not in keys and afford_building("research_lab"):
+            await start_build(session, player, base, "research_lab")
+            return "build research_lab"
+        if "research_lab" in active:   # investigar lo que habilita defensa/industria/expansión
+            for tk in ("weapons", "shields", "espionage", "counter_espionage",
+                       "antigravity", "mining_efficiency"):
+                spec = content.technologies.get(tk, {})
+                rt = spec.get("requires_tech")
+                if tk in techs or (rt and rt not in techs):
+                    continue
+                if energy < spec.get("energy_cost", 0):
+                    continue
+                try:
+                    from app.services.research import start_research
+                    await start_research(session, player, tk)
+                    return f"research {tk}"
+                except Exception:   # costo/energía: probá otra cosa este turno
+                    break
         if "barracks" not in keys and afford_building("barracks"):
             await start_build(session, player, base, "barracks")
             return "build barracks"
-        if "barracks" in active and "factory" not in keys and afford_building("factory"):
+        if "factory" not in keys and afford_building("factory"):
             await start_build(session, player, base, "factory")
             return "build factory"
 
-        # 3) Baseline defense: keep at least one turret.
+        # 3) Baseline defense: keep at least one turret (gated por lab+weapons via afford_building).
         if turrets == 0 and afford_building("turret"):
             await start_build(session, player, base, "turret")
             return "build turret"

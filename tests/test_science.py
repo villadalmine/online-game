@@ -3,7 +3,7 @@ from sqlalchemy import select
 
 from app.content.registry import get_content, localize
 from app.core.security import hash_password
-from app.models import Base_, Building, Player
+from app.models import Base_, Building, Player, PlayerTech
 from app.services.onboarding import onboard_player
 from app.services.training import TrainingError, start_training
 
@@ -49,6 +49,7 @@ async def _base_with_factory(session, player) -> Base_:
         await session.execute(select(Base_).where(Base_.player_id == player.id))
     ).scalars().first()
     session.add(Building(base_id=base.id, building_key="factory", status="active"))
+    session.add(PlayerTech(player_id=player.id, tech_key="weapons"))  # SDD 1: aviones piden weapons
     await session.commit()
     return base
 

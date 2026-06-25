@@ -22,9 +22,9 @@ personnel:
     real: "Infantería: soldado de combate terrestre."
     real_en: "Infantry: ground combat soldier."
     sources: ["Wikipedia: Infantry"]
-    description: "Unidad de combate basica."
-    description_en: "Basic combat unit."
-    requires: barracks
+    description: "Unidad de combate basica. Barata e inmediata: para ataques rapidos desde el inicio."
+    description_en: "Basic combat unit. Cheap and immediate: for quick early attacks."
+    requires: headquarters
     energy_cost: 3
     train_seconds: 45
     cost: { structural: 15, energetic: 10 }
@@ -52,6 +52,7 @@ personnel:
     real_en: "Intelligence / reconnaissance (HUMINT/ISR)."
     sources: ["Wikipedia: Espionage"]
     requires: research_lab
+    requires_tech: espionage
     energy_cost: 4
     train_seconds: 40
     cost: { structural: 12, energetic: 8, advanced: 6 }
@@ -65,6 +66,7 @@ heavy:
     real_en: "Tank: tracked armored fighting vehicle."
     sources: ["Wikipedia: Tank"]
     requires: factory
+    requires_tech: weapons
     energy_cost: 8
     train_seconds: 120
     cost: { structural: 80, energetic: 40, advanced: 20 }
@@ -76,6 +78,7 @@ heavy:
     real_en: "Warship: naval combat vessel."
     sources: ["Wikipedia: Warship"]
     requires: factory
+    # barco = camino dinámico de ataque (lento pero accesible): fábrica, sin tech de armas.
     # Rigor científico (SDD 13): un barco necesita un océano → solo en planetas con agua líquida.
     requires_liquid_water: true
     propulsion: naval
@@ -90,6 +93,7 @@ heavy:
     real_en: "Military aircraft: combat airplane."
     sources: ["Wikipedia: Military aircraft"]
     requires: factory
+    requires_tech: weapons
     # Rigor científico (SDD 13): un avión necesita atmósfera para volar → no en el vacío.
     requires_atmosphere: true
     propulsion: jet
@@ -104,6 +108,7 @@ heavy:
     real_en: "Space shuttle: reusable orbital spacecraft."
     sources: ["NASA: Space Shuttle"]
     requires: factory
+    requires_tech: antigravity
     energy_cost: 15
     train_seconds: 240
     cost: { structural: 120, energetic: 100, advanced: 80 }

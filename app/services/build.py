@@ -1,6 +1,7 @@
 """Start construction: spend energy + minerals (resolved per-race), enqueue with a timer."""
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import get_content
@@ -31,6 +32,23 @@ async def start_build(
         raise BuildError(f"Edificio desconocido: {building_key}")
     if base.player_id != player.id:
         raise BuildError("La base no pertenece al jugador.")
+
+    # SDD 1: árbol de tech — el edificio puede pedir otro edificio activo en la base y/o una tech.
+    required = spec.get("requires")
+    if required and required != "headquarters":
+        active = (await session.execute(
+            select(Building.id).where(
+                Building.base_id == base.id, Building.building_key == required,
+                Building.status == "active",
+            )
+        )).first()
+        if active is None:
+            raise BuildError(f"Requiere el edificio activo: {required}")
+    rtech = spec.get("requires_tech")
+    if rtech:
+        from app.services.research import researched_techs
+        if rtech not in await researched_techs(session, player.id):
+            raise BuildError(f"Requiere investigar: {rtech}")
 
     if spec["category"] == "mine":
         if target_mineral is None:

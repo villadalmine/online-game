@@ -1327,14 +1327,41 @@ async def test_train_worker(client):
     assert r.json()["quantity"] == 2
 
 
+async def test_tech_tree_gates_buildings_and_research_e2e(client):
+    # SDD 1 (árbol): factory pide research_lab; deep_core_mining pide mining_efficiency.
+    from app.models import Building, Player
+    h = await _register(client.http, "techtree")
+    state = await _onboard(client.http, h)
+    bid = state["bases"][0]["id"]
+
+    # factory sin laboratorio → 400
+    r = await client.http.post(f"/api/v1/bases/{bid}/build", headers=h,
+                               json={"building_key": "factory"})
+    assert r.status_code == 400, r.text
+    # research encadenada: deep_core_mining sin mining_efficiency → 400
+    r2 = await client.http.post("/api/v1/research", headers=h,
+                                json={"tech_key": "deep_core_mining"})
+    assert r2.status_code == 400
+
+    # con laboratorio activo → factory sale
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "techtree"))).scalar_one()
+        s.add(Building(base_id=bid, building_key="research_lab", status="active"))
+        p.energy = 99999.0
+        await s.commit()
+    ok = await client.http.post(f"/api/v1/bases/{bid}/build", headers=h,
+                                json={"building_key": "factory"})
+    assert ok.status_code == 201, ok.text
+
+
 async def test_train_requires_building(client):
     h = await _register(client.http)
     state = await _onboard(client.http, h)
     base_id = state["bases"][0]["id"]
     r = await client.http.post(
-        f"/api/v1/bases/{base_id}/train", headers=h, json={"unit_key": "soldier", "quantity": 1}
+        f"/api/v1/bases/{base_id}/train", headers=h, json={"unit_key": "tank", "quantity": 1}
     )
-    assert r.status_code == 400  # no barracks
+    assert r.status_code == 400  # no factory (SDD 1 árbol de tech)
 
 
 # ---- combat (deferred: travel + resolve + return) ---------------------------

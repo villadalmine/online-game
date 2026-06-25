@@ -66,6 +66,7 @@ buildings:
     real_en: "Hangar: shed to park and dispatch ships."
     sources: ["Wikipedia: Hangar"]
     category: economy
+    requires: factory
     description: "Estaciona naves de carga: cada hangar sube cuántas podés despachar por ventana (SDD 42)."
     description_en: "Parks cargo ships: each hangar raises how many you can dispatch per window (SDD 42)."
     energy_cost: 12
@@ -96,7 +97,8 @@ buildings:
     real_en: "Industrial manufacturing / assembly plant."
     sources: ["Wikipedia: Factory"]
     category: heavy
-    description: "Produce unidades pesadas (tanques, barcos, aviones)."
+    requires: research_lab
+    description: "Produce unidades pesadas (tanques, barcos, aviones). Necesita Laboratorio."
     description_en: "Produces heavy units (tanks, ships, aircraft)."
     energy_cost: 25
     build_seconds: 240
@@ -126,6 +128,8 @@ buildings:
     real_en: "Close-in weapon system (CIWS): rapid-fire defensive turret."
     sources: ["Wikipedia: Close-in weapon system"]
     category: defense
+    requires: research_lab
+    requires_tech: weapons
     description: "Defiende la base: suma poder defensivo fijo en combate (sin unidades)."
     description_en: "Defends the base: adds fixed defensive power in combat (no units)."
     energy_cost: 18
@@ -138,6 +142,8 @@ buildings:
     name: "Contrainteligencia"
     name_en: "Counter-intelligence"
     category: defense
+    requires: research_lab
+    requires_tech: counter_espionage
     description: "Protege tu base del espionaje enemigo: reduce la info que obtienen."
     description_en: "Shields your base from enemy espionage: reduces the intel they get."
     real: "Contraespionaje / OPSEC."

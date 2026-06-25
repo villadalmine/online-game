@@ -105,6 +105,11 @@ async def start_training(
     required = spec.get("requires")
     if required and not await _building_active(session, base.id, required):
         raise TrainingError(f"Requiere el edificio activo: {required}")
+    rtech = spec.get("requires_tech")   # SDD 1: árbol de tech — la unidad pide una investigación
+    if rtech:
+        from app.services.research import researched_techs
+        if rtech not in await researched_techs(session, player.id):
+            raise TrainingError(f"Requiere investigar: {rtech}")
 
     # Restricciones físicas del planeta (SDD 13): aviones necesitan atmósfera, barcos agua líquida.
     planet = content.planets.get(player.planet_key, {})
