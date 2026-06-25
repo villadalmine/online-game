@@ -26,10 +26,12 @@ async def hub(
     session: AsyncSession = Depends(get_session),
 ):
     """Hub galáctico: precios dinámicos de TU galaxia + de las demás (consulta inter-galaxia)."""
+    from app.core.config import get_settings
     return {
         "galaxy": player.galaxy_key,
         "prices": await market.hub_prices(session, player.galaxy_key) if player.galaxy_key else {},
         "galaxies": await market.hub_prices_all(session),
+        "black_market_rate": get_settings().black_market_rate,
     }
 
 

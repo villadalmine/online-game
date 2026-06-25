@@ -436,6 +436,10 @@ async def test_black_market_barter_e2e(client):
     h = await _register(client.http, "smuggler_e2e")
     await _onboard(client.http, h)   # terran/earth
 
+    # el hub expone el cambio del mercado negro para que la UI estime (SDD 42)
+    hub = (await client.http.get("/api/v1/market/hub", headers=h)).json()
+    assert 0 < hub["black_market_rate"] <= 1
+
     # sin nave → 400
     blind = await client.http.post(
         "/api/v1/market/blackmarket", headers=h,

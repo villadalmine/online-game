@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Mercado negro: la UI ahora te dice por qué no podés trocar
+- El panel 🕶 Mercado negro muestra **antes de tocar el botón**: tus **naves de carga** (y avisa si te
+  falta una, que se entrena en la Fábrica), tu **stock en el planeta natal** del mineral que pagás, y
+  una **estimación de lo que recibís** (al cambio del hub × premium). Si no te alcanza el stock o son
+  minerales iguales, lo marca en rojo. Resuelve el "no sé por qué me falla el trueque".
+- `GET /api/v1/market/hub` ahora devuelve `black_market_rate` para que la UI estime sin hardcodear.
+- Test e2e: el hub expone `black_market_rate`.
+
 ## [1.40.0] - 2026-06-25
 
 ### 2026-06-25 — Hangar: estacionar/despachar más naves (SDD 42 Fase 3)
