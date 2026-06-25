@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_player
+from app.api.deps import get_current_player, lock_current_player
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.redis import get_redis, rate_limited
@@ -14,6 +14,7 @@ from app.schemas import (
     AdvisorHackResult,
     AdvisorMessageOut,
     AdvisorReply,
+    AssistEnergyResult,
 )
 from app.services import advisor
 
@@ -49,6 +50,18 @@ async def hack(
 ):
     try:
         return await advisor.grant_hack(session, player, body.target)
+    except advisor.AdvisorError as e:
+        raise HTTPException(e.status, str(e)) from e
+
+
+@router.post("/assist-energy", response_model=AssistEnergyResult)
+async def assist_energy(
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Energía de nivelado por ranking (SDD 40): los 3 últimos llenan el pool; el resto +100."""
+    try:
+        return await advisor.grant_assist_energy(session, player)
     except advisor.AdvisorError as e:
         raise HTTPException(e.status, str(e)) from e
 

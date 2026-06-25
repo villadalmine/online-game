@@ -34,6 +34,13 @@ class VerifyCodeRequest(BaseModel):
     code: str = Field(min_length=4, max_length=12)
 
 
+class AssistEnergyResult(BaseModel):
+    granted: float
+    energy: float
+    bottom3: bool
+    left: int
+
+
 class ProfileUpdateRequest(BaseModel):
     # Cambiar nick y/o contraseña (autenticado, sin validar email). Al menos uno.
     username: str | None = Field(default=None, min_length=3, max_length=50)

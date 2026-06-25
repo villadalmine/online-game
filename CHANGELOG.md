@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 40: métricas del asistente por jugador + energía de nivelado por ranking
+- **Uso del asistente por jugador**: cada consulta deja un evento **`advisor_ask`** en el journal
+  (`game_journal_events_total{kind="advisor_ask"}`) → cruzable con todo. (Quién + qué modelo
+  GPU/nube/free/pago ya viene de SDD 28 vía litellm `end_user`×`model`.)
+- **Energía de nivelado por ranking** (`POST /players/me/advisor/assist-energy`, botón **⚡ Nivelar**):
+  los **3 últimos** del ranking (entre pares de tu galaxia) **llenan el pool** de energía (nivelan
+  rápido); el resto recibe **+100**, hasta **3 veces/día**. Capeado a `energy_max` y transitorio
+  (regenera) → sin snowball/ventaja. Determinista (lo calcula el server, no el LLM). Migración
+  aditiva (cupo diario). Tests + 271 verdes. Doc `docs/sdd-assistant-metrics-energy-assist.md`.
+
 ## [1.28.0] - 2026-06-25
 
 ### 2026-06-25 — Perfil: cambiar nick y contraseña (sin validar) + reset por OTP

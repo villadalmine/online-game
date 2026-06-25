@@ -249,6 +249,8 @@ async def ask(session: AsyncSession, player: Player, message: str) -> AdvisorRep
 
     await _save(session, player, "user", message)
     await _save(session, player, "assistant", reply_text)
+    from app.services.journal import record  # SDD 40: uso del asistente por jugador
+    await record(session, "advisor_ask", player.id)
     await session.commit()
 
     return AdvisorReply(
@@ -369,3 +371,61 @@ async def grant_hack(session: AsyncSession, player: Player, target: str) -> dict
     await _save(session, player, "assistant", msg)
     await session.commit()
     return {"granted": granted, "message": msg, "hacks_left": left}
+
+
+# --------------------------------------------------------------------------- #
+# Asistencia de energía por ranking (SDD 40): los últimos nivelan rápido; el resto +100, 3/día.
+# --------------------------------------------------------------------------- #
+def assist_energy_left(player: Player, now: datetime | None = None) -> int:
+    now = now or datetime.now(UTC)
+    used = player.assist_energy_used if _same_day(player.assist_energy_reset_at, now) else 0
+    return max(0, get_settings().assist_energy_per_day - used)
+
+
+async def grant_assist_energy(session: AsyncSession, player: Player) -> dict:
+    """Da energía según tu posición: si sos de los 3 últimos, te llena el pool (nivelás rápido);
+    si no, +100. Cap a energy_max y hasta N veces/día → sin snowball (la energía es transitoria)."""
+    from app.services.scoring import player_score
+
+    if not player.race_key:
+        raise AdvisorError("Primero hacé el onboarding.", 400)
+    s = get_settings()
+    now = datetime.now(UTC)
+    if assist_energy_left(player, now) <= 0:
+        per = s.assist_energy_per_day
+        raise AdvisorError(f"Sin nivelado hoy ({per}/{per}). Vuelve mañana.", 429)
+
+    await advance(session, player)   # energía al día antes de calcular
+
+    peers = (
+        await session.execute(
+            select(Player).where(
+                Player.is_npc.is_(False),
+                Player.race_key.is_not(None),
+                Player.galaxy_instance_id == player.galaxy_instance_id,
+            )
+        )
+    ).scalars().all()
+    pairs = sorted([(await player_score(session, p), p.id) for p in peers])
+    bottom3 = {pid for _sc, pid in pairs[:3]}
+    is_bottom3 = len(peers) >= 4 and player.id in bottom3
+
+    headroom = max(0.0, s.energy_max - player.energy)
+    grant = headroom if is_bottom3 else min(s.assist_energy_normal, headroom)
+    player.energy = min(s.energy_max, player.energy + grant)
+    player.energy_updated_at = now
+
+    if not _same_day(player.assist_energy_reset_at, now):
+        player.assist_energy_used = 0
+        player.assist_energy_reset_at = now
+    player.assist_energy_used += 1
+
+    from app.services.journal import record
+    await record(session, "assist_energy", player.id, granted=round(grant, 1), bottom3=is_bottom3)
+    await session.commit()
+    return {
+        "granted": round(grant, 1),
+        "energy": round(player.energy, 1),
+        "bottom3": is_bottom3,
+        "left": assist_energy_left(player, now),
+    }

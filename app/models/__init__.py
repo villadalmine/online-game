@@ -57,6 +57,11 @@ class Player(Base):
     assistant_hacks_reset_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Asistencia de energía por ranking (SDD 40): cupo diario con reset perezoso.
+    assist_energy_used: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    assist_energy_reset_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # Newbie protection (SDD 11): hasta esta fecha no te pueden atacar. null = sin protección.
     protected_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

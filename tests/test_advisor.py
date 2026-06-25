@@ -155,3 +155,47 @@ async def test_ask_mechanics_fallback_returns_rule(session, monkeypatch):
     reply = await adv.ask(session, p, "cómo funciona el combate y la capacidad de las flotas?")
     low = reply.reply.lower()
     assert "combate" in low and ("capacidad" in low or "transbordador" in low)
+
+
+async def test_advisor_ask_is_journaled(session, monkeypatch):
+    # SDD 40: cada consulta al asistente queda en el journal (métrica por jugador).
+    from app.services.journal import list_events
+    p = await _player(session, name="asker_j")
+
+    async def fake(*a, **k):
+        return "ok"
+
+    monkeypatch.setattr(adv, "llm_chat", fake)
+    await adv.ask(session, p, "hola")
+    evs = [e for e in await list_events(session, p.id) if e.type == "advisor_ask"]
+    assert evs
+
+
+async def test_assist_energy_bottom_fills_middle_gets_100_and_daily_cap(session):
+    # SDD 40: los 3 últimos llenan el pool; el resto +100; tope diario → 429.
+    from app.core.config import get_settings
+    from app.services.economy import get_or_create_stock
+    s = get_settings()
+    players = [await _player(session, name=f"rank{i}") for i in range(4)]
+    for i, p in enumerate(players):
+        (await get_or_create_stock(session, p.id, "iron")).amount = i * 50000.0
+    await session.commit()
+    low, high = players[0], players[3]
+    low.energy = 0.0
+    high.energy = 0.0
+    await session.commit()
+
+    r_low = await adv.grant_assist_energy(session, low)
+    assert r_low["bottom3"] and r_low["energy"] == s.energy_max          # llenó el pool
+
+    r_high = await adv.grant_assist_energy(session, high)
+    assert (not r_high["bottom3"]) and r_high["granted"] == s.assist_energy_normal
+
+    # tope diario: low ya usó 1; gastar el resto y el siguiente debe fallar
+    for _ in range(s.assist_energy_per_day - 1):
+        await adv.grant_assist_energy(session, low)
+    try:
+        await adv.grant_assist_energy(session, low)
+        raise AssertionError("debía agotar el cupo diario")
+    except adv.AdvisorError as e:
+        assert e.status == 429
