@@ -7,6 +7,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 42 Fase 2: economía POR-PLANETA (el material vive donde está)
+- **Refactor estructural** (backward-compatible): `ResourceStock` ahora es **por planeta**
+  (`planet_key`), con migración que **lleva el stock existente al mundo natal** → las partidas
+  actuales no cambian. `player_stocks` pasa a **agregado** (suma por planeta, sigue sirviendo a
+  UI/scoring/asistente); `planet_stocks` para un planeta puntual.
+- **Consumo por-planeta:** las **minas acreditan al planeta de su base**; **construir/entrenar/
+  investigar gastan del planeta de la base** (si falta material ahí → "transportá a ese planeta");
+  el **saqueo** sale del planeta de la base atacada y el botín se descarga en el mundo natal del
+  atacante; el **mercado** compra/vende en el stock del planeta del mercado.
+- **UI:** el panel de bases muestra el **stock por planeta** (⛏) de cada base.
+- Pendiente de Fase 2: `TransportMission` + naves de comercio (mover bulk entre planetas). 283 verdes.
+
 ### 2026-06-25 — SDD 42 diseño ampliado: naves de comercio, aparcamiento y robos
 - En tu planeta no necesitás nave; en otro con base solo almacenaje; en otro sin base viajás con
   **nave protocolar** (ver precios) o **de cargo** (comprar y traer). Mercado de planeta = **1 slot**

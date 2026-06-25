@@ -71,7 +71,7 @@ async def buy(
     cost = mineral_price(planet_key, mineral_key) * qty
     if not spend_energy(player, cost, now, effective_energy_regen(player, s), s.energy_max):
         raise MarketError(f"Energía insuficiente (cuesta {round(cost, 1)}).")
-    (await get_or_create_stock(session, player.id, mineral_key)).amount += qty
+    (await get_or_create_stock(session, player.id, mineral_key, planet_key)).amount += qty
 
     from app.services.journal import record
     await record(session, "market_buy", player.id,
@@ -89,7 +89,7 @@ async def sell(
         raise MarketError("Cantidad inválida.")
     if not await _has_market(session, player, planet_key):
         raise MarketError(f"Necesitás un mercado activo en {planet_key}.")
-    stock = await get_or_create_stock(session, player.id, mineral_key)
+    stock = await get_or_create_stock(session, player.id, mineral_key, planet_key)
     if stock.amount < qty:
         raise MarketError(f"No tenés {qty} de {mineral_key} (tenés {stock.amount:g}).")
 

@@ -123,11 +123,16 @@ class Building(Base):
 
 class ResourceStock(Base):
     __tablename__ = "resource_stocks"
-    __table_args__ = (UniqueConstraint("player_id", "mineral_key", name="uq_player_mineral"),)
+    # SDD 42 Fase 2: el stock es POR PLANETA (el material vive donde está). Único por (jugador,
+    # mineral, planeta). El agregado por jugador se calcula sumando (economy.player_stocks).
+    __table_args__ = (
+        UniqueConstraint("player_id", "mineral_key", "planet_key", name="uq_player_mineral_planet"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
     mineral_key: Mapped[str] = mapped_column(String(50))
+    planet_key: Mapped[str] = mapped_column(String(50), default="", server_default="")
     amount: Mapped[float] = mapped_column(Float, default=0.0)
 
     player: Mapped[Player] = relationship(back_populates="stocks")

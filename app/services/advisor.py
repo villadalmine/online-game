@@ -363,7 +363,8 @@ async def grant_hack(session: AsyncSession, player: Player, target: str) -> dict
         if b.kind in ("mineral", "not_producible"):
             shortfall = b.need - b.have
             if shortfall > 0:
-                (await get_or_create_stock(session, player.id, b.key)).amount += shortfall
+                st = await get_or_create_stock(session, player.id, b.key, player.planet_key)
+                st.amount += shortfall
                 granted[b.key] = granted.get(b.key, 0.0) + shortfall
         elif b.kind == "energy":
             player.energy = max(player.energy, b.need)

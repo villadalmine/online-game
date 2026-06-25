@@ -19,24 +19,47 @@ def _aware(dt: datetime) -> datetime:
 
 
 async def get_or_create_stock(
-    session: AsyncSession, player_id: int, mineral_key: str
+    session: AsyncSession, player_id: int, mineral_key: str, planet_key: str
 ) -> ResourceStock:
+    """Stock de un mineral EN UN PLANETA (SDD 42 Fase 2). `planet_key` es obligatorio: el material
+    vive donde está. El agregado por jugador se obtiene con `player_stocks`."""
     res = await session.execute(
         select(ResourceStock).where(
-            ResourceStock.player_id == player_id, ResourceStock.mineral_key == mineral_key
+            ResourceStock.player_id == player_id,
+            ResourceStock.mineral_key == mineral_key,
+            ResourceStock.planet_key == planet_key,
         )
     )
     stock = res.scalar_one_or_none()
     if stock is None:
-        stock = ResourceStock(player_id=player_id, mineral_key=mineral_key, amount=0.0)
+        stock = ResourceStock(
+            player_id=player_id, mineral_key=mineral_key, planet_key=planet_key, amount=0.0
+        )
         session.add(stock)
         await session.flush()
     return stock
 
 
 async def player_stocks(session: AsyncSession, player_id: int) -> dict[str, float]:
+    """Agregado por jugador: suma de cada mineral en TODOS sus planetas (backward-compat para
+    UI/scoring/asistente). Para un planeta puntual usar `planet_stocks`."""
     res = await session.execute(
         select(ResourceStock).where(ResourceStock.player_id == player_id)
+    )
+    out: dict[str, float] = {}
+    for s in res.scalars():
+        out[s.mineral_key] = out.get(s.mineral_key, 0.0) + s.amount
+    return out
+
+
+async def planet_stocks(
+    session: AsyncSession, player_id: int, planet_key: str
+) -> dict[str, float]:
+    """Stock del jugador EN UN PLANETA (SDD 42 Fase 2)."""
+    res = await session.execute(
+        select(ResourceStock).where(
+            ResourceStock.player_id == player_id, ResourceStock.planet_key == planet_key
+        )
     )
     return {s.mineral_key: s.amount for s in res.scalars()}
 
@@ -119,7 +142,8 @@ async def collect_mines(
             amount *= colony_mult[planet]
         if amount <= 0:
             continue
-        stock = await get_or_create_stock(session, player.id, b.production_mineral)
+        # SDD 42: la mina acredita al stock DE SU PLANETA (no a un pool global).
+        stock = await get_or_create_stock(session, player.id, b.production_mineral, planet)
         stock.amount += amount
         b.last_collected_at = now
         gained[b.production_mineral] = gained.get(b.production_mineral, 0.0) + amount

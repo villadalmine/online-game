@@ -56,7 +56,7 @@ async def onboard_player(
 
     # Seed starting minerals for the race's resource roles.
     for role in content.races[race_key]["resource_roles"].values():
-        stock = await get_or_create_stock(session, player.id, role)
+        stock = await get_or_create_stock(session, player.id, role, planet_key)
         stock.amount = STARTING_STOCK
 
     # Catch-up (SDD 25): si entrás a una partida vieja, te nivela al P40 de tus pares (energía full

@@ -322,7 +322,7 @@ async def test_rule_brain_ganks_the_leading_human(session):
     await add_human("weak_human", "earth")
     leader = await add_human("leader_human", "mercury")
     # Raise the leader's score without adding any defense.
-    (await get_or_create_stock(session, leader.id, "iron")).amount += 100000
+    (await get_or_create_stock(session, leader.id, "iron", leader.planet_key)).amount += 100000
 
     npc = await _npc(session, "npc_martian")
     npc.energy = 999

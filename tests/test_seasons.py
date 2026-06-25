@@ -42,7 +42,7 @@ async def test_close_current_snapshots_hof_and_opens_next(session):
     await _human(session, "weak")
     strong = await _human(session, "strong")
     # subí el score del fuerte sin tocar nada más
-    (await get_or_create_stock(session, strong.id, "iron")).amount += 1_000_000
+    (await get_or_create_stock(session, strong.id, "iron", strong.planet_key)).amount += 1_000_000
     await session.commit()
 
     closed = await svc.close_current_now(session)
@@ -68,7 +68,7 @@ async def test_season_ranking_orders_by_score(session):
     await svc.ensure_active_season(session)
     await _human(session, "a")
     b = await _human(session, "b")
-    (await get_or_create_stock(session, b.id, "iron")).amount += 500_000
+    (await get_or_create_stock(session, b.id, "iron", b.planet_key)).amount += 500_000
     await session.commit()
     ranking = await svc.season_ranking(session, 10)
     names = [p.username for _r, p, _s in ranking]

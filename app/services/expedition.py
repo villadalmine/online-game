@@ -42,7 +42,7 @@ async def finalize_due_expeditions(
             continue
         moon = content.moons.get(order.moon_key, {})
         for mineral, amount in moon.get("grants", {}).items():
-            stock = await get_or_create_stock(session, player.id, mineral)
+            stock = await get_or_create_stock(session, player.id, mineral, player.planet_key)
             stock.amount += float(amount)
         boon = moon.get("boon")
         if boon:

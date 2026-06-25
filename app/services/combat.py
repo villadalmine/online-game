@@ -21,7 +21,6 @@ from app.services.economy import (
     collect_mines,
     finalize_due_builds,
     get_or_create_stock,
-    player_stocks,
 )
 from app.services.energy import spend_energy
 from app.services.notifications import notify
@@ -260,14 +259,17 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
     survivors = {k: max(0, force.get(k, 0) - result.attacker_losses.get(k, 0)) for k in force}
     survivors = {k: v for k, v in survivors.items() if v > 0}
 
-    # Loot on win (taken from defender now, carried home on return).
+    # Loot on win: se saquea el PLANETA de la base atacada (SDD 42), se lleva a casa al volver.
     loot: dict[str, float] = {}
     if result.outcome == "attacker":
-        for mineral, amount in (await player_stocks(session, defender.id)).items():
+        from app.services.economy import planet_stocks
+        target_base = await session.get(Base_, mission.target_base_id)
+        loot_planet = target_base.planet_key if target_base else defender.planet_key
+        for mineral, amount in (await planet_stocks(session, defender.id, loot_planet)).items():
             taken = round(amount * settings.loot_fraction, 2)
             if taken <= 0:
                 continue
-            (await get_or_create_stock(session, defender.id, mineral)).amount -= taken
+            (await get_or_create_stock(session, defender.id, mineral, loot_planet)).amount -= taken
             loot[mineral] = taken
 
     # Lifetime stats (SDD 12).
@@ -337,8 +339,11 @@ async def _process_return(session: AsyncSession, mission: AttackMission) -> None
     details = json.loads(mission.details or "{}")
     for unit_key, qty in details.get("survivors", {}).items():
         (await get_or_create_unit_stock(session, mission.attacker_id, unit_key)).quantity += qty
+    # El botín se descarga en el mundo natal del atacante (SDD 42).
+    attacker = await session.get(Player, mission.attacker_id)
+    home = attacker.planet_key if attacker else ""
     for mineral, amount in details.get("loot", {}).items():
-        (await get_or_create_stock(session, mission.attacker_id, mineral)).amount += amount
+        (await get_or_create_stock(session, mission.attacker_id, mineral, home)).amount += amount
     mission.status = "done"
     await notify(
         session,

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.content.registry import get_content
 from app.core.config import get_settings
 from app.models import Base_, Building, Player
-from app.services.economy import collect_mines, finalize_due_builds, player_stocks
+from app.services.economy import collect_mines, finalize_due_builds
 from app.services.energy import spend_energy
 from app.services.physics import effective_energy_regen, gravity_build_multiplier
 
@@ -68,16 +68,18 @@ async def start_build(
             cm *= compat(player.race_key, base.planet_key, techs)["modifiers"]["build_cost"]
     if cm != 1.0:
         cost = {m: a * cm for m, a in cost.items()}
-    stocks = await player_stocks(session, player.id)
+    # SDD 42: el material tiene que estar EN EL PLANETA de la base; si no, hay que transportarlo.
+    from app.services.economy import get_or_create_stock, planet_stocks
+    here = await planet_stocks(session, player.id, base.planet_key)
     for mineral, amount in cost.items():
-        if stocks.get(mineral, 0.0) < amount:
-            raise BuildError(f"Mineral insuficiente: {mineral} (necesita {amount:g}).")
-    if cost:
-        from app.services.economy import get_or_create_stock
-
-        for mineral, amount in cost.items():
-            stock = await get_or_create_stock(session, player.id, mineral)
-            stock.amount -= amount
+        if here.get(mineral, 0.0) < amount:
+            raise BuildError(
+                f"Falta {mineral} en {base.planet_key} (necesita {amount:g}, "
+                f"tenés {here.get(mineral, 0.0):g} ahí). Transportá material a ese planeta."
+            )
+    for mineral, amount in cost.items():
+        stock = await get_or_create_stock(session, player.id, mineral, base.planet_key)
+        stock.amount -= amount
 
     build_seconds = spec.get("build_seconds", 0) * gravity_build_multiplier(
         player.planet_key, settings

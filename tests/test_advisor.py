@@ -179,7 +179,7 @@ async def test_assist_energy_proportional_to_deficit_and_daily_cap(session):
     s = get_settings()
     players = [await _player(session, name=f"rank{i}") for i in range(4)]
     for i, p in enumerate(players):
-        (await get_or_create_stock(session, p.id, "iron")).amount = i * 100000.0
+        (await get_or_create_stock(session, p.id, "iron", p.planet_key)).amount = i * 100000.0
     await session.commit()
     low, high = players[0], players[3]
     low.energy = 0.0

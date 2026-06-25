@@ -44,18 +44,18 @@ async def test_buy_requires_market_then_spends_energy(session):
         pass
     await _add_market(session, p)
     e0 = p.energy
-    base0 = (await get_or_create_stock(session, p.id, "iron")).amount
+    base0 = (await get_or_create_stock(session, p.id, "iron", p.planet_key)).amount
     r = await buy(session, p, "earth", "iron", 10)
     await session.commit()
     assert r["bought"] == 10 and p.energy < e0
-    assert (await get_or_create_stock(session, p.id, "iron")).amount == base0 + 10
+    assert (await get_or_create_stock(session, p.id, "iron", p.planet_key)).amount == base0 + 10
 
 
 async def test_sell_credits_energy(session):
     p = await _player(session, "seller")
     p.energy = 0.0
     await _add_market(session, p)
-    (await get_or_create_stock(session, p.id, "iron")).amount = 100.0
+    (await get_or_create_stock(session, p.id, "iron", p.planet_key)).amount = 100.0
     await session.commit()
     r = await sell(session, p, "earth", "iron", 10)
     await session.commit()

@@ -55,7 +55,7 @@ async def test_collect_mines_bumps_resources_mined(session):
 async def test_leaderboard_orders_humans_by_score(session):
     await _human(session, "lb_a")
     b = await _human(session, "lb_b")
-    (await get_or_create_stock(session, b.id, "iron")).amount += 500_000
+    (await get_or_create_stock(session, b.id, "iron", b.planet_key)).amount += 500_000
     await session.commit()
     lb = await svc.leaderboard(session, 10)
     names = [p.username for _r, p, _s in lb]

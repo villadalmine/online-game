@@ -61,7 +61,7 @@ async def apply_catchup(session: AsyncSession, player: Player) -> dict | None:
         roles = list(dict.fromkeys(content.races[player.race_key]["resource_roles"].values()))
         per = (baseline - mine_total) / max(1, len(roles))
         for role in roles:
-            st = await get_or_create_stock(session, player.id, role)
+            st = await get_or_create_stock(session, player.id, role, player.planet_key)
             st.amount += per
             granted[role] = per
 

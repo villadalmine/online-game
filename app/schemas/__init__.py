@@ -446,6 +446,7 @@ class PlayerStateOut(BaseModel):
     energy: float
     energy_max: float
     stocks: dict[str, float]
+    stocks_by_planet: dict[str, dict[str, float]] = {}   # SDD 42: stock por planeta
     units: dict[str, int] = {}
     bases: list[BaseOut]
     training: list[TrainingOrderOut] = []

@@ -66,6 +66,14 @@ async def advance(session: AsyncSession, player: Player) -> None:
 async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
     settings = get_settings()
     stocks = await player_stocks(session, player.id)
+    # SDD 42: stock por planeta (para ver dónde está el material).
+    from app.models import ResourceStock
+    by_planet: dict[str, dict[str, float]] = {}
+    for rs in (await session.execute(
+        select(ResourceStock).where(ResourceStock.player_id == player.id)
+    )).scalars():
+        if rs.amount:
+            by_planet.setdefault(rs.planet_key, {})[rs.mineral_key] = round(rs.amount, 2)
     units = await player_units(session, player.id)
 
     res = await session.execute(select(Base_).where(Base_.player_id == player.id))
@@ -184,6 +192,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         energy=round(player.energy, 2),
         energy_max=settings.energy_max,
         stocks={k: round(v, 2) for k, v in stocks.items()},
+        stocks_by_planet=by_planet,
         units=units,
         bases=bases_out,
         training=training_out,

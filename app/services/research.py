@@ -13,7 +13,7 @@ from app.services.economy import (
     collect_mines,
     finalize_due_builds,
     get_or_create_stock,
-    player_stocks,
+    planet_stocks,
 )
 from app.services.energy import spend_energy
 from app.services.physics import effective_energy_regen
@@ -110,12 +110,12 @@ async def start_research(session: AsyncSession, player, tech_key: str) -> Resear
         raise ResearchError("Energia insuficiente.")
 
     cost = content.tech_cost_in_minerals(player.race_key, tech_key)
-    stocks = await player_stocks(session, player.id)
+    here = await planet_stocks(session, player.id, player.planet_key)   # se investiga en casa
     for mineral, amount in cost.items():
-        if stocks.get(mineral, 0.0) < amount:
-            raise ResearchError(f"Mineral insuficiente: {mineral} (necesita {amount:g}).")
+        if here.get(mineral, 0.0) < amount:
+            raise ResearchError(f"Falta {mineral} en {player.planet_key} (necesita {amount:g}).")
     for mineral, amount in cost.items():
-        (await get_or_create_stock(session, player.id, mineral)).amount -= amount
+        (await get_or_create_stock(session, player.id, mineral, player.planet_key)).amount -= amount
 
     order = ResearchOrder(
         player_id=player.id,

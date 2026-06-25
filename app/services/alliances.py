@@ -97,8 +97,8 @@ async def transfer(
     stocks = await player_stocks(session, sender.id)
     if stocks.get(mineral, 0.0) < amount:
         raise AllianceError(f"No tenes suficiente {mineral}.")
-    (await get_or_create_stock(session, sender.id, mineral)).amount -= amount
-    (await get_or_create_stock(session, target.id, mineral)).amount += amount
+    (await get_or_create_stock(session, sender.id, mineral, sender.planet_key)).amount -= amount
+    (await get_or_create_stock(session, target.id, mineral, target.planet_key)).amount += amount
 
 
 async def member_count(session: AsyncSession, alliance_id: int) -> int:
