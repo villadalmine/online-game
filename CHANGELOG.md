@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-06-24
+
 ### 2026-06-24 — Asistente IA: ve el grafo COMPLETO y deduce (no solo keyword-match)
 - El contexto del asistente ahora incluye **todo el grafo del juego** (todos los objetos con
   costo/requisitos/qué habilitan + todas las mecánicas), no solo los ~6 nodos que matcheaban por
