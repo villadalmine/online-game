@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-06-24
+
 ### 2026-06-24 — SDD 36: eventos dinámicos "happy hour" (implementado)
 - Eventos globales temporales que se disparan en **horas aleatorias** desde el tick y aplican a
   todos mientras duran: **todo más barato** (build_cost ×0.5), **energía ×2**, **+50% producción**,
