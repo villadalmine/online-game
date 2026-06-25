@@ -82,6 +82,9 @@
   .modal.hidden{ display:none; }   /* gana a .modal{display:flex} cuando está oculto */
   .modal .x{ float:right; background:#33406e; }
   .ab{ display:grid; grid-template-columns:90px 1fr 42px; gap:8px; align-items:center; margin:5px 0; font-size:12px; }
+  .acrow{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); font-size:12px; }
+  .acrow input{ flex:1 1 130px; min-width:110px; } .acrow select{ flex:0 0 auto; }
+  .acrow .id{ flex:0 0 46px; color:var(--mut); } .acrow .acbtns{ display:flex; gap:6px; margin-left:auto; }
   .ab .b{ height:10px; background:#0a0e1f; border:1px solid #33406e; border-radius:6px; overflow:hidden; }
   .ab .b>div{ height:100%; }
   .ab.rich .b>div{ background:linear-gradient(90deg,#2b8a3e,#7ee787); } .ab.poor .b>div{ background:linear-gradient(90deg,#8a5a2b,#d9a441); }
@@ -934,14 +937,16 @@ function acRender(){
   const rows=_acPlayers.filter(p=>!q||(p.username||"").toLowerCase().includes(q)||(p.email||"").toLowerCase().includes(q));
   $("ac_list").innerHTML=rows.map(p=>{
     const st=["active","pending","suspended","rejected"].map(s=>`<option value="${s}"${s===p.status?" selected":""}>${s}</option>`).join("");
-    return `<div class="ab" style="gap:6px;flex-wrap:wrap;align-items:center">`+
-      `<span class="muted" style="font-size:11px;min-width:34px">#${p.id}${p.is_admin?" 🛡":""}</span>`+
-      `<input id="acu_${p.id}" value="${esc(p.username)}" style="width:150px" title="usuario">`+
-      `<input id="ace_${p.id}" value="${esc(p.email||"")}" placeholder="(sin email)" style="width:180px" title="email">`+
+    return `<div class="acrow">`+
+      `<span class="id">#${p.id}${p.is_admin?" 🛡":""}</span>`+
+      `<input id="acu_${p.id}" value="${esc(p.username)}" title="usuario" placeholder="usuario">`+
+      `<input id="ace_${p.id}" value="${esc(p.email||"")}" placeholder="(sin email)" title="email">`+
       `<select id="acs_${p.id}">${st}</select>`+
-      `<button class="sm" onclick="acSave(${p.id})">💾</button>`+
-      `<button class="sm sec" onclick="acReset(${p.id},'${esc(p.username)}')">🔑</button>`+
-      `<button class="sm danger" onclick="acDelete(${p.id},'${esc(p.username)}')">🗑</button></div>`;
+      `<span class="acbtns">`+
+        `<button class="sm" onclick="acSave(${p.id})" title="guardar">💾</button>`+
+        `<button class="sm sec" onclick="acReset(${p.id},'${esc(p.username)}')" title="reset clave">🔑</button>`+
+        `<button class="sm danger" onclick="acDelete(${p.id},'${esc(p.username)}')" title="borrar">🗑</button>`+
+      `</span></div>`;
   }).join("")||`<span class="muted">—</span>`;
 }
 async function acSave(id){
