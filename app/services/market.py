@@ -370,6 +370,56 @@ async def hub_trade(
             "energy": round(player.energy, 1)}
 
 
+async def black_market(
+    session: AsyncSession, player: Player, pay_mineral: str, pay_qty: int, get_mineral: str
+) -> dict:
+    """Mercado negro: **trueque** material-por-material (no se paga energía). Pagás con un mineral y
+    recibís otro, valuados a los precios del hub de tu galaxia, pero con un *premium ilegal*
+    (`black_market_rate` < 1) → siempre te dan menos que el cambio justo. Requiere una nave de carga
+    (viajás con la mercancía) y no tiene los límites del mercado natal (el riesgo del contrabando).
+    La carga sale y entra de tu planeta natal."""
+    s = get_settings()
+    pay_qty = int(pay_qty)
+    if pay_qty <= 0:
+        raise MarketError("Cantidad inválida.")
+    if pay_mineral == get_mineral:
+        raise MarketError("Elegí minerales distintos para el trueque.")
+    mins = get_content().minerals
+    if pay_mineral not in mins or get_mineral not in mins:
+        raise MarketError("Mineral desconocido.")
+    galaxy = player.galaxy_key
+    if not galaxy:
+        raise MarketError("No estás en ninguna galaxia.")
+    from app.services.training import player_units
+    if (await player_units(session, player.id)).get("cargo_ship", 0) < 1:
+        raise MarketError("Necesitás una nave de carga para llegar al mercado negro.")
+
+    home = player.planet_key
+    stock = await get_or_create_stock(session, player.id, pay_mineral, home)
+    if stock.amount < pay_qty:
+        raise MarketError(
+            f"No tenés {pay_qty} de {pay_mineral} en {home} (tenés {stock.amount:g})."
+        )
+
+    pay_price = (await _hub_row(session, galaxy, pay_mineral)).price
+    get_price = (await _hub_row(session, galaxy, get_mineral)).price
+    if get_price <= 0:
+        raise MarketError("El mercado negro no cotiza ese mineral.")
+    value = pay_price * pay_qty
+    get_qty = int(value / get_price * s.black_market_rate)
+    if get_qty <= 0:
+        raise MarketError("El trueque no alcanza para 1 unidad. Subí la cantidad.")
+
+    stock.amount -= pay_qty
+    (await get_or_create_stock(session, player.id, get_mineral, home)).amount += get_qty
+
+    from app.services.journal import record
+    await record(session, "black_market", player.id, galaxy=galaxy,
+                 pay_mineral=pay_mineral, pay_qty=pay_qty, get_mineral=get_mineral, get_qty=get_qty)
+    return {"paid": pay_qty, "pay_mineral": pay_mineral, "received": get_qty,
+            "get_mineral": get_mineral, "rate": s.black_market_rate}
+
+
 async def revert_hub_prices(session: AsyncSession) -> int:
     """Reversión lenta de los precios del hub hacia su intrínseco (oferta/demanda se calma)."""
     from app.models import MarketPrice

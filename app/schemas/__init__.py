@@ -45,6 +45,12 @@ class HubTradeRequest(BaseModel):
     qty: int
 
 
+class BlackMarketRequest(BaseModel):
+    pay_mineral: str
+    pay_qty: int
+    get_mineral: str
+
+
 class TransportRequest(BaseModel):
     from_planet: str
     to_planet: str

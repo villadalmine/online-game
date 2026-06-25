@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Mercado negro: trueque material-por-material (SDD 42 Fase 3)
+- Nuevo `POST /api/v1/market/blackmarket`: **trueque** de un mineral por otro **sin pagar energía**.
+  Pagás con un mineral y recibís otro valuados a los **precios dinámicos del hub** de tu galaxia,
+  pero con un **premium ilegal** (`black_market_rate` = 0.7) → siempre te dan menos que el cambio
+  justo. Es el riesgo del contrabando: **no** tiene los límites anti-abuso del mercado natal.
+- Requiere una **nave de carga** (viajás con la mercancía); la carga sale y entra de tu planeta
+  natal. Queda registrado en el journal (`black_market`).
+- UI: mini-form **🕶 Mercado negro** dentro del panel del Hub (elegís pagar/recibir + cantidad).
+- Tests: `test_black_market_barter`, `test_black_market_needs_ship_and_material` (servicio) y
+  `test_black_market_barter_e2e` (HTTP: sin nave → 400, trueque ok).
+
 ## [1.37.0] - 2026-06-25
 
 ### 2026-06-25 — Mercado equilibrado: límites anti-abuso (ventana de 2h)

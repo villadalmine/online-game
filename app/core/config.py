@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     market_buy_pct: float = 0.20              # comprás ≤ 20% (anti-reventa)
     market_buy_floor: float = 100.0           # piso de compra para no bloquear a los que empiezan
     market_transport_ships_per_window: int = 4  # ≤ 4 naves de carga despachadas por ventana
+    black_market_rate: float = 0.7            # trueque ilegal: peor que el precio justo (premium)
     # Hub galáctico (SDD 42 Fase 3): precio dinámico por oferta/demanda.
     market_hub_impact: float = 0.0008         # cuánto mueve el precio cada unidad comprada/vendida
     market_hub_reversion: float = 0.1         # reversión al valor intrínseco por tick

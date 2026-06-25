@@ -165,6 +165,51 @@ async def test_market_rate_limits_home_only(session):
     await _check_rate_limit(session, p, "mars", "iron", 99999, "sell", 10.0)
 
 
+async def test_black_market_barter(session):
+    # Trueque material-por-material: paga hierro, recibe titanio al cambio del hub (premium ilegal).
+    from app.models import UnitStock
+    from app.services.market import black_market
+
+    p = await _player(session, "smuggler")
+    (await get_or_create_stock(session, p.id, "iron", p.planet_key)).amount = 1000.0
+    session.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=1))
+    await session.commit()
+
+    r = await black_market(session, p, "iron", 500, "titanium")
+    await session.commit()
+    assert r["paid"] == 500 and r["received"] > 0
+    assert (await get_or_create_stock(session, p.id, "iron", p.planet_key)).amount == 500.0
+    ti = (await get_or_create_stock(session, p.id, "titanium", p.planet_key)).amount
+    assert ti == r["received"]
+
+
+async def test_black_market_needs_ship_and_material(session):
+    from app.models import UnitStock
+    from app.services.market import MarketError, black_market
+
+    p = await _player(session, "nosmuggler")
+    (await get_or_create_stock(session, p.id, "iron", p.planet_key)).amount = 100.0
+    await session.commit()
+    try:                                   # sin nave de carga
+        await black_market(session, p, "iron", 50, "titanium")
+        raise AssertionError("debía requerir nave de carga")
+    except MarketError as e:
+        assert "carga" in str(e).lower()
+
+    session.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=1))
+    await session.commit()
+    try:                                   # mismo mineral
+        await black_market(session, p, "iron", 50, "iron")
+        raise AssertionError("debía rechazar trueque del mismo mineral")
+    except MarketError:
+        pass
+    try:                                   # sin material suficiente
+        await black_market(session, p, "iron", 999, "titanium")
+        raise AssertionError("debía faltar material")
+    except MarketError:
+        pass
+
+
 async def test_transport_limits_ships_per_window(session):
     from app.models import UnitStock
     from app.services.market import MarketError, start_transport

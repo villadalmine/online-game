@@ -428,6 +428,38 @@ async def test_market_prices_and_buy_guard_e2e(client):
     assert r.status_code == 400   # sin mercado construido
 
 
+async def test_black_market_barter_e2e(client):
+    # SDD 42 Fase 3: trueque material-por-material en el mercado negro (sin energía, requiere nave).
+    from app.models import Player, UnitStock
+    from app.services.economy import get_or_create_stock
+
+    h = await _register(client.http, "smuggler_e2e")
+    await _onboard(client.http, h)   # terran/earth
+
+    # sin nave → 400
+    blind = await client.http.post(
+        "/api/v1/market/blackmarket", headers=h,
+        json={"pay_mineral": "iron", "pay_qty": 100, "get_mineral": "titanium"},
+    )
+    assert blind.status_code == 400
+
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "smuggler_e2e"))).scalar_one()
+        s.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=1))
+        (await get_or_create_stock(s, p.id, "iron", p.planet_key)).amount = 1000.0
+        await s.commit()
+
+    r = await client.http.post(
+        "/api/v1/market/blackmarket", headers=h,
+        json={"pay_mineral": "iron", "pay_qty": 500, "get_mineral": "titanium"},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["paid"] == 500 and body["received"] > 0
+    assert body["pay_mineral"] == "iron"
+    assert body["get_mineral"] == "titanium"
+
+
 async def test_colonize_options_e2e(client):
     # SDD 37: el grafo de opciones raza×planeta para tu imperio.
     h = await _register(client.http, "colonizer")

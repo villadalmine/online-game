@@ -9,6 +9,7 @@ from app.api.deps import get_current_player, lock_current_player
 from app.core.db import get_session
 from app.models import Player, TransportMission
 from app.schemas import (
+    BlackMarketRequest,
     HubTradeRequest,
     MarketTradeRequest,
     TransportMissionOut,
@@ -44,6 +45,23 @@ async def hub_trade(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "side debe ser buy o sell.")
     try:
         res = await market.hub_trade(session, player, body.mineral_key, body.qty, side)
+    except market.MarketError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
+    await session.commit()
+    return res
+
+
+@router.post("/blackmarket")
+async def blackmarket(
+    body: BlackMarketRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Mercado negro: trueque material-por-material (sin energía, premium ilegal, requiere nave)."""
+    try:
+        res = await market.black_market(
+            session, player, body.pay_mineral, body.pay_qty, body.get_mineral
+        )
     except market.MarketError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
     await session.commit()
