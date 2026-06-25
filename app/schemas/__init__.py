@@ -34,6 +34,17 @@ class VerifyCodeRequest(BaseModel):
     code: str = Field(min_length=4, max_length=12)
 
 
+class ProfileUpdateRequest(BaseModel):
+    # Cambiar nick y/o contraseña (autenticado, sin validar email). Al menos uno.
+    username: str | None = Field(default=None, min_length=3, max_length=50)
+    password: str | None = Field(default=None, min_length=6, max_length=200)
+
+
+class ProfileUpdateResponse(BaseModel):
+    username: str
+    access_token: str   # token nuevo (el nick va en el token); seguí logueado
+
+
 class OnboardRequest(BaseModel):
     galaxy_key: str
     planet_key: str

@@ -3,11 +3,19 @@ from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_player
+from app.api.deps import get_current_player, lock_current_player
 from app.core.db import get_session
 from app.core.redis import get_redis
+from app.core.security import create_access_token, hash_password
 from app.models import Base_, Player
-from app.schemas import OnboardRequest, PlayerStateOut, PlayerSummaryOut, RankingEntryOut
+from app.schemas import (
+    OnboardRequest,
+    PlayerStateOut,
+    PlayerSummaryOut,
+    ProfileUpdateRequest,
+    ProfileUpdateResponse,
+    RankingEntryOut,
+)
 from app.services import presence
 from app.services.onboarding import OnboardingError, onboard_player
 from app.services.scoring import player_score
@@ -68,6 +76,32 @@ async def get_me(
         await advance(session, player)
     await presence.touch(redis, player.id)  # SDD 21: heartbeat de "online"
     return await snapshot(session, player)
+
+
+@router.post("/me/profile", response_model=ProfileUpdateResponse)
+async def update_profile(
+    body: ProfileUpdateRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Cambiar tu nick y/o contraseña sin validar email (ya estás autenticado). El reset de
+    contraseña olvidada va por OTP (login por código → cambiás la clave acá). Devuelve un token
+    nuevo porque el nick viaja en el token."""
+    if body.username is None and body.password is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Nada para cambiar.")
+    if body.username and body.username != player.username:
+        taken = (
+            await session.execute(select(Player).where(Player.username == body.username))
+        ).scalar_one_or_none()
+        if taken is not None:
+            raise HTTPException(status.HTTP_409_CONFLICT, "Ese nombre de usuario ya está en uso.")
+        player.username = body.username
+    if body.password:
+        player.password_hash = hash_password(body.password)
+    await session.commit()
+    return ProfileUpdateResponse(
+        username=player.username, access_token=create_access_token(player.username)
+    )
 
 
 @router.post("/onboard", response_model=PlayerStateOut, status_code=status.HTTP_201_CREATED)

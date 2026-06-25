@@ -388,6 +388,33 @@ async def test_shared_vision_shares_intel_e2e(client):
     assert shared and shared[0]["shared"] is True and shared[0]["via"] == "vis_a"
 
 
+async def test_profile_update_nick_and_password_e2e(client):
+    # Cambiar nick + clave sin validar (autenticado); el reset olvidado va por OTP (login x código).
+    h = await _register(client.http, "changer")
+    await _onboard(client.http, h)
+    r = await client.http.post(
+        "/api/v1/players/me/profile", headers=h,
+        json={"username": "changer2", "password": "newpass123"},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["username"] == "changer2"
+    tok = r.json()["access_token"]
+    # el token nuevo sirve y refleja el nick
+    me = await client.http.get("/api/v1/players/me", headers={"Authorization": f"Bearer {tok}"})
+    assert me.status_code == 200 and me.json()["username"] == "changer2"
+    # login con nick + clave nuevos
+    lg = await client.http.post(
+        "/api/v1/auth/login", json={"username": "changer2", "password": "newpass123"}
+    )
+    assert lg.status_code == 200
+    # nick en uso → 409
+    h2 = await _register(client.http, "other")
+    dup = await client.http.post(
+        "/api/v1/players/me/profile", headers=h2, json={"username": "changer2"}
+    )
+    assert dup.status_code == 409
+
+
 async def test_colonize_options_e2e(client):
     # SDD 37: el grafo de opciones raza×planeta para tu imperio.
     h = await _register(client.http, "colonizer")

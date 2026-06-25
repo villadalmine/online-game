@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Perfil: cambiar nick y contraseña (sin validar) + reset por OTP
+- `POST /api/v1/players/me/profile` `{username?, password?}`: el jugador autenticado cambia su
+  **nick** y/o **contraseña** sin validar email (valida unicidad del nick + longitudes). Devuelve un
+  **token nuevo** (el nick viaja en el token, así seguís logueado). Panel **👤 Perfil** en la web.
+- **Reset de contraseña olvidada vía OTP**: entrás con código por email (flujo passwordless ya
+  existente) y cambiás la clave en el perfil. (Las cuentas invitado tienen email inexistente, así
+  que su reset es solo por este endpoint estando logueadas.)
+
 ## [1.27.0] - 2026-06-25
 
 ### 2026-06-25 — Colonias: costo de construcción por-colonia + tipo visible
