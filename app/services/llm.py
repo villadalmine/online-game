@@ -11,6 +11,15 @@ import httpx
 from app.core import metrics
 from app.core.config import get_settings
 
+# Etiqueta de app para el campo OpenAI `user` (→ end_user en LiteLLM). Varios juegos comparten el
+# mismo LiteLLM/GPU → prefijamos con la app para que el dashboard separe online-game (SDD 28).
+APP_TAG = "online-game"
+
+
+def _tag_user(user: str | None) -> str:
+    """Prefija el id con la app, conservando el sub-id (p.ej. 'online-game:player:bob')."""
+    return f"{APP_TAG}:{user}" if user else APP_TAG
+
 
 async def llm_chat(
     messages: list[dict],
@@ -35,8 +44,7 @@ async def llm_chat(
         "max_tokens": max_tokens,
         "messages": messages,
     }
-    if user:
-        payload["user"] = user  # → end_user en LiteLLM (SDD 28)
+    payload["user"] = _tag_user(user)  # app-tagged end_user en LiteLLM (SDD 28 + métricas por app)
     if json_mode:
         # Honored by OpenAI/LiteLLM/Ollama/vLLM; makes the reply parse-safe.
         payload["response_format"] = {"type": "json_object"}

@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Métricas LLM separadas por app (dashboard ya no mezcla juegos)
+- El campo `user` que se manda a LiteLLM (→ `end_user`) ahora va **prefijado con la app**
+  (`online-game:player:bob`, `online-game:npc:zorg`) — antes era `player:bob`. Como varios juegos
+  comparten el mismo LiteLLM/GPU, esto permite separar el consumo por app. Centralizado en
+  `llm.py:_tag_user` (cubre asistente + NPC). Sigue atribuyendo por jugador (SDD 28).
+- **Dashboard `llm-usage.json`**: los paneles de tokens/spend ahora filtran `end_user=~"online-game:.*"`
+  → muestran **solo el juego**, no el shooter ni otros. Los paneles de **GPU/HAMI y requests del
+  proxy** se marcaron como **compartidos** (la GPU es física; no se pueden separar por app). El panel
+  "GPU vs nube" pasó a tokens de salida (que sí llevan `end_user`) para poder scopearlo.
+- Tests: `tests/test_llm.py` (tagging) + ajuste de los asserts de `user` en `test_npc.py`.
+
 ## [1.45.0] - 2026-06-25
 
 ### 2026-06-25 — Página Tech: cómo usa la IA el juego + enlace desde la landing

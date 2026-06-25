@@ -4,7 +4,7 @@
   "tags": ["online-game", "llm", "gpu"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
   "templating": {
@@ -26,26 +26,26 @@
       "targets": [ { "refId": "A", "expr": "sum(litellm_in_flight_requests)" } ]
     },
     {
-      "id": 2, "type": "stat", "title": "Requests/s (5m)",
+      "id": 2, "type": "stat", "title": "Requests/s (5m) — TODOS los servicios",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "targets": [ { "refId": "A", "expr": "sum(rate(litellm_proxy_total_requests_metric_total[5m]))" } ]
     },
     {
-      "id": 3, "type": "stat", "title": "GPU VRAM asignada (total)",
+      "id": 3, "type": "stat", "title": "GPU VRAM asignada (total, GPU compartida)",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
       "targets": [ { "refId": "A", "expr": "sum(hami_gpu_memory_allocated_bytes)" } ]
     },
     {
-      "id": 4, "type": "stat", "title": "Fallbacks/s → free (5m)",
+      "id": 4, "type": "stat", "title": "Fallbacks/s (5m) — TODOS los servicios",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "targets": [ { "refId": "A", "expr": "sum(rate(litellm_deployment_successful_fallbacks_total[5m]))" } ]
     },
     {
-      "id": 5, "type": "timeseries", "title": "Requests/s por backend (requested_model)",
+      "id": 5, "type": "timeseries", "title": "Requests/s por backend — TODOS los servicios (proxy)",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "targets": [ { "refId": "A", "expr": "sum by (requested_model) (rate(litellm_proxy_total_requests_metric_total[5m]))", "legendFormat": "{{requested_model}}" } ]
@@ -54,19 +54,19 @@
       "id": 6, "type": "timeseries", "title": "Tokens de salida/s por modelo (backend real)",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "targets": [ { "refId": "A", "expr": "sum by (model) (rate(litellm_output_tokens_metric_total[5m]))", "legendFormat": "{{model}}" } ]
+      "targets": [ { "refId": "A", "expr": "sum by (model) (rate(litellm_output_tokens_metric_total{end_user=~\"online-game:.*\"}[5m]))", "legendFormat": "{{model}}" } ]
     },
     {
       "id": 7, "type": "table", "title": "Tokens por usuario (24h) — salida",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
-      "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user) (increase(litellm_output_tokens_metric_total[24h])))", "legendFormat": "{{end_user}}" } ]
+      "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user) (increase(litellm_output_tokens_metric_total{end_user=~\"online-game:.*\"}[24h])))", "legendFormat": "{{end_user}}" } ]
     },
     {
       "id": 8, "type": "table", "title": "Spend por usuario × backend (24h) — monetización",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user, model) (increase(litellm_spend_metric_total[24h])))", "legendFormat": "{{end_user}} / {{model}}" } ]
+      "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user, model) (increase(litellm_spend_metric_total{end_user=~\"online-game:.*\"}[24h])))", "legendFormat": "{{end_user}} / {{model}}" } ]
     },
     {
       "id": 9, "type": "timeseries", "title": "GPU — VRAM asignada por placa (HAMI)",
@@ -87,15 +87,15 @@
       "description": "source=gpu si el modelo servido es local (qwen → GPU); nube = OpenRouter (fallback/free/pago).",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
-      "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user, source) (label_replace(label_replace(increase(litellm_total_tokens_metric_total[24h]), \"source\", \"nube\", \"model\", \".+\"), \"source\", \"gpu\", \"model\", \"qwen.*\")))" } ]
+      "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user, source) (label_replace(label_replace(increase(litellm_total_tokens_metric_total{end_user=~\"online-game:.*\"}[24h]), \"source\", \"nube\", \"model\", \".+\"), \"source\", \"gpu\", \"model\", \"qwen.*\")))" } ]
     },
     {
-      "id": 12, "type": "timeseries", "title": "Requests/s GPU vs nube",
+      "id": 12, "type": "timeseries", "title": "Tokens de salida/s GPU vs nube (online-game)",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
       "targets": [
-        { "refId": "A", "expr": "sum(rate(litellm_requests_metric_total{model=~\"qwen.*\"}[5m]))", "legendFormat": "GPU (local)" },
-        { "refId": "B", "expr": "sum(rate(litellm_requests_metric_total{model!~\"qwen.*\",model!=\"\"}[5m]))", "legendFormat": "nube (OpenRouter)" }
+        { "refId": "A", "expr": "sum(rate(litellm_output_tokens_metric_total{end_user=~\"online-game:.*\",model=~\"qwen.*\"}[5m]))", "legendFormat": "GPU (local)" },
+        { "refId": "B", "expr": "sum(rate(litellm_output_tokens_metric_total{end_user=~\"online-game:.*\",model!~\"qwen.*\",model!=\"\"}[5m]))", "legendFormat": "nube (OpenRouter)" }
       ]
     },
     {

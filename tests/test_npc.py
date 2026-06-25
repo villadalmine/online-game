@@ -254,7 +254,7 @@ async def test_llm_chat_sends_user_for_billing(monkeypatch):
     monkeypatch.setattr(llm_mod.httpx, "AsyncClient", _capturing_client(captured))
     monkeypatch.setattr(llm_mod, "get_settings", lambda: cfg)
     await llm_mod.llm_chat([{"role": "user", "content": "hola"}], user="player:bob")
-    assert captured["json"]["user"] == "player:bob"
+    assert captured["json"]["user"] == "online-game:player:bob"   # app-tagged (métricas por app)
 
 
 async def test_npc_decide_attributes_user_and_keeps_it_out_of_prompt(monkeypatch):
@@ -266,7 +266,7 @@ async def test_npc_decide_attributes_user_and_keeps_it_out_of_prompt(monkeypatch
     monkeypatch.setattr(llm_mod, "get_settings", lambda: cfg)
     monkeypatch.setattr(npc_mod, "get_settings", lambda: cfg)
     await npc_mod._llm_decide({"personality": "rudo", "__user": "npc:zorg"})
-    assert captured["json"]["user"] == "npc:zorg"
+    assert captured["json"]["user"] == "online-game:npc:zorg"   # app-tagged (métricas por app)
     # __user no debe aparecer en el contenido enviado al modelo
     assert "__user" not in captured["json"]["messages"][1]["content"]
 
