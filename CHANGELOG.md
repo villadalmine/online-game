@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Fix: el auto-refresh borraba lo que elegías en Mercado/Hub
+- El panel del Hub (y el de Mercado/Transporte) se re-renderiza solo cada 4s; eso **reseteaba a los
+  valores por defecto** lo que estabas eligiendo (minerales del trueque del mercado negro, cantidades,
+  origen/destino/escolta del transporte) antes de que llegaras a tocar el botón. Ahora se **preservan**
+  tus selecciones/cantidades entre refrescos. (Bug introducido en 1.41.0; solo frontend.)
+
 ## [1.42.0] - 2026-06-25
 
 ### 2026-06-25 — Avisos centralizados: toasts apilables y descartables

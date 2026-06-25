@@ -972,9 +972,11 @@ function renderMarket(){
       `<input id="tr_escn" type="number" value="0" min="0" style="width:48px"> `+
       `<span class="muted" style="font-size:11px">${esc(tr('escorttip'))}</span></div>`;
   }
+  const keepM={}; ["marketqty","tr_from","tr_to","tr_min","tr_qty","tr_esc","tr_escn"].forEach(id=>{ const e=$(id); if(e) keepM[id]=e.value; });
   el.innerHTML=`<div class="row"><select onchange="selectMarket(this.value)">${opts}</select>`+
     ` <input id="marketqty" type="number" value="${esc(qty)}" min="1" style="width:60px"></div>`+
     `<div class="muted" style="font-size:11px;margin:3px 0">${esc(tr('mktcols'))}</div>${rows}${transp}`;
+  Object.entries(keepM).forEach(([id,v])=>{ const e=$(id); if(e!=null&&v!=null) e.value=v; });
 }
 // hub galáctico (SDD 42 Fase 3): precios dinámicos por oferta/demanda + comparar otras galaxias
 async function loadHub(){
@@ -999,8 +1001,11 @@ async function loadHub(){
     `<button class="sm" onclick="blackMarket()">${esc(tr('bmtrade'))}</button></div>`+
     `<div id="bm_est" class="muted" style="font-size:11px"></div>`+
     `<div class="muted" style="font-size:11px">${esc(tr('bmtip'))}</div></div>`;
+  // preservar lo que el usuario tenía elegido (el auto-refresh re-renderiza el panel cada 4s)
+  const keep={}; ["hubqty","bm_qty","bm_pay","bm_get"].forEach(id=>{ const e=$(id); if(e) keep[id]=e.value; });
   $("hub").innerHTML=`<div class="row"><input id="hubqty" type="number" value="50" min="1" style="width:60px"> `+
     `<span class="muted">${esc(tr('hubof'))} ${esc((catalog.galaxies.find(x=>x.key===d.galaxy)||{}).name||d.galaxy)} · ${esc(tr('hubdyn'))}</span></div>${rows}${cmp}${bm}`;
+  Object.entries(keep).forEach(([id,v])=>{ const e=$(id); if(e!=null&&v!=null) e.value=v; });
   bmEstimate();
 }
 function bmEstimate(){
