@@ -11,13 +11,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import metrics
+from app.core.config import get_settings
 from app.models import GameEvent
 
 
 async def record(
     session: AsyncSession, type_: str, player_id: int | None = None, **payload
 ) -> None:
-    session.add(GameEvent(type=type_, player_id=player_id, payload=json.dumps(payload)))
+    session.add(GameEvent(
+        type=type_, player_id=player_id, payload=json.dumps(payload),
+        version=get_settings().app_version,   # SDD 41: tag de versión para segmentar el meta
+    ))
     metrics.JOURNAL_EVENTS.inc(kind=type_)
 
 

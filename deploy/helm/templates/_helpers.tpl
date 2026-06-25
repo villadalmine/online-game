@@ -20,6 +20,8 @@ imagePullSecrets:
 {{- end -}}
 
 {{- define "online-game.commonEnv" -}}
+- name: APP_VERSION
+  value: {{ .Values.image.tag | quote }}
 - name: DATABASE_URL
   value: {{ include "online-game.dbUrl" . | quote }}
 - name: REDIS_URL

@@ -454,9 +454,26 @@ class GameEvent(Base):
     )
     type: Mapped[str] = mapped_column(String(40), index=True)
     payload: Mapped[str] = mapped_column(Text, default="{}")
+    # Versión del juego al ocurrir el evento (SDD 41): permite segmentar/ventanear los datos cuando
+    # cambian unidades/balance/reglas → la data vieja sigue sirviendo (sabés de qué ruleset es).
+    version: Mapped[str] = mapped_column(
+        String(20), default="dev", server_default="dev", index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, index=True
     )
+
+
+class MetaInsight(Base):
+    """Insight agregado del meta (SDD 41), upsert por `key`. Datos derivados del journal que el
+    asistente y los NPCs leen para jugar/aconsejar con datos reales. Base para dashboards y ML."""
+
+    __tablename__ = "meta_insights"
+
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    payload: Mapped[str] = mapped_column(Text, default="{}")
+    sample_n: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class CombatLog(Base):

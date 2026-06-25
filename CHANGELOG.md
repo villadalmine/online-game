@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 41: la IA aprende el meta de las partidas (insights del journal)
+- **Capa de insights** (`insights.py`): mina el journal (`battle_resolved` ahora guarda la **`force`**
+  atacante) y calcula el **meta** real — win-rate de ataques + **win-rate por composición** (unidad
+  dominante) — guardado en **`MetaInsight`** (upsert por key, persistido, queryable). Se recalcula en
+  el tick. Determinista (sin entrenar nada).
+- **La IA lo usa**: el asistente recibe `meta_summary_text` en su contexto → aconseja con datos
+  ("las flotas con tank ganan 70%, n=…"). API `GET /api/v1/insights` + panel web **📈 Meta**.
+- **Preparado para escalar y para cambios del juego**: cada evento del journal queda **versionado**
+  (`game_events.version`, poblado desde el tag de deploy vía `APP_VERSION`) → podés **segmentar el
+  meta por ruleset** cuando cambie el balance, y la data vieja sigue sirviendo. Los insights agrupan
+  por las **claves que hay en los datos** (no hardcodean unidades) → unidades nuevas/removidas se
+  manejan solas. El journal + `MetaInsight` quedan como **feature store** para entrenar un modelo a
+  futuro (nivel 3, sin hacerlo aún). Doc `docs/sdd-meta-insights.md`. Tests + 276 verdes.
+
 ## [1.30.0] - 2026-06-25
 
 ### 2026-06-25 — SDD 37: bases lunares (minar recursos premium de las lunas)

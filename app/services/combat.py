@@ -320,7 +320,7 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
     from app.services.journal import record
     await record(session, "battle_resolved", attacker.id,
                  defender_id=defender.id, target_base_id=mission.target_base_id,
-                 outcome=result.outcome, attacker_losses=result.attacker_losses,
+                 outcome=result.outcome, force=force, attacker_losses=result.attacker_losses,
                  defender_losses=result.defender_losses, loot=loot)
 
     mission.details = json.dumps({"outcome": result.outcome, "survivors": survivors, "loot": loot})

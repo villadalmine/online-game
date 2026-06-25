@@ -12,6 +12,7 @@ from app.api.v1 import (
     events,
     expeditions,
     galaxies,
+    insights,
     intel,
     journal,
     notifications,
@@ -39,6 +40,7 @@ api_router.include_router(galaxies.router, prefix="/galaxies", tags=["galaxies"]
 api_router.include_router(public.router, prefix="/public", tags=["public"])
 api_router.include_router(intel.router, tags=["intel"])
 api_router.include_router(journal.router, tags=["journal"])
+api_router.include_router(insights.router, tags=["insights"])
 api_router.include_router(events.router, prefix="/events", tags=["events"])
 api_router.include_router(colonize.router, prefix="/colonize", tags=["colonize"])
 api_router.include_router(advisor.router, prefix="/players/me/advisor", tags=["advisor"])

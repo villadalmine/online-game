@@ -279,6 +279,14 @@ def _intel_for_context(intel: list[dict], now: datetime) -> list[dict]:
     return out
 
 
+async def _meta_text(session) -> str:
+    try:
+        from app.services.insights import meta_summary_text
+        return await meta_summary_text(session)
+    except Exception:
+        return ""
+
+
 async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=None) -> str:
     """Prose from the LLM grounded on retrieved docs + blockers + spy intel; det. fallback."""
     try:
@@ -295,6 +303,7 @@ async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=
             "relevant": [d["id"] for d in hits],   # nodos más cercanos a la pregunta (pista)
             "blockers": [r.model_dump() for r in reports if not r.buildable],
             "intel": _intel_for_context(intel or [], datetime.now(UTC)),
+            "meta": await _meta_text(session),     # SDD 41: meta aprendido de partidas reales
         }
         system = (
             "Sos el asistente personal de un jugador en un juego de estrategia espacial por "
@@ -310,7 +319,9 @@ async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=
             "inventes objetos ni reglas fuera de 'knowledge'; si algo no está, decilo. "
             "'intel' es lo que tus espías saben de rivales (depth/confidence/age_hours): para "
             "ataques usá SOLO esos datos, no inventes la defensa del rival; si la intel es vieja o "
-            "poco confiable, recomendá espiar de nuevo."
+            "poco confiable, recomendá espiar de nuevo. "
+            "'meta' es lo aprendido de partidas reales (win-rates por composición): usalo para "
+            "recomendar tácticas que funcionan, aclarando si la muestra (n) es chica."
         )
         msgs = [{"role": "system", "content": system}]
         for m in history:

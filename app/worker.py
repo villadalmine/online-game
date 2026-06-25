@@ -78,6 +78,12 @@ async def run_tick(session: AsyncSession) -> dict:
     await maybe_start_event(session)
     await session.commit()
 
+    # Meta-insights (SDD 41): recalcular el meta cada tanto para que la IA aprenda de las partidas.
+    from app.services.insights import compute_meta, should_recompute
+    if await should_recompute(session):
+        await compute_meta(session)
+        await session.commit()
+
     metrics.TICK_DURATION.observe(time.perf_counter() - _t0)  # SDD 19
     metrics.TICK_LAST_RUN.set(time.time())
     return {

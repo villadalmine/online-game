@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     # Colonización (SDD 37): fundar bases en otros planetas.
     max_colonies: int = 3                 # máximo de colonias (además del mundo natal)
     colonize_energy_cost: float = 60.0    # energía por colonización (escala con nº de colonias)
+    app_version: str = "dev"              # SDD 41: versión del juego (se setea por env APP_VERSION)
+    meta_compute_interval_seconds: int = 600   # cada cuánto recalcula el meta (en el tick)
     assist_energy_per_day: int = 3        # SDD 40: veces/día que podés pedir energía de nivelado
     assist_energy_normal: float = 100.0   # +energía para jugadores que no son del fondo
     orbital_yield: float = 0.4            # rinde de una base orbital (robots, sin habitabilidad)
