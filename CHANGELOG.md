@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.33.0] - 2026-06-25
+
 ### 2026-06-25 — SDD 42 Fase 1: mercado local (comprar/vender minerales con energía)
 - Edificio **`market`** + servicio de mercado: **precios por planeta derivados** (no hardcodeados)
   = base / abundancia → barato donde abunda, caro donde escasea, **premium (He-3, etc.) lo más caro**.
