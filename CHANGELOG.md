@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.34.0] - 2026-06-25
+
 ### 2026-06-25 — SDD 42 Fase 2: economía POR-PLANETA (el material vive donde está)
 - **Refactor estructural** (backward-compatible): `ResourceStock` ahora es **por planeta**
   (`planet_key`), con migración que **lleva el stock existente al mundo natal** → las partidas
