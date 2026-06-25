@@ -51,7 +51,8 @@ class Settings(BaseSettings):
     market_sell_pct: float = 0.30             # vendés ≤ 30% de tus tenencias por ventana
     market_buy_pct: float = 0.20              # comprás ≤ 20% (anti-reventa)
     market_buy_floor: float = 100.0           # piso de compra para no bloquear a los que empiezan
-    market_transport_ships_per_window: int = 4  # ≤ 4 naves de carga despachadas por ventana
+    market_transport_ships_per_window: int = 4  # ≤ 4 naves de carga despachadas por ventana (base)
+    market_transport_ships_per_hangar: int = 2  # +N al cupo de la ventana por cada hangar activo
     black_market_rate: float = 0.7            # trueque ilegal: peor que el precio justo (premium)
     pirate_raid_chance: float = 0.15          # prob. por tick de que piratas embosquen un convoy
     pirate_strength: float = 0.02             # poder pirata = strength × unidades de carga totales

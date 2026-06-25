@@ -98,6 +98,17 @@ async def _check_rate_limit(
             )
 
 
+async def _count_buildings(session: AsyncSession, player_id: int, building_key: str) -> int:
+    """Cuántos edificios `building_key` activos tiene el jugador (en todas sus bases)."""
+    from sqlalchemy import func
+    return (await session.execute(
+        select(func.count(Building.id))
+        .join(Base_, Building.base_id == Base_.id)
+        .where(Base_.player_id == player_id,
+               Building.building_key == building_key, Building.status == "active")
+    )).scalar_one()
+
+
 async def _has_market(session: AsyncSession, player: Player, planet_key: str) -> bool:
     """¿El jugador tiene un `market` activo en una base en ese planeta?"""
     res = await session.execute(
@@ -227,9 +238,11 @@ async def start_transport(
             GameEvent.created_at >= since,
         ))).scalars()
     )
-    if sent + ships_needed > s.market_transport_ships_per_window:
+    hangars = await _count_buildings(session, player.id, "hangar")
+    cap = s.market_transport_ships_per_window + hangars * s.market_transport_ships_per_hangar
+    if sent + ships_needed > cap:
         raise MarketError(
-            f"Límite 2h: hasta {s.market_transport_ships_per_window} naves de carga; "
+            f"Límite 2h: hasta {cap} naves de carga (construí hangares para más); "
             f"despachaste {int(sent)}. Las demás esperan en el hangar."
         )
 

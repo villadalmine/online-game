@@ -494,6 +494,38 @@ async def test_transport_with_escort_e2e(client):
     assert any(t["escort"] == {"tank": 1} for t in ts)
 
 
+async def test_hangar_raises_transport_cap_e2e(client):
+    # SDD 42 Fase 3: el hangar (en el catálogo) sube el cupo de naves de carga por ventana.
+    from app.models import Base_, Building, Player, UnitStock
+    from app.services.economy import get_or_create_stock
+
+    cat = (await client.http.get("/api/v1/catalog")).json()
+    assert any(b["key"] == "hangar" for b in cat["buildings"])
+
+    h = await _register(client.http, "hangar_e2e")
+    await _onboard(client.http, h)   # terran/earth
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "hangar_e2e"))).scalar_one()
+        s.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=10))
+        (await get_or_create_stock(s, p.id, "iron", "earth")).amount = 4000.0
+        await s.commit()
+
+    # sin hangar: 6 naves (3000/500) > cupo base 4 → 400
+    body = {"from_planet": "earth", "to_planet": "mars", "cargo": {"iron": 3000}}
+    over = await client.http.post("/api/v1/market/transport", headers=h, json=body)
+    assert over.status_code == 400
+
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "hangar_e2e"))).scalar_one()
+        base = (await s.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
+        s.add(Building(base_id=base.id, building_key="hangar", status="active"))
+        await s.commit()
+
+    ok = await client.http.post("/api/v1/market/transport", headers=h, json=body)
+    assert ok.status_code == 201, ok.text
+    assert ok.json()["ships"] == 6
+
+
 async def test_colonize_options_e2e(client):
     # SDD 37: el grafo de opciones raza×planeta para tu imperio.
     h = await _register(client.http, "colonizer")

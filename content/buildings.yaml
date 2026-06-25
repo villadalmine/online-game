@@ -59,6 +59,21 @@ buildings:
       structural: 120
       energetic: 80
       advanced: 20
+  - key: hangar
+    name: "Hangar"
+    name_en: "Hangar"
+    real: "Hangar: cobertizo para estacionar y despachar naves."
+    real_en: "Hangar: shed to park and dispatch ships."
+    sources: ["Wikipedia: Hangar"]
+    category: economy
+    description: "Estaciona naves de carga: cada hangar sube cuántas podés despachar por ventana (SDD 42)."
+    description_en: "Parks cargo ships: each hangar raises how many you can dispatch per window (SDD 42)."
+    energy_cost: 12
+    build_seconds: 130
+    cost:
+      structural: 90
+      energetic: 50
+      advanced: 10
   - key: barracks
     name: "Cuartel"
     name_en: "Barracks"

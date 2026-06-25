@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Hangar: estacionar/despachar más naves (SDD 42 Fase 3)
+- Nuevo edificio **`hangar`** (categoría economía): cada hangar activo **sube el cupo** de naves de
+  carga que podés despachar por ventana de 2h (`market_transport_ships_per_window` base +
+  `market_transport_ships_per_hangar` × hangares). Cierra el loop "las naves que no salen quedan en
+  el hangar": construí hangares para mover convoyes más grandes.
+- El mensaje del límite ahora dice el cupo efectivo y sugiere construir hangares.
+- Tests: `test_hangar_raises_ship_window_cap` (servicio) y `test_hangar_raises_transport_cap_e2e`
+  (HTTP: sin hangar 6 naves → 400; con hangar → 201 con 6 naves; hangar en el catálogo).
+
 ## [1.39.0] - 2026-06-25
 
 ### 2026-06-25 — Piratería y escolta de convoyes (SDD 42 Fase 3 §8)

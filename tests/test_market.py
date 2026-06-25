@@ -282,3 +282,21 @@ async def test_transport_limits_ships_per_window(session):
         raise AssertionError("debía limitar a 4 naves por ventana")
     except MarketError as e:
         assert "naves" in str(e).lower() or "hangar" in str(e).lower()
+
+
+async def test_hangar_raises_ship_window_cap(session):
+    # Un hangar activo sube el cupo de 4 → 6 naves por ventana (SDD 42 Fase 3).
+    from app.models import UnitStock
+    from app.services.market import start_transport
+
+    p = await _player(session, "hangared")
+    base = (await session.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
+    session.add(Building(base_id=base.id, building_key="hangar", status="active",
+                         completes_at=datetime.now(UTC)))
+    (await get_or_create_stock(session, p.id, "iron", "earth")).amount = 4000.0
+    session.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=10))
+    await session.commit()
+
+    m = await start_transport(session, p, "earth", "mars", {"iron": 3000})   # 6 naves ≤ 4+2
+    await session.commit()
+    assert m.ships == 6
