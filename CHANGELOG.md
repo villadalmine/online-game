@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.51.0] - 2026-06-25
+
 ### 2026-06-25 — Login por email o usuario + vitrina de universos spin-off (SDD 26)
 - **Login por email O usuario**: `POST /auth/login` acepta el username **o** el email + contraseña.
   Resuelve quedarse afuera tras renombrar el nick (el login era solo por username). Placeholder y
