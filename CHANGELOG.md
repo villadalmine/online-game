@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.38.0] - 2026-06-25
+
 ### 2026-06-25 — Mercado negro: trueque material-por-material (SDD 42 Fase 3)
 - Nuevo `POST /api/v1/market/blackmarket`: **trueque** de un mineral por otro **sin pagar energía**.
   Pagás con un mineral y recibís otro valuados a los **precios dinámicos del hub** de tu galaxia,
