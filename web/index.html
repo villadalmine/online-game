@@ -184,8 +184,10 @@
       <div id="forcepicker" class="muted" style="margin:6px 0"></div>
       <div class="row">
         <button class="danger" onclick="attack()" data-i18n="attack">Lanzar flota</button>
+        <button class="sec" onclick="calcAttack()" data-i18n="calc" title="Estima cuánto necesitás según tu intel del objetivo">📊 Calcular</button>
         <span id="attackcost" class="muted"></span>
       </div>
+      <div id="attackplan" class="muted" style="margin:4px 0"></div>
       <p class="muted" data-i18n="attacktip">Tip: tocá una base enemiga en el mapa para elegir objetivo.</p>
     </div>
 
@@ -401,6 +403,7 @@ function renderAttackCost(){
 }
 // fill the picker from a combat plan option and jump to the attack panel
 function usePlan(baseId, unit, qty){
+  closePlanet();   // si vino del modal de planeta, cerralo para ver el panel de ataque
   $("tbase").value=baseId; const i=document.querySelector(`[data-force="${unit}"]`);
   if(i){ i.value=Math.min(qty, +i.max||qty); renderAttackCost();
     i.scrollIntoView({behavior:"smooth",block:"center"}); }
@@ -481,7 +484,7 @@ document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-pan
 const I18N={
   es:{ panels:{acciones:"Acciones",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",combate:"⚔ Reportes de combate",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
     ui:{build:"🏗 Construir",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking",
-      logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo.",targetbase:"objetivo base"},
+      logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo.",targetbase:"objetivo base",calc:"📊 Calcular"},
     ph:{advmsg:"¿qué construyo? me falta algo…",regemail:"email invitado (para registrarte)",user:"usuario (mín. 3)",pass:"contraseña (mín. 6)",otpemail:"tu@email.com",otpcode:"código de 6 dígitos",chatmsg:"mensaje…"},
     s:{nofeed:"sin notificaciones sin leer",authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
       otphelp:"Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta. Una vez dentro, quedás logueado en este dispositivo (no te pide código cada vez).",
@@ -491,14 +494,14 @@ const I18N={
       spyBtn:"🕵 espiar",nointel:"sin intel — espialo para ver qué tiene",spyPrompt:"¿Cuántos espías mandás a",spySent:"🕵 Espías despachados, llegan",
       iScore:"score",iAtk:"⚔ ataque",iDef:"🛡 defensa",iMin:"⛏ minerales",iTurrets:"🔫 torretas",iBuildings:"🏗 edificios",iUnits:"👥 unidades",
       iDepth:"profundidad",iConf:"confianza",iAsOf:"hace",iStale:"⚠ desactualizada — re-espiá",iShared:"🤝 aliado",
-      planBtn:"📊 planear",planLoading:"calculando…",planLoss:"pierde",planDef:"defensa est.",planMargin:"margen",planNeed:"poder de ataque",planUse:"usar",
+      planBtn:"📊 planear",planLoading:"calculando…",planLoss:"pierde",planDef:"defensa est.",planMargin:"margen",planNeed:"poder de ataque",planUse:"usar",planTarget:"objetivo",needtarget:"poné el id de la base objetivo (o tocá una en el mapa)",
       youhave:"tenés",noattackunits:"no tenés unidades de ataque — entrená soldados/tanques primero",lowenergy:"poca energía",unitssel:"unidades",pickunits:"elegí cuántas unidades mandás",fleetsent:"🚀 Flota despachada, llega",trainfirst:"entrená {u} primero",
       cNone:"nada",cYouAtk:"vos →",cAtkYou:"te atacó",cWon:"✓ ganaste",cLost:"✗ perdiste",cYouLost:"perdiste",cTheyLost:"perdió",cLoot:"botín",cLooted:"te saquearon",cNoReports:"todavía no hubo batallas",
       perunit:"de ataque c/u",atkperunit:"Ataque por unidad (sumás esto × cantidad al mandar la flota)",
       bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
   en:{ panels:{acciones:"Actions",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
     ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",
-      logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it.",targetbase:"target base"},
+      logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it.",targetbase:"target base",calc:"📊 Calculate"},
     ph:{advmsg:"what should I build? I'm missing something…",regemail:"invited email (to register)",user:"username (min. 3)",pass:"password (min. 6)",otpemail:"you@email.com",otpcode:"6-digit code",chatmsg:"message…"},
     s:{nofeed:"no unread notifications",authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
       otphelp:"We send a <b>code</b> to your email. First time, it creates your account. Once in, you stay logged in on this device (no code each time).",
@@ -508,7 +511,7 @@ const I18N={
       spyBtn:"🕵 spy",nointel:"no intel — spy them to see what they have",spyPrompt:"How many spies do you send to",spySent:"🕵 Spies dispatched, arriving",
       iScore:"score",iAtk:"⚔ attack",iDef:"🛡 defense",iMin:"⛏ minerals",iTurrets:"🔫 turrets",iBuildings:"🏗 buildings",iUnits:"👥 units",
       iDepth:"depth",iConf:"confidence",iAsOf:"as of",iStale:"⚠ stale — re-spy",iShared:"🤝 ally",
-      planBtn:"📊 plan",planLoading:"calculating…",planLoss:"loses",planDef:"est. defense",planMargin:"margin",planNeed:"attack power",planUse:"use",
+      planBtn:"📊 plan",planLoading:"calculating…",planLoss:"loses",planDef:"est. defense",planMargin:"margin",planNeed:"attack power",planUse:"use",planTarget:"target",needtarget:"enter the target base id (or click one on the map)",
       youhave:"you have",noattackunits:"no attack units — train soldiers/tanks first",lowenergy:"low energy",unitssel:"units",pickunits:"pick how many units to send",fleetsent:"🚀 Fleet dispatched, arrives",trainfirst:"train {u} first",
       cNone:"nothing",cYouAtk:"you →",cAtkYou:"attacked you",cWon:"✓ you won",cLost:"✗ you lost",cYouLost:"you lost",cTheyLost:"they lost",cLoot:"loot",cLooted:"looted from you",cNoReports:"no battles yet",
       perunit:"attack each",atkperunit:"Attack per unit (this × quantity is added when you send the fleet)",
@@ -799,17 +802,25 @@ function intelHtml(playerId){
     `${esc(tr('iConf'))} <b class="${confClass(r.confidence)}">${Math.round(r.confidence*100)}%</b> · `+
     `${esc(tr('iAsOf'))} ${ageStr(r.as_of)}${stale}</div>${rows.join("")}`;
 }
-async function planAttack(baseId){
-  const el=$("plan_"+baseId); if(!el) return; el.textContent=tr('planLoading');
-  try{ const p=await api("/api/v1/combat/plan","POST",{target_base_id:baseId,margin:2});
-    const opts=p.options.filter(o=>o.qty>0).slice(0,4).map(o=>
-      `<div class="ab"><span>${esc(o.unit)} ×${o.qty}</span>`+
-      `<span class="muted">${esc(tr('planLoss'))} ~${o.est_attacker_loss_pct}%${o.wins?'':' <span class="bad">✗</span>'}</span>`+
-      `<button class="sm sec" onclick="closePlanet();usePlan(${baseId},'${esc(o.unit)}',${o.qty})">${esc(tr('planUse'))}</button></div>`
-    ).join("")||`<span class="muted">—</span>`;
-    el.innerHTML=`<div class="muted" style="margin-top:4px">📊 ${esc(tr('planDef'))} ~${Math.round(p.estimated_defense)} · `+
-      `${esc(tr('planMargin'))} ${p.margin}× · ${esc(tr('planNeed'))} <b>${Math.round(p.attack_power_needed)}</b></div>${opts}`;
-  }catch(e){ el.innerHTML=`<span class="bad">${esc(e.message)}</span>`; }
+function renderPlan(p, el, baseId){
+  const opts=p.options.filter(o=>o.qty>0).slice(0,4).map(o=>
+    `<div class="ab"><span>${esc(o.unit)} ×${o.qty}</span>`+
+    `<span class="muted">${esc(tr('planLoss'))} ~${o.est_attacker_loss_pct}%${o.wins?'':' <span class="bad">✗</span>'}</span>`+
+    `<button class="sm sec" onclick="usePlan(${baseId},'${esc(o.unit)}',${o.qty})">${esc(tr('planUse'))}</button></div>`
+  ).join("")||`<span class="muted">—</span>`;
+  el.innerHTML=`<div class="muted" style="margin-top:4px">📊 ${esc(tr('planTarget'))} <b>#${baseId}</b> · ${esc(tr('planDef'))} ~${Math.round(p.estimated_defense)} · `+
+    `${esc(tr('planMargin'))} ${p.margin}× · ${esc(tr('planNeed'))} <b>${Math.round(p.attack_power_needed)}</b></div>${opts}`;
+}
+async function planFor(baseId, el){
+  if(!el) return; el.textContent=tr('planLoading');
+  try{ renderPlan(await api("/api/v1/combat/plan","POST",{target_base_id:baseId,margin:2}), el, baseId); }
+  catch(e){ el.innerHTML=`<span class="bad">${esc(e.message)}</span>`; }
+}
+function planAttack(baseId){ return planFor(baseId, $("plan_"+baseId)); }   // desde el modal de planeta
+function calcAttack(){                                                       // desde el panel ⚔ Atacar
+  const baseId=+$("tbase").value;
+  if(!baseId){ $("attackplan").innerHTML=`<span class="bad">${esc(tr('needtarget'))}</span>`; return; }
+  return planFor(baseId, $("attackplan"));
 }
 async function spy(targetBaseId, username){
   const def=localStorage.getItem("lastspies")||"5";

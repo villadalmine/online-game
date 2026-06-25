@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — Calculadora de ataque visible en el panel ⚔ Atacar
+- Botón **📊 Calcular** en el panel de ataque: estima, para el objetivo cargado (id o tocando una
+  base en el mapa), cuánto necesitás según **tu intel** — defensa estimada, poder requerido (margen
+  2×) y por unidad cuántas llevar + pérdidas, con botón **usar** que llena el selector de unidades.
+  Antes la calculadora (`/combat/plan`) solo estaba como "📊 planear" dentro del modal de planeta y
+  únicamente para enemigos ya espiados → poco visible. Sin intel del objetivo, avisa "espialo primero".
+  Bilingüe ES/EN.
+
 ## [1.20.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 38: journal de eventos (medir todo + reproducir la partida)
