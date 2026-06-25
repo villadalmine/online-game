@@ -112,4 +112,6 @@ async def start_expedition(session: AsyncSession, player: Player, moon_key: str)
     )
     session.add(order)
     await session.flush()
+    from app.services.journal import record
+    await record(session, "expedition_launched", player.id, moon=moon_key)
     return order

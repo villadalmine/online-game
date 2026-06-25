@@ -77,4 +77,7 @@ async def start_build(
     )
     session.add(building)
     await session.flush()
+    from app.services.journal import record
+    await record(session, "build_queued", player.id,
+                 building=building_key, mineral=target_mineral, base_id=base.id)
     return building

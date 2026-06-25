@@ -15,6 +15,7 @@ assistant always has a correct fallback. See docs/sdd-dependency-graph.md.
 from dataclasses import dataclass, field
 
 from app.content.registry import GameContent, get_content
+from app.core.config import get_settings
 from app.schemas import Blocker, BlockerReport, Cost, Source
 
 # The mineral that powers nothing else: energy is a pseudo-resource node in the graph.
@@ -344,6 +345,8 @@ def graph_documents(race_key: str, planet_key: str) -> list[dict]:
                          "entrenar"],
         })
 
+    docs.extend(mechanics_documents())
+
     for key, t in content.technologies.items():
         docs.append({
             "id": key, "type": "tech",
@@ -356,6 +359,82 @@ def graph_documents(race_key: str, planet_key: str) -> list[dict]:
         })
 
     return docs
+
+
+def mechanics_documents() -> list[dict]:
+    """Reglas/mecánicas del juego como docs recuperables (no solo objetos): así el asistente
+    entiende CÓMO funciona el juego (combate, flotas, expediciones, espionaje, energía), con
+    números reales de la config/contenido. Antes el corpus era solo objetos → la IA no podía
+    responder 'cómo funciona X'."""
+    s = get_settings()
+    c = get_content()
+    turret = c.buildings.get("turret", {}).get("defense_power", 40)
+    same, cross = s.travel_seconds_same_planet, s.travel_seconds_cross_planet
+    return [
+        {
+            "id": "mech_combat", "type": "mechanic",
+            "text": (
+                "COMBATE: atacás una base enemiga mandando una flota de unidades "
+                "{unidad: cantidad}. NO hay límite de capacidad ni transporte: mandás las "
+                "unidades que quieras directamente (los transbordadores NO transportan tropas; "
+                "son para expediciones). Resultado: attack_score = suma de ataque de tus unidades "
+                "× tus multiplicadores; defense_score = (defensa de las unidades del defensor + "
+                f"torretas×{turret} fijas) × sus multiplicadores. Gana quien tiene más score; las "
+                "pérdidas de cada lado son proporcionales a la cuota del rival. Ganar saquea "
+                f"~{int(s.loot_fraction*100)}% de los minerales. La flota viaja {same}s mismo "
+                f"planeta / {cross}s entre planetas, resuelve al llegar y vuelve. Cuesta "
+                f"⚡{int(s.attack_energy_cost)} de energía."
+            ),
+            "keywords": ["combate", "combat", "atacar", "ataque", "attack", "flota", "fleet",
+                         "unidades", "militar", "soldado", "tank", "capacidad", "transporte",
+                         "transbordador", "shuttle", "cuantos", "cuántos", "entran", "caben",
+                         "llevar", "mandar", "viaje", "torreta", "defensa", "saqueo", "botin"],
+        },
+        {
+            "id": "mech_expedition", "type": "mechanic",
+            "text": (
+                "EXPEDICIONES: mandás un transbordador (shuttle) a una luna; vuelve con recursos "
+                "premium y un boon temporal (multiplicador). Requiere tener al menos 1 "
+                "transbordador. El transbordador es para esto, NO para llevar tropas a un ataque."
+            ),
+            "keywords": ["expedicion", "expedición", "expedition", "luna", "moon", "transbordador",
+                         "shuttle", "boon", "dios", "premium"],
+        },
+        {
+            "id": "mech_espionage", "type": "mechanic",
+            "text": (
+                "ESPIONAJE: mandás espías a un objetivo para conseguir inteligencia "
+                "(profundidad = espías / (espías + contraespionaje del rival)). Más profundidad = "
+                "datos más exactos; poca = solo rangos. El rival con contraespías o el edificio "
+                "counter_intel te detecta y te baja espías. La intel se guarda por objetivo y se "
+                "desactualiza con el tiempo (hay que re-espiar). "
+                f"Cuesta ⚡{int(s.spy_energy_cost)}."
+            ),
+            "keywords": ["espia", "espía", "espias", "espionaje", "spy", "intel", "inteligencia",
+                         "contraespionaje", "counter", "detectar", "ofuscar"],
+        },
+        {
+            "id": "mech_energy", "type": "mechanic",
+            "text": (
+                f"ENERGÍA: se regenera ~{int(s.energy_regen_per_hour)}/hora hasta un tope de "
+                f"{int(s.energy_max)} (ajustado por física del planeta). Cada acción cuesta "
+                "energía (construir, entrenar, atacar, investigar, expedición, espiar). Se calcula "
+                "sola por timestamp; no hay que reclamarla."
+            ),
+            "keywords": ["energia", "energía", "energy", "regenera", "tope", "costo", "acciones"],
+        },
+        {
+            "id": "mech_research", "type": "mechanic",
+            "text": (
+                "INVESTIGACIÓN: requiere un laboratorio activo. Cada tecnología da un "
+                "multiplicador "
+                "permanente (producción, ataque, defensa, espionaje o contraespionaje) que apila "
+                "con boons y beneficios de alianza."
+            ),
+            "keywords": ["investigar", "investigacion", "research", "tecnologia", "tech",
+                         "laboratorio", "multiplicador", "permanente"],
+        },
+    ]
 
 
 def _tokens(text: str) -> list[str]:

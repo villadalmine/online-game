@@ -386,6 +386,28 @@ async def test_shared_vision_shares_intel_e2e(client):
     assert shared and shared[0]["shared"] is True and shared[0]["via"] == "vis_a"
 
 
+async def test_journal_records_and_exports_e2e(client):
+    # SDD 38: las acciones quedan en el journal; /journal (propio) + /journal/export (YAML).
+    import yaml
+
+    h = await _register(client.http, "journalist")
+    await _onboard(client.http, h)
+    await client.http.post(
+        "/api/v1/bases/1/build", headers=h, json={"building_key": "power_plant"}
+    )
+
+    j = await client.http.get("/api/v1/journal", headers=h)
+    assert j.status_code == 200, j.text
+    types = [e["type"] for e in j.json()]
+    assert "onboard" in types  # el onboarding quedó registrado
+    assert all(e["seq"] for e in j.json())  # orden total
+
+    exp = await client.http.get("/api/v1/journal/export?format=yaml", headers=h)
+    assert exp.status_code == 200
+    doc = yaml.safe_load(exp.text)
+    assert "events" in doc and isinstance(doc["events"], list) and doc["events"]
+
+
 async def test_combat_simulate_and_plan_e2e(client):
     # SDD 34: /combat/simulate (determinista) y /combat/plan (estima defensa desde tu intel).
     from datetime import UTC, datetime, timedelta

@@ -146,4 +146,7 @@ async def start_training(
     )
     session.add(order)
     await session.flush()
+    from app.services.journal import record
+    await record(session, "train_queued", player.id,
+                 unit=unit_key, quantity=quantity, base_id=base.id)
     return order

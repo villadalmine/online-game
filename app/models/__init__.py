@@ -408,6 +408,23 @@ class Notification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class GameEvent(Base):
+    """Append-only journal of everything players do (SDD 38): `id` = orden total (seq).
+    Fuente de verdad para medir todo, exportar la partida a YAML y reproducirla."""
+
+    __tablename__ = "game_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)  # autoincrement = seq global
+    player_id: Mapped[int | None] = mapped_column(
+        ForeignKey("players.id", ondelete="SET NULL"), index=True, nullable=True
+    )
+    type: Mapped[str] = mapped_column(String(40), index=True)
+    payload: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, index=True
+    )
+
+
 class CombatLog(Base):
     """Persisted battle report (history). `details` holds a JSON blob."""
 

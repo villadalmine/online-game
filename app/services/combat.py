@@ -209,6 +209,9 @@ async def start_attack(
     await _npc_taunt(session, attacker, defender, "attack")
     from app.services.stats import bump as _bump
     await _bump(session, attacker.id, attacks_launched=1)
+    from app.services.journal import record
+    await record(session, "attack_launched", attacker.id,
+                 defender_id=defender.id, target_base_id=target_base_id, force=force)
     return mission
 
 
@@ -313,6 +316,12 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
     await _npc_taunt(
         session, attacker, defender, "win" if result.outcome == "attacker" else "lose"
     )
+
+    from app.services.journal import record
+    await record(session, "battle_resolved", attacker.id,
+                 defender_id=defender.id, target_base_id=mission.target_base_id,
+                 outcome=result.outcome, attacker_losses=result.attacker_losses,
+                 defender_losses=result.defender_losses, loot=loot)
 
     mission.details = json.dumps({"outcome": result.outcome, "survivors": survivors, "loot": loot})
     if survivors or loot:

@@ -158,6 +158,11 @@ LOGINS = Counter("game_logins_total", "Logins exitosos", ("method",))
 # battles_won/lost, resources_mined/looted/lost. Cardinalidad baja (nunca ids de jugador).
 GAME_EVENTS = Counter("game_events_total", "Eventos del juego por tipo", ("kind",))
 
+# Journal de acciones (SDD 38): un counter por TIPO de evento del log append-only. Como toda
+# acción que cambia estado llama journal.record(), Grafana ve TODO (incl. espionaje y calculadora)
+# sin instrumentar cada servicio a mano. Cardinalidad baja (set acotado de tipos, sin ids).
+JOURNAL_EVENTS = Counter("game_journal_events_total", "Acciones registradas por tipo", ("kind",))
+
 # Tick del mundo
 TICK_DURATION = Histogram("game_tick_duration_seconds", "Duración de run_tick")
 TICK_LAST_RUN = Gauge("game_tick_last_run_timestamp", "Unix ts del último tick OK")

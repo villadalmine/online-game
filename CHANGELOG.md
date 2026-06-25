@@ -7,6 +7,32 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-06-24
+
+### 2026-06-24 — SDD 38: journal de eventos (medir todo + reproducir la partida)
+- Modelo **`GameEvent`** append-only (orden total por `id`) + servicio `journal.record()` que en
+  **un solo punto registra y mide**: agrega el evento y bumpea `game_journal_events_total{kind}`
+  (Prometheus). Enganchado en onboarding, build, train, research, expedición, ataque (launch +
+  battle_resolved), espionaje (spy_launched + intel_gathered). → **espionaje y combate ahora SÍ se
+  miden en Grafana** (antes el gap), y queda el log para reproducir.
+- API: `GET /journal` (tus acciones, en orden) y `GET /journal/export?format=yaml` (admin: toda la
+  partida como YAML ordenado → "guardo todo" / replay). Doc `docs/sdd-event-journal-replay.md`.
+
+### 2026-06-24 — Asistente IA: ahora entiende las MECÁNICAS del juego
+- El corpus del asistente (grafo SDD 1) sumó **docs de reglas** (`mechanics_documents`): combate
+  (sin capacidad de transporte: en un ataque mandás cualquier cantidad; el transbordador es para
+  expediciones), flotas/viaje, expediciones, espionaje, energía, investigación — con números reales
+  de la config. El asistente **detecta preguntas de mecánica** (cómo/cuántos/capacidad/funciona…) y
+  responde la regla en vez de desviar a "qué construir". Antes, preguntar "cuántos militares entran
+  en un transbordador" devolvía consejos de construcción.
+
+### 2026-06-24 — SSE con heartbeat + UI de unidades más clara
+- El stream de notificaciones (SSE) ahora manda un `: ping` cada ~15s sin tráfico → mantiene viva la
+  conexión a través de proxies (p.ej. HAProxy corta a `timeout server` si no fluyen bytes; SSE no es
+  upgrade, `timeout tunnel` no aplica). Evita la reconexión cada ~50s.
+- El selector de ataque aclara el stat: "⚔ 8 de ataque c/u · tenés 1" (con tooltip) en vez del
+  confuso "⚔8 · tenés 1".
+
 ## [1.19.0] - 2026-06-24
 
 ### 2026-06-24 — Panel de reportes de combate (qué pasó en cada batalla)

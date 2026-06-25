@@ -66,4 +66,7 @@ async def onboard_player(
         from app.services.catchup import apply_catchup
         await apply_catchup(session, player)
 
+    from app.services.journal import record
+    await record(session, "onboard", player.id,
+                 galaxy=galaxy_key, planet=planet_key, race=race_key)
     return base

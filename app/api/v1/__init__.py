@@ -11,6 +11,7 @@ from app.api.v1 import (
     expeditions,
     galaxies,
     intel,
+    journal,
     notifications,
     players,
     public,
@@ -35,4 +36,5 @@ api_router.include_router(seasons.router, prefix="/seasons", tags=["seasons"])
 api_router.include_router(galaxies.router, prefix="/galaxies", tags=["galaxies"])
 api_router.include_router(public.router, prefix="/public", tags=["public"])
 api_router.include_router(intel.router, tags=["intel"])
+api_router.include_router(journal.router, tags=["journal"])
 api_router.include_router(advisor.router, prefix="/players/me/advisor", tags=["advisor"])

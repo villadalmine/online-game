@@ -139,6 +139,14 @@ class IncomingAttackOut(BaseModel):
     arrives_at: datetime
 
 
+class JournalEventOut(BaseModel):
+    seq: int
+    at: datetime
+    player_id: int | None
+    type: str
+    payload: dict
+
+
 class CombatSimRequest(BaseModel):
     attacker_force: dict[str, int]
     defender_force: dict[str, int] = {}

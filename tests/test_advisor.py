@@ -126,3 +126,32 @@ async def test_hack_daily_budget_exhausts_and_resets(session):
     p.assistant_hacks_reset_at = datetime.now(UTC) - timedelta(days=1)
     await session.commit()
     assert adv.hacks_left(p) == 3
+
+
+async def test_ask_mechanics_question_grounds_on_rules(session, monkeypatch):
+    # SDD 38/2: una pregunta de MECÁNICA debe responderse con las reglas (grounded), no desviar
+    # a "qué construir". La mecánica de combate (sin capacidad de transporte) llega al contexto.
+    p = await _player(session)
+    captured = {}
+
+    async def fake_chat(messages, **kw):
+        captured["ctx"] = messages[-1]["content"]
+        return "En un ataque mandás las unidades que quieras; el shuttle es para expediciones."
+
+    monkeypatch.setattr(adv, "llm_chat", fake_chat)
+    reply = await adv.ask(session, p, "cuántos militares entran en un transbordador espacial?")
+    assert "mech_combat" in captured["ctx"]      # la regla de combate fue al grounding
+    assert not reply.blockers                     # no se desvía a "qué te falta construir"
+
+
+async def test_ask_mechanics_fallback_returns_rule(session, monkeypatch):
+    # sin LLM, el fallback determinista responde con la regla recuperada (no "vas bien").
+    p = await _player(session)
+
+    async def boom(*a, **k):
+        raise RuntimeError("no llm")
+
+    monkeypatch.setattr(adv, "llm_chat", boom)
+    reply = await adv.ask(session, p, "cómo funciona el combate y la capacidad de las flotas?")
+    low = reply.reply.lower()
+    assert "combate" in low and ("capacidad" in low or "transbordador" in low)

@@ -125,4 +125,6 @@ async def start_research(session: AsyncSession, player, tech_key: str) -> Resear
     )
     session.add(order)
     await session.flush()
+    from app.services.journal import record
+    await record(session, "research_started", player.id, tech=tech_key)
     return order

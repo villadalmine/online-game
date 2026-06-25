@@ -91,8 +91,15 @@ async def stream_events(
     once: bool = False,
 ) -> AsyncIterator[str]:
     """Yield SSE chunks for a player's notifications: catch-up, then live as they appear.
-    `once=True` does a single poll (for tests); the endpoint loops until disconnect."""
+    `once=True` does a single poll (for tests); the endpoint loops until disconnect.
+
+    Hace heartbeat (comment `: ping`) cada ~HEARTBEAT s sin tráfico para mantener viva la conexión
+    a través de proxies (p.ej. HAProxy corta a `timeout server` si no fluyen bytes; SSE no es un
+    upgrade, así que `timeout tunnel` no aplica). EventSource ignora las líneas `:`."""
+    import time
+    HEARTBEAT = 15.0
     seen = 0
+    last_beat = time.monotonic()
     while True:
         async with maker() as session:
             rows = list(
@@ -107,10 +114,15 @@ async def stream_events(
         for n in rows:
             seen = n.id
             yield _sse(n)
+        if rows:
+            last_beat = time.monotonic()
         if once:
             return
         if is_disconnected is not None and await is_disconnected():
             return
+        if time.monotonic() - last_beat >= HEARTBEAT:
+            yield ": ping\n\n"
+            last_beat = time.monotonic()
         await asyncio.sleep(interval)
 
 

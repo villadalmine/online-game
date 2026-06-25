@@ -156,6 +156,9 @@ async def start_spy(
     )
     session.add(mission)
     await session.flush()
+    from app.services.journal import record
+    await record(session, "spy_launched", observer.id,
+                 target_id=target.id, target_base_id=target_base_id, spies=spies["spy"])
     return mission
 
 
@@ -207,6 +210,10 @@ async def process_spy_missions(
                     f"⚠ Detectaste espionaje de {observer.username} (cayeron {lost}).",
                     {"from": observer.username, "lost": lost},
                 )
+            from app.services.journal import record
+            await record(session, "intel_gathered", observer.id,
+                         target_id=target.id, depth=round(r.depth, 3),
+                         detected=r.detect_prob >= 0.5, spies_lost=lost)
             m.details = json.dumps({"depth": round(r.depth, 3), "detected": r.detect_prob >= 0.5,
                                     "lost": lost})
             m.force = json.dumps({"spy": survivors} if survivors else {})

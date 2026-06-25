@@ -26,6 +26,14 @@ from app.services.state import advance
 
 HISTORY_LEN = 10
 
+# Palabras que marcan una pregunta de MECÁNICA (cómo/cuánto/capacidad/funciona…), para
+# responder la regla aunque el mensaje nombre una unidad/edificio (SDD 38).
+_MECH_WORDS = {
+    "como", "cómo", "cuanto", "cuánto", "cuantos", "cuántos", "cuanta", "cuánta", "cuantas",
+    "cuántas", "capacidad", "funciona", "funcionan", "sirve", "sirven", "caben", "cabe",
+    "entran", "entra", "llevar", "llevo", "transporta", "transporte", "regla", "reglas",
+}
+
 
 class AdvisorError(Exception):
     def __init__(self, message: str, status: int = 400) -> None:
@@ -180,9 +188,12 @@ async def _save(session: AsyncSession, player: Player, role: str, body: str) -> 
 # --------------------------------------------------------------------------- #
 # Ask
 # --------------------------------------------------------------------------- #
-def _fallback_reply(reports: list[BlockerReport]) -> str:
+def _fallback_reply(reports: list[BlockerReport], hits: list[dict] | None = None) -> str:
     blocked = [r for r in reports if not r.buildable]
     if not blocked:
+        # pregunta de mecánica / sin trabas: respondé con la regla recuperada (grounded)
+        if hits:
+            return "Según las reglas del juego:\n" + "\n".join(f"• {h['text']}" for h in hits[:2])
         return "Vas bien: con lo que tenés podés construir lo que mirabas. ¡Seguí expandiendo!"
     lines = []
     for r in blocked[:3]:
@@ -205,11 +216,23 @@ async def ask(session: AsyncSession, player: Player, message: str) -> AdvisorRep
     await advance(session, player)
     snap = await build_snapshot(session, player)
 
-    # focus on what the player asked about (RAG), else on the next buildable things
+    # RAG: recupera objetos Y mecánicas relevantes a la pregunta.
     hits = depgraph.retrieve(player.race_key, player.planet_key, message, k=6)
-    targets = [d["id"] for d in hits if d["id"] in set(_all_targets())]
-    if not targets:
-        targets = [t for t in _all_targets() if t not in snap.active_buildings][:6]
+    matched = [d["id"] for d in hits if d["id"] in set(_all_targets())]
+    # ¿es una pregunta de MECÁNICA? El mejor match es una regla, o hay una regla entre los top
+    # hits y la pregunta es del tipo "cómo/cuántos/capacidad/funciona" (aunque nombre una unidad,
+    # p.ej. "cuántos militares entran en un transbordador" → responder la regla, no construir).
+    qtokens = set(depgraph._tokens(message))
+    mech_top = any(d.get("type") == "mechanic" for d in hits[:3])
+    mechanics_q = bool(hits) and (
+        hits[0].get("type") == "mechanic" or (mech_top and bool(qtokens & _MECH_WORDS))
+    )
+    if mechanics_q:
+        targets = []                                  # "cómo funciona X" → responde desde knowledge
+    elif matched:
+        targets = matched                             # preguntó por objetos puntuales
+    else:
+        targets = [t for t in _all_targets() if t not in snap.active_buildings][:6]  # "¿qué hago?"
     reports = [depgraph.analyze(snap, t) for t in targets]
 
     from app.services.espionage import player_intel  # local: evita ciclo de imports
@@ -269,10 +292,15 @@ async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=
         }
         system = (
             "Sos el asistente personal de un jugador en un juego de estrategia espacial por "
-            "turnos. Tu conocimiento del juego es SOLO el grafo que te paso en 'knowledge' y los "
-            "'blockers' (qué le falta y cuánto). Respondé en español, breve y concreto: explicá "
-            "qué le falta y cómo conseguirlo (mina local, expedición, saqueo, comercio). No "
-            "inventes recursos ni reglas que no estén en el contexto. "
+            "turnos. Tu conocimiento del juego es SOLO lo que te paso en 'knowledge' (objetos del "
+            "juego — minerales, edificios, unidades, tecnologías — y MECÁNICAS/REGLAS: combate, "
+            "flotas, expediciones, espionaje, energía) y 'blockers' (qué le falta para construir "
+            "algo puntual). RESPONDÉ LA PREGUNTA que hace el jugador: si pregunta cómo funciona "
+            "algo (p.ej. cuántas unidades entran en una flota, cómo se ataca, cómo espiar), "
+            "explicá la regla usando 'knowledge' — NO la desvíes a qué construir. Usá 'blockers' "
+            "SOLO si la pregunta es sobre construir/qué le falta. Respondé en español, breve y "
+            "concreto. No inventes objetos ni reglas que no estén en 'knowledge' (si no está, "
+            "decí que no estás seguro). "
             "'intel' es lo que tus espías saben de rivales (depth=profundidad, "
             "confidence=confianza, age_hours=antigüedad): para aconsejar ataques usá SOLO esos "
             "datos; NO inventes "
@@ -284,9 +312,9 @@ async def _llm_or_fallback(session, player, message, snap, hits, reports, intel=
             msgs.append({"role": m.role, "content": m.body})
         msgs.append({"role": "user", "content": f"{message}\n\nCONTEXTO:\n{json.dumps(context)}"})
         reply = await llm_chat(msgs, max_tokens=400, user=f"player:{player.username}")  # SDD 28
-        return reply.strip() or _fallback_reply(reports)
+        return reply.strip() or _fallback_reply(reports, hits)
     except Exception:
-        return _fallback_reply(reports)
+        return _fallback_reply(reports, hits)
 
 
 # --------------------------------------------------------------------------- #
