@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.47.0] - 2026-06-25
+
 ### 2026-06-25 — Asistente: selector de modelo (GPU / nube / tu modelo BYOK) (SDD 9)
 - En el panel del asistente, un **selector** con 3 modos (tooltip al pasar el mouse):
   - **🖥️ GPU local** (default): gratis, sin tope diario, rápido (modelo local).
