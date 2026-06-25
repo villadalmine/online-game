@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Mercado equilibrado: límites anti-abuso (ventana de 2h)
+- En el mercado del **mundo natal**: por **ventana móvil de 2h** (rolling = se resetea sola), no
+  podés **vender más del 30%** ni **comprar más del 20%** (+ piso) de tus tenencias de cada mineral
+  → sin dumping ni reventa, parejo. Las **colonias** quedan exentas del % (se rigen por transporte).
+- **Transporte**: máximo **4 naves de carga despachadas por ventana de 2h** (las demás "esperan en el
+  hangar"). Todo config-driven (porcentajes/ventana/piso). Se calcula desde el journal (SDD 38).
+  Tests + 289 verdes.
+
 ## [1.36.0] - 2026-06-25
 
 ### 2026-06-25 — SDD 42 Fase 3: hub galáctico con precios dinámicos + inter-galaxia

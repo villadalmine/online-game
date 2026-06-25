@@ -140,3 +140,40 @@ async def test_hub_needs_cargo_ship_and_inter_galaxy(session):
 
     allg = await hub_prices_all(session)   # consulta inter-galaxia
     assert "milky_way" in allg and "iron" in allg["milky_way"]
+
+
+async def test_market_rate_limits_home_only(session):
+    # SDD 42: en el natal, vender ≤30% y comprar ≤20%+piso de tenencias por ventana; colonia exenta.
+    from app.services.market import MarketError, _check_rate_limit
+    p = await _player(session, "rl")   # terran/earth (natal = earth)
+
+    await _check_rate_limit(session, p, "earth", "iron", 300, "sell", 1000.0)   # 30% ok
+    try:
+        await _check_rate_limit(session, p, "earth", "iron", 301, "sell", 1000.0)
+        raise AssertionError("debía limitar la venta a 30%")
+    except MarketError:
+        pass
+
+    await _check_rate_limit(session, p, "earth", "iron", 300, "buy", 1000.0)    # 20%+100 ok
+    try:
+        await _check_rate_limit(session, p, "earth", "iron", 301, "buy", 1000.0)
+        raise AssertionError("debía limitar la compra a 20%+piso")
+    except MarketError:
+        pass
+
+    # en una colonia (no es el natal) la regla del % no aplica
+    await _check_rate_limit(session, p, "mars", "iron", 99999, "sell", 10.0)
+
+
+async def test_transport_limits_ships_per_window(session):
+    from app.models import UnitStock
+    from app.services.market import MarketError, start_transport
+    p = await _player(session, "tlim")
+    (await get_or_create_stock(session, p.id, "iron", "earth")).amount = 3000.0
+    session.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=10))
+    await session.commit()
+    try:
+        await start_transport(session, p, "earth", "mars", {"iron": 2500})   # 5 naves > 4/ventana
+        raise AssertionError("debía limitar a 4 naves por ventana")
+    except MarketError as e:
+        assert "naves" in str(e).lower() or "hangar" in str(e).lower()

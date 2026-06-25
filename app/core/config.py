@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     market_mineral_base_energy: float = 2.0   # energía por unidad de mineral (precio intrínseco)
     market_scarcity_floor: float = 0.2        # piso de abundancia → tope de carestía (premium ~5×)
     market_sell_spread: float = 0.7           # vendés al 70% del precio de compra (spread)
+    # Anti-abuso del mercado local del mundo natal (SDD 42): ventana móvil que "se resetea".
+    market_window_seconds: int = 7200         # 2h
+    market_sell_pct: float = 0.30             # vendés ≤ 30% de tus tenencias por ventana
+    market_buy_pct: float = 0.20              # comprás ≤ 20% (anti-reventa)
+    market_buy_floor: float = 100.0           # piso de compra para no bloquear a los que empiezan
+    market_transport_ships_per_window: int = 4  # ≤ 4 naves de carga despachadas por ventana
     # Hub galáctico (SDD 42 Fase 3): precio dinámico por oferta/demanda.
     market_hub_impact: float = 0.0008         # cuánto mueve el precio cada unidad comprada/vendida
     market_hub_reversion: float = 0.1         # reversión al valor intrínseco por tick

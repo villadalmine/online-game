@@ -44,6 +44,60 @@ def prices(planet_key: str) -> dict[str, dict]:
     return out
 
 
+async def _window_traded(
+    session: AsyncSession, player_id: int, planet_key: str, mineral_key: str, since
+) -> tuple[float, float]:
+    """(comprado, vendido) de un mineral en un planeta dentro de la ventana (desde el journal)."""
+    import json
+
+    from app.models import GameEvent
+    rows = (await session.execute(
+        select(GameEvent).where(
+            GameEvent.player_id == player_id,
+            GameEvent.type.in_(("market_buy", "market_sell")),
+            GameEvent.created_at >= since,
+        )
+    )).scalars()
+    bought = sold = 0.0
+    for e in rows:
+        p = json.loads(e.payload or "{}")
+        if p.get("planet") == planet_key and p.get("mineral") == mineral_key:
+            if e.type == "market_buy":
+                bought += p.get("qty", 0)
+            else:
+                sold += p.get("qty", 0)
+    return bought, sold
+
+
+async def _check_rate_limit(
+    session: AsyncSession, player: Player, planet_key: str, mineral_key: str,
+    qty: int, side: str, stock_now: float,
+) -> None:
+    """Anti-abuso (SDD 42): en el mercado del MUNDO NATAL, por ventana de 2h, no vendas más del
+    30% ni compres más del 20% de tus tenencias (parejo, sin dumping/reventa). Rolling = resetea."""
+    if planet_key != player.planet_key:
+        return  # la regla del % es solo del mundo natal; las colonias se rigen por transporte
+    from datetime import timedelta
+    s = get_settings()
+    since = datetime.now(UTC) - timedelta(seconds=s.market_window_seconds)
+    bought, sold = await _window_traded(session, player.id, planet_key, mineral_key, since)
+    base = max(0.0, stock_now + sold - bought)   # tenencias al inicio de la ventana
+    if side == "sell":
+        cap = s.market_sell_pct * base
+        if sold + qty > cap:
+            raise MarketError(
+                f"Límite 2h: vendés hasta {int(s.market_sell_pct * 100)}% de tus tenencias de "
+                f"{mineral_key} (te quedan {max(0, int(cap - sold))})."
+            )
+    else:
+        cap = s.market_buy_pct * base + s.market_buy_floor
+        if bought + qty > cap:
+            raise MarketError(
+                f"Límite 2h: comprás hasta {int(s.market_buy_pct * 100)}% de tus tenencias "
+                f"(anti-reventa); te quedan {max(0, int(cap - bought))} de {mineral_key}."
+            )
+
+
 async def _has_market(session: AsyncSession, player: Player, planet_key: str) -> bool:
     """¿El jugador tiene un `market` activo en una base en ese planeta?"""
     res = await session.execute(
@@ -67,6 +121,8 @@ async def buy(
         raise MarketError(f"Mineral desconocido: {mineral_key}")
     if not await _has_market(session, player, planet_key):
         raise MarketError(f"Necesitás un mercado activo en {planet_key}.")
+    held = (await get_or_create_stock(session, player.id, mineral_key, planet_key)).amount
+    await _check_rate_limit(session, player, planet_key, mineral_key, qty, "buy", held)
 
     cost = mineral_price(planet_key, mineral_key) * qty
     if not spend_energy(player, cost, now, effective_energy_regen(player, s), s.energy_max):
@@ -92,6 +148,7 @@ async def sell(
     stock = await get_or_create_stock(session, player.id, mineral_key, planet_key)
     if stock.amount < qty:
         raise MarketError(f"No tenés {qty} de {mineral_key} (tenés {stock.amount:g}).")
+    await _check_rate_limit(session, player, planet_key, mineral_key, qty, "sell", stock.amount)
 
     gain = mineral_price(planet_key, mineral_key) * s.market_sell_spread * qty
     stock.amount -= qty
@@ -153,6 +210,25 @@ async def start_transport(
     have_ships = (await player_units(session, player.id)).get("cargo_ship", 0)
     if have_ships < ships_needed:
         raise MarketError(f"Necesitás {ships_needed} nave(s) de carga (tenés {have_ships}).")
+
+    # Anti-abuso (SDD 42): ≤ N naves de carga despachadas por ventana de 2h (rolling = resetea).
+    from datetime import timedelta as _td
+
+    from app.models import GameEvent
+    s = get_settings()
+    since = now - _td(seconds=s.market_window_seconds)
+    sent = sum(
+        json.loads(e.payload or "{}").get("ships", 0)
+        for e in (await session.execute(select(GameEvent).where(
+            GameEvent.player_id == player.id, GameEvent.type == "transport_launched",
+            GameEvent.created_at >= since,
+        ))).scalars()
+    )
+    if sent + ships_needed > s.market_transport_ships_per_window:
+        raise MarketError(
+            f"Límite 2h: hasta {s.market_transport_ships_per_window} naves de carga; "
+            f"despachaste {int(sent)}. Las demás esperan en el hangar."
+        )
 
     for m, q in cargo.items():   # la carga sale del origen ya
         (await get_or_create_stock(session, player.id, m, from_planet)).amount -= q
