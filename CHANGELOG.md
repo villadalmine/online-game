@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.37.0] - 2026-06-25
+
 ### 2026-06-25 — Mercado equilibrado: límites anti-abuso (ventana de 2h)
 - En el mercado del **mundo natal**: por **ventana móvil de 2h** (rolling = se resetea sola), no
   podés **vender más del 30%** ni **comprar más del 20%** (+ piso) de tus tenencias de cada mineral
