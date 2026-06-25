@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 42 diseñado: mercado, comercio y economía por-planeta
+- Doc `docs/sdd-market-trade.md`: mercado local por planeta (precios derivados del costo de
+  producción × escasez/abundancia, no hardcodeados) + mercado **intergaláctico** por galaxia (hub en
+  ubicación real, p.ej. cinturón de asteroides; precios por **oferta/demanda**) + **black market**
+  (pagás con materiales pero viajás con nave). Pagás en **energía**; siempre necesitás nave para traer
+  lo comprado. Deja lista la estructura de **inventario por-planeta** + transporte y el **policy de
+  comercio por alianza** (v1 no chequea). **Fasado** porque el inventario por-planeta es una refactor
+  grande del corazón económico. Solo especificación.
+
 ## [1.32.0] - 2026-06-25
 
 ### 2026-06-25 — NPCs juegan el meta + energía de nivelado matemática + el asistente la conoce
