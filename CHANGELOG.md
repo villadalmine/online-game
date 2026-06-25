@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.41.0] - 2026-06-25
+
 ### 2026-06-25 — Mercado negro: la UI ahora te dice por qué no podés trocar
 - El panel 🕶 Mercado negro muestra **antes de tocar el botón**: tus **naves de carga** (y avisa si te
   falta una, que se entrena en la Fábrica), tu **stock en el planeta natal** del mineral que pagás, y
