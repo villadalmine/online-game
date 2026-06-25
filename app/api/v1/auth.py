@@ -45,12 +45,17 @@ async def register(body: RegisterRequest, session: AsyncSession = Depends(get_se
         taken = await session.execute(select(Player.id).where(Player.email == email))
         if taken.first() is not None:
             raise HTTPException(status.HTTP_409_CONFLICT, "Ese email ya tiene cuenta.")
-    admin_email = get_settings().admin_email.strip().lower()
+    s = get_settings()
+    admin_email = s.admin_email.strip().lower()
+    is_admin = bool(admin_email) and email == admin_email
+    # SDD 14: altas nuevas 'pending' si la aprobación está activa (admin siempre 'active').
+    acct_status = "pending" if (s.signup_requires_approval and not is_admin) else "active"
     player = Player(
         username=body.username,
         password_hash=hash_password(body.password),
         email=email,
-        is_admin=bool(admin_email) and email == admin_email,
+        is_admin=is_admin,
+        status=acct_status,
     )
     session.add(player)
     await session.commit()

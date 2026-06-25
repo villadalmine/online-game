@@ -983,6 +983,43 @@ async def test_admin_endpoints_gated(client, monkeypatch):
     assert rr.status_code == 200, rr.text
 
 
+async def test_admin_approval_flow_e2e(client, monkeypatch):
+    # SDD 14: con aprobación activa, el alta nace 'pending' (no juega) hasta que el admin aprueba.
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "admin_email", "boss@ap.com")
+    monkeypatch.setattr(get_settings(), "signup_requires_approval", True)
+
+    rn = await client.http.post("/api/v1/auth/register",
+        json={"username": "newbie_ap", "password": "secret123", "email": "newbie@ap.com"})
+    assert rn.status_code == 201, rn.text
+    ntok = {"Authorization": f"Bearer {rn.json()['access_token']}"}
+    me = (await client.http.get("/api/v1/players/me", headers=ntok)).json()
+    assert me["account_status"] == "pending" and me["is_admin"] is False
+    # pending → no puede onboardear (403)
+    ob = await client.http.post("/api/v1/players/onboard", headers=ntok,
+        json={"galaxy_key": "milky_way", "planet_key": "mars", "race_key": "martian"})
+    assert ob.status_code == 403
+    # no-admin no puede listar pendientes
+    assert (await client.http.get("/api/v1/admin/players", headers=ntok)).status_code == 403
+
+    # admin (email configurado) nace active + is_admin
+    ra = await client.http.post("/api/v1/auth/register",
+        json={"username": "boss_ap", "password": "secret123", "email": "boss@ap.com"})
+    atok = {"Authorization": f"Bearer {ra.json()['access_token']}"}
+    ame = (await client.http.get("/api/v1/players/me", headers=atok)).json()
+    assert ame["is_admin"] is True and ame["account_status"] == "active"
+    pend = (await client.http.get("/api/v1/admin/players?status=pending", headers=atok)).json()
+    nid = next(p["id"] for p in pend if p["username"] == "newbie_ap")
+    assert (await client.http.post(f"/api/v1/admin/players/{nid}/approve",
+                                   headers=atok)).status_code == 200
+    # aprobado → ahora sí puede jugar
+    me2 = (await client.http.get("/api/v1/players/me", headers=ntok)).json()
+    assert me2["account_status"] == "active"
+    ob2 = await client.http.post("/api/v1/players/onboard", headers=ntok,
+        json={"galaxy_key": "milky_way", "planet_key": "mars", "race_key": "martian"})
+    assert ob2.status_code == 201, ob2.text
+
+
 async def test_otp_request_rate_limited(client, monkeypatch):
     # SDD 6/14: rate-limit por IP del request-code (anti-abuso del endpoint).
     import fakeredis.aioredis

@@ -494,6 +494,8 @@ class PlayerStateOut(BaseModel):
     protected_until: datetime | None = None          # newbie protection (SDD 11)
     season: SeasonOut | None = None                  # temporada actual
     galaxy_instance: GalaxyInstanceOut | None = None  # tu shard de galaxia (SDD 8)
+    is_admin: bool = False                            # SDD 14: muestra el panel de admin
+    account_status: str = "active"                    # SDD 14: active | pending | suspended
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

@@ -139,15 +139,22 @@ async def verify_code(session: AsyncSession, email: str, code: str) -> Player:
         player = res.scalar_one_or_none()
         if player is None:  # signup = login
             admin_email = settings.admin_email.strip().lower()
+            is_admin = bool(admin_email) and email == admin_email
+            # SDD 14: si la aprobación está activa, las altas nuevas nacen 'pending' (el admin entra
+            # siempre 'active'). Flag OFF → 'active' (no rompe).
+            status = "pending" if (settings.signup_requires_approval and not is_admin) else "active"
             player = Player(
                 username=await _unique_username(session),
                 # passwordless: contraseña inutilizable (no la conoce nadie)
                 password_hash=hash_password(secrets.token_urlsafe(32)),
                 email=email,
-                is_admin=bool(admin_email) and email == admin_email,
+                is_admin=is_admin,
+                status=status,
             )
             session.add(player)
             metrics.SIGNUPS.inc(method="otp")
+            if status == "pending":
+                await _notify_admins_pending(session, player)
         await session.delete(otp)
         await session.commit()
         metrics.LOGINS.inc(method="otp")
@@ -160,3 +167,16 @@ async def verify_code(session: AsyncSession, email: str, code: str) -> Player:
         raise AuthOtpError("Código inválido o expirado.", 401)
     await session.commit()
     raise AuthOtpError("Código inválido o expirado.", 401)
+
+
+async def _notify_admins_pending(session: AsyncSession, new_player: Player) -> None:
+    """SDD 14: avisa a los admins (in-app) que hay una cuenta esperando aprobación."""
+    from app.services.notifications import notify
+    res = await session.execute(select(Player).where(Player.is_admin.is_(True)))
+    admins = res.scalars().all()
+    for admin in admins:
+        await notify(
+            session, admin.id, "signup_pending",
+            f"Nueva cuenta espera aprobación: {new_player.username} ({new_player.email}).",
+            {"username": new_player.username, "email": new_player.email},
+        )

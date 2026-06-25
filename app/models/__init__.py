@@ -28,6 +28,11 @@ class Player(Base):
     is_npc: Mapped[bool] = mapped_column(Boolean, default=False)
     # Admin (SDD 14 v2): gate de /admin/*. Se siembra desde ADMIN_EMAIL al crear la cuenta.
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    # Estado de cuenta (SDD 14): active (default) | pending | suspended | rejected.
+    # Solo las altas nuevas nacen pending si SIGNUP_REQUIRES_APPROVAL.
+    status: Mapped[str] = mapped_column(String(20), default="active", server_default="active")
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Passwordless login por email + código OTP (SDD 6). Nullable: cuentas legacy/NPC no tienen.
     email: Mapped[str | None] = mapped_column(String(254), unique=True, index=True, nullable=True)
 

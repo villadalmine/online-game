@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +13,66 @@ from app.services import presence
 from app.worker import run_tick
 
 router = APIRouter()
+
+
+@router.get("/players")
+async def list_players(
+    status_: str | None = Query(default=None, alias="status"),
+    admin: Player = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Jugadores (con email) para moderar (SDD 14). `?status=pending` filtra. Solo admin."""
+    q = select(Player).where(Player.is_npc.is_(False))
+    if status_:
+        q = q.where(Player.status == status_)
+    rows = (await session.execute(q.order_by(Player.id))).scalars().all()
+    return [
+        {"id": p.id, "username": p.username, "email": p.email,
+         "status": p.status, "is_admin": p.is_admin, "approved_at": p.approved_at}
+        for p in rows
+    ]
+
+
+async def _moderate(session: AsyncSession, admin: Player, player_id: int, new_status: str) -> dict:
+    target = await session.get(Player, player_id)
+    if target is None or target.is_npc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Jugador no encontrado.")
+    target.status = new_status
+    if new_status == "active":
+        target.approved_at = datetime.now(UTC)
+        target.approved_by = admin.id
+    from app.services.notifications import notify
+    msg = {"active": "Tu cuenta fue aprobada, ¡a jugar!",
+           "rejected": "Tu solicitud de cuenta fue rechazada.",
+           "suspended": "Tu cuenta fue suspendida."}.get(new_status, "Estado actualizado.")
+    await notify(session, target.id, "account_status", msg, {"status": new_status})
+    await session.commit()
+    return {"id": target.id, "status": target.status}
+
+
+@router.post("/players/{player_id}/approve")
+async def approve_player(
+    player_id: int, admin: Player = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Activa una cuenta pendiente (SDD 14): status=active + notifica al jugador. Solo admin."""
+    return await _moderate(session, admin, player_id, "active")
+
+
+@router.post("/players/{player_id}/reject")
+async def reject_player(
+    player_id: int, admin: Player = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    return await _moderate(session, admin, player_id, "rejected")
+
+
+@router.post("/players/{player_id}/suspend")
+async def suspend_player(
+    player_id: int, admin: Player = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    return await _moderate(session, admin, player_id, "suspended")
 
 
 @router.get("/online")

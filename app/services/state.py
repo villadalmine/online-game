@@ -188,6 +188,8 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
     return PlayerStateOut(
         id=player.id,
         username=player.username,
+        is_admin=player.is_admin,
+        account_status=player.status,
         galaxy_key=player.galaxy_key,
         planet_key=player.planet_key,
         race_key=player.race_key,

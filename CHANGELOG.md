@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Alta con aprobación de admin + panel (SDD 14)
+- Nuevo `Player.status` (`active` default | `pending` | `suspended` | `rejected`) + `approved_at/by`
+  (migración aditiva, `server_default='active'` → no rompe cuentas/tests). Flag
+  **`SIGNUP_REQUIRES_APPROVAL`** (default OFF): cuando está ON, las altas nuevas (OTP y user+pass)
+  nacen **`pending`** y **no pueden jugar** (`/onboard` → 403 "espera aprobación"); el admin siempre
+  nace `active`. Al quedar pending, se **notifica a los admins** (in-app).
+- Endpoints **solo admin** (sobre `get_current_admin`): `GET /admin/players?status=pending` (con
+  email), `POST /admin/players/{id}/approve|reject|suspend` (setean estado + `approved_at/by` +
+  notifican al jugador).
+- `/players/me` ahora expone `is_admin` y `account_status`.
+- UI: panel **🛡 Admin** (solo visible para admins) con la lista de pendientes y aprobar/rechazar;
+  aviso **"Cuenta en revisión"** para el jugador pendiente (en vez del onboarding).
+- Tests: `test_admin_approval_flow_e2e` (pending→403, admin aprueba→onboarding 201, no-admin→403).
+
 ## [1.48.0] - 2026-06-25
 
 ### 2026-06-25 — Anuncios / "Lo que viene" (SDD 27)

@@ -163,6 +163,9 @@ class Settings(BaseSettings):
     # Admin (SDD 14 v2): email del admin. Si está seteado, /admin/* exige ser admin (ese email
     # o is_admin=True). Vacío = sin gate (dev/test, comportamiento actual).
     admin_email: str = ""
+    # SDD 14: si está ON, las altas nuevas nacen 'pending' y no pueden jugar hasta que el admin
+    # apruebe. OFF (default) = todos 'active' → no rompe nada existente.
+    signup_requires_approval: bool = False
 
     # Observabilidad (SDD 19): si está seteado, /metrics exige Bearer = este token (Prometheus lo
     # manda por bearerTokenSecret) → no queda público por el gateway. Vacío = abierto (dev).

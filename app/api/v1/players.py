@@ -110,6 +110,12 @@ async def onboard(
     player: Player = Depends(get_current_player),
     session: AsyncSession = Depends(get_session),
 ):
+    if player.status != "active":   # SDD 14: no se puede jugar hasta que el admin apruebe
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Tu cuenta espera aprobación del admin." if player.status == "pending"
+            else "Tu cuenta no está activa.",
+        )
     try:
         await onboard_player(session, player, body.galaxy_key, body.planet_key, body.race_key)
     except OnboardingError as exc:
