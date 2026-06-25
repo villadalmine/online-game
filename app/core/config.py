@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     market_mineral_base_energy: float = 2.0   # energía por unidad de mineral (precio intrínseco)
     market_scarcity_floor: float = 0.2        # piso de abundancia → tope de carestía (premium ~5×)
     market_sell_spread: float = 0.7           # vendés al 70% del precio de compra (spread)
+    # Hub galáctico (SDD 42 Fase 3): precio dinámico por oferta/demanda.
+    market_hub_impact: float = 0.0008         # cuánto mueve el precio cada unidad comprada/vendida
+    market_hub_reversion: float = 0.1         # reversión al valor intrínseco por tick
+    market_hub_band: float = 4.0              # banda: precio en [intrínseco/band, intrínseco×band]
     app_version: str = "dev"              # SDD 41: versión del juego (se setea por env APP_VERSION)
     meta_compute_interval_seconds: int = 600   # cada cuánto recalcula el meta (en el tick)
     assist_energy_per_day: int = 3        # SDD 40: veces/día que podés pedir energía de nivelado

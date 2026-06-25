@@ -106,3 +106,37 @@ async def test_transport_needs_cargo_ship_and_material(session):
         raise AssertionError("debía faltar nave de carga")
     except MarketError as e:
         assert "carga" in str(e).lower()
+
+
+async def test_hub_buy_raises_price_sell_lowers(session):
+    from app.models import UnitStock
+    from app.services.market import hub_intrinsic, hub_trade
+
+    p = await _player(session, "hubtrader")   # terran/earth → galaxia milky_way
+    p.energy = 999999.0
+    session.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=1))
+    await session.commit()
+
+    intr = hub_intrinsic("iron")
+    r1 = await hub_trade(session, p, "iron", 100, "buy")
+    await session.commit()
+    assert r1["price"] > intr            # comprar sube el precio (demanda)
+    r2 = await hub_trade(session, p, "iron", 50, "sell")
+    await session.commit()
+    assert r2["price"] < r1["price"]     # vender baja el precio (oferta)
+
+
+async def test_hub_needs_cargo_ship_and_inter_galaxy(session):
+    from app.services.market import MarketError, hub_prices_all, hub_trade
+
+    p = await _player(session, "hubpoor")
+    p.energy = 999999.0
+    await session.commit()
+    try:
+        await hub_trade(session, p, "iron", 10, "buy")
+        raise AssertionError("debía requerir nave de carga")
+    except MarketError as e:
+        assert "carga" in str(e).lower()
+
+    allg = await hub_prices_all(session)   # consulta inter-galaxia
+    assert "milky_way" in allg and "iron" in allg["milky_way"]

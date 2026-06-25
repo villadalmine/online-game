@@ -5,6 +5,7 @@
 technologies:
   - key: mining_efficiency
     name: "Mineria mejorada"
+    category: economy
     name_en: "Improved mining"
     description: "+25% de produccion de minas."
     description_en: "+25% mine production."
@@ -16,6 +17,7 @@ technologies:
     magnitude: 1.25
   - key: deep_core_mining
     name: "Mineria de nucleo profundo"
+    category: economy
     name_en: "Deep core mining"
     description: "+25% de produccion adicional."
     description_en: "+25% additional production."
@@ -27,6 +29,7 @@ technologies:
     magnitude: 1.25
   - key: weapons
     name: "Armamento avanzado"
+    category: military
     name_en: "Advanced weaponry"
     description: "+30% de ataque de tus flotas."
     description_en: "+30% attack for your fleets."
@@ -38,6 +41,7 @@ technologies:
     magnitude: 1.30
   - key: shields
     name: "Escudos planetarios"
+    category: military
     name_en: "Planetary shields"
     description: "+30% de defensa de tus bases."
     description_en: "+30% defense for your bases."
@@ -49,6 +53,7 @@ technologies:
     magnitude: 1.30
   - key: espionage
     name: "Redes de espionaje"
+    category: espionage
     name_en: "Espionage networks"
     description: "+40% al poder de tus espías (intel más profunda, menos detección)."
     description_en: "+40% to your spies' power (deeper intel, less detection)."
@@ -62,6 +67,7 @@ technologies:
   # mundos antes imposibles. `effect: colonize` + `colonize: {axis, factor}` lo lee compat().
   - key: antigravity
     name: "Antigravedad"
+    category: colonization
     name_en: "Antigravity"
     description: "Plataformas antigravedad: tolerás gravedades muy distintas a tu mundo."
     description_en: "Antigravity platforms: tolerate gravities far from your homeworld."
@@ -74,6 +80,7 @@ technologies:
     magnitude: 1.0
   - key: thermal_shielding
     name: "Blindaje térmico"
+    category: colonization
     name_en: "Thermal shielding"
     description: "Cúpulas con regulación térmica: aguantás frío o calor extremos."
     description_en: "Thermally-regulated domes: endure extreme cold or heat."
@@ -86,6 +93,7 @@ technologies:
     magnitude: 1.0
   - key: sealed_domes
     name: "Cúpulas selladas"
+    category: colonization
     name_en: "Sealed domes"
     description: "Hábitats presurizados con escudo: colonizás sin atmósfera respirable."
     description_en: "Pressurized shielded habitats: colonize without breathable air."
@@ -98,6 +106,7 @@ technologies:
     magnitude: 1.0
   - key: orbital_robotics
     name: "Robótica orbital"
+    category: colonization
     name_en: "Orbital robotics"
     description: "Estaciones orbitales con robots: extraen recursos de mundos letales (nadie vive ahí; naves van y vienen). Rinde menos, cuesta más, pero abre cualquier mundo."
     description_en: "Orbital stations with robots: extract resources from lethal worlds (no one lives there; ships ferry). Lower yield, higher cost, but opens any world."
@@ -110,6 +119,7 @@ technologies:
     magnitude: 1.0
   - key: counter_espionage
     name: "Contraespionaje"
+    category: espionage
     name_en: "Counter-espionage"
     description: "+40% a tu defensa de espionaje (ofusca tu info y detecta intrusos)."
     description_en: "+40% to your espionage defense (obfuscates your info, detects intruders)."

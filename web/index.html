@@ -190,6 +190,11 @@
       <div id="market"></div>
     </div>
 
+    <div class="card collapsed" data-panel="hub">
+      <h2>🛰 Hub galáctico</h2>
+      <div id="hub"></div>
+    </div>
+
     <div class="card" data-panel="atacar">
       <h2>⚔ Atacar</h2>
       <div class="row">
@@ -508,11 +513,11 @@ document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-pan
 // i18n del chrome (ES/EN). El contenido del juego (nombres/descripciones) viene del catálogo ya
 // traducido; acá traducimos títulos de paneles y botones fijos. SDD docs/sdd-i18n.md
 const I18N={
-  es:{ panels:{acciones:"Acciones",perfil:"👤 Perfil",mercado:"💱 Mercado",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",combate:"⚔ Reportes de combate",eventos:"📣 Eventos",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",meta:"📈 Meta (aprendido de partidas)",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
+  es:{ panels:{acciones:"Acciones",perfil:"👤 Perfil",mercado:"💱 Mercado",hub:"🛰 Hub galáctico",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",combate:"⚔ Reportes de combate",eventos:"📣 Eventos",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",meta:"📈 Meta (aprendido de partidas)",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
     ui:{build:"🏗 Construir",pfsave:"guardar",lvlbtn:"⚡ Nivelar",pfhelp:"Cambiá tu nick o clave sin validar. ¿Olvidaste la clave? Entrá con código por email y cambiala acá.",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking",
       logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo.",targetbase:"objetivo base",calc:"📊 Calcular"},
     ph:{advmsg:"¿qué construyo? me falta algo…",pfuser:"nuevo usuario",pfpass:"nueva contraseña",regemail:"email invitado (para registrarte)",user:"usuario (mín. 3)",pass:"contraseña (mín. 6)",otpemail:"tu@email.com",otpcode:"código de 6 dígitos",chatmsg:"mensaje…"},
-    s:{nofeed:"sin notificaciones sin leer",nomarket:"construí un Mercado en un planeta para comerciar",mktbuy:"comprar",mktsell:"vender",mktcols:"mineral (tenés) · ⚡compra/venta",transport:"Transportar (necesita nave de carga)",trsame:"origen y destino iguales",nometa:"aún sin datos de meta (jugá batallas)",metawin:"los ataques ganan",pfok:"✓ perfil actualizado:",lvlok:"⚡ Energía de nivelado:",lvlbottom:"⚡ Estás último: energía a tope",lvlleft:"quedan hoy:",pfnothing:"poné un usuario o una contraseña nueva",noevents:"sin eventos activos ahora",evActive:"🟢 Activos ahora",evRecent:"🕓 Pasaron (2 días)",evPossible:"🔮 Pueden aparecer",evEnded:"terminó",colonize:"🪐 Colonización (tu raza)",cyourhome:"tu mundo natal",verdict_great:"Ideal para colonizar",verdict_ok:"Colonizable",verdict_poor:"Hostil (rinde poco)",verdict_impossible:"Imposible de colonizar",colonizebtn:"🪐 Colonizar",lunarbtn:"🌙 Base lunar",colonized:"✓ colonizado",orbitalbtn:"🛰 Base orbital",orbitaltip:"Estación con robots: extrae recursos sin habitar el mundo (rinde menos, cuesta más).",needorbital:"hostil — investigá Robótica orbital para una base orbital",authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
+    s:{nofeed:"sin notificaciones sin leer",nomarket:"construí un Mercado en un planeta para comerciar",mktbuy:"comprar",mktsell:"vender",mktcols:"mineral (tenés) · ⚡compra/venta",transport:"Transportar (necesita nave de carga)",nohub:"sin precios de hub aún",hubdyn:"precios por oferta/demanda",hubof:"hub de",othergx:"otras galaxias",trsame:"origen y destino iguales",nometa:"aún sin datos de meta (jugá batallas)",metawin:"los ataques ganan",pfok:"✓ perfil actualizado:",lvlok:"⚡ Energía de nivelado:",lvlbottom:"⚡ Estás último: energía a tope",lvlleft:"quedan hoy:",pfnothing:"poné un usuario o una contraseña nueva",noevents:"sin eventos activos ahora",evActive:"🟢 Activos ahora",evRecent:"🕓 Pasaron (2 días)",evPossible:"🔮 Pueden aparecer",evEnded:"terminó",colonize:"🪐 Colonización (tu raza)",cyourhome:"tu mundo natal",verdict_great:"Ideal para colonizar",verdict_ok:"Colonizable",verdict_poor:"Hostil (rinde poco)",verdict_impossible:"Imposible de colonizar",colonizebtn:"🪐 Colonizar",lunarbtn:"🌙 Base lunar",colonized:"✓ colonizado",orbitalbtn:"🛰 Base orbital",orbitaltip:"Estación con robots: extrae recursos sin habitar el mundo (rinde menos, cuesta más).",needorbital:"hostil — investigá Robótica orbital para una base orbital",authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
       otphelp:"Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta. Una vez dentro, quedás logueado en este dispositivo (no te pide código cada vez).",
       advdefault:"Preguntá y te aconsejo según el grafo del juego.",noseason:"Sin temporada activa.",closesin:"cierra en",closing:"cerrando…",newbie:"🛡 Protección de novato",newbieend:"termina en {x}; atacar a un jugador la cancela",
       colplayer:"jugador",colrace:"raza",colscore:"score",nounits:"sin unidades",nobases:"sin colonias",noqueue:"nada en cola",noflights:"sin flotas en vuelo",nomsgs:"sin mensajes — escribí el primero",noworld:"todavía no pasó nada en la galaxia",noally:"no hay alianzas aún",nocols:"sin colonias todavía",nomoons:"sin lunas",ranklist:"ranking de temporada",
@@ -525,11 +530,11 @@ const I18N={
       cNone:"nada",cYouAtk:"vos →",cAtkYou:"te atacó",cWon:"✓ ganaste",cLost:"✗ perdiste",cYouLost:"perdiste",cTheyLost:"perdió",cLoot:"botín",cLooted:"te saquearon",cNoReports:"todavía no hubo batallas",
       perunit:"de ataque c/u",atkperunit:"Ataque por unidad (sumás esto × cantidad al mandar la flota)",
       bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
-  en:{ panels:{acciones:"Actions",perfil:"👤 Profile",mercado:"💱 Market",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",eventos:"📣 Events",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",meta:"📈 Meta (learned)",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
+  en:{ panels:{acciones:"Actions",perfil:"👤 Profile",mercado:"💱 Market",hub:"🛰 Galactic hub",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",eventos:"📣 Events",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",meta:"📈 Meta (learned)",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
     ui:{build:"🏗 Build",pfsave:"save",lvlbtn:"⚡ Level up",pfhelp:"Change your nick or password without validation. Forgot it? Log in with an email code and change it here.",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",
       logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it.",targetbase:"target base",calc:"📊 Calculate"},
     ph:{advmsg:"what should I build? I'm missing something…",pfuser:"new username",pfpass:"new password",regemail:"invited email (to register)",user:"username (min. 3)",pass:"password (min. 6)",otpemail:"you@email.com",otpcode:"6-digit code",chatmsg:"message…"},
-    s:{nofeed:"no unread notifications",nomarket:"build a Market on a planet to trade",mktbuy:"buy",mktsell:"sell",mktcols:"mineral (have) · ⚡buy/sell",transport:"Transport (needs cargo ship)",trsame:"same origin and destination",nometa:"no meta data yet (play battles)",metawin:"attacks win",pfok:"✓ profile updated:",lvlok:"⚡ Level-up energy:",lvlbottom:"⚡ You're last: energy filled",lvlleft:"left today:",pfnothing:"enter a new username or password",noevents:"no active events right now",evActive:"🟢 Active now",evRecent:"🕓 Past (2 days)",evPossible:"🔮 Can appear",evEnded:"ended",colonize:"🪐 Colonization (your race)",cyourhome:"your homeworld",verdict_great:"Ideal to colonize",verdict_ok:"Colonizable",verdict_poor:"Hostile (low yield)",verdict_impossible:"Cannot colonize",colonizebtn:"🪐 Colonize",lunarbtn:"🌙 Lunar base",colonized:"✓ colonized",orbitalbtn:"🛰 Orbital base",orbitaltip:"Robot station: extracts resources without living on the world (lower yield, higher cost).",needorbital:"hostile — research Orbital robotics for an orbital base",authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
+    s:{nofeed:"no unread notifications",nomarket:"build a Market on a planet to trade",mktbuy:"buy",mktsell:"sell",mktcols:"mineral (have) · ⚡buy/sell",transport:"Transport (needs cargo ship)",nohub:"no hub prices yet",hubdyn:"supply/demand prices",hubof:"hub of",othergx:"other galaxies",trsame:"same origin and destination",nometa:"no meta data yet (play battles)",metawin:"attacks win",pfok:"✓ profile updated:",lvlok:"⚡ Level-up energy:",lvlbottom:"⚡ You're last: energy filled",lvlleft:"left today:",pfnothing:"enter a new username or password",noevents:"no active events right now",evActive:"🟢 Active now",evRecent:"🕓 Past (2 days)",evPossible:"🔮 Can appear",evEnded:"ended",colonize:"🪐 Colonization (your race)",cyourhome:"your homeworld",verdict_great:"Ideal to colonize",verdict_ok:"Colonizable",verdict_poor:"Hostile (low yield)",verdict_impossible:"Cannot colonize",colonizebtn:"🪐 Colonize",lunarbtn:"🌙 Lunar base",colonized:"✓ colonized",orbitalbtn:"🛰 Orbital base",orbitaltip:"Robot station: extracts resources without living on the world (lower yield, higher cost).",needorbital:"hostile — research Orbital robotics for an orbital base",authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
       otphelp:"We send a <b>code</b> to your email. First time, it creates your account. Once in, you stay logged in on this device (no code each time).",
       advdefault:"Ask and I'll advise you based on the game's dependency graph.",noseason:"No active season.",closesin:"closes in",closing:"closing…",newbie:"🛡 Newbie protection",newbieend:"ends in {x}; attacking a player cancels it",
       colplayer:"player",colrace:"race",colscore:"score",nounits:"no units",nobases:"no colonies",noqueue:"nothing queued",noflights:"no fleets in flight",nomsgs:"no messages — write the first",noworld:"nothing has happened in the galaxy yet",noally:"no alliances yet",nocols:"no colonies yet",nomoons:"no moons",ranklist:"season ranking",
@@ -628,19 +633,29 @@ async function refresh(){
     b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
-  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed(); loadReports(); loadEvents(); loadColonize(); loadInsights(); loadMarket(); renderSeason();
+  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed(); loadReports(); loadEvents(); loadColonize(); loadInsights(); loadMarket(); loadHub(); renderSeason();
   renderCost(); renderTrainCost(); renderExpInfo(); renderForcePicker();
 }
+const TECH_CAT={es:{economy:"⛏ Economía",military:"⚔ Militar",espionage:"🕵 Espionaje",colonization:"🪐 Colonización",other:"Otras"},
+  en:{economy:"⛏ Economy",military:"⚔ Military",espionage:"🕵 Espionage",colonization:"🪐 Colonization",other:"Other"}};
 function renderResearch(){
   if(!catalog||!state) return; const done=new Set(state.technologies||[]);
-  $("research").innerHTML=catalog.technologies.map(t=>{
+  const techRow=t=>{
     const order=(state.research||[]).find(r=>r.tech_key===t.key);
     let right;
     if(done.has(t.key)) right=`<span class="ok">${esc(tr('ready'))}</span>`;
     else if(order) right=`<span class="warn">${cd(order.completes_at)}</span>`;
     else right=`<button class="sm" onclick="doResearch('${t.key}')">${esc(tr('research'))}</button>`;
     return `<div class="item"><div class="top"><span title="${esc(t.description||'')}">${esc(t.name)} <span class="muted">(${esc(t.effect)} ×${t.magnitude})</span></span>${right}</div>${order?bar(t.research_seconds,order.completes_at):""}</div>`;
-  }).join("");
+  };
+  // SDD: agrupado por categoría de investigación
+  const cats=(TECH_CAT[lang]||TECH_CAT.es);
+  const byCat={};
+  catalog.technologies.forEach(t=>{ (byCat[t.category||"other"]=byCat[t.category||"other"]||[]).push(t); });
+  const order=["economy","military","espionage","colonization","other"];
+  $("research").innerHTML=order.filter(c=>byCat[c]).map(c=>
+    `<div class="muted" style="margin:6px 0 2px">${esc(cats[c]||c)}</div>`+byCat[c].map(techRow).join("")
+  ).join("");
 }
 const BENEFIT_KEY={shared_bonus:"bMines",shared_unit_tech:"bUnit",mutual_defense:"bDef",shared_vision:"bVis",trade:"bTrade"};
 function allianceType(key){ return (catalog.alliance_types||[]).find(t=>t.key===key)||{}; }
@@ -936,6 +951,27 @@ function renderMarket(){
   el.innerHTML=`<div class="row"><select onchange="selectMarket(this.value)">${opts}</select>`+
     ` <input id="marketqty" type="number" value="${esc(qty)}" min="1" style="width:60px"></div>`+
     `<div class="muted" style="font-size:11px;margin:3px 0">${esc(tr('mktcols'))}</div>${rows}${transp}`;
+}
+// hub galáctico (SDD 42 Fase 3): precios dinámicos por oferta/demanda + comparar otras galaxias
+async function loadHub(){
+  let d; try{ d=await api("/api/v1/market/hub"); }catch{ return; }
+  const pr=d.prices||{};
+  if(!Object.keys(pr).length){ $("hub").innerHTML=`<span class="muted">${esc(tr('nohub'))}</span>`; return; }
+  const rows=Object.entries(pr).map(([m,p])=>
+    `<div class="ab"><span>${esc(mineralName(m))}</span><span class="muted">⚡${(+p).toFixed(2)}</span>`+
+    `<span><button class="sm" onclick="hubTrade('buy','${m}')">${esc(tr('mktbuy'))}</button> `+
+    `<button class="sm sec" onclick="hubTrade('sell','${m}')">${esc(tr('mktsell'))}</button></span></div>`).join("");
+  const others=Object.keys(d.galaxies||{}).filter(g=>g!==d.galaxy);
+  const cmp=others.length?`<div class="muted" style="font-size:11px;margin-top:4px">🌐 ${esc(tr('othergx'))}: `+
+    others.map(g=>esc((catalog.galaxies.find(x=>x.key===g)||{}).name||g)).join(", ")+`</div>`:"";
+  $("hub").innerHTML=`<div class="row"><input id="hubqty" type="number" value="50" min="1" style="width:60px"> `+
+    `<span class="muted">${esc(tr('hubof'))} ${esc((catalog.galaxies.find(x=>x.key===d.galaxy)||{}).name||d.galaxy)} · ${esc(tr('hubdyn'))}</span></div>${rows}${cmp}`;
+}
+async function hubTrade(side,m){
+  const q=Math.max(1,+($("hubqty")||{}).value||1);
+  try{ const r=await api("/api/v1/market/hub/"+side,"POST",{mineral_key:m,qty:q});
+    msg(`🛰 ${side==='buy'?'+':'−'}${q} ${esc(m)} → ⚡${r.price}`); refresh();
+  }catch(e){ msg(e.message,false); }
 }
 async function transportSend(){
   const f=$("tr_from").value, t=$("tr_to").value, m=$("tr_min").value, q=Math.max(1,+$("tr_qty").value||1);

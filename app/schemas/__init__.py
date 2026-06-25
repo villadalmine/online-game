@@ -40,6 +40,11 @@ class MarketTradeRequest(BaseModel):
     qty: int
 
 
+class HubTradeRequest(BaseModel):
+    mineral_key: str
+    qty: int
+
+
 class TransportRequest(BaseModel):
     from_planet: str
     to_planet: str

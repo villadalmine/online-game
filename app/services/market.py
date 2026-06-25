@@ -197,3 +197,110 @@ async def process_transport_missions(
         m.status = "done"
         done += 1
     return done
+
+
+# --------------------------------------------------------------------------- #
+# Hub galáctico con precios dinámicos por oferta/demanda (SDD 42 Fase 3)
+# --------------------------------------------------------------------------- #
+def hub_intrinsic(mineral_key: str) -> float:
+    """Valor intrínseco del mineral en el hub (sin abundancia local: usa la media de todos los
+    planetas → los premium, que no se dan en ninguno, valen más)."""
+    s = get_settings()
+    present = [
+        p.get("abundance", {}).get(mineral_key)
+        for p in get_content().planets.values()
+        if p.get("abundance", {}).get(mineral_key) is not None
+    ]
+    avg = (sum(present) / len(present)) if present else 0.0
+    eff = s.market_scarcity_floor if avg <= 0 else max(avg, s.market_scarcity_floor)
+    return round(s.market_mineral_base_energy / eff, 2)
+
+
+async def _hub_row(session: AsyncSession, galaxy_key: str, mineral_key: str):
+    from app.models import MarketPrice
+    row = (await session.execute(
+        select(MarketPrice).where(
+            MarketPrice.galaxy_key == galaxy_key, MarketPrice.mineral_key == mineral_key
+        )
+    )).scalar_one_or_none()
+    if row is None:
+        row = MarketPrice(galaxy_key=galaxy_key, mineral_key=mineral_key,
+                          price=hub_intrinsic(mineral_key))
+        session.add(row)
+        await session.flush()
+    return row
+
+
+async def hub_prices(session: AsyncSession, galaxy_key: str) -> dict[str, float]:
+    return {m: (await _hub_row(session, galaxy_key, m)).price for m in get_content().minerals}
+
+
+async def hub_prices_all(session: AsyncSession) -> dict[str, dict[str, float]]:
+    """Precios del hub de CADA galaxia (consulta inter-galaxia, SDD 42)."""
+    return {g: await hub_prices(session, g) for g in get_content().galaxies}
+
+
+def _clamp_hub(price: float, mineral_key: str) -> float:
+    band = get_settings().market_hub_band
+    intr = hub_intrinsic(mineral_key)
+    return round(max(intr / band, min(intr * band, price)), 2)
+
+
+async def hub_trade(
+    session: AsyncSession, player: Player, mineral_key: str, qty: int, side: str
+) -> dict:
+    """Comprar/vender en el hub de tu galaxia al precio dinámico. Requiere una nave de carga para
+    traer/llevar los bienes; pagás/cobrás energía; el precio se mueve con tu operación."""
+    from app.services.training import player_units
+
+    s = get_settings()
+    now = datetime.now(UTC)
+    qty = int(qty)
+    if qty <= 0:
+        raise MarketError("Cantidad inválida.")
+    if mineral_key not in get_content().minerals:
+        raise MarketError(f"Mineral desconocido: {mineral_key}")
+    galaxy = player.galaxy_key
+    if not galaxy:
+        raise MarketError("No estás en ninguna galaxia.")
+    if (await player_units(session, player.id)).get("cargo_ship", 0) < 1:
+        raise MarketError("Necesitás una nave de carga para operar en el hub.")
+
+    row = await _hub_row(session, galaxy, mineral_key)
+    home = player.planet_key
+    if side == "buy":
+        cost = row.price * qty
+        if not spend_energy(player, cost, now, effective_energy_regen(player, s), s.energy_max):
+            raise MarketError(f"Energía insuficiente (cuesta {round(cost, 1)}).")
+        (await get_or_create_stock(session, player.id, mineral_key, home)).amount += qty
+        row.price = _clamp_hub(row.price * (1 + s.market_hub_impact * qty), mineral_key)
+        result = {"bought": qty, "energy_spent": round(cost, 1)}
+    else:  # sell
+        stock = await get_or_create_stock(session, player.id, mineral_key, home)
+        if stock.amount < qty:
+            raise MarketError(f"No tenés {qty} de {mineral_key} en {home}.")
+        gain = row.price * s.market_sell_spread * qty
+        stock.amount -= qty
+        player.energy = min(s.energy_max, player.energy + gain)
+        player.energy_updated_at = now
+        row.price = _clamp_hub(row.price * (1 - s.market_hub_impact * qty), mineral_key)
+        result = {"sold": qty, "energy_gained": round(gain, 1)}
+    row.updated_at = now
+
+    from app.services.journal import record
+    await record(session, f"hub_{side}", player.id,
+                 galaxy=galaxy, mineral=mineral_key, qty=qty, price=round(row.price, 2))
+    return {**result, "mineral": mineral_key, "price": round(row.price, 2),
+            "energy": round(player.energy, 1)}
+
+
+async def revert_hub_prices(session: AsyncSession) -> int:
+    """Reversión lenta de los precios del hub hacia su intrínseco (oferta/demanda se calma)."""
+    from app.models import MarketPrice
+    s = get_settings()
+    rows = (await session.execute(select(MarketPrice))).scalars().all()
+    for row in rows:
+        intr = hub_intrinsic(row.mineral_key)
+        row.price = _clamp_hub(row.price + (intr - row.price) * s.market_hub_reversion,
+                               row.mineral_key)
+    return len(rows)

@@ -7,6 +7,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 42 Fase 3: hub galáctico con precios dinámicos + inter-galaxia
+- **`MarketPrice` por (galaxia, mineral)** con precio por **oferta/demanda** (estilo stock market):
+  comprar sube, vender baja, y en el tick **revierte** lento al precio intrínseco (base/abundancia-
+  media → premium caros), dentro de una banda. `POST /api/v1/market/hub/{buy|sell}` (requiere
+  **nave de carga**, pagás/cobrás energía). `GET /api/v1/market/hub` muestra los precios de **tu
+  galaxia y de TODAS** (consulta inter-galaxia, tu idea). Panel web **🛰 Hub galáctico**. Pendiente:
+  black market + robos/escolta + aparcamiento.
+
+### 2026-06-25 — Investigación por categorías
+- Cada tecnología ahora tiene **`category`** (economy/military/espionage/colonization) y el panel
+  🔬 Investigación las **agrupa por categoría**. Data-driven (editar el YAML). Bilingüe.
+
 ## [1.35.0] - 2026-06-25
 
 ### 2026-06-25 — SDD 42 Fase 2 completa: transporte de minerales entre planetas

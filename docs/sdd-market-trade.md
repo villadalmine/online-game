@@ -121,7 +121,13 @@ scarcity(p, mineral)     = 1 / max(abundance(p, mineral), ε)   # caro donde esc
   acredita al destino y devuelve las naves) en `state.advance`+tick; API `POST/GET /market/transport`;
   form 🚚 en el panel de mercado. **Pendiente (Fase 3):** `protocol_ship` (scoutear precios remotos) +
   reglas de presencia/aparcamiento/robos del §8.
-- **Fase 3 (hub dinámico + black market + aparcamiento + robos):** `MarketPrice` por oferta/demanda;
+- **Fase 3 — PARCIAL (2026-06-25): hub dinámico + inter-galaxia.** `MarketPrice(galaxy, mineral)` con
+  precio por **oferta/demanda** (comprar sube, vender baja, reversión al intrínseco en el tick, banda
+  de clamp). `hub_trade` (requiere `cargo_ship`, paga/cobra energía, acredita al natal); precio
+  intrínseco = base/abundancia-media (premium caros). API `GET /market/hub` (tu galaxia + **todas**,
+  consulta inter-galaxia) y `POST /market/hub/{buy|sell}`; panel web 🛰 Hub. **Pendiente de Fase 3:**
+  black market (trueque con materiales + viaje), `protocol_ship`, aparcamiento/hangar y robos/escolta.
+- **Fase 3 (resto):** `MarketPrice` por oferta/demanda;
   cuevas ilegales (pagás con materiales, viajás); **slot único** en mercados de planeta + upgrade
   `hangar` (más slots), aparcamiento **infinito** en el hub; **piratería/saqueo** de convoyes →
   escolta militar (reusa `resolve_combat`); precios inter-galaxia (consultar otros hubs).

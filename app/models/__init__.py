@@ -447,6 +447,22 @@ class EventGrant(Base):
     event_id: Mapped[int] = mapped_column(ForeignKey("world_events.id", ondelete="CASCADE"))
 
 
+class MarketPrice(Base):
+    """Precio dinámico del hub galáctico (SDD 42 Fase 3): un precio por (galaxia, mineral) que se
+    mueve por oferta/demanda (comprar sube, vender baja) y revierte lento al valor intrínseco."""
+
+    __tablename__ = "market_prices"
+    __table_args__ = (
+        UniqueConstraint("galaxy_key", "mineral_key", name="uq_market_price"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    galaxy_key: Mapped[str] = mapped_column(String(50), index=True)
+    mineral_key: Mapped[str] = mapped_column(String(50))
+    price: Mapped[float] = mapped_column(Float, default=0.0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class TransportMission(Base):
     """Transporte de minerales entre planetas del jugador (SDD 42 Fase 2). Sale del planeta origen,
     viaja, y al llegar acredita la carga al planeta destino (las naves vuelven al stock)."""
