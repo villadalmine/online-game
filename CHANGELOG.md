@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.54.0] - 2026-06-25
+
 ### 2026-06-25 — Fix: layout de la consola de admin
 - Las filas del ABM usaban la clase `.ab` (grid de 3 columnas, pensada para minerales) y con 6
   elementos (id, usuario, email, estado, 3 botones) **se pisaban**. Nueva clase `.acrow` (flex con
