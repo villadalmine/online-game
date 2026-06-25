@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.55.0] - 2026-06-25
+
 ### 2026-06-25 — Construir en colonias/bases orbitales (selector de base)
 - El form de Acciones siempre construía en la base **principal** (no se podía elegir colonia/órbita).
   Ahora hay un **selector de base** (aparece si tenés más de una) con su 🌙/🛰/🪐 y planeta. Así
