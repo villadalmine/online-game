@@ -278,6 +278,11 @@
       <div id="events"></div>
     </div>
 
+    <div class="card" data-panel="anuncios">
+      <h2>📰 Novedades</h2>
+      <div id="announcements" class="muted">…</div>
+    </div>
+
     <div class="card" data-panel="notis">
       <h2>🔔 Notificaciones</h2>
       <div class="row"><button class="sec sm" onclick="markRead()" data-i18n="markread">marcar leídas</button>
@@ -566,7 +571,7 @@ document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-pan
 // i18n del chrome (ES/EN). El contenido del juego (nombres/descripciones) viene del catálogo ya
 // traducido; acá traducimos títulos de paneles y botones fijos. SDD docs/sdd-i18n.md
 const I18N={
-  es:{ panels:{acciones:"Acciones",perfil:"👤 Perfil",mercado:"💱 Mercado",hub:"🛰 Hub galáctico",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",combate:"⚔ Reportes de combate",eventos:"📣 Eventos",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",meta:"📈 Meta (aprendido de partidas)",asistente:"🧠 Asistente AI",guia:"📖 Guía — ¿qué es cada cosa?"},
+  es:{ panels:{acciones:"Acciones",perfil:"👤 Perfil",mercado:"💱 Mercado",hub:"🛰 Hub galáctico",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",combate:"⚔ Reportes de combate",eventos:"📣 Eventos",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",meta:"📈 Meta (aprendido de partidas)",asistente:"🧠 Asistente AI",anuncios:"📰 Novedades",guia:"📖 Guía — ¿qué es cada cosa?"},
     ui:{build:"🏗 Construir",pfsave:"guardar",lvlbtn:"⚡ Nivelar",pfhelp:"Cambiá tu nick o clave sin validar. ¿Olvidaste la clave? Entrá con código por email y cambiala acá.",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking",amode_gpu:"🖥️ GPU local",amode_cloud:"☁️ Nube (free→pago)",amode_byok:"🔑 Tu modelo",
       logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo.",targetbase:"objetivo base",calc:"📊 Calcular"},
     ph:{advmsg:"¿qué construyo? me falta algo…",pfuser:"nuevo usuario",pfpass:"nueva contraseña",regemail:"email invitado (para registrarte)",user:"usuario (mín. 3)",pass:"contraseña (mín. 6)",otpemail:"tu@email.com",otpcode:"código de 6 dígitos",chatmsg:"mensaje…",byokkey_ph:"OpenRouter API key (no se guarda en el server)",byokmodel_ph:"modelo (ej google/gemma-3-27b-it:free)"},
@@ -583,7 +588,7 @@ const I18N={
       cNone:"nada",cYouAtk:"vos →",cAtkYou:"te atacó",cWon:"✓ ganaste",cLost:"✗ perdiste",cYouLost:"perdiste",cTheyLost:"perdió",cLoot:"botín",cLooted:"te saquearon",cNoReports:"todavía no hubo batallas",
       perunit:"de ataque c/u",atkperunit:"Ataque por unidad (sumás esto × cantidad al mandar la flota)",
       bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
-  en:{ panels:{acciones:"Actions",perfil:"👤 Profile",mercado:"💱 Market",hub:"🛰 Galactic hub",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",eventos:"📣 Events",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",meta:"📈 Meta (learned)",asistente:"🧠 AI Assistant",guia:"📖 Guide — what is each thing?"},
+  en:{ panels:{acciones:"Actions",perfil:"👤 Profile",mercado:"💱 Market",hub:"🛰 Galactic hub",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",eventos:"📣 Events",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",meta:"📈 Meta (learned)",asistente:"🧠 AI Assistant",anuncios:"📰 News",guia:"📖 Guide — what is each thing?"},
     ui:{build:"🏗 Build",pfsave:"save",lvlbtn:"⚡ Level up",pfhelp:"Change your nick or password without validation. Forgot it? Log in with an email code and change it here.",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",amode_gpu:"🖥️ Local GPU",amode_cloud:"☁️ Cloud (free→paid)",amode_byok:"🔑 Your model",
       logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it.",targetbase:"target base",calc:"📊 Calculate"},
     ph:{advmsg:"what should I build? I'm missing something…",pfuser:"new username",pfpass:"new password",regemail:"invited email (to register)",user:"username (min. 3)",pass:"password (min. 6)",otpemail:"you@email.com",otpcode:"6-digit code",chatmsg:"message…",byokkey_ph:"OpenRouter API key (not stored on the server)",byokmodel_ph:"model (e.g. google/gemma-3-27b-it:free)"},
@@ -686,7 +691,7 @@ async function refresh(){
     b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
-  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed(); loadReports(); loadEvents(); loadColonize(); loadInsights(); loadMarket(); loadHub(); renderSeason();
+  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed(); loadReports(); loadEvents(); loadAnnouncements(); loadColonize(); loadInsights(); loadMarket(); loadHub(); renderSeason();
   renderCost(); renderTrainCost(); renderExpInfo(); renderForcePicker();
 }
 const TECH_CAT={es:{economy:"⛏ Economía",military:"⚔ Militar",espionage:"🕵 Espionaje",colonization:"🪐 Colonización",other:"Otras"},
@@ -844,6 +849,21 @@ async function loadEvents(){
   const html=sect(tr('evActive'),active||`<span class="muted">${esc(tr('noevents'))}</span>`)+
     sect(tr('evRecent'),recent)+sect(tr('evPossible'),possible);
   $("events").innerHTML=html;
+}
+// novedades / "lo que viene" (SDD 27): contenido público, bilingüe, categorizado
+const ANN_BADGE={live:"🟢",coming:"🛠",planned:"🔮"};
+const ANN_CAT={release:"🚀",incoming:"🔭",spinoff:"🌌",season:"📅",maintenance:"🧰"};
+async function loadAnnouncements(){
+  let a; try{ a=await api("/api/v1/announcements?lang="+lang); }catch{ return; }
+  if(!a.length){ $("announcements").textContent="—"; return; }
+  $("announcements").innerHTML=a.map(x=>{
+    const diffs=(x.differences||[]).map(d=>`<li>${esc(d)}</li>`).join("");
+    const base=x.standard_baseline?`<div class="muted" style="font-size:11px">${esc(x.standard_baseline)}</div>`:"";
+    const dl=diffs?`${base}<ul style="margin:3px 0 0;padding-left:18px;font-size:12px">${diffs}</ul>`:"";
+    const link=x.link?` <a href="${esc(x.link)}" target="_blank">+info</a>`:"";
+    return `<div class="note" style="margin-bottom:6px"><b>${ANN_CAT[x.category]||"📣"} ${esc(x.title)}</b> `+
+      `<span class="muted">${ANN_BADGE[x.status]||""}</span><div class="muted" style="font-size:12px">${esc(x.summary||"")}${link}</div>${dl}</div>`;
+  }).join("");
 }
 // combat reports — detalle de cada batalla (qué llegó, contra qué, qué perdiste/perdió, botín)
 function pname(id){ const p=(players||[]).find(x=>x.id===id); return p?p.username:('#'+id); }

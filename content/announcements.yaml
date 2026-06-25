@@ -1,0 +1,79 @@
+# SDD 27 — Anuncios / "Lo que viene". Data-as-code, tipado y bilingüe (ES default + *_en).
+# category: release (ya jugable) | incoming (lo que viene) | spinoff (universo) | season | maintenance
+# status:   live (disponible) | coming (en desarrollo) | planned (en diseño)
+announcements:
+  - key: market-economy
+    category: release
+    status: live
+    date: 2026-06-25
+    title: "Mercado y economía por planeta"
+    title_en: "Per-planet market & economy"
+    summary: "Comprá/vendé minerales a precios por planeta, transportá entre planetas, hub galáctico con precios dinámicos, mercado negro (trueque) y piratería con escolta."
+    summary_en: "Buy/sell minerals at per-planet prices, transport between planets, a galactic hub with dynamic pricing, a black market (barter) and piracy with escorts."
+    tags: [gameplay, economia]
+    link: "docs/sdd-market-trade.md"
+
+  - key: ai-on-gpu
+    category: release
+    status: live
+    date: 2026-06-25
+    title: "Asistente AI en GPU propia"
+    title_en: "AI assistant on our own GPU"
+    summary: "El asistente entiende el grafo del juego y corre en GPU local (rápido y gratis); podés elegir GPU, nube o tu propio modelo (BYOK)."
+    summary_en: "The assistant understands the game graph and runs on a local GPU (fast and free); pick GPU, cloud or your own model (BYOK)."
+    tags: [ia, gpu]
+    link: "/tech"
+
+  - key: espionage
+    category: release
+    status: live
+    date: 2026-06-24
+    title: "Espionaje e inteligencia"
+    title_en: "Espionage & intelligence"
+    summary: "Espías y contraespías, intel persistida sobre rivales y un asistente que la usa para planear ataques."
+    summary_en: "Spies and counter-spies, persisted intel on rivals and an assistant that uses it to plan attacks."
+    tags: [gameplay]
+    link: "docs/sdd-espionage-intel.md"
+
+  - key: seasons
+    category: season
+    status: live
+    date: 2026-06-22
+    title: "Mundo persistente + temporadas"
+    title_en: "Persistent world + seasons"
+    summary: "Jugá en un mundo persistente con temporadas, Hall of Fame al cerrar y protección para novatos."
+    summary_en: "Play in a persistent world with seasons, a Hall of Fame at close and newbie protection."
+    tags: [temporada]
+    link: "docs/sdd-game-lifecycle.md"
+
+  - key: telegram-bot
+    category: incoming
+    status: planned
+    title: "Bot de Telegram"
+    title_en: "Telegram bot"
+    summary: "Jugar y recibir notificaciones desde Telegram, sobre el mismo backend API-first."
+    summary_en: "Play and get notifications from Telegram, on the same API-first backend."
+    tags: [clientes]
+    link: "docs/sdd-telegram-bot.md"
+
+  - key: spinoff-star-wars
+    category: spinoff
+    status: planned
+    title: "Universo: Star Wars"
+    title_en: "Universe: Star Wars"
+    summary: "Una partida ambientada en una galaxia muy, muy lejana."
+    summary_en: "A game set in a galaxy far, far away."
+    universe: star_wars
+    canon: fiction
+    standard_baseline: "Universo estándar: planetas y materiales reales (Sistema Solar / exosistemas)."
+    standard_baseline_en: "Standard universe: real planets and materials (Solar System / exosystems)."
+    differences:
+      - "Mundos del lore: Tatooine (desierto, 2 soles), Hoth (helado), Coruscant (ciudad-planeta)."
+      - "Naves con hiperimpulsor: X-wing, Caza TIE, Destructor Estelar, Estación de batalla."
+      - "Materiales nuevos: cristal kyber (armamento) y beskar (blindaje)."
+    differences_en:
+      - "Lore worlds: Tatooine (desert, twin suns), Hoth (frozen), Coruscant (city-planet)."
+      - "Hyperdrive ships: X-wing, TIE fighter, Star Destroyer, battle station."
+      - "New materials: kyber crystal (weaponry) and beskar (armor)."
+    licensing: fan-noncommercial
+    link: "docs/sdd-spinoff-universes.md"

@@ -571,6 +571,25 @@ async def test_colonize_with_tech_e2e(client):
     assert any(b["planet_key"] == "earth" for b in me["bases"])
 
 
+async def test_announcements_public_localized_and_filtered(client):
+    # SDD 27: anuncios públicos (sin auth), bilingües y filtrables por category/status.
+    r = await client.http.get("/api/v1/announcements")
+    assert r.status_code == 200, r.text
+    items = r.json()
+    assert items and all("key" in a and "title" in a and "category" in a for a in items)
+    # live primero (orden por status)
+    assert items[0]["status"] == "live"
+    # EN: el spinoff trae title en inglés + 'differences' (qué cambia vs estándar)
+    en = (await client.http.get("/api/v1/announcements?lang=en&category=spinoff")).json()
+    assert en and all(a["category"] == "spinoff" for a in en)
+    sw = next(a for a in en if a["key"] == "spinoff-star-wars")
+    assert sw["title"] == "Universe: Star Wars" and sw["differences"]
+    assert "title_en" not in sw   # helper *_en dropped
+    # filtro por status
+    live = (await client.http.get("/api/v1/announcements?status=live")).json()
+    assert live and all(a["status"] == "live" for a in live)
+
+
 async def test_events_feed_e2e(client):
     # SDD 36: el panel muestra activos + recientes + lo que puede aparecer (nunca vacío).
     h = await _register(client.http, "feeder")

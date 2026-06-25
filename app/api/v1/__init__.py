@@ -4,6 +4,7 @@ from app.api.v1 import (
     admin,
     advisor,
     alliances,
+    announcements,
     auth,
     bases,
     catalog,
@@ -43,6 +44,7 @@ api_router.include_router(intel.router, tags=["intel"])
 api_router.include_router(journal.router, tags=["journal"])
 api_router.include_router(insights.router, tags=["insights"])
 api_router.include_router(events.router, prefix="/events", tags=["events"])
+api_router.include_router(announcements.router, prefix="/announcements", tags=["announcements"])
 api_router.include_router(colonize.router, prefix="/colonize", tags=["colonize"])
 api_router.include_router(market.router, prefix="/market", tags=["market"])
 api_router.include_router(advisor.router, prefix="/players/me/advisor", tags=["advisor"])

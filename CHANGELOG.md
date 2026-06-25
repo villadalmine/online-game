@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Anuncios / "Lo que viene" (SDD 27)
+- Contenido **data-as-code** en `content/announcements.yaml` (tipado, bilingüe): categorías
+  `release|incoming|spinoff|season|maintenance` y estados `live|coming|planned`. Los spin-offs
+  (ej. Star Wars) listan **qué traen y en qué difieren del estándar** (`differences`).
+- Nuevo endpoint público **`GET /api/v1/announcements`** (sin auth): localiza con `?lang=`, filtra
+  por `?category=`/`?status=`, ordena live→planned y por fecha. `localize` ahora swapea también
+  `title`/`summary`/`standard_baseline`/`differences`.
+- UI: panel **📰 Novedades** en el cliente (categoría + estado + resumen + diferencias del spin-off).
+- Test e2e: `test_announcements_public_localized_and_filtered` (público, EN, filtros).
+
 ## [1.47.0] - 2026-06-25
 
 ### 2026-06-25 — Asistente: selector de modelo (GPU / nube / tu modelo BYOK) (SDD 9)
