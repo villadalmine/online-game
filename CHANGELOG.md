@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.31.0] - 2026-06-25
+
 ### 2026-06-25 — SDD 41: la IA aprende el meta de las partidas (insights del journal)
 - **Capa de insights** (`insights.py`): mina el journal (`battle_resolved` ahora guarda la **`force`**
   atacante) y calcula el **meta** real — win-rate de ataques + **win-rate por composición** (unidad
