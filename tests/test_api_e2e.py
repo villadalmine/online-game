@@ -596,6 +596,10 @@ async def test_announcements_public_localized_and_filtered(client):
     # filtro por status
     live = (await client.http.get("/api/v1/announcements?status=live")).json()
     assert live and all(a["status"] == "live" for a in live)
+    # SDD 27: los `release` se generan del CHANGELOG (auto), no del yaml
+    rel = (await client.http.get("/api/v1/announcements?category=release")).json()
+    assert rel and all(a["category"] == "release" for a in rel)
+    assert any(a["key"].startswith("release-") for a in rel)   # vienen del changelog
 
 
 async def test_events_feed_e2e(client):

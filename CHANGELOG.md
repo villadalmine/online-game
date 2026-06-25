@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Novedades se alimentan del CHANGELOG (SDD 27)
+- Los anuncios de categoría **`release`** ahora se **generan automáticamente** desde el `CHANGELOG.md`
+  (`app/services/changelog.py`: parsea cada `## [X.Y.Z] - fecha` + su título `### … — Título` y el
+  primer bullet como resumen). Así el panel **📰 Novedades** se mantiene solo; el `announcements.yaml`
+  queda solo para **incoming/spinoff/season**. El link va al CHANGELOG en GitHub.
+- Test: `GET /announcements?category=release` devuelve los `release-X.Y.Z` del changelog.
+
 ## [1.55.0] - 2026-06-25
 
 ### 2026-06-25 — Construir en colonias/bases orbitales (selector de base)

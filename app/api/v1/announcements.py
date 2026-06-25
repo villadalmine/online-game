@@ -22,7 +22,10 @@ async def announcements(
     """Lista pública de anuncios, localizada y filtrable. Orden: status (live→planned), luego fecha
     descendente (lo más nuevo primero)."""
     chosen = normalize_lang(lang or accept_language)
-    items = get_content().announcements
+    # SDD 27: los `release` se generan del CHANGELOG (auto); el yaml aporta incoming/spinoff/season.
+    from app.services.changelog import recent_releases
+    curated = [a for a in get_content().announcements if a.get("category") != "release"]
+    items = recent_releases() + curated
     if category:
         items = [a for a in items if a.get("category") == category]
     if status:
