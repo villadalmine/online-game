@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-24 — SDD 37 v1: grafo de colonización (raza × planeta, read-only)
+- `compat(race, planet)` determinista: a partir de los atributos del planeta (gravedad, temperatura,
+  atmósfera, agua) y las `tolerances` de la raza, da **habitabilidad**, **veredicto**
+  (🟢 ideal / 🟡 colonizable / 🟠 hostil / 🔒 imposible) y **modifiers** (prod/energía/costo) que
+  tendría esa colonia, con el **por qué**. Cada raza es "great" en su mundo natal; otros mundos van
+  de hostiles a imposibles (Mercurio sin atmósfera = imposible para todos; Venus imposible para
+  terrícolas por el calor, pero great para venusianos).
+- API `GET /colonize/options` (el grafo para tu raza/galaxia). La web muestra el veredicto en el
+  modal de planeta. Data-driven (editar `tolerances` rebalancea). Bilingüe.
+- Pendiente (con el usuario): fundar la colonia + aplicar los modifiers por-base (cambio estructural).
+- Test: además, robustecido `test_npc_strategy_runs_in_tick` (postura válida en vez de exacta) para
+  quitar un flake de orden entre tests.
+
 ## [1.23.0] - 2026-06-24
 
 ### 2026-06-24 — SDD 36: eventos dinámicos "happy hour" (implementado)

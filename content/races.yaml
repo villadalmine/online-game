@@ -8,6 +8,15 @@ races:
     name: "Terricolas"
     name_en: "Terrans"
     home_planet: earth
+    # Tolerancias para colonizar otros planetas (SDD 37): ambiente ideal + cuánto se bancan apartarse.
+    tolerances:
+      ideal_gravity_g: 1.0
+      ideal_temp_c: 15
+      gravity_tol: 0.55
+      temp_tol: 60
+      atmospheres: [thin, thick]
+      needs_water: false
+      hostile_penalty: 0.55
     description: "Equilibrados y versatiles. Economia y diplomacia fuertes."
     description_en: "Balanced and versatile. Strong economy and diplomacy."
     personality: >-
@@ -39,6 +48,15 @@ races:
     name: "Marcianos"
     name_en: "Martians"
     home_planet: mars
+    # Marcianos: rudos, resisten frío y baja gravedad (toleran más ambientes hostiles).
+    tolerances:
+      ideal_gravity_g: 0.38
+      ideal_temp_c: -50
+      gravity_tol: 0.7
+      temp_tol: 150
+      atmospheres: [thin, thick]
+      needs_water: false
+      hostile_penalty: 0.7
     description: "Rudos y militaristas; resisten ambientes hostiles."
     description_en: "Rugged and militaristic; they endure hostile environments."
     personality: >-
@@ -68,6 +86,15 @@ races:
     name: "Venusianos"
     name_en: "Venusians"
     home_planet: venus
+    # Venusianos: alta tecnología, resisten calor extremo y atmósferas densas.
+    tolerances:
+      ideal_gravity_g: 0.9
+      ideal_temp_c: 400
+      gravity_tol: 0.6
+      temp_tol: 420
+      atmospheres: [thin, thick]
+      needs_water: false
+      hostile_penalty: 0.7
     description: "Alta tecnologia, resistentes al calor; energia y ciencia."
     description_en: "High technology, heat-resistant; energy and science."
     personality: >-

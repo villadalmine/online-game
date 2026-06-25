@@ -7,6 +7,7 @@ from app.api.v1 import (
     auth,
     bases,
     catalog,
+    colonize,
     combat,
     events,
     expeditions,
@@ -39,4 +40,5 @@ api_router.include_router(public.router, prefix="/public", tags=["public"])
 api_router.include_router(intel.router, tags=["intel"])
 api_router.include_router(journal.router, tags=["journal"])
 api_router.include_router(events.router, prefix="/events", tags=["events"])
+api_router.include_router(colonize.router, prefix="/colonize", tags=["colonize"])
 api_router.include_router(advisor.router, prefix="/players/me/advisor", tags=["advisor"])

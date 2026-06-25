@@ -291,7 +291,7 @@
 const API="";
 let token=localStorage.getItem("token")||"";
 let lang=localStorage.getItem("lang")||"es";
-let catalog=null, es=null, state=null, players=[], alliances=[], intel={};
+let catalog=null, es=null, state=null, players=[], alliances=[], intel={}, colonizeOpts={};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -491,7 +491,7 @@ const I18N={
     ui:{build:"🏗 Construir",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking",
       logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo.",targetbase:"objetivo base",calc:"📊 Calcular"},
     ph:{advmsg:"¿qué construyo? me falta algo…",regemail:"email invitado (para registrarte)",user:"usuario (mín. 3)",pass:"contraseña (mín. 6)",otpemail:"tu@email.com",otpcode:"código de 6 dígitos",chatmsg:"mensaje…"},
-    s:{nofeed:"sin notificaciones sin leer",noevents:"sin eventos activos — pueden aparecer en cualquier momento",authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
+    s:{nofeed:"sin notificaciones sin leer",noevents:"sin eventos activos — pueden aparecer en cualquier momento",colonize:"🪐 Colonización (tu raza)",cyourhome:"tu mundo natal",verdict_great:"Ideal para colonizar",verdict_ok:"Colonizable",verdict_poor:"Hostil (rinde poco)",verdict_impossible:"Imposible de colonizar",authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
       otphelp:"Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta. Una vez dentro, quedás logueado en este dispositivo (no te pide código cada vez).",
       advdefault:"Preguntá y te aconsejo según el grafo del juego.",noseason:"Sin temporada activa.",closesin:"cierra en",closing:"cerrando…",newbie:"🛡 Protección de novato",newbieend:"termina en {x}; atacar a un jugador la cancela",
       colplayer:"jugador",colrace:"raza",colscore:"score",nounits:"sin unidades",nobases:"sin colonias",noqueue:"nada en cola",noflights:"sin flotas en vuelo",nomsgs:"sin mensajes — escribí el primero",noworld:"todavía no pasó nada en la galaxia",noally:"no hay alianzas aún",nocols:"sin colonias todavía",nomoons:"sin lunas",ranklist:"ranking de temporada",
@@ -508,7 +508,7 @@ const I18N={
     ui:{build:"🏗 Build",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",
       logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it.",targetbase:"target base",calc:"📊 Calculate"},
     ph:{advmsg:"what should I build? I'm missing something…",regemail:"invited email (to register)",user:"username (min. 3)",pass:"password (min. 6)",otpemail:"you@email.com",otpcode:"6-digit code",chatmsg:"message…"},
-    s:{nofeed:"no unread notifications",noevents:"no active events — they can pop up anytime",authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
+    s:{nofeed:"no unread notifications",noevents:"no active events — they can pop up anytime",colonize:"🪐 Colonization (your race)",cyourhome:"your homeworld",verdict_great:"Ideal to colonize",verdict_ok:"Colonizable",verdict_poor:"Hostile (low yield)",verdict_impossible:"Cannot colonize",authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
       otphelp:"We send a <b>code</b> to your email. First time, it creates your account. Once in, you stay logged in on this device (no code each time).",
       advdefault:"Ask and I'll advise you based on the game's dependency graph.",noseason:"No active season.",closesin:"closes in",closing:"closing…",newbie:"🛡 Newbie protection",newbieend:"ends in {x}; attacking a player cancels it",
       colplayer:"player",colrace:"race",colscore:"score",nounits:"no units",nobases:"no colonies",noqueue:"nothing queued",noflights:"no fleets in flight",nomsgs:"no messages — write the first",noworld:"nothing has happened in the galaxy yet",noally:"no alliances yet",nocols:"no colonies yet",nomoons:"no moons",ranklist:"season ranking",
@@ -603,7 +603,7 @@ async function refresh(){
     b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
-  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed(); loadReports(); loadEvents(); renderSeason();
+  renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); loadAllyChat(); loadWorld(); loadFeed(); loadReports(); loadEvents(); loadColonize(); renderSeason();
   renderCost(); renderTrainCost(); renderExpInfo(); renderForcePicker();
 }
 function renderResearch(){
@@ -794,6 +794,19 @@ function mineralName(key){ const m=(catalog&&catalog.minerals||[]).find(x=>x.key
 function moonName(key){ return (spec.moon[key]||{}).name||key; }
 // ── Espionaje / inteligencia (SDD 35) ─────────────────────────────────────────
 async function loadIntel(){ try{ const rs=await api("/api/v1/intel"); intel={}; rs.forEach(r=>intel[r.target_id]=r); }catch{} }
+// colonización (SDD 37): grafo de opciones raza×planeta para mostrar el veredicto por planeta
+async function loadColonize(){ try{ const rs=await api("/api/v1/colonize/options"); colonizeOpts={}; rs.forEach(o=>colonizeOpts[o.planet]=o); }catch{} }
+const VERDICT={great:["🟢","ok"],ok:["🟡","warn"],poor:["🟠","warn"],impossible:["🔒","bad"]};
+function colonizeHtml(planetKey){
+  const o=colonizeOpts[planetKey]; if(!o) return "";
+  const [icon,cls]=VERDICT[o.verdict]||["",""];
+  const home=o.is_home?` <span class="muted">(${esc(tr('cyourhome'))})</span>`:"";
+  const why=o.reasons&&o.reasons.length?` <span class="muted">— ${o.reasons.map(esc).join(", ")}</span>`:"";
+  const mods=o.verdict==='impossible'?"":` <span class="muted">· prod ×${o.modifiers.production} · ⚡×${o.modifiers.energy_regen} · 🏗×${o.modifiers.build_cost}</span>`;
+  return `<h2 style="margin-top:12px">${esc(tr('colonize'))}</h2>`+
+    `<div class="item"><span class="${cls}">${icon} ${esc(tr('verdict_'+o.verdict))}</span> `+
+    `<span class="muted">(hab. ${Math.round(o.habitability*100)}%)</span>${home}${why}${mods}</div>`;
+}
 function ageStr(iso){ if(!iso)return "—"; let s=Math.floor((Date.now()-new Date(iso))/1000); if(s<60)return s+"s";
   const m=Math.floor(s/60); if(m<60)return m+"m"; const h=Math.floor(m/60); if(h<24)return h+"h "+(m%60)+"m"; return Math.floor(h/24)+"d "+(h%24)+"h"; }
 function confClass(c){ return c>=0.6?"ok":(c>=0.3?"warn":"bad"); }
@@ -867,6 +880,7 @@ function openPlanet(key){
     (p.system?`<p class="muted">✨ ${esc(p.system)}${p.canon&&p.canon!=="real"?` · <span class="warn">${esc(p.canon)}</span>`:""}${p.confidence?` · <span class="muted">confianza: ${esc(p.confidence)}</span>`:""}</p>`:"")+
     (p.rationale?`<p class="muted">💡 ${esc(p.rationale)}</p>`:"")+
     (p.gravity_g!=null?`<p class="muted">🪐 gravedad ${p.gravity_g}g · 🌡 ${p.mean_temp_c}°C · atmósfera ${esc(p.atmosphere||"?")} · ${p.has_liquid_water?"💧 agua líquida":"sin agua"} · ☀ ${p.insolation}× ${p.canon&&p.canon!=="real"?`· <span class="warn">${esc(p.canon)}</span>`:""}</p>`:"")+
+    colonizeHtml(p.key)+
     `<h2>${esc(tr('abundance'))} <span class="muted">${esc(tr('abundancesub'))}</span></h2>${ab||'<span class="muted">—</span>'}`+
     `<h2 style="margin-top:12px">${esc(tr('moons'))}</h2><div class="row">${moons}</div>`+
     `<h2 style="margin-top:12px">${esc(tr('colonies'))} (${colonies.length})</h2>${cols}`;

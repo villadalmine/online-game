@@ -139,6 +139,18 @@ class IncomingAttackOut(BaseModel):
     arrives_at: datetime
 
 
+class ColonizeOptionOut(BaseModel):
+    planet: str
+    name: str
+    habitability: float
+    can_colonize: bool
+    verdict: str            # great | ok | poor | impossible
+    modifiers: dict
+    reasons: list[str]
+    is_home: bool = False
+    abundance_highlights: list[str] = []
+
+
 class ActiveEventOut(BaseModel):
     key: str
     name: str

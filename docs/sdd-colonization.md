@@ -95,6 +95,20 @@ can_colonize = atmo_ok-o-no-letal  AND  habitability >= min_habitability   # umb
 - **e2e:** `GET /colonize/options` lista veredictos coherentes con la raza; colonizar y luego ver la
   nueva base en `/players/me`.
 
+## 7.bis Estado de implementación (2026-06-24) — v1 (grafo de opciones, read-only)
+- **Contenido:** `tolerances` por raza en `content/races.yaml` (ambiente ideal + tolerancias +
+  atmósferas respirables); ajustado para que el mundo natal dé "great".
+- **Servicio `colonization.py`:** `compat(race, planet)` puro (habitability, can_colonize, verdict
+  great|ok|poor|impossible, modifiers prod/energía/costo, reasons) + `options(race, galaxy)` (el
+  grafo por planeta de tu galaxia, con `is_home` y `abundance_highlights`).
+- **API:** `GET /colonize/options` (tu raza). **Web:** el modal de planeta muestra el veredicto para
+  tu raza (🟢/🟡/🟠/🔒 + por qué + modifiers). Bilingüe.
+- **Tests:** compat (home=great, mercurio imposible por atmósfera, Venus imposible para terran por
+  calor), options ordenado + home flag; e2e. **260 verdes.**
+- **Pendiente (follow-up estructural, NO en v1):** `POST /colonize` (fundar base en otro planeta) +
+  aplicar los **modifiers por-colonia** (producción/energía/costo por base) — es el cambio de
+  por-jugador a por-base que marca el §8; se hace con el usuario presente.
+
 ## 8. Riesgos / decisiones
 - **Multiplicador por-base vs por-jugador:** hoy es por-jugador; introducir por-base es el cambio
   estructural principal (decidir: `effects.multiplier(..., base_id=)` o factor de planeta en el punto

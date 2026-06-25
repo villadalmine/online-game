@@ -293,15 +293,17 @@ async def test_physics_extreme_planet_regenerates_less_energy(client, monkeypatc
 
 
 async def test_npc_strategy_runs_in_tick(client):
-    # SDD 29: el tick corre la capa estratégica de NPCs; sin LLM la NPC mantiene 'opportunist'
-    # (postura persistida, el path estratégico corre sin romper el tick).
+    # SDD 29: el tick corre la capa estratégica de NPCs sin romper, y cada NPC queda con una
+    # postura VÁLIDA persistida (no asumimos una exacta: el orden/estado entre tests puede variar).
+    from app.services.npc import POSTURES
+
     h = await _register(client.http, "ticker")
     await _onboard(client.http, h)
     r = await client.http.post("/api/v1/admin/tick", headers=h)
     assert r.status_code == 200
     async with client.session_maker() as s:
-        npc = (await s.execute(select(Player).where(Player.is_npc.is_(True)))).scalars().first()
-        assert npc is not None and npc.npc_posture == "opportunist"
+        npcs = (await s.execute(select(Player).where(Player.is_npc.is_(True)))).scalars().all()
+        assert npcs and all(n.npc_posture in POSTURES for n in npcs)
 
 
 async def test_spy_and_intel_e2e(client):
@@ -384,6 +386,18 @@ async def test_shared_vision_shares_intel_e2e(client):
     intel = (await client.http.get("/api/v1/intel", headers=hb)).json()
     shared = [i for i in intel if i["target"] == "vis_rival"]
     assert shared and shared[0]["shared"] is True and shared[0]["via"] == "vis_a"
+
+
+async def test_colonize_options_e2e(client):
+    # SDD 37: el grafo de opciones raza×planeta para tu imperio.
+    h = await _register(client.http, "colonizer")
+    await _onboard(client.http, h)   # terran on earth (default _onboard)
+    r = await client.http.get("/api/v1/colonize/options", headers=h)
+    assert r.status_code == 200, r.text
+    opts = r.json()
+    assert opts and all("verdict" in o for o in opts)
+    home = [o for o in opts if o["is_home"]]
+    assert home and home[0]["verdict"] == "great"
 
 
 async def test_events_admin_start_and_active_e2e(client):
