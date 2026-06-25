@@ -166,7 +166,7 @@ async def test_market_rate_limits_home_only(session):
 
 
 async def test_hub_buy_pirate_risk_and_escort(session):
-    # SDD 42: comprar en el hub trae mercadería → riesgo determinístico de pirata; la escolta lo baja.
+    # SDD 42: comprar en el hub trae mercadería → riesgo determinístico; la escolta lo baja.
     from app.models import UnitStock
     from app.services.market import hub_trade, trade_raid_risk
 
