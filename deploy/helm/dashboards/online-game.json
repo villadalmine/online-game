@@ -1,89 +1,276 @@
 {
-  "title": "Online Galaxy War",
-  "uid": "online-game",
-  "schemaVersion": 39,
-  "version": 1,
-  "editable": true,
-  "tags": ["online-game"],
-  "templating": {
-    "list": [
-      {
-        "name": "datasource",
-        "type": "datasource",
-        "query": "prometheus",
-        "current": {},
-        "hide": 0
-      }
-    ]
-  },
-  "time": { "from": "now-6h", "to": "now" },
-  "refresh": "30s",
-  "panels": [
-    {
-      "type": "stat", "title": "Conectados ahora (SSE)", "id": 1,
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [ { "expr": "sum(game_sse_connections)", "refId": "A" } ]
-    },
-    {
-      "type": "stat", "title": "Jugadores totales", "id": 2,
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [ { "expr": "max(game_players_total)", "refId": "A" } ]
-    },
-    {
-      "type": "stat", "title": "Altas (última hora)", "id": 3,
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [ { "expr": "sum(increase(game_signups_total[1h]))", "refId": "A" } ]
-    },
-    {
-      "type": "stat", "title": "RPS", "id": 4,
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [ { "expr": "sum(rate(http_requests_total[5m]))", "refId": "A" } ]
-    },
-    {
-      "type": "timeseries", "title": "Requests por status", "id": 5,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [ { "expr": "sum by (status) (rate(http_requests_total[5m]))", "legendFormat": "{{status}}", "refId": "A" } ]
-    },
-    {
-      "type": "timeseries", "title": "Latencia /players/me y global (p95)", "id": 6,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [ { "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "A" } ]
-    },
-    {
-      "type": "timeseries", "title": "Eventos de juego (rate)", "id": 7,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [ { "expr": "sum by (kind) (rate(game_events_total[10m]))", "legendFormat": "{{kind}}", "refId": "A" } ]
-    },
-    {
-      "type": "timeseries", "title": "Altas / logins (rate)", "id": 8,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [
-        { "expr": "sum(rate(game_signups_total[10m]))", "legendFormat": "signups", "refId": "A" },
-        { "expr": "sum(rate(game_logins_total[10m]))", "legendFormat": "logins", "refId": "B" }
-      ]
-    },
-    {
-      "type": "timeseries", "title": "Tick del mundo (p95 seg)", "id": 9,
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [ { "expr": "histogram_quantile(0.95, sum by (le) (rate(game_tick_duration_seconds_bucket[10m])))", "legendFormat": "p95", "refId": "A" } ]
-    },
-    {
-      "type": "timeseries", "title": "LLM: latencia p95 y errores", "id": 10,
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "targets": [
-        { "expr": "histogram_quantile(0.95, sum by (le) (rate(game_llm_latency_seconds_bucket[10m])))", "legendFormat": "p95", "refId": "A" },
-        { "expr": "sum(rate(game_llm_requests_total{status=\"error\"}[10m]))", "legendFormat": "errores/s", "refId": "B" }
-      ]
-    }
+ "title": "Online Galaxy War",
+ "uid": "online-game",
+ "schemaVersion": 39,
+ "version": 2,
+ "editable": true,
+ "tags": [
+  "online-game"
+ ],
+ "templating": {
+  "list": [
+   {
+    "name": "datasource",
+    "type": "datasource",
+    "query": "prometheus",
+    "current": {},
+    "hide": 0
+   }
   ]
+ },
+ "time": {
+  "from": "now-6h",
+  "to": "now"
+ },
+ "refresh": "30s",
+ "panels": [
+  {
+   "type": "stat",
+   "title": "Conectados ahora (SSE)",
+   "id": 1,
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 0,
+    "y": 0
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "sum(game_sse_connections)",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "stat",
+   "title": "Jugadores totales",
+   "id": 2,
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 6,
+    "y": 0
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "max(game_players_total)",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "stat",
+   "title": "Altas (última hora)",
+   "id": 3,
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 12,
+    "y": 0
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "sum(increase(game_signups_total[1h]))",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "stat",
+   "title": "RPS",
+   "id": 4,
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 18,
+    "y": 0
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "sum(rate(http_requests_total[5m]))",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Requests por status",
+   "id": 5,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 4
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "sum by (status) (rate(http_requests_total[5m]))",
+     "legendFormat": "{{status}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Latencia /players/me y global (p95)",
+   "id": 6,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 4
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))",
+     "legendFormat": "p95",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Eventos de juego (rate)",
+   "id": 7,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 12
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "sum by (kind) (rate(game_events_total[10m]))",
+     "legendFormat": "{{kind}}",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Altas / logins (rate)",
+   "id": 8,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 12
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "sum(rate(game_signups_total[10m]))",
+     "legendFormat": "signups",
+     "refId": "A"
+    },
+    {
+     "expr": "sum(rate(game_logins_total[10m]))",
+     "legendFormat": "logins",
+     "refId": "B"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Tick del mundo (p95 seg)",
+   "id": 9,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 20
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(game_tick_duration_seconds_bucket[10m])))",
+     "legendFormat": "p95",
+     "refId": "A"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "LLM: latencia p95 y errores",
+   "id": 10,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 20
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(game_llm_latency_seconds_bucket[10m])))",
+     "legendFormat": "p95",
+     "refId": "A"
+    },
+    {
+     "expr": "sum(rate(game_llm_requests_total{status=\"error\"}[10m]))",
+     "legendFormat": "errores/s",
+     "refId": "B"
+    }
+   ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Acciones del juego (journal) — incl. espionaje/combate",
+   "id": 11,
+   "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 28
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "${datasource}"
+   },
+   "targets": [
+    {
+     "expr": "sum by (kind) (rate(game_journal_events_total[10m]))",
+     "legendFormat": "{{kind}}",
+     "refId": "A"
+    }
+   ]
+  }
+ ]
 }
