@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.43.0] - 2026-06-25
+
 ### 2026-06-25 — Fix: el auto-refresh borraba lo que elegías en Mercado/Hub
 - El panel del Hub (y el de Mercado/Transporte) se re-renderiza solo cada 4s; eso **reseteaba a los
   valores por defecto** lo que estabas eligiendo (minerales del trueque del mercado negro, cantidades,
