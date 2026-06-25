@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.29.0] - 2026-06-25
+
 ### 2026-06-25 — SDD 40: métricas del asistente por jugador + energía de nivelado por ranking
 - **Uso del asistente por jugador**: cada consulta deja un evento **`advisor_ask`** en el journal
   (`game_journal_events_total{kind="advisor_ask"}`) → cruzable con todo. (Quién + qué modelo
