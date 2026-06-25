@@ -77,14 +77,15 @@ async def transport(
     """Envía minerales de un planeta tuyo a otro (necesita naves de carga; viaja y llega)."""
     try:
         m = await market.start_transport(
-            session, player, body.from_planet, body.to_planet, body.cargo
+            session, player, body.from_planet, body.to_planet, body.cargo, body.escort
         )
     except market.MarketError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
     await session.commit()
     return TransportMissionOut(
         id=m.id, from_planet=m.from_planet, to_planet=m.to_planet,
-        cargo=json.loads(m.cargo), ships=m.ships, status=m.status, arrives_at=m.arrives_at,
+        cargo=json.loads(m.cargo), escort=json.loads(m.escort or "{}"),
+        ships=m.ships, status=m.status, arrives_at=m.arrives_at,
     )
 
 
@@ -102,7 +103,8 @@ async def transports(
     return [
         TransportMissionOut(
             id=m.id, from_planet=m.from_planet, to_planet=m.to_planet,
-            cargo=json.loads(m.cargo), ships=m.ships, status=m.status, arrives_at=m.arrives_at,
+            cargo=json.loads(m.cargo), escort=json.loads(m.escort or "{}"),
+            ships=m.ships, status=m.status, arrives_at=m.arrives_at,
         )
         for m in res.scalars()
     ]

@@ -177,11 +177,13 @@ async def player_market_planets(session: AsyncSession, player: Player) -> list[s
 # Transporte de minerales entre planetas (SDD 42 Fase 2)
 # --------------------------------------------------------------------------- #
 async def start_transport(
-    session: AsyncSession, player: Player, from_planet: str, to_planet: str, cargo: dict[str, int]
+    session: AsyncSession, player: Player, from_planet: str, to_planet: str,
+    cargo: dict[str, int], escort: dict[str, int] | None = None,
 ):
     """Despacha un envío de minerales de `from_planet` a `to_planet`. Requiere naves de carga
     suficientes (capacidad `cargo` por nave). Consume carga del origen + naves; al llegar acredita
-    al destino y devuelve las naves (process_transport_missions)."""
+    al destino y devuelve las naves (process_transport_missions). Opcionalmente lleva una `escort`
+    de unidades militares que defiende el convoy de los piratas (ver raid_convoys)."""
     import json
     from datetime import timedelta
 
@@ -192,6 +194,7 @@ async def start_transport(
 
     now = datetime.now(UTC)
     cargo = {k: int(v) for k, v in cargo.items() if v and int(v) > 0}
+    escort = {k: int(v) for k, v in (escort or {}).items() if v and int(v) > 0}
     if not cargo:
         raise MarketError("No hay carga para transportar.")
     if from_planet == to_planet:
@@ -230,21 +233,32 @@ async def start_transport(
             f"despachaste {int(sent)}. Las demás esperan en el hangar."
         )
 
+    if escort:   # la escolta debe estar disponible (unidades militares, no naves de carga)
+        owned = await player_units(session, player.id)
+        for u, q in escort.items():
+            if u == "cargo_ship":
+                raise MarketError("Las naves de carga no escoltan; usá unidades militares.")
+            if owned.get(u, 0) < q:
+                raise MarketError(f"No tenés {q} de {u} para escoltar (tenés {owned.get(u, 0)}).")
+
     for m, q in cargo.items():   # la carga sale del origen ya
         (await get_or_create_stock(session, player.id, m, from_planet)).amount -= q
     (await get_or_create_unit_stock(session, player.id, "cargo_ship")).quantity -= ships_needed
+    for u, q in escort.items():   # la escolta también parte (vuelve si sobrevive)
+        (await get_or_create_unit_stock(session, player.id, u)).quantity -= q
 
     travel = travel_seconds(from_planet, to_planet)
     mission = TransportMission(
         player_id=player.id, from_planet=from_planet, to_planet=to_planet,
-        cargo=json.dumps(cargo), ships=ships_needed, status="outbound",
+        cargo=json.dumps(cargo), escort=json.dumps(escort), ships=ships_needed, status="outbound",
         arrives_at=now + timedelta(seconds=travel),
     )
     session.add(mission)
     await session.flush()
     from app.services.journal import record
     await record(session, "transport_launched", player.id,
-                 from_planet=from_planet, to_planet=to_planet, cargo=cargo, ships=ships_needed)
+                 from_planet=from_planet, to_planet=to_planet, cargo=cargo,
+                 ships=ships_needed, escort=escort)
     return mission
 
 
@@ -270,9 +284,78 @@ async def process_transport_missions(
         for mineral, qty in json.loads(m.cargo).items():
             (await get_or_create_stock(session, m.player_id, mineral, m.to_planet)).amount += qty
         (await get_or_create_unit_stock(session, m.player_id, "cargo_ship")).quantity += m.ships
+        for unit, qty in json.loads(m.escort or "{}").items():   # la escolta superviviente vuelve
+            (await get_or_create_unit_stock(session, m.player_id, unit)).quantity += qty
         m.status = "done"
         done += 1
     return done
+
+
+# --------------------------------------------------------------------------- #
+# Piratería: convoyes interceptados; la escolta militar los defiende (SDD 42 §8)
+# --------------------------------------------------------------------------- #
+def _raid_outcome(escort: dict[str, int], total_cargo: int, s) -> tuple[str, dict[str, int], float]:
+    """Resuelve un asalto pirata a un convoy (misma lógica de pérdidas por proporción de poder que
+    resolve_combat). Devuelve (resultado, bajas_de_escolta, fracción_de_carga_robada)."""
+    from app.services.combat import _force_power
+
+    pirate = s.pirate_strength * total_cargo
+    defense = _force_power(escort, "defense")
+    total = pirate + defense
+    if pirate <= 0 or total <= 0:
+        return ("safe", {}, 0.0)
+    loss_ratio = pirate / total
+    losses = {
+        k: min(q, round(q * loss_ratio)) for k, q in escort.items() if round(q * loss_ratio) > 0
+    }
+    if defense >= pirate:
+        return ("defended", losses, 0.0)   # la escolta repele; algunas bajas, carga intacta
+    stolen = min(s.pirate_loss_cap, (pirate - defense) / pirate)
+    return ("raided", losses, stolen)
+
+
+async def raid_convoys(
+    session: AsyncSession, now: datetime | None = None, force: bool = False
+) -> int:
+    """Tick del mundo: con prob. `pirate_raid_chance`, los piratas emboscan convoyes en vuelo. La
+    `escort` los defiende; si pierden, roban hasta `pirate_loss_cap` de la carga (perdida) y la
+    escolta sufre bajas. `force=True` salta el dado (para tests/admin)."""
+    import json
+    import random
+
+    from app.models import TransportMission
+    s = get_settings()
+    now = now or datetime.now(UTC)
+    res = await session.execute(
+        select(TransportMission).where(TransportMission.status == "outbound")
+    )
+    raided = 0
+    from app.services.journal import record
+    for m in res.scalars():
+        if not force and random.random() > s.pirate_raid_chance:
+            continue
+        escort = json.loads(m.escort or "{}")
+        cargo = json.loads(m.cargo or "{}")
+        total = sum(cargo.values())
+        result, losses, stolen_frac = _raid_outcome(escort, total, s)
+        if result == "safe":
+            continue
+        for u, lost in losses.items():   # las bajas de escolta no vuelven
+            escort[u] = max(0, escort.get(u, 0) - lost)
+        m.escort = json.dumps({k: v for k, v in escort.items() if v > 0})
+        if result == "raided":
+            stolen = {k: int(q * stolen_frac) for k, q in cargo.items() if int(q * stolen_frac) > 0}
+            for k, q in stolen.items():
+                cargo[k] -= q
+            m.cargo = json.dumps(cargo)
+            await record(session, "convoy_raided", m.player_id,
+                         from_planet=m.from_planet, to_planet=m.to_planet,
+                         stolen=stolen, escort_losses=losses)
+            raided += 1
+        else:   # defended
+            await record(session, "convoy_defended", m.player_id,
+                         from_planet=m.from_planet, to_planet=m.to_planet, escort_losses=losses)
+    return raided
 
 
 # --------------------------------------------------------------------------- #

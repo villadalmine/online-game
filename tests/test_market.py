@@ -210,6 +210,66 @@ async def test_black_market_needs_ship_and_material(session):
         pass
 
 
+async def test_pirates_steal_from_unescorted_convoy(session):
+    import json
+
+    from app.models import UnitStock
+    from app.services.market import raid_convoys, start_transport
+
+    p = await _player(session, "naked_convoy")
+    (await get_or_create_stock(session, p.id, "iron", "earth")).amount = 1000.0
+    session.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=1))
+    await session.commit()
+
+    m = await start_transport(session, p, "earth", "mars", {"iron": 400})   # sin escolta
+    await session.commit()
+    n = await raid_convoys(session, force=True)
+    await session.commit()
+    assert n == 1
+    cargo = json.loads(m.cargo)
+    assert cargo["iron"] == 200   # piratas roban el tope (50%)
+
+
+async def test_escort_defends_convoy(session):
+    import json
+
+    from app.models import UnitStock
+    from app.services.market import raid_convoys, start_transport
+
+    p = await _player(session, "guarded_convoy")
+    (await get_or_create_stock(session, p.id, "iron", "earth")).amount = 1000.0
+    session.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=1))
+    session.add(UnitStock(player_id=p.id, unit_key="tank", quantity=1))   # tank def=25 > pirata
+    await session.commit()
+
+    m = await start_transport(session, p, "earth", "mars", {"iron": 400}, escort={"tank": 1})
+    await session.commit()
+    await raid_convoys(session, force=True)
+    await session.commit()
+    assert json.loads(m.cargo)["iron"] == 400   # escolta repele: carga intacta
+
+
+async def test_escort_must_be_military_and_owned(session):
+    from app.models import UnitStock
+    from app.services.market import MarketError, start_transport
+
+    p = await _player(session, "bad_escort")
+    (await get_or_create_stock(session, p.id, "iron", "earth")).amount = 1000.0
+    session.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=2))
+    await session.commit()
+    try:                                   # escoltar con naves de carga → no
+        await start_transport(session, p, "earth", "mars", {"iron": 100},
+                              escort={"cargo_ship": 1})
+        raise AssertionError("las naves de carga no escoltan")
+    except MarketError:
+        pass
+    try:                                   # escolta que no tenés → no
+        await start_transport(session, p, "earth", "mars", {"iron": 100}, escort={"tank": 1})
+        raise AssertionError("debía faltar la escolta")
+    except MarketError:
+        pass
+
+
 async def test_transport_limits_ships_per_window(session):
     from app.models import UnitStock
     from app.services.market import MarketError, start_transport

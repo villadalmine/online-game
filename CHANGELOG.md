@@ -7,6 +7,22 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Piratería y escolta de convoyes (SDD 42 Fase 3 §8)
+- Los **convoyes** de transporte ahora pueden ser **emboscados por piratas** en vuelo: cada tick del
+  mundo, con probabilidad `pirate_raid_chance`, un convoy es atacado. El poder pirata escala con el
+  tamaño de la carga (`pirate_strength`).
+- **Escolta**: `POST /api/v1/market/transport` acepta `escort` (unidades militares que viajan con el
+  convoy). Defienden con su `defense` usando la misma lógica de pérdidas que `resolve_combat`: si la
+  escolta repele, la carga queda intacta (puede sufrir bajas); si pierde, los piratas roban hasta
+  `pirate_loss_cap` (50%) de la carga. La escolta superviviente vuelve al llegar.
+- Las naves de carga **no** escoltan (hay que mandar unidades militares); valida tenencia.
+- Journal: `convoy_raided` / `convoy_defended`. Worker corre `raid_convoys` antes de entregar.
+- Migración: `transport_missions.escort` (Text, default `{}`).
+- UI: selector de escolta opcional en el form de transporte (🛡).
+- Tests: `test_pirates_steal_from_unescorted_convoy`, `test_escort_defends_convoy`,
+  `test_escort_must_be_military_and_owned` (servicio) y `test_transport_with_escort_e2e` (HTTP:
+  escoltar con nave de carga → 400, escolta militar → 201 + eco).
+
 ## [1.38.0] - 2026-06-25
 
 ### 2026-06-25 — Mercado negro: trueque material-por-material (SDD 42 Fase 3)

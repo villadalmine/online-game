@@ -474,6 +474,7 @@ class TransportMission(Base):
     from_planet: Mapped[str] = mapped_column(String(50))
     to_planet: Mapped[str] = mapped_column(String(50))
     cargo: Mapped[str] = mapped_column(Text, default="{}")        # {mineral: qty}
+    escort: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")  # {unit: qty}
     ships: Mapped[int] = mapped_column(Integer, default=1)        # naves de carga usadas
     status: Mapped[str] = mapped_column(String(20), default="outbound")  # outbound | done
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

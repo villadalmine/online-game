@@ -460,6 +460,40 @@ async def test_black_market_barter_e2e(client):
     assert body["get_mineral"] == "titanium"
 
 
+async def test_transport_with_escort_e2e(client):
+    # SDD 42 Fase 3: despachar un convoy con escolta militar (defensa anti-piratas).
+    from app.models import Player, UnitStock
+    from app.services.economy import get_or_create_stock
+
+    h = await _register(client.http, "convoy_e2e")
+    await _onboard(client.http, h)   # terran/earth
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "convoy_e2e"))).scalar_one()
+        s.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=1))
+        s.add(UnitStock(player_id=p.id, unit_key="tank", quantity=2))
+        (await get_or_create_stock(s, p.id, "iron", "earth")).amount = 1000.0
+        await s.commit()
+
+    # escoltar con nave de carga → 400
+    bad = await client.http.post(
+        "/api/v1/market/transport", headers=h,
+        json={"from_planet": "earth", "to_planet": "mars", "cargo": {"iron": 100},
+              "escort": {"cargo_ship": 1}},
+    )
+    assert bad.status_code == 400
+
+    r = await client.http.post(
+        "/api/v1/market/transport", headers=h,
+        json={"from_planet": "earth", "to_planet": "mars", "cargo": {"iron": 300},
+              "escort": {"tank": 1}},
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["escort"] == {"tank": 1}
+    # la escolta partió con el convoy → queda 1 tank
+    ts = (await client.http.get("/api/v1/market/transport", headers=h)).json()
+    assert any(t["escort"] == {"tank": 1} for t in ts)
+
+
 async def test_colonize_options_e2e(client):
     # SDD 37: el grafo de opciones raza×planeta para tu imperio.
     h = await _register(client.http, "colonizer")

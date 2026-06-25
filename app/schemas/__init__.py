@@ -55,6 +55,7 @@ class TransportRequest(BaseModel):
     from_planet: str
     to_planet: str
     cargo: dict[str, int]
+    escort: dict[str, int] | None = None
 
 
 class TransportMissionOut(BaseModel):
@@ -62,6 +63,7 @@ class TransportMissionOut(BaseModel):
     from_planet: str
     to_planet: str
     cargo: dict[str, int]
+    escort: dict[str, int] = {}
     ships: int
     status: str
     arrives_at: datetime
