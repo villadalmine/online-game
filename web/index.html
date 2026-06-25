@@ -32,6 +32,11 @@
   .chip{ background:#243056; border-radius:18px; padding:3px 10px; font-size:12px; white-space:nowrap; }
   .pill{ background:#243056; border-radius:18px; padding:3px 10px; font-size:12px; }
   .muted{ color:var(--mut); font-size:12px; } .ok{ color:#7ee787; } .bad{ color:#ff8a8a; } .warn{ color:#f0c674; }
+  #toasts{ position:fixed; top:12px; right:12px; z-index:9999; display:flex; flex-direction:column; gap:8px; max-width:min(92vw,360px); }
+  .toast{ background:var(--card2); border:1px solid #33406e; border-left-width:4px; border-radius:8px; padding:9px 30px 9px 11px; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.45); position:relative; cursor:pointer; animation:tin .18s ease-out; word-break:break-word; }
+  .toast.ok{ border-left-color:#7ee787; color:#cdeacd; } .toast.bad{ border-left-color:#ff8a8a; color:#ffd2d2; }
+  .toast .x{ position:absolute; top:5px; right:9px; color:var(--mut); font-size:15px; line-height:1; }
+  @keyframes tin{ from{ opacity:0; transform:translateX(20px); } to{ opacity:1; transform:none; } }
   .bar{ height:9px; background:#0a0e1f; border:1px solid #33406e; border-radius:6px; overflow:hidden; }
   .bar>div{ height:100%; background:linear-gradient(90deg,#2b5fff,#7ea2ff); transition:width .9s linear; }
   table{ width:100%; border-collapse:collapse; font-size:13px; } th,td{ text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); }
@@ -83,6 +88,7 @@
 </style>
 </head>
 <body>
+<div id="toasts"></div>
 <header>
   <h1>🪐 Online Galaxy War</h1>
   <div class="row" id="hdr">
@@ -171,7 +177,6 @@
       <div class="row">
         <button class="sec" onclick="refresh()" data-i18n="refresh" title="Relee tu estado del servidor (como F5, pero sin recargar la página). Igual pasa solo cada 4s.">↻ Refrescar</button>
       </div>
-      <p id="msg" class="muted"></p>
       <p class="muted" data-i18n="worldtip">El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.</p>
     </div>
 
@@ -329,7 +334,19 @@ async function api(path,method="GET",body){
   if(!r.ok) throw new Error(fmtErr(d,t)); return d;
 }
 function fmtErr(d,t){ if(d&&Array.isArray(d.detail)) return d.detail.map(e=>(e.loc?e.loc.slice(-1)+": ":"")+(e.msg||JSON.stringify(e))).join("; "); return (d&&d.detail)||t||"error de red"; }
-function msg(t,ok=true){ const m=$("msg"); m.textContent=t; m.className=ok?"ok":"bad"; }
+// Avisos centralizados (SDD 42 UX): toasts apilables y descartables. Éxitos se borran solos;
+// los errores quedan hasta que los cierres (clic o ×), así no se te pasa qué pasó.
+function msg(t,ok=true){
+  const box=$("toasts"); if(!box) return;
+  const el=document.createElement("div");
+  el.className="toast "+(ok?"ok":"bad");
+  el.innerHTML=`<span class="x">×</span>${esc(String(t))}`;
+  const close=()=>{ if(el.parentNode){ el.style.opacity="0"; el.style.transform="translateX(20px)"; setTimeout(()=>el.remove(),180); } };
+  el.onclick=close;
+  box.appendChild(el);
+  while(box.children.length>5) box.firstChild.remove();   // no más de 5 a la vez
+  if(ok) setTimeout(close,4500);                            // los OK se autodescartan
+}
 
 // auth
 function authErr(t){ const e=$("autherr"); e.textContent=t; e.className="bad"; }
@@ -400,7 +417,7 @@ function renderExpInfo(){ const m=spec.moon[$("moon").value]; if(!m) return; con
   const lacks=[]; if(state&&state.energy<e) lacks.push("⚡energía"); if(req&&state&&(state.units[req]||0)<1) lacks.push(req);
   const warn=lacks.length?` — <span class="bad">⚠ te falta: ${lacks.join(", ")}</span>`:` — <span class="ok">✓ listo</span>`;
   $("expinfo").innerHTML=`⚡${e} · requiere ${req||"-"} · trae ${grants||"-"}${warn}${reach}`; }
-async function onboard(){ try{ await api("/api/v1/players/onboard","POST",{galaxy_key:"milky_way",planet_key:$("planet").value,race_key:$("race").value}); boot(); }catch(e){ alert(e.message);} }
+async function onboard(){ try{ await api("/api/v1/players/onboard","POST",{galaxy_key:"milky_way",planet_key:$("planet").value,race_key:$("race").value}); boot(); }catch(e){ msg(e.message,false);} }
 
 // actions
 const baseId=()=>(state&&state.bases[0])?state.bases[0].id:1;

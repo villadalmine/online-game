@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — Avisos centralizados: toasts apilables y descartables
+- Todos los resultados de acciones (construir, entrenar, vender, transportar, atacar, investigar,
+  alianzas, etc.) ahora aparecen como **toasts** arriba a la derecha, **siempre visibles** sin
+  importar en qué panel estés ni cuánto hayas scrolleado. Antes el aviso salía en un `#msg` cerca del
+  panel de imperio y si estabas en un panel de más abajo no te enterabas de "qué pasó".
+- Los **éxitos** se autodescartan (~4.5s); los **errores quedan** hasta que los cerrás (clic o ×), así
+  no se te escapa el motivo. Máximo 5 a la vez. `alert()` del onboarding también pasó a toast.
+- Los **pre-cálculos inline** (costo/viabilidad al crear unidades, plan de combate, estimación del
+  mercado negro) se mantienen donde están: lo que se puede anticipar se muestra antes de accionar; lo
+  que solo se sabe al ejecutar el botón cae en el toast. (Cambio solo de frontend; sin API nueva.)
+
 ## [1.41.0] - 2026-06-25
 
 ### 2026-06-25 — Mercado negro: la UI ahora te dice por qué no podés trocar
