@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.35.0] - 2026-06-25
+
 ### 2026-06-25 — SDD 42 Fase 2 completa: transporte de minerales entre planetas
 - Unidad **`cargo_ship`** (capacidad `cargo`) + **`TransportMission`**: enviás minerales de un planeta
   tuyo a otro — sale del origen, **viaja** (tiempo por distancia, consume naves), al **llegar acredita
