@@ -96,6 +96,18 @@ technologies:
     effect: colonize
     colonize: { axis: atmosphere, factor: 1.0 }
     magnitude: 1.0
+  - key: orbital_robotics
+    name: "Robótica orbital"
+    name_en: "Orbital robotics"
+    description: "Estaciones orbitales con robots: extraen recursos de mundos letales (nadie vive ahí; naves van y vienen). Rinde menos, cuesta más, pero abre cualquier mundo."
+    description_en: "Orbital stations with robots: extract resources from lethal worlds (no one lives there; ships ferry). Lower yield, higher cost, but opens any world."
+    requires: research_lab
+    energy_cost: 60
+    research_seconds: 1500
+    cost: { structural: 600, energetic: 400, advanced: 450 }
+    effect: colonize
+    colonize: { axis: orbital }
+    magnitude: 1.0
   - key: counter_espionage
     name: "Contraespionaje"
     name_en: "Counter-espionage"

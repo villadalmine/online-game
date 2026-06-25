@@ -136,10 +136,14 @@ def options(race_key: str, galaxy_key: str | None, techs=()) -> list[dict]:
     return out
 
 
-async def found_colony(session: AsyncSession, player: Player, planet_key: str) -> Base_:
-    """Funda una colonia (nueva base) en `planet_key` (SDD 37). Valida compat + galaxia + límite,
-    consume 1 transbordador y energía (escala con nº de colonias), y crea la base. v1: instantáneo
-    (sin viaje). Los stocks son un pool por jugador; la colonia produce según su planeta."""
+async def found_colony(
+    session: AsyncSession, player: Player, planet_key: str, mode: str = "surface"
+) -> Base_:
+    """Funda una colonia en `planet_key` (SDD 37). `mode`:
+    - "surface": base terrestre, requiere que el mundo sea colonizable (compat, con tus techs).
+    - "orbital": estación con robots (SDD 37 v2), requiere `orbital_robotics`; sirve en CUALQUIER
+      mundo (los robots no viven ahí) pero rinde menos y cuesta más.
+    Consume 1 transbordador + energía (escala con nº de colonias). Instantáneo en v1 (sin viaje)."""
     from datetime import UTC, datetime
 
     from app.core.config import get_settings
@@ -162,10 +166,18 @@ async def found_colony(session: AsyncSession, player: Player, planet_key: str) -
     if planet_key == player.planet_key:
         raise ColonizeError("Ya tenés tu base ahí.")
 
-    verdict = compat(player.race_key, planet_key, techs)
-    if not verdict["can_colonize"]:
-        why = ", ".join(verdict["reasons"]) or "ambiente incompatible"
-        raise ColonizeError(f"No podés colonizar {planet_key}: {why}.")
+    if mode == "orbital":
+        if "orbital_robotics" not in techs:
+            raise ColonizeError("Necesitás investigar Robótica orbital para una base orbital.")
+        # los robots no necesitan habitabilidad → cualquier mundo sirve
+    else:
+        verdict = compat(player.race_key, planet_key, techs)
+        if not verdict["can_colonize"]:
+            why = ", ".join(verdict["reasons"]) or "ambiente incompatible"
+            raise ColonizeError(
+                f"No podés colonizar {planet_key} en superficie: {why}. "
+                "Probá una base orbital (robótica orbital)."
+            )
 
     # ¿ya tenés una base en ese planeta?
     existing = (await session.execute(
@@ -185,6 +197,8 @@ async def found_colony(session: AsyncSession, player: Player, planet_key: str) -
         raise ColonizeError("Necesitás un transbordador para colonizar.")
 
     energy_cost = s.colonize_energy_cost * (1 + colonies)   # expansión decreciente
+    if mode == "orbital":
+        energy_cost *= s.orbital_cost_mult
     if not spend_energy(
         player, energy_cost, now, effective_energy_regen(player, s), s.energy_max
     ):
@@ -193,10 +207,11 @@ async def found_colony(session: AsyncSession, player: Player, planet_key: str) -
     stock = await get_or_create_unit_stock(session, player.id, "shuttle")
     stock.quantity -= 1   # el transbordador se usa en el viaje de colonización
 
-    base = Base_(player_id=player.id, planet_key=planet_key,
-                 name=f"Colonia {c.planets[planet_key].get('name', planet_key)}")
+    pname = c.planets[planet_key].get("name", planet_key)
+    name = f"Estación orbital {pname}" if mode == "orbital" else f"Colonia {pname}"
+    base = Base_(player_id=player.id, planet_key=planet_key, base_type=mode, name=name)
     session.add(base)
     await session.flush()
     from app.services.journal import record
-    await record(session, "colonize", player.id, planet=planet_key, base_id=base.id)
+    await record(session, "colonize", player.id, planet=planet_key, base_id=base.id, mode=mode)
     return base

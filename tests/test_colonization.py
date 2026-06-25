@@ -105,3 +105,24 @@ async def test_found_colony_needs_tech_then_shuttle_then_creates_base(session):
         )
     )).scalar_one()
     assert sh == 0
+
+
+async def test_orbital_base_needs_robotics_and_opens_lethal_worlds(session):
+    # SDD 37 v2: base orbital con robots → coloniza mundos letales (Mercurio, sin atmósfera),
+    # pero requiere la tecnología Robótica orbital.
+    p = await _terran(session, "orbiter")
+    p.energy = 999.0
+    session.add(UnitStock(player_id=p.id, unit_key="shuttle", quantity=2))
+    await session.commit()
+
+    try:
+        await found_colony(session, p, "mercury", mode="orbital")
+        raise AssertionError("orbital debía requerir Robótica orbital")
+    except ColonizeError as e:
+        assert "rob" in str(e).lower()
+
+    session.add(PlayerTech(player_id=p.id, tech_key="orbital_robotics"))
+    await session.commit()
+    base = await found_colony(session, p, "mercury", mode="orbital")
+    await session.commit()
+    assert base.base_type == "orbital" and base.planet_key == "mercury"

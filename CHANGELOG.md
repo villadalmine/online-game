@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 37 v2: bases orbitales con robots (colonizar mundos letales)
+- Tecnología **Robótica orbital** + tipo de base **orbital** (`Base_.base_type`): una estación con
+  robots que **extrae recursos de mundos letales** (Mercurio sin atmósfera, etc.) sin habitarlos —
+  nadie vive ahí, las naves van y vienen. Rinde fijo bajo (`orbital_yield` 0.4, sin importar
+  habitabilidad) y cuesta más (`orbital_cost_mult`). `POST /colonize {mode:"orbital"}`; botón
+  **🛰 Base orbital** en el modal de planeta (aparece si investigaste la tech). Migración aditiva
+  (`base_type` default surface → no rompe partidas). Tests + 267 verdes.
+
 ## [1.25.0] - 2026-06-25
 
 ### 2026-06-25 — SDD 37: fundar colonias + tech para mundos hostiles + producción por-colonia

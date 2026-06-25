@@ -85,6 +85,8 @@ class Base_(Base):
     player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
     planet_key: Mapped[str] = mapped_column(String(50))
     name: Mapped[str] = mapped_column(String(80))
+    # Tipo de base (SDD 37 v2): surface (terrestre) | orbital (estación con robots, sin habitar).
+    base_type: Mapped[str] = mapped_column(String(20), default="surface", server_default="surface")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     player: Mapped[Player] = relationship(back_populates="bases")

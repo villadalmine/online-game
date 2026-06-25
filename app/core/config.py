@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     # Colonización (SDD 37): fundar bases en otros planetas.
     max_colonies: int = 3                 # máximo de colonias (además del mundo natal)
     colonize_energy_cost: float = 60.0    # energía por colonización (escala con nº de colonias)
+    orbital_yield: float = 0.4            # rinde de una base orbital (robots, sin habitabilidad)
+    orbital_cost_mult: float = 1.8        # la colonización orbital cuesta más energía
 
     # Eventos dinámicos "happy hour" (SDD 36): el tick puede arrancar uno en horas aleatorias.
     event_chance_per_tick: float = 0.25   # prob. por tick (si no hay activo y pasó el cooldown)

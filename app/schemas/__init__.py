@@ -141,12 +141,14 @@ class IncomingAttackOut(BaseModel):
 
 class ColonizeRequest(BaseModel):
     planet_key: str
+    mode: str = "surface"   # surface | orbital
 
 
 class ColonyOut(BaseModel):
     base_id: int
     planet_key: str
     name: str
+    base_type: str = "surface"
 
 
 class ColonizeOptionOut(BaseModel):

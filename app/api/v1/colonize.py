@@ -19,11 +19,13 @@ async def colonize(
 ):
     """Funda una colonia en otro planeta (valida raza×planeta, consume transbordador + energía)."""
     try:
-        base = await found_colony(session, player, body.planet_key)
+        base = await found_colony(session, player, body.planet_key, body.mode)
     except ColonizeError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()
-    return ColonyOut(base_id=base.id, planet_key=base.planet_key, name=base.name)
+    return ColonyOut(
+        base_id=base.id, planet_key=base.planet_key, name=base.name, base_type=base.base_type
+    )
 
 
 @router.get("/options", response_model=list[ColonizeOptionOut])
