@@ -108,3 +108,15 @@ heavy:
     train_seconds: 240
     cost: { structural: 120, energetic: 100, advanced: 80 }
     stats: { attack: 20, defense: 20, hp: 100 }
+  - key: cargo_ship
+    name: "Nave de carga"
+    name_en: "Cargo ship"
+    real: "Carguero espacial: transporta minerales entre planetas."
+    real_en: "Space freighter: hauls minerals between planets."
+    sources: ["Wikipedia: Cargo spacecraft"]
+    requires: factory
+    energy_cost: 18
+    train_seconds: 200
+    cost: { structural: 150, energetic: 90, advanced: 40 }
+    # cargo = capacidad de minerales por nave (SDD 42 Fase 2)
+    stats: { attack: 5, defense: 10, hp: 90, cargo: 500 }

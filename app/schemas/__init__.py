@@ -40,6 +40,22 @@ class MarketTradeRequest(BaseModel):
     qty: int
 
 
+class TransportRequest(BaseModel):
+    from_planet: str
+    to_planet: str
+    cargo: dict[str, int]
+
+
+class TransportMissionOut(BaseModel):
+    id: int
+    from_planet: str
+    to_planet: str
+    cargo: dict[str, int]
+    ships: int
+    status: str
+    arrives_at: datetime
+
+
 class AssistEnergyResult(BaseModel):
     granted: float
     energy: float

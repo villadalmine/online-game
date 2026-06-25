@@ -53,6 +53,8 @@ async def advance(session: AsyncSession, player: Player) -> None:
     await process_missions(session, now, player_id=player.id)
     from app.services.espionage import process_spy_missions  # SDD 35
     await process_spy_missions(session, now, observer_id=player.id)
+    from app.services.market import process_transport_missions  # SDD 42 Fase 2
+    await process_transport_missions(session, now, player_id=player.id)
     # Eventos dinámicos (SDD 36): energía ×evento + soldados gratis (una vez por evento).
     from app.services.events import event_multiplier, grant_due_free_units
     regen = effective_energy_regen(player, settings) * await event_multiplier(

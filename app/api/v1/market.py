@@ -1,14 +1,57 @@
 """Mercado (SDD 42 Fase 1): precios por planeta + comprar/vender minerales con energía."""
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_player, lock_current_player
 from app.core.db import get_session
-from app.models import Player
-from app.schemas import MarketTradeRequest
+from app.models import Player, TransportMission
+from app.schemas import MarketTradeRequest, TransportMissionOut, TransportRequest
 from app.services import market
 
 router = APIRouter()
+
+
+@router.post("/transport", response_model=TransportMissionOut, status_code=status.HTTP_201_CREATED)
+async def transport(
+    body: TransportRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Envía minerales de un planeta tuyo a otro (necesita naves de carga; viaja y llega)."""
+    try:
+        m = await market.start_transport(
+            session, player, body.from_planet, body.to_planet, body.cargo
+        )
+    except market.MarketError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
+    await session.commit()
+    return TransportMissionOut(
+        id=m.id, from_planet=m.from_planet, to_planet=m.to_planet,
+        cargo=json.loads(m.cargo), ships=m.ships, status=m.status, arrives_at=m.arrives_at,
+    )
+
+
+@router.get("/transport", response_model=list[TransportMissionOut])
+async def transports(
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Tus transportes en curso."""
+    res = await session.execute(
+        select(TransportMission).where(
+            TransportMission.player_id == player.id, TransportMission.status == "outbound"
+        )
+    )
+    return [
+        TransportMissionOut(
+            id=m.id, from_planet=m.from_planet, to_planet=m.to_planet,
+            cargo=json.loads(m.cargo), ships=m.ships, status=m.status, arrives_at=m.arrives_at,
+        )
+        for m in res.scalars()
+    ]
 
 
 @router.get("/prices")

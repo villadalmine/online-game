@@ -76,6 +76,8 @@ async def run_tick(session: AsyncSession) -> dict:
     # Se ve por GET /events/active (el front pollea) y queda en el journal/world feed.
     from app.services.events import maybe_start_event
     await maybe_start_event(session)
+    from app.services.market import process_transport_missions  # SDD 42: entregar transportes
+    await process_transport_missions(session)
     await session.commit()
 
     # Meta-insights (SDD 41): recalcular el meta cada tanto para que la IA aprenda de las partidas.

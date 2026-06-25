@@ -114,3 +114,86 @@ async def player_market_planets(session: AsyncSession, player: Player) -> list[s
                Building.building_key == "market", Building.status == "active")
     )
     return sorted({p for p in res.scalars()})
+
+
+# --------------------------------------------------------------------------- #
+# Transporte de minerales entre planetas (SDD 42 Fase 2)
+# --------------------------------------------------------------------------- #
+async def start_transport(
+    session: AsyncSession, player: Player, from_planet: str, to_planet: str, cargo: dict[str, int]
+):
+    """Despacha un envío de minerales de `from_planet` a `to_planet`. Requiere naves de carga
+    suficientes (capacidad `cargo` por nave). Consume carga del origen + naves; al llegar acredita
+    al destino y devuelve las naves (process_transport_missions)."""
+    import json
+    from datetime import timedelta
+
+    from app.models import TransportMission
+    from app.services.combat import travel_seconds
+    from app.services.economy import planet_stocks
+    from app.services.training import get_or_create_unit_stock, player_units
+
+    now = datetime.now(UTC)
+    cargo = {k: int(v) for k, v in cargo.items() if v and int(v) > 0}
+    if not cargo:
+        raise MarketError("No hay carga para transportar.")
+    if from_planet == to_planet:
+        raise MarketError("Origen y destino son el mismo planeta.")
+    if from_planet not in get_content().planets and from_planet not in get_content().moons:
+        raise MarketError(f"Origen desconocido: {from_planet}")
+
+    here = await planet_stocks(session, player.id, from_planet)
+    for m, q in cargo.items():
+        if here.get(m, 0.0) < q:
+            raise MarketError(f"No tenés {q} de {m} en {from_planet} (tenés {here.get(m, 0.0):g}).")
+
+    capacity = get_content().units.get("cargo_ship", {}).get("stats", {}).get("cargo", 0)
+    total = sum(cargo.values())
+    ships_needed = -(-total // capacity) if capacity else 1   # ceil
+    have_ships = (await player_units(session, player.id)).get("cargo_ship", 0)
+    if have_ships < ships_needed:
+        raise MarketError(f"Necesitás {ships_needed} nave(s) de carga (tenés {have_ships}).")
+
+    for m, q in cargo.items():   # la carga sale del origen ya
+        (await get_or_create_stock(session, player.id, m, from_planet)).amount -= q
+    (await get_or_create_unit_stock(session, player.id, "cargo_ship")).quantity -= ships_needed
+
+    travel = travel_seconds(from_planet, to_planet)
+    mission = TransportMission(
+        player_id=player.id, from_planet=from_planet, to_planet=to_planet,
+        cargo=json.dumps(cargo), ships=ships_needed, status="outbound",
+        arrives_at=now + timedelta(seconds=travel),
+    )
+    session.add(mission)
+    await session.flush()
+    from app.services.journal import record
+    await record(session, "transport_launched", player.id,
+                 from_planet=from_planet, to_planet=to_planet, cargo=cargo, ships=ships_needed)
+    return mission
+
+
+async def process_transport_missions(
+    session: AsyncSession, now: datetime | None = None, player_id: int | None = None
+) -> int:
+    """Entrega los transportes que llegaron: acredita la carga al destino y devuelve las naves."""
+    import json
+
+    from app.models import TransportMission
+    from app.services.training import get_or_create_unit_stock
+
+    now = now or datetime.now(UTC)
+    conds = [TransportMission.status == "outbound"]
+    if player_id is not None:
+        conds.append(TransportMission.player_id == player_id)
+    res = await session.execute(select(TransportMission).where(*conds))
+    done = 0
+    for m in res.scalars():
+        arr = m.arrives_at if m.arrives_at.tzinfo else m.arrives_at.replace(tzinfo=UTC)
+        if arr > now:
+            continue
+        for mineral, qty in json.loads(m.cargo).items():
+            (await get_or_create_stock(session, m.player_id, mineral, m.to_planet)).amount += qty
+        (await get_or_create_unit_stock(session, m.player_id, "cargo_ship")).quantity += m.ships
+        m.status = "done"
+        done += 1
+    return done

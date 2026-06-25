@@ -113,12 +113,14 @@ scarcity(p, mineral)     = 1 / max(abundance(p, mineral), ε)   # caro donde esc
   `GET /market/planets`, `POST /market/buy|sell` (energía ↔ minerales, requiere market activo en ese
   planeta); panel web 💱 Mercado; journal `market_buy`/`market_sell`. Acredita al **pool por-jugador**
   (per-planeta = Fase 2).
-- **Fase 2 (inventario por-planeta) — PARCIAL (2026-06-25):** `ResourceStock` con `planet_key` +
-  migración (backfill al mundo natal) + `planet_stocks`/`player_stocks` (agregado). Minería acredita
-  al planeta de la mina; build/train/research gastan del planeta de la base (si falta → "transportá");
-  saqueo desde el planeta de la base atacada; mercado compra/vende en su planeta; UI muestra stock por
-  planeta. **Pendiente de Fase 2:** `TransportMission` + naves `protocol_ship`/`cargo_ship` + reglas
-  de presencia (§8). La estructura ya está; falta el transporte para mover bulk entre planetas.
+- **Fase 2 (inventario por-planeta + transporte) — COMPLETA (2026-06-25):** `ResourceStock` con
+  `planet_key` + migración (backfill al mundo natal); `planet_stocks`/`player_stocks` (agregado).
+  Minería acredita al planeta de la mina; build/train/research gastan del planeta de la base (si falta
+  → "transportá"); saqueo desde la base atacada; mercado por su planeta; UI muestra stock por planeta.
+  **Transporte:** unidad `cargo_ship` (capacidad `cargo`); `TransportMission` (sale del origen, viaja,
+  acredita al destino y devuelve las naves) en `state.advance`+tick; API `POST/GET /market/transport`;
+  form 🚚 en el panel de mercado. **Pendiente (Fase 3):** `protocol_ship` (scoutear precios remotos) +
+  reglas de presencia/aparcamiento/robos del §8.
 - **Fase 3 (hub dinámico + black market + aparcamiento + robos):** `MarketPrice` por oferta/demanda;
   cuevas ilegales (pagás con materiales, viajás); **slot único** en mercados de planeta + upgrade
   `hangar` (más slots), aparcamiento **infinito** en el hub; **piratería/saqueo** de convoyes →

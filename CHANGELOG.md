@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-25 — SDD 42 Fase 2 completa: transporte de minerales entre planetas
+- Unidad **`cargo_ship`** (capacidad `cargo`) + **`TransportMission`**: enviás minerales de un planeta
+  tuyo a otro — sale del origen, **viaja** (tiempo por distancia, consume naves), al **llegar acredita
+  al planeta destino** y devuelve las naves. Se resuelve en `state.advance` y el tick. Valida que
+  tengas el material en el origen y naves suficientes. `POST/GET /api/v1/market/transport`; form 🚚
+  en el panel 💱 Mercado. Con esto cierra el lazo de la economía por-planeta (minás/comprás local,
+  y movés bulk donde lo necesitás). Tests + 285 verdes.
+
 ## [1.34.0] - 2026-06-25
 
 ### 2026-06-25 — SDD 42 Fase 2: economía POR-PLANETA (el material vive donde está)

@@ -447,6 +447,23 @@ class EventGrant(Base):
     event_id: Mapped[int] = mapped_column(ForeignKey("world_events.id", ondelete="CASCADE"))
 
 
+class TransportMission(Base):
+    """Transporte de minerales entre planetas del jugador (SDD 42 Fase 2). Sale del planeta origen,
+    viaja, y al llegar acredita la carga al planeta destino (las naves vuelven al stock)."""
+
+    __tablename__ = "transport_missions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    from_planet: Mapped[str] = mapped_column(String(50))
+    to_planet: Mapped[str] = mapped_column(String(50))
+    cargo: Mapped[str] = mapped_column(Text, default="{}")        # {mineral: qty}
+    ships: Mapped[int] = mapped_column(Integer, default=1)        # naves de carga usadas
+    status: Mapped[str] = mapped_column(String(20), default="outbound")  # outbound | done
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    arrives_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class GameEvent(Base):
     """Append-only journal of everything players do (SDD 38): `id` = orden total (seq).
     Fuente de verdad para medir todo, exportar la partida a YAML y reproducirla."""
