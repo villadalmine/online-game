@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.25.0] - 2026-06-25
+
 ### 2026-06-25 — SDD 37: fundar colonias + tech para mundos hostiles + producción por-colonia
 - **Tecnologías de colonización** (`antigravity`, `thermal_shielding`, `sealed_domes`): vencen
   gravedad/temperatura/atmósfera → desbloquean colonizar mundos antes imposibles. `compat()` ahora
