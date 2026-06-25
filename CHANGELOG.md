@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-06-24
+
 ### 2026-06-24 — Calculadora de ataque visible en el panel ⚔ Atacar
 - Botón **📊 Calcular** en el panel de ataque: estima, para el objetivo cargado (id o tocando una
   base en el mapa), cuánto necesitás según **tu intel** — defensa estimada, poder requerido (margen
