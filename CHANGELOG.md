@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.56.0] - 2026-06-25
+
 ### 2026-06-25 — Novedades se alimentan del CHANGELOG (SDD 27)
 - Los anuncios de categoría **`release`** ahora se **generan automáticamente** desde el `CHANGELOG.md`
   (`app/services/changelog.py`: parsea cada `## [X.Y.Z] - fecha` + su título `### … — Título` y el
