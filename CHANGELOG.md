@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.57.0] - 2026-06-25
+
 ### 2026-06-25 — Transporte: muestra el stock disponible en el origen
 - El form de transporte no decía cuánto tenías del mineral en el **planeta de origen**. Ahora muestra
   **"disponible en origen: N @planeta"** en vivo (al cambiar origen/mineral/cantidad) y avisa **cuánto
