@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.79.0] - 2026-06-26
+
 ### 2026-06-26 — NPC sin ahogo de energía + no atacar sin energía (más jugadas por LLM)
 - **#1 Energía NPC:** los NPC regeneran energía ×`npc_energy_regen_mult` (default 4) → dejan de
   quedar 'ahogados' (~6 de energía con todo costando ≥10) y pueden jugar de verdad por LLM en vez de
