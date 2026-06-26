@@ -1572,12 +1572,15 @@ setInterval(()=>{ if(!document.hidden){ renderQueues(); renderMap(); renderTrans
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden && state){ refresh(); refreshPanels(); } });
 
 // live notifications
+// coalesce: si llegan varias notis seguidas, un solo refresh (no 30 de golpe)
+let _sseT=null;
+function sseRefresh(){ if(_sseT) return; _sseT=setTimeout(()=>{ _sseT=null; refresh(); loadFeed(); loadReports(); }, 600); }
 function startStream(){
   if(es) es.close();
   es=new EventSource(API+"/api/v1/notifications/stream?token="+encodeURIComponent(token)+"&interval=2");
   es.onopen=()=>{ $("streamstate").textContent=tr('live'); $("live").textContent="●"; $("live").className="ok"; };
   es.onerror=()=>{ $("streamstate").textContent=tr('reconnect'); $("live").textContent="○"; $("live").className="muted"; };
-  es.onmessage=ev=>{ const n=JSON.parse(ev.data); playBeep(soundForType(n.type)); refresh(); loadFeed(); loadReports(); };
+  es.onmessage=ev=>{ const n=JSON.parse(ev.data); playBeep(soundForType(n.type)); sseRefresh(); };
 }
 
 async function showDb(){ try{ const h=await (await fetch(API+"/health")).json(); $("dbpill").textContent="🗄 "+h.db; }catch{} }

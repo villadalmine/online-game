@@ -9,6 +9,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.68.0] - 2026-06-26
 
+### 2026-06-26 — Más estabilidad: SSE sin backlog (30 sonidos) + tick sin colgar el juego
+- **30 sonidos de notificación de golpe al cargar:** el SSE re-emitía **todo el backlog** de
+  notificaciones al conectar (catch-up desde 0) → 30 beeps **y** 30 refresh/loadFeed de una.
+  Ahora el SSE arranca desde la última (`catch_up=False`) y solo empuja lo **nuevo** (el historial
+  ya lo trae el GET); el cliente además **coalesce** los refresh del SSE (uno cada 600ms).
+- **El juego se colgaba ~2 min cada tanto:** el tick de NPCs con **LLM** (GPU) mantenía **locks de
+  fila** mientras esperaba la GPU (los lock-waits no respetan `pool_timeout`), y los requests del
+  jugador esperaban hasta que el tick soltaba. Mitigado pasando el tick a **`npc=rules`** (NPCs
+  siguen jugando, sin LLM en el camino caliente). *Follow-up:* reestructurar `run_npc_turn` para
+  decidir con el LLM **fuera** de la transacción y aplicar la acción en una transacción corta, para
+  poder reactivar el LLM sin bloquear.
+
 ### 2026-06-26 — Performance/estabilidad: paneles que se quedaban cargando + escala a más jugadores
 - **Causa raíz del "se queda cargando / paneles vacíos / base no encontrada":** el cliente disparaba
   **~12-15 requests en paralelo cada 4 s** (todos los loaders de panel en cada `refresh`, + en cada

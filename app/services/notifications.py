@@ -89,9 +89,13 @@ async def stream_events(
     is_disconnected: Callable[[], Awaitable[bool]] | None = None,
     interval: float = 2.0,
     once: bool = False,
+    catch_up: bool = True,
 ) -> AsyncIterator[str]:
     """Yield SSE chunks for a player's notifications: catch-up, then live as they appear.
     `once=True` does a single poll (for tests); the endpoint loops until disconnect.
+    `catch_up=False` (lo usa el endpoint) arranca desde la última notificación → NO re-emite el
+    backlog al conectar (si no, el cliente reproducía 30 sonidos y disparaba 30 refresh de golpe;
+    el historial ya lo trae el GET /notifications).
 
     Hace heartbeat (comment `: ping`) cada ~HEARTBEAT s sin tráfico para mantener viva la conexión
     a través de proxies (p.ej. HAProxy corta a `timeout server` si no fluyen bytes; SSE no es un
@@ -99,6 +103,13 @@ async def stream_events(
     import time
     HEARTBEAT = 15.0
     seen = 0
+    if not catch_up:
+        async with maker() as session:
+            seen = (await session.execute(
+                select(func.coalesce(func.max(Notification.id), 0)).where(
+                    Notification.player_id == player_id
+                )
+            )).scalar_one()
     last_beat = time.monotonic()
     while True:
         async with maker() as session:

@@ -1669,6 +1669,26 @@ async def test_sse_stream_emits_notifications(client):
     assert payload["type"] == "test_event" and payload["message"] == "hola en vivo"
 
 
+async def test_sse_no_backlog_replay(client):
+    # El endpoint usa catch_up=False: al conectar NO re-emite el backlog (si no, el cliente
+    # reproducía 30 sonidos y disparaba 30 refresh). El historial lo trae el GET /notifications.
+    from app.services.notifications import notify, stream_events
+
+    h = await _register(client.http, "nobacklog")
+    state = await _onboard(client.http, h)
+    async with client.session_maker() as s:
+        for i in range(5):
+            await notify(s, state["id"], "old_event", f"vieja {i}", {})
+        await s.commit()
+
+    chunks = [
+        c async for c in stream_events(
+            client.session_maker, state["id"], once=True, catch_up=False
+        )
+    ]
+    assert chunks == [], "el SSE no debe re-emitir el backlog con catch_up=False"
+
+
 async def test_web_client_served(client):
     r = await client.http.get("/")
     assert r.status_code == 200

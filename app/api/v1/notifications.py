@@ -46,7 +46,9 @@ async def stream(
     if interval is None:
         interval = get_settings().stream_interval
     interval = min(max(interval, 0.05), 30.0)
-    gen = stream_events(maker, player.id, request.is_disconnected, interval)
+    # catch_up=False: el SSE solo empuja notificaciones NUEVAS (el historial lo trae el GET);
+    # evita reproducir el backlog al conectar (30 sonidos + 30 refresh de golpe).
+    gen = stream_events(maker, player.id, request.is_disconnected, interval, catch_up=False)
 
     async def _counted():
         # SDD 19: gauge de conexiones SSE = "conectados ahora".
