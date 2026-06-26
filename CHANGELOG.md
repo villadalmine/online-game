@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.61.0] - 2026-06-26
+
 ### 2026-06-26 — Errores de energía con detalle (cuánto falta y cuándo se recarga)
 - Al intentar **construir** (incluida la base orbital), **entrenar** o **investigar** sin energía,
   el mensaje ahora dice exactamente **cuánta energía necesitás, cuánta tenés, cuánto falta** y
