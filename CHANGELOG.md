@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.82.0] - 2026-06-26
+
 ### 2026-06-26 — Fix: requisitos de unidades por planeta (entrenar en colonias)
 - **El research es global** (por jugador): si lo investigaste en tu planeta origen, ya vale para
   TODAS tus colonias. Lo que bloquea entrenar en una colonia es el **edificio requerido en ESA base**
