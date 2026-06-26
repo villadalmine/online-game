@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.89.0] - 2026-06-26
+
 ### 2026-06-26 — NPC que aprende de cada batalla (SDD 29 §3.7 reflexión post-batalla)
 - Tras cada combate, los NPC involucrados **reflexionan** (determinista, **sin gastar GPU**): anotan
   el resultado y **ajustan su postura** — perdió defendiendo→`defensive`, falló atacando→`expand`,
