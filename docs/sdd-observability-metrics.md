@@ -188,6 +188,19 @@ Dos ejes **independientes** en `game_npc_decisions_total`:
 > **`fallback` NO es "no usó GPU".** Es "usó el modelo pero su jugada no servía". El único caso sin
 > GPU/nube es `brain=rules` (o sin API key, que ni cuenta como decisión).
 
+### 9.1.quater Afinar la IA + medir si aprendió (2026-06-26)
+- **Afinación (menos fallback):** `_npc_state` marca cada build/train con **`affordable`** (puede pagar
+  minerales+energía ahora y tiene el edificio requerido) y el prompt le exige **elegir solo
+  `affordable=true`** y **no repetir** una jugada que acaba de fallar (`recent_actions`). Esto sube
+  el ratio de jugadas aplicadas (la IA deja de "comprar lo que no puede pagar").
+- **Medir si aprendió (DB-backed, visible en el admin):** cada decisión se registra en el journal
+  (`npc_decision` {outcome, backend, reason}). `/admin/npc-stats` agrega por NPC **`decisions`**:
+  `llm`, `fallback`, **`llm_rate`** (% aplicado = "¿juega bien/aprende?") y `fallback_reasons`
+  (`energy`/`infeasible`/`parse`/`llm`). La consola de admin muestra **🧠 % + motivos** por NPC →
+  se ve si sube `llm_rate` y baja `energy` con el tiempo, **sin abrir Grafana**.
+- En Grafana, panel nuevo `game_npc_fallback_reason_total{reason}` ("¿Aprende?"): si baja `energy`,
+  la IA aprendió a no intentar lo impagable.
+
 ### 9.1.ter Aprendizaje: la NPC aprende de sus propias jugadas
 Cuando una jugada del LLM **falla**, la NPC la **memoriza con el motivo** (`LlmBrain.act` →
 `_remember("intento LLM 'build' falló: Energía insuficiente…")`). Esa memoria entra en

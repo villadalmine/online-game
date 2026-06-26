@@ -418,24 +418,32 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
     stocks = await player_stocks(session, player.id)
     units = await player_units(session, player.id)
     buildings = await _buildings(session, player)
+    energy_now = _current_energy(player)
+    active_bld = {b.building_key for b in buildings if b.status == "active"}
 
-    build_options = {
-        key: {
-            "minerals": content.building_cost_in_minerals(player.race_key, key),
-            "energy": spec.get("energy_cost", 0),
-            "category": spec["category"],
+    # `affordable`: ¿se puede pagar AHORA (minerales+energía) y está el edificio requerido?
+    # El LLM tiende a elegir lo que no puede pagar (→ fallback); marcarlo sube el ratio de jugadas
+    # aplicadas (la afinación). El prompt le pide elegir SOLO opciones con affordable=true.
+    build_options = {}
+    for key, spec in content.buildings.items():
+        if key == "headquarters":
+            continue
+        cost = content.building_cost_in_minerals(player.race_key, key)
+        req = spec.get("requires")
+        build_options[key] = {
+            "minerals": cost, "energy": spec.get("energy_cost", 0), "category": spec["category"],
+            "affordable": (_can_afford(stocks, energy_now, cost, spec.get("energy_cost", 0))
+                           and (not req or req == "headquarters" or req in active_bld)),
         }
-        for key, spec in content.buildings.items()
-        if key != "headquarters"
-    }
-    train_options = {
-        key: {
-            "minerals": content.unit_cost_in_minerals(player.race_key, key),
-            "energy": spec.get("energy_cost", 0),
-            "requires": spec.get("requires"),
+    train_options = {}
+    for key, spec in content.units.items():
+        cost = content.unit_cost_in_minerals(player.race_key, key)
+        req = spec.get("requires")
+        train_options[key] = {
+            "minerals": cost, "energy": spec.get("energy_cost", 0), "requires": req,
+            "affordable": (_can_afford(stocks, energy_now, cost, spec.get("energy_cost", 0))
+                           and (not req or req == "headquarters" or req in active_bld)),
         }
-        for key, spec in content.units.items()
-    }
     enemies = []
     for b in await _enemy_bases(session, player):
         owner = await session.get(Player, b.player_id)
@@ -675,6 +683,10 @@ async def _llm_decide(state: dict) -> dict:
         "Honor your `posture`: 'aggressive'/'raid' -> prioritize attacking a beatable enemy "
         "(prefer enemies[].is_target=true, then is_human=true); 'defensive' -> turret/recall; "
         "'expand' -> mines/buildings/expedition. "
+        "CRITICAL: only choose build/train options whose `affordable` is true (you can pay "
+        "minerals + energy now and have the required building); never pick affordable=false. If "
+        "nothing is affordable, pick a cheaper one or {\"action\":\"none\"}. Check "
+        "`recent_actions` for past failures and do NOT repeat a move that just failed. "
         "Given your state, choose exactly ONE affordable action consistent with your personality. "
         'Respond with ONLY JSON, one of: '
         '{"action":"build","building":"<key>","mineral":"<key|null>"} (mineral only for a mine), '
@@ -705,6 +717,18 @@ async def _llm_decide(state: dict) -> dict:
         timeout=settings.npc_llm_timeout_seconds,
     )
     return _extract_json(content)
+
+
+def _fallback_reason(exc: Exception) -> str:
+    """Categoría gruesa del fallo (para medir si aprende): energy|infeasible|parse|llm."""
+    msg = str(exc).lower()
+    if "energ" in msg:
+        return "energy"
+    if "json" in msg or isinstance(exc, (ValueError, KeyError)):
+        return "parse"
+    if type(exc).__name__.endswith("Error"):
+        return "infeasible"   # BuildError/TrainingError/CombatError… acción no aplicable
+    return "llm"              # red/timeout u otro
 
 
 def npc_llm_choice(player: Player) -> tuple[str | None, str]:
@@ -747,6 +771,8 @@ class LlmBrain:
             player = await session.get(Player, player_id)  # re-cargar tras el commit
             result = await dispatch_action(session, player, action)
             metrics.NPC_DECISIONS.inc(outcome="llm", backend=backend)   # el LLM decidió y se aplicó
+            from app.services.journal import record as _rec
+            await _rec(session, "npc_decision", player_id, outcome="llm", backend=backend)
             return result
         except Exception as exc:
             # Any failure (network, rate limit, bad JSON, infeasible action) -> rules.
@@ -756,12 +782,16 @@ class LlmBrain:
                 getattr(player, "username", player_id), backend, type(exc).__name__, exc,
             )
             metrics.NPC_DECISIONS.inc(outcome="fallback", backend=backend)
+            metrics.NPC_FALLBACK_REASON.inc(reason=_fallback_reason(exc))
             await session.rollback()
             player = await session.get(Player, player_id)  # fresh after rollback
             # APRENDIZAJE: la NPC recuerda QUÉ intentó y por qué falló → el próximo prompt lo trae
             # en `recent_actions` y el modelo evita repetir la jugada inviable (ej. sin energía).
             tried = (action or {}).get("action", "?") if isinstance(action, dict) else "?"
             _remember(player, f"intento LLM '{tried}' falló: {str(exc)[:80]}")
+            from app.services.journal import record as _rec
+            await _rec(session, "npc_decision", player_id, outcome="fallback",
+                       backend=backend, reason=_fallback_reason(exc))
             return await self._fallback.act(session, player)
 
 

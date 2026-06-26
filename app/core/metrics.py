@@ -178,3 +178,6 @@ NPC_ACTIONS = Counter("game_npc_actions_total", "Acciones de NPC por tipo", ("ac
 NPC_DECISIONS = Counter("game_npc_decisions_total",
                         "Decisiones de NPC: el LLM decidió vs cayó a reglas, por backend gpu/cloud",
                         ("outcome", "backend"))
+NPC_FALLBACK_REASON = Counter("game_npc_fallback_reason_total",
+                              "Por qué la jugada del LLM no se aplicó (energy/infeasible/parse/llm)",
+                              ("reason",))

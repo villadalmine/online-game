@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Afinar la IA (jugar lo que puede pagar) + métrica "¿aprendió?" en el admin
+- **IA afinada:** el estado que ve el NPC marca cada opción con **`affordable`** (puede pagar
+  minerales+energía y tiene el edificio requerido) y el prompt le exige elegir **solo affordable** y
+  no repetir jugadas fallidas → menos `fallback` por "sin energía", más jugadas aplicadas.
+- **¿Aprendió? (sin Grafana):** cada decisión se registra en el journal (`npc_decision`); el panel
+  admin "🤖 NPC" ahora muestra por NPC **🧠 % de jugadas aplicadas** (`llm_rate`), el conteo
+  `llm/total` y los **motivos de fallback** (energy/infeasible/parse). Sube el % y baja "energy" =
+  la IA está aprendiendo. `/admin/npc-stats.decisions`.
+- Grafana: panel `game_npc_fallback_reason_total{reason}` ("¿Aprende?"). SDD 19 §9.1.quater.
+
 ## [1.76.0] - 2026-06-26
 
 ## [1.75.0] - 2026-06-26

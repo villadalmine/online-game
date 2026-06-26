@@ -100,6 +100,17 @@
         { "refId": "A", "legendFormat": "{{status}}",
           "expr": "sum by(status) (rate(game_llm_requests_total[5m]))" }
       ]
+    },
+    {
+      "id": 8, "type": "timeseries",
+      "title": "¿Aprende? Motivos de fallback en el tiempo (debería bajar 'energy')",
+      "description": "game_npc_fallback_reason_total{reason}: por qué la jugada del LLM no se aplicó. Si la IA aprende, 'energy'/'infeasible' bajan (deja de elegir lo que no puede pagar). 'parse'=JSON malo del modelo; 'llm'=la llamada falló.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 35 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{reason}}",
+          "expr": "sum by(reason) (increase(game_npc_fallback_reason_total[1h]))" }
+      ]
     }
   ]
 }

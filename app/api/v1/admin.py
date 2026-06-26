@@ -51,6 +51,29 @@ async def npc_stats(
             mem = json.loads(n.npc_memory or "[]")
         except Exception:
             mem = []
+        # Decisiones LLM (DB-backed, fiable aunque el tick corra en el CronJob): ratio de jugadas
+        # que la IA logró aplicar (sube = está aprendiendo) + motivos de fallback.
+        evs = (await session.execute(
+            select(GameEvent.payload).where(
+                GameEvent.player_id == n.id, GameEvent.type == "npc_decision"
+            ).order_by(GameEvent.id.desc()).limit(300)
+        )).scalars().all()
+        llm = fb = 0
+        reasons: dict[str, int] = {}
+        for p in evs:
+            try:
+                d = json.loads(p)
+            except Exception:
+                continue
+            if d.get("outcome") == "llm":
+                llm += 1
+            else:
+                fb += 1
+                reasons[d.get("reason", "?")] = reasons.get(d.get("reason", "?"), 0) + 1
+        total = llm + fb
+        decisions = {"llm": llm, "fallback": fb,
+                     "llm_rate": round(llm / total, 2) if total else None,
+                     "fallback_reasons": reasons}
         model, backend = npc_llm_choice(n)   # con qué juega: gpu local vs nube (comparación)
         out.append({
             "id": n.id, "username": n.username, "race": n.race_key,
@@ -58,6 +81,7 @@ async def npc_stats(
             "backend": backend, "model": model or "(default)",
             "posture": n.npc_posture, "strategy": n.npc_strategy,
             "actions": actions,                       # {build: N, train: N, attack: N, ...}
+            "decisions": decisions,                   # llm/fallback/llm_rate (¿aprende?) + motivos
             "combat": {"wins": wins, "losses": losses,
                        "battles": wins + losses},
             "recent": mem[-8:] if isinstance(mem, list) else [],
