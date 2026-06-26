@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.69.0] - 2026-06-26
+
 ## [1.68.0] - 2026-06-26
 
 ### 2026-06-26 — Más estabilidad: SSE sin backlog (30 sonidos) + tick sin colgar el juego
