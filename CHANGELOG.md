@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.68.0] - 2026-06-26
+
 ### 2026-06-26 — Performance/estabilidad: paneles que se quedaban cargando + escala a más jugadores
 - **Causa raíz del "se queda cargando / paneles vacíos / base no encontrada":** el cliente disparaba
   **~12-15 requests en paralelo cada 4 s** (todos los loaders de panel en cada `refresh`, + en cada
