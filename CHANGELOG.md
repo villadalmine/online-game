@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.66.0] - 2026-06-26
+
 ### 2026-06-26 — CD de un paso: build + deploy in-cluster (SDD 44)
 - Nuevo Argo Workflow `deploy/build/online-game-cicd.yaml` que **buildea (Kaniko) y despliega (helm)
   en una sola corrida**, con el tag como **parámetro** (no se edita YAML). `make deploy V=X.Y.Z` lo
