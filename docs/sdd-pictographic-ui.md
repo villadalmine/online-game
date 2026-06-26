@@ -212,8 +212,13 @@ Va como `icon:` en cada YAML; ajustable sin tocar código.
   pictomode y los botones setean su `value`); **toggle por panel** (botón 🔤/🖼 en cada `h2`,
   override en `localStorage["ui.picto.panels"]`); chips de mineral (ícono+letra) en **mercado** y
   **hub**.
-- **Pendiente (F2 cont.):** aplicar el chip/íconos a `atacar`/`combate`/`transitos`/`eventos`/`meta`
-  y la grilla de botones a los selects de mercado/hub/transporte/alianzas.
+- **F2 cont. (hecho):** chip/íconos en `atacar` (force-picker con íconos + ✓/❌ de energía),
+  `combate` (unidades perdidas y botín como íconos/chips) y `eventos` (ícono grande + ⏱, nombre por
+  TTS). `transitos` ya era icónico.
+- **Tests de frontend (nuevos):** `tests/test_web_smoke.py` (Playwright + Chromium) levanta un server
+  real y verifica que el modo dibujos renderiza **sin errores de JS** y que la sesión es resiliente
+  (un 503 transitorio NO desloguea; un 401 sí). Se saltea si no hay Chromium.
+- **Pendiente (F2 resto):** grilla de botones a los selects de mercado/hub/transporte/alianzas; `meta`.
 
 ## 5. Alcance incremental (fases)
 - **F1 — base:** `icon:`/`symbol:` en YAML + toggle global + `ico()` + chip de material + ramas

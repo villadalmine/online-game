@@ -7,6 +7,21 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Fix: ya no te desloguea cuando la API parpadea (deploy/red) + e2e de frontend
+- **Bug:** un fallo **transitorio** de `/players/me` (un deploy rolando el pod, un corte de red de un
+  segundo) te mandaba al **login** y veías **todo vacío** (incluida la opción de **base orbital**, que
+  vive en el modal de planeta). `boot()` deslogueaba ante CUALQUIER error.
+- **Fix:** ahora solo desloguea ante un **401 real** (token inválido); ante un error transitorio
+  **mantiene la sesión y reintenta** solo cada 3 s. `api()` expone el status HTTP.
+- **Tests de frontend (nuevos, Playwright + Chromium):** `tests/test_web_smoke.py` levanta un server
+  real y verifica con un browser que (a) el **modo dibujos** renderiza sin errores de JS, (b) un
+  **503** no desloguea, (c) un **401** sí. Se saltean solos si no hay Chromium.
+
+### 2026-06-26 — Modo pictográfico F2 (cont.): atacar/combate/eventos sin leer (SDD 43)
+- El **modo dibujos** ahora también cubre **Atacar** (unidades como íconos + ⚔ y ✓/❌ de energía),
+  **Reportes de combate** (unidades perdidas y botín como íconos/chips) y **Eventos** (ícono grande +
+  ⏱, con el nombre leído por voz al tocar).
+
 ## [1.64.0] - 2026-06-26
 
 ### 2026-06-26 — Modo pictográfico F2: navegar sin leer (SDD 43)

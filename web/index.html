@@ -406,7 +406,7 @@ async function api(path,method="GET",body){
   const h={ "Content-Type":"application/json" }; if(token) h["Authorization"]="Bearer "+token;
   const r=await fetch(API+path,{method,headers:h,body:body?JSON.stringify(body):undefined});
   const t=await r.text(); let d; try{ d=JSON.parse(t); }catch{ d=t; }
-  if(!r.ok) throw new Error(fmtErr(d,t)); return d;
+  if(!r.ok){ const e=new Error(fmtErr(d,t)); e.status=r.status; throw e; } return d;
 }
 function fmtErr(d,t){ if(d&&Array.isArray(d.detail)) return d.detail.map(e=>(e.loc?e.loc.slice(-1)+": ":"")+(e.msg||JSON.stringify(e))).join("; "); return (d&&d.detail)||t||"error de red"; }
 // Avisos centralizados (SDD 42 UX): toasts apilables y descartables. Éxitos se borran solos;
@@ -623,12 +623,14 @@ function renderForcePicker(){
   const keys=us.map(u=>u.key).join(",");
   // no pisar lo que el usuario tipeó: si el set de unidades no cambió, solo refrescá el costo
   if($("forcepicker").dataset.keys===keys){ renderAttackCost(); return; }
-  const prev=pickedForce();
+  const prev=pickedForce(); const pic=isPicto('atacar');
   $("forcepicker").dataset.keys=keys;
   $("forcepicker").innerHTML = us.length
     ? us.map(u=>{ const have=state.units[u.key]||0; const v=Math.min(prev[u.key]||0, have);
+        const lbl=pic? `${ico('unit',u.key)} <span class="muted">⚔${u.stats.attack} · ${have}</span>`
+                     : `${esc(u.name)} <span class="muted">⚔ ${u.stats.attack} ${esc(tr('perunit'))} · ${esc(tr('youhave'))} ${have}</span>`;
         return `<label style="display:inline-flex;align-items:center;gap:4px;margin:2px 8px 2px 0">`+
-          `<span title="${esc(tr('atkperunit'))}">${esc(u.name)} <span class="muted">⚔ ${u.stats.attack} ${esc(tr('perunit'))} · ${esc(tr('youhave'))} ${have}</span></span>`+
+          `<span title="${esc(tr('atkperunit'))}">${lbl}</span>`+
           `<input type="number" data-force="${esc(u.key)}" min="0" max="${have}" value="${v}" style="width:54px" oninput="renderAttackCost()"></label>`;
       }).join("")
     : `<span class="muted">${esc(tr('noattackunits'))}</span>`;
@@ -638,6 +640,10 @@ function pickedForce(){ const f={}; document.querySelectorAll('[data-force]').fo
 function renderAttackCost(){
   if(!state||!catalog) return; const cost=(catalog.costs||{}).attack_energy||0;
   const force=pickedForce(); const n=Object.values(force).reduce((a,b)=>a+b,0);
+  if(isPicto('atacar')){
+    const lk=state.energy<cost?` <span class="bad">⚡❌ −${Math.round(cost-state.energy)}</span>`:` <span class="ok">✓</span>`;
+    $("attackcost").innerHTML=`⚡${cost}${lk} · ⚔ ${n}`; return;
+  }
   const lack = state.energy<cost ? ` <span class="bad">⚠ ${esc(tr('lowenergy'))}</span>` : "";
   $("attackcost").innerHTML = `⚡ ${cost} (${esc(tr('youhave'))} ${Math.round(state.energy)})${lack} · ${n} ${esc(tr('unitssel'))}`;
 }
@@ -1030,12 +1036,16 @@ async function loadWorld(){
 async function loadEvents(){
   let f; try{ f=await api("/api/v1/events/feed?lang="+lang); }catch{ return; }
   const sect=(title,html)=>html?`<div class="muted" style="margin:6px 0 2px">${esc(title)}</div>${html}`:"";
-  const active=(f.active||[]).map(e=>
-    `<div class="note"><b>${esc(e.icon)} ${esc(e.name)}</b> <span class="muted">${esc(e.description)}</span>`+
-    `<div class="muted">⏱ ${cd(e.ends_at)}</div></div>`).join("");
-  const recent=(f.recent||[]).map(e=>
-    `<div class="item"><span class="muted">${esc(e.icon)} ${esc(e.name)} · ${esc(tr('evEnded'))} ${new Date(e.ends_at).toLocaleString()}</span></div>`).join("");
-  const possible=(f.possible||[]).map(e=>`<span class="chip">${esc(e.icon||"📣")} ${esc(e.name)}</span>`).join(" ");
+  const pic=isPicto('eventos');
+  const evIco=e=>`<span class="ico" role="img" title="${esc(e.name)}" aria-label="${esc(e.name+'. '+(e.description||''))}">${esc(e.icon||"📣")}</span>`;
+  const active=(f.active||[]).map(e=> pic
+    ? `<div class="note">🟢 ${evIco(e)} <span class="muted">⏱ ${cd(e.ends_at)}</span></div>`
+    : `<div class="note"><b>${esc(e.icon)} ${esc(e.name)}</b> <span class="muted">${esc(e.description)}</span>`+
+      `<div class="muted">⏱ ${cd(e.ends_at)}</div></div>`).join("");
+  const recent=(f.recent||[]).map(e=> pic
+    ? `<span class="chip">${evIco(e)} <span class="muted">✓</span></span>`
+    : `<div class="item"><span class="muted">${esc(e.icon)} ${esc(e.name)} · ${esc(tr('evEnded'))} ${new Date(e.ends_at).toLocaleString()}</span></div>`).join(pic?" ":"");
+  const possible=(f.possible||[]).map(e=> pic? `<span class="chip">${evIco(e)}</span>` : `<span class="chip">${esc(e.icon||"📣")} ${esc(e.name)}</span>`).join(" ");
   const html=sect(tr('evActive'),active||`<span class="muted">${esc(tr('noevents'))}</span>`)+
     sect(tr('evRecent'),recent)+sect(tr('evPossible'),possible);
   $("events").innerHTML=html;
@@ -1151,22 +1161,24 @@ async function adminFind(){
 }
 // combat reports — detalle de cada batalla (qué llegó, contra qué, qué perdiste/perdió, botín)
 function pname(id){ const p=(players||[]).find(x=>x.id===id); return p?p.username:('#'+id); }
-function unitsStr(d){ const e=Object.entries(d||{}).filter(([,v])=>v>0);
-  return e.length?e.map(([k,v])=>`${esc(k)} ${v}`).join(", "):esc(tr('cNone')); }
+function unitsStr(d,pic){ const e=Object.entries(d||{}).filter(([,v])=>v>0);
+  if(!e.length) return esc(tr('cNone'));
+  return pic? e.map(([k,v])=>`${ico('unit',k)} ${v}`).join(" ") : e.map(([k,v])=>`${esc(k)} ${v}`).join(", "); }
 async function loadReports(){
   let rs; try{ rs=await api("/api/v1/combat/reports"); }catch{ return; }
   const me=state&&state.id;
+  const pic=isPicto('combate');
   $("reports").innerHTML = rs.length ? rs.map(r=>{
     const iAtk=r.attacker_id===me, d=r.details||{};
     const other=iAtk?pname(r.defender_id):pname(r.attacker_id);
     const won=iAtk?(r.outcome==='attacker'):(r.outcome==='defender');
     const myLoss=iAtk?d.attacker_losses:d.defender_losses;
     const theirLoss=iAtk?d.defender_losses:d.attacker_losses;
-    const lootStr=Object.entries(d.loot||{}).filter(([,v])=>v>0).map(([k,v])=>`${esc(k)} ${Math.round(v)}`).join(", ");
+    const lootStr=Object.entries(d.loot||{}).filter(([,v])=>v>0).map(([k,v])=>pic?mchip(k,v):`${esc(k)} ${Math.round(v)}`).join(pic?" ":", ");
     const dir=iAtk?`⚔ ${esc(tr('cYouAtk'))} ${esc(other)}`:`🛡 ${esc(other)} ${esc(tr('cAtkYou'))}`;
     const res=won?`<span class="ok">${esc(tr('cWon'))}</span>`:`<span class="bad">${esc(tr('cLost'))}</span>`;
     return `<div class="item"><div class="top"><span>${dir} <span class="muted">#${r.target_base_id}</span></span>${res}</div>`+
-      `<div class="muted">${esc(tr('cYouLost'))}: ${unitsStr(myLoss)} · ${esc(tr('cTheyLost'))}: ${unitsStr(theirLoss)}`+
+      `<div class="muted">${esc(tr('cYouLost'))}: ${unitsStr(myLoss,pic)} · ${esc(tr('cTheyLost'))}: ${unitsStr(theirLoss,pic)}`+
       (lootStr?` · ${esc(iAtk&&won?tr('cLoot'):tr('cLooted'))}: ${lootStr}`:"")+`</div>`+
       `<div class="muted" style="font-size:11px">⚔${Math.round(d.attack_score||0)} vs 🛡${Math.round(d.defense_score||0)} · ${new Date(r.created_at).toLocaleString()}</div></div>`;
   }).join("") : `<span class="muted">${esc(tr('cNoReports'))}</span>`;
@@ -1546,7 +1558,11 @@ async function boot(){
   ["energy","unread","logout","live","collapseall","expandall"].forEach(i=>$(i).classList.toggle("hidden",!authed));
   if(!authed){ $("game").classList.add("hidden"); $("onboard").classList.add("hidden"); loadShowcase(); return; }
   await loadCatalog();
-  let me; try{ me=await api("/api/v1/players/me"); }catch{ logout(); return; }
+  // Solo deslogueamos si el token es inválido (401). Un fallo transitorio (deploy/pod rolando,
+  // red) NO te saca: reintenta solo, así no te patea al login cuando la API parpadea un segundo.
+  let me;
+  try{ me=await api("/api/v1/players/me"); }
+  catch(e){ if(e&&e.status===401){ logout(); } else { $("streamstate")&&($("streamstate").textContent=tr('reconnect')); setTimeout(boot,3000); } return; }
   if(me.is_admin){   // SDD 14: el admin no juega → consola de admin (ABM de cuentas)
     $("onboard").classList.add("hidden"); $("game").classList.add("hidden"); $("pending").classList.add("hidden");
     $("adminconsole").classList.remove("hidden"); applyI18n(); await loadAdminConsole(); return;
