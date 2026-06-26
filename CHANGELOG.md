@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Docs: SDD 43 modo pictográfico (jugar sin leer)
+- Nuevo `docs/sdd-pictographic-ui.md` (**diseño, NO implementado**): un botón **🖼 Dibujos** que
+  reemplaza el texto por **íconos** (unidades, edificios, minerales) con costos y faltantes en
+  ícono + número (`🔩 ❌ −12`), activable **global o por panel**. Campo `icon:` aditivo en
+  `content/*.yaml`; texto preservado como tooltip/aria-label (accesibilidad + aprender a leer).
+
 ### 2026-06-26 — Docs: SDD de colonización sincronizado
 - `docs/sdd-colonization.md` registra el estado **v1.6**: pre-cálculo de costo en `/colonize/options`
   (`energy_surface`/`energy_orbital`/`shuttle_cost`) visible en el modal, y errores de energía con
