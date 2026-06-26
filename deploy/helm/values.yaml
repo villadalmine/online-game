@@ -184,6 +184,13 @@ metrics:
   perPlayer:
     enabled: false
 
+# Grafana DENTRO del admin (SDD 19 §9.3). Si seteás la URL del dashboard NPC AI, la consola de
+# admin muestra "📊 Ver en Grafana" + un iframe colapsable (carga si Grafana tiene
+# allow_embedding=true y el admin tiene sesión de Grafana en el navegador). Vacío = no se muestra.
+# Ej (kiosk = embed limpio): https://grafana.tu-dominio/d/online-game-npc-ai?kiosk
+grafana:
+  npcDashboardUrl: ""
+
 # Legacy / fallback. El token nunca al repo: usá --set o un values-local.yaml gitignored.
 openrouter:
   apiKey: ""                   # ej: helm install ... --set openrouter.apiKey=sk-or-...

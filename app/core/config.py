@@ -114,6 +114,11 @@ class Settings(BaseSettings):
     # SDD 19 §7.quater: el tick (CronJob) es un pod efímero no-scrapeable → empuja sus métricas
     # (NPC actions/decisions, tick) a la Pushgateway. Vacío = no empuja (dev/local).
     pushgateway_url: str = ""
+    # SDD 19 §9.3: ver el dashboard de Grafana DENTRO del admin. Si seteás la URL del dashboard
+    # NPC AI (idealmente con &kiosk para embeber limpio), la consola de admin muestra un link
+    # "📊 Ver en Grafana" y, si el navegador del admin ya tiene sesión de Grafana, lo embebe en un
+    # iframe. Vacío = no muestra nada (sin cambios de UI). Requiere allow_embedding=true en Grafana.
+    grafana_npc_dashboard_url: str = ""
     # Presupuesto del asesor por jugador/día (anti-quema de créditos): pasado el cupo NO se llama al
     # LLM (cero tokens) y se cae a los tips deterministas. = patrón DAILY_CAP del repo shooter.
     advisor_llm_calls_per_day: int = 40

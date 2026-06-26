@@ -1104,6 +1104,39 @@ async def test_admin_npc_stats_e2e(client, monkeypatch):
     assert {"llm", "fallback", "llm_rate", "fallback_reasons"} <= set(s0["decisions"])
 
 
+async def test_admin_dashboards_e2e(client, monkeypatch):
+    # SDD 19 §9.3: ver Grafana DENTRO del admin. Data-driven: solo devuelve lo configurado.
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "allowed_emails", "boss@gf.com,plebe@gf.com")
+    monkeypatch.setattr(get_settings(), "admin_email", "boss@gf.com")
+
+    # no-admin → 403
+    r0 = await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "plebe_gf", "password": "secret123", "email": "plebe@gf.com"},
+    )
+    h = {"Authorization": f"Bearer {r0.json()['access_token']}"}
+    assert (await client.http.get("/api/v1/admin/dashboards", headers=h)).status_code == 403
+
+    r = await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "gfboss", "password": "secret123", "email": "boss@gf.com"},
+    )
+    ah = {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+    # sin configurar → vacío (el front no muestra nada, sin cambios de UI)
+    res = await client.http.get("/api/v1/admin/dashboards", headers=ah)
+    assert res.status_code == 200, res.text
+    assert res.json() == {}
+
+    # configurado → devuelve la URL del dashboard NPC AI
+    url = "https://grafana.example/d/online-game-npc-ai?kiosk"
+    monkeypatch.setattr(get_settings(), "grafana_npc_dashboard_url", url)
+    res = await client.http.get("/api/v1/admin/dashboards", headers=ah)
+    assert res.status_code == 200, res.text
+    assert res.json() == {"npc_ai": url}
+
+
 async def test_admin_approval_flow_e2e(client, monkeypatch):
     # SDD 14: con aprobación activa, el alta nace 'pending' (no juega) hasta que el admin aprueba.
     from app.core.config import get_settings

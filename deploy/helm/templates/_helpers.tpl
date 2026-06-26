@@ -104,6 +104,12 @@ imagePullSecrets:
       name: {{ .Release.Name }}-secrets
       key: LLM_API_KEY
 {{- end }}
+{{- if .Values.grafana }}
+{{- if .Values.grafana.npcDashboardUrl }}
+- name: GRAFANA_NPC_DASHBOARD_URL
+  value: {{ .Values.grafana.npcDashboardUrl | quote }}
+{{- end }}
+{{- end }}
 - name: OPENROUTER_BASE_URL
   value: {{ .Values.openrouter.baseUrl | quote }}
 - name: OPENROUTER_MODEL

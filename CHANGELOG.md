@@ -7,6 +7,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Admin: ver el dashboard de Grafana DENTRO de la consola (SDD 19 §9.3)
+- **`GET /admin/dashboards`** (admin-gated, data-driven): devuelve la URL del dashboard **NPC AI**
+  solo si se configuró `GRAFANA_NPC_DASHBOARD_URL` (helm `grafana.npcDashboardUrl`). La **consola de
+  admin** muestra entonces un link **"📊 Ver en Grafana"** + un **iframe colapsable** con el
+  dashboard, junto a la card "🤖 NPC — cómo juega la IA".
+- **Sin configurar = no se muestra nada** (invariante: cero cambios de UI). El iframe **no expone
+  Grafana anónimo**: carga si Grafana tiene `allow_embedding=true` y el admin ya tiene sesión de
+  Grafana en el navegador. URL recomendada con `?kiosk` (embed limpio).
+- e2e `test_admin_dashboards_e2e` (403 no-admin · `{}` sin configurar · `{npc_ai:url}` con config).
+- **Infra pendiente (opcional):** habilitar `allow_embedding=true` en Grafana (kube-prometheus-stack)
+  para que el iframe cargue; el link "Ver en Grafana" funciona igual sin eso.
+
 ## [1.80.0] - 2026-06-26
 
 ### 2026-06-26 — Docs: IA del juego documentada en la página tech + qué queda pendiente

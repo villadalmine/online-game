@@ -17,6 +17,20 @@ from app.worker import run_tick
 router = APIRouter()
 
 
+@router.get("/dashboards")
+async def dashboards(admin: Player = Depends(get_current_admin)):
+    """Links a los dashboards de Grafana para verlos DENTRO del admin (SDD 19 §9.3). Data-driven:
+    solo devuelve lo que esté configurado por env. Vacío = el front no muestra nada (sin cambios
+    de UI). El embed por iframe sólo carga si Grafana tiene allow_embedding=true y el navegador del
+    admin ya tiene sesión de Grafana (no exponemos Grafana anónimo)."""
+    from app.core.config import get_settings
+    s = get_settings()
+    out: dict[str, str] = {}
+    if s.grafana_npc_dashboard_url:
+        out["npc_ai"] = s.grafana_npc_dashboard_url
+    return out
+
+
 @router.get("/npc-stats")
 async def npc_stats(
     admin: Player = Depends(get_current_admin),

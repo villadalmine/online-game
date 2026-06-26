@@ -222,11 +222,16 @@ acciones** (del journal), **récord de combate** (wins/battles) y **últimas jug
 admin** lo muestra en una card "🤖 NPC — cómo juega la IA". Es la respuesta a "ver las métricas en
 modo admin" para lo de NPC, sin depender de Grafana.
 
-> **Ver los dashboards de Grafana DENTRO del admin (embed):** posible vía iframe a una *panel embed
-> URL* de Grafana, pero requiere config de Grafana (`allow_embedding=true` + acceso anónimo de
-> sololectura o auth proxy). Decisión: por ahora el admin trae el **snapshot nativo** (9.3) y un
-> **link** al dashboard de Grafana; el embed iframe queda como follow-up de infra (no exponer Grafana
-> con anónimo sin pensar el acceso).
+**Ver los dashboards de Grafana DENTRO del admin (embed) — implementado, data-driven.**
+`GET /admin/dashboards` (admin-gated) devuelve `{npc_ai: <url>}` **solo si** se configuró
+`grafana_npc_dashboard_url` (env `GRAFANA_NPC_DASHBOARD_URL`, helm `grafana.npcDashboardUrl`). El
+front (consola de admin) muestra entonces un **link "📊 Ver en Grafana"** y un **iframe colapsable**
+con el dashboard. Si la URL no está configurada, **no se muestra nada** (sin cambios de UI). El
+iframe **no expone Grafana anónimo**: carga si Grafana tiene `allow_embedding=true` y el navegador
+del admin **ya tiene sesión de Grafana** (mismo dominio/SSO). URL recomendada con `?kiosk` (embed
+limpio). e2e: `test_admin_dashboards_e2e` (403 no-admin · `{}` sin configurar · `{npc_ai:url}` con
+config). **Habilitar `allow_embedding` en Grafana es un paso de infra** (kube-prometheus-stack →
+`grafana.grafana.ini.security.allow_embedding=true`).
 
 ### 9.4 Cuándo se usa la GPU (aclaración)
 Tres call-sites únicos: (a) **NPC decide su jugada** (`npc._llm_decide`, 1× por NPC **por tick**,
