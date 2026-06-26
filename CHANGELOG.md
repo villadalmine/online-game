@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.83.0] - 2026-06-26
+
 ### 2026-06-26 — Jugar sin leer (SDD 43): mercado, hub, transporte y alianzas pictográficos
 - **Mercado y Hub:** botones **comprar/vender/trocar** como íconos (🛒/💰/🔄) en pictomode; precios
   con 🛒/💰; selectores de planeta, mineral, unidad de escolta con su **ícono**; estimaciones del
