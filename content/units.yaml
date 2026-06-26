@@ -4,6 +4,7 @@
 # i18n: `name`/`description` are ES; `*_en` add English (SDD 4).
 personnel:
   - key: worker
+    icon: "👷"
     name: "Trabajador"
     name_en: "Worker"
     real: "Obrero/operario: mano de obra industrial."
@@ -17,6 +18,7 @@ personnel:
     cost: { structural: 10, energetic: 5 }
     stats: { attack: 0, defense: 1, hp: 5 }
   - key: soldier
+    icon: "💂"
     name: "Militar"
     name_en: "Soldier"
     real: "Infantería: soldado de combate terrestre."
@@ -30,6 +32,7 @@ personnel:
     cost: { structural: 15, energetic: 10 }
     stats: { attack: 8, defense: 5, hp: 12 }
   - key: scientist
+    icon: "🔬"
     name: "Cientifico"
     name_en: "Scientist"
     real: "Investigador científico: I+D y experimentación."
@@ -44,6 +47,7 @@ personnel:
     stats: { attack: 0, defense: 2, hp: 6 }
 
   - key: spy
+    icon: "🕵"
     name: "Espía"
     name_en: "Spy"
     description: "Recopila inteligencia de un objetivo; tambien defiende del espionaje enemigo."
@@ -60,6 +64,7 @@ personnel:
 
 heavy:
   - key: tank
+    icon: "🛡"
     name: "Tanque"
     name_en: "Tank"
     real: "Carro de combate: vehículo blindado con orugas."
@@ -72,6 +77,7 @@ heavy:
     cost: { structural: 80, energetic: 40, advanced: 20 }
     stats: { attack: 30, defense: 25, hp: 60 }
   - key: ship
+    icon: "🚢"
     name: "Barco"
     name_en: "Ship"
     real: "Buque de guerra: nave naval de combate."
@@ -87,6 +93,7 @@ heavy:
     cost: { structural: 100, energetic: 50 }
     stats: { attack: 25, defense: 30, hp: 80 }
   - key: aircraft
+    icon: "✈"
     name: "Avion"
     name_en: "Aircraft"
     real: "Aeronave militar: avión de combate."
@@ -102,6 +109,7 @@ heavy:
     cost: { structural: 60, energetic: 60, advanced: 40 }
     stats: { attack: 40, defense: 15, hp: 40 }
   - key: shuttle
+    icon: "🚀"
     name: "Transbordador espacial"
     name_en: "Space shuttle"
     real: "Transbordador espacial: lanzadera reutilizable a órbita."
@@ -114,6 +122,7 @@ heavy:
     cost: { structural: 120, energetic: 100, advanced: 80 }
     stats: { attack: 20, defense: 20, hp: 100 }
   - key: cargo_ship
+    icon: "🛰"
     name: "Nave de carga"
     name_en: "Cargo ship"
     real: "Carguero espacial: transporta minerales entre planetas."

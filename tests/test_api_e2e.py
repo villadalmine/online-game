@@ -165,6 +165,23 @@ async def test_catalog(client):
     assert any(b["key"] == "mine" for b in body["buildings"])
 
 
+async def test_catalog_pictographic_icons(client):
+    # SDD 43 F1: el catálogo expone icon (universal) en minerales/unidades/edificios y symbol en
+    # minerales (la "letra"), para el modo pictográfico. No se localiza.
+    body = (await client.http.get("/api/v1/catalog")).json()
+    minerals = {m["key"]: m for m in body["minerals"]}
+    assert minerals["iron"]["icon"] and minerals["iron"]["symbol"] == "Fe"
+    builds = {b["key"]: b for b in body["buildings"]}
+    assert builds["mine"]["icon"]
+    units = {u["key"]: u for u in (body["personnel"] + body["heavy_units"])}
+    assert units["worker"]["icon"] and units["tank"]["icon"]
+    # universal: el icon es igual en inglés (no se traduce)
+    en = (await client.http.get("/api/v1/catalog?lang=en")).json()
+    en_iron = {m["key"]: m for m in en["minerals"]}["iron"]
+    assert en_iron["icon"] == minerals["iron"]["icon"]
+    assert en_iron["symbol"] == "Fe"
+
+
 async def test_catalog_i18n(client):
     def names(body):
         return {b["key"]: b["name"] for b in body["buildings"]}

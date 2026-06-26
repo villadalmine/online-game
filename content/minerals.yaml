@@ -3,6 +3,8 @@
 # i18n: `name`/`real`/`description` are ES (default); `*_en` add the English variant (SDD 4).
 minerals:
   - key: iron
+    icon: "🔩"
+    symbol: "Fe"
     name: "Hierro (Fe)"
     name_en: "Iron (Fe)"
     real: "Hierro / feldespato"
@@ -10,6 +12,8 @@ minerals:
     description: "Estructuras y unidades pesadas."
     description_en: "Structures and heavy units."
   - key: silicon
+    icon: "🪟"
+    symbol: "Si"
     name: "Silicio (Si)"
     name_en: "Silicon (Si)"
     real: "Silicatos / cuarzo"
@@ -17,6 +21,8 @@ minerals:
     description: "Electrónica y ciencia."
     description_en: "Electronics and science."
   - key: aluminum
+    icon: "🥫"
+    symbol: "Al"
     name: "Aluminio (Al)"
     name_en: "Aluminum (Al)"
     real: "Plagioclasa / feldespato"
@@ -24,6 +30,8 @@ minerals:
     description: "Unidades ligeras y aviones."
     description_en: "Light units and aircraft."
   - key: titanium
+    icon: "🛠"
+    symbol: "Ti"
     name: "Titanio (Ti)"
     name_en: "Titanium (Ti)"
     real: "Ilmenita (FeTiO3)"
@@ -31,6 +39,8 @@ minerals:
     description: "Unidades pesadas y espaciales."
     description_en: "Heavy and space units."
   - key: sulfur
+    icon: "🧪"
+    symbol: "S"
     name: "Azufre (S)"
     name_en: "Sulfur (S)"
     real: "Jarosita / pirita / SO2"
@@ -38,6 +48,8 @@ minerals:
     description: "Combustible, quimica y armas."
     description_en: "Fuel, chemistry and weapons."
   - key: magnesium
+    icon: "✨"
+    symbol: "Mg"
     name: "Magnesio (Mg)"
     name_en: "Magnesium (Mg)"
     real: "Olivino / MgO"
@@ -45,6 +57,8 @@ minerals:
     description: "Aleaciones."
     description_en: "Alloys."
   - key: basalt
+    icon: "🪨"
+    symbol: "Ba"
     name: "Roca basaltica"
     name_en: "Basaltic rock"
     real: "Basalto / piroxeno"
@@ -52,6 +66,8 @@ minerals:
     description: "Construccion basica."
     description_en: "Basic construction."
   - key: helium3
+    icon: "⚛"
+    symbol: "He3"
     name: "Helio-3 (He-3)"
     name_en: "Helium-3 (He-3)"
     real: "Regolito lunar + ilmenita"
@@ -59,6 +75,8 @@ minerals:
     description: "Energia y motor espacial avanzado (endgame, lunas)."
     description_en: "Energy and advanced space drive (endgame, moons)."
   - key: rare_earth
+    icon: "💎"
+    symbol: "RE"
     name: "Tierras raras (KREEP)"
     name_en: "Rare earths (KREEP)"
     real: "K, REE, P"
@@ -66,6 +84,8 @@ minerals:
     description: "Alta tecnologia (lunas)."
     description_en: "High technology (moons)."
   - key: water_ice
+    icon: "🧊"
+    symbol: "H2O"
     name: "Hielo de agua"
     name_en: "Water ice"
     real: "Condrita carbonacea"

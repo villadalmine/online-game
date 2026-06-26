@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Modo pictográfico F1 + leer en voz alta (SDD 43)
+- Nuevo botón **🔤/🖼** en el header: el **modo dibujos** muestra el **chip ícono + letra + número**
+  (`🔩 Fe 30`) en costos de construir/entrenar/expedición, en los faltantes (`🔩 ❌ −12`, `⚡❌ −N`),
+  en los requisitos bloqueados (🔒 con íconos) y en los stocks/unidades del imperio. Pensado para
+  quien **no lee**: relaciona número, ícono y la **letra del material**.
+- **Leer en voz alta (TTS):** con el modo activo, **tocar un ícono dice qué es** (Web Speech API,
+  voz por idioma es/en) — para lo difícil de representar con un dibujo.
+- **Aditivo, no rompe nada:** apagado por default; con el modo off **todo queda como hoy**. Los
+  íconos son **atributos del catálogo** (`icon:`/`symbol:` en `content/*.yaml`) que la API expone por
+  `/catalog` sin localizar — la UI solo los lee. e2e `test_catalog_pictographic_icons`. **321 verdes.**
+
 ### 2026-06-26 — Docs: SDD 43 modo pictográfico (jugar sin leer)
 - Nuevo `docs/sdd-pictographic-ui.md` (**diseño, NO implementado**): un botón **🖼 Dibujos** que
   reemplaza el texto por el **chip ícono + letra + número** (`🔩 Fe 30`, faltante `🔩 Fe ❌ −12`) en

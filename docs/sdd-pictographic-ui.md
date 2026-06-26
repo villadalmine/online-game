@@ -1,6 +1,7 @@
 # SDD 43 — Modo pictográfico de la UI (jugar sin leer)
 
-> **Estado:** **diseño (NO implementado)** · **Fecha:** 2026-06-26 · **Autor:** equipo online-game
+> **Estado:** **F1 + TTS implementado** (en producción) · resto en diseño · **Fecha:** 2026-06-26
+> · **Autor:** equipo online-game
 > **Ámbito:** principalmente cliente web (`web/index.html`) + un campo **aditivo** `icon:` en
 > `content/*.yaml` expuesto por `/catalog`. **Sin cambios de reglas de juego ni de modelos/DB.**
 
@@ -192,6 +193,22 @@ Va como `icon:` en cada YAML; ajustable sin tocar código.
   tal cual; `/catalog?lang=` los expone **sin localizar** (ícono y símbolo son universales).
 - **Cache:** `/catalog` está cacheado 300s (memoria de proyecto) → tras deploy, los íconos nuevos
   tardan ≤5 min en verse. Sin migraciones, sin cambios de modelos.
+
+## 4.bis Estado de implementación (2026-06-26) — F1 + TTS
+- **Datos/API (hecho):** `icon:` en `minerals/units/buildings`, `symbol:` en `minerals`
+  (`content/*.yaml`). Fluyen por `/catalog` sin localizar (el `localize` mantiene las claves no-`_en`;
+  no hubo cambios de registry/DB). e2e `test_catalog_pictographic_icons` (icon/symbol presentes e
+  iguales en es/en).
+- **Front (hecho):** botón header **🔤/🖼**, `localStorage["ui.pictographic"]`, clase `body.pictomode`,
+  helpers `isPicto()`/`ico()`/`mchip()`. Rama pictográfica en `costStr`/`affordText`/`reqLock` (panel
+  `acciones`) y en los chips de minerales/unidades del panel `imperio`. Con el modo **off**, render
+  idéntico a hoy (invariante).
+- **TTS (hecho, adelantado de F3):** en `pictomode`, un clic en cualquier `.ico` lo **lee en voz
+  alta** (Web Speech API `speechSynthesis`, voz por idioma es/en, sin infra). Resuelve "lo difícil de
+  representar": tocás y escuchás qué es. Fallback de servidor (proxy espeak-ng, como en el repo
+  `shooter`) queda pendiente para navegadores sin voces (Chromium/Linux).
+- **Pendiente (F2):** grilla de botones-ícono para los `<select>`, toggle **por panel**, y el resto
+  de los paneles del §3 (atacar/combate/transitos/mercado/hub/eventos…).
 
 ## 5. Alcance incremental (fases)
 - **F1 — base:** `icon:`/`symbol:` en YAML + toggle global + `ico()` + chip de material + ramas

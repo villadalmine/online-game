@@ -32,6 +32,9 @@
   .chip{ background:#243056; border-radius:18px; padding:3px 10px; font-size:12px; white-space:nowrap; }
   .pill{ background:#243056; border-radius:18px; padding:3px 10px; font-size:12px; }
   .muted{ color:var(--mut); font-size:12px; } .ok{ color:#7ee787; } .bad{ color:#ff8a8a; } .warn{ color:#f0c674; }
+  /* SDD 43 modo pictográfico: el ícono y la letra del material. En pictomode los íconos invitan a tocar (TTS). */
+  .ico{ font-style:normal; } .msym{ font-size:11px; color:var(--mut); margin-left:1px; }
+  body.pictomode .ico{ cursor:pointer; font-size:1.15em; }
   #toasts{ position:fixed; top:12px; right:12px; z-index:9999; display:flex; flex-direction:column; gap:8px; max-width:min(92vw,360px); }
   .toast{ background:var(--card2); border:1px solid #33406e; border-left-width:4px; border-radius:8px; padding:9px 30px 9px 11px; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.45); position:relative; cursor:pointer; animation:tin .18s ease-out; word-break:break-word; }
   .toast.ok{ border-left-color:#7ee787; color:#cdeacd; } .toast.bad{ border-left-color:#ff8a8a; color:#ffd2d2; }
@@ -105,6 +108,7 @@
     <button class="sec sm hidden" id="collapseall" onclick="collapseAllPanels(true)" title="Plegar todos los paneles">⊟</button>
     <button class="sec sm hidden" id="expandall" onclick="collapseAllPanels(false)" title="Expandir todos los paneles">⊞</button>
     <button class="sec sm" id="sound" onclick="toggleSound()" title="Sonido de eventos">🔊</button>
+    <button class="sec sm" id="pictotoggle" onclick="togglePicto()" title="Modo dibujos / Pictographic">🔤</button>
     <button class="sec sm hidden" id="logout" onclick="logout()" data-i18n="logout">salir</button>
   </div>
 </header>
@@ -439,13 +443,14 @@ function setToken(t){ token=t; localStorage.setItem("token",t); }
 function logout(){ token=""; localStorage.removeItem("token"); if(es)es.close(); location.reload(); }
 
 // catalog
-const spec={ build:{}, unit:{}, moon:{}, tech:{} };
+const spec={ build:{}, unit:{}, moon:{}, tech:{}, mineral:{} };
 function fill(id,pairs){ $(id).innerHTML=pairs.map(([v,t])=>`<option value="${v}">${esc(t)}</option>`).join(""); }
 async function loadCatalog(){
   catalog=await api("/api/v1/catalog?lang="+lang);
   catalog.buildings.forEach(b=>spec.build[b.key]=b);
   [...catalog.personnel,...catalog.heavy_units].forEach(u=>spec.unit[u.key]=u);
   catalog.moons.forEach(m=>spec.moon[m.key]=m);
+  (catalog.minerals||[]).forEach(m=>spec.mineral[m.key]=m);
   (catalog.technologies||[]).forEach(t=>spec.tech[t.key]=t);
   fill("planet",catalog.planets.map(p=>[p.key,p.name]));
   fill("race",catalog.races.map(r=>[r.key,r.name]));
@@ -456,14 +461,55 @@ async function loadCatalog(){
   $("races").innerHTML=catalog.races.map(r=>`<div class="item"><b>${esc(r.name)}</b> <span class="muted">${esc(r.description||"")}</span></div>`).join("");
   renderCost(); renderTrainCost(); renderExpInfo();
 }
+// ---- SDD 43: modo pictográfico (ícono + letra + número). Aditivo: apagado por default,
+// con el toggle off TODO queda como hoy (rama paralela, no reemplaza ningún render). ----
+const ICON_FALLBACK={mineral:"🪨",unit:"🪖",build:"🏗",tech:"🔬",moon:"🌙",race:"👽"};
+function pictoGlobal(){ return localStorage.getItem('ui.pictographic')==='1'; }
+function pictoOverrides(){ try{ return JSON.parse(localStorage.getItem('ui.picto.panels')||'{}'); }catch{ return {}; } }
+function isPicto(panelId){ const o=pictoOverrides(); return (panelId in o)? !!o[panelId] : pictoGlobal(); }
+function picLookup(kind,key){ const t={mineral:spec.mineral,unit:spec.unit,build:spec.build,tech:spec.tech,moon:spec.moon}[kind]; return (t&&t[key])||null; }
+// un ícono con su NOMBRE accesible (title/aria-label): el texto se complementa, no se pierde
+function ico(kind,key){ const it=picLookup(kind,key); const sym=(it&&it.icon)||ICON_FALLBACK[kind]||"•"; const name=(it&&it.name)||key;
+  return `<span class="ico" role="img" title="${esc(name)}" aria-label="${esc(name)}">${sym}</span>`; }
+// chip de material = ícono + letra(símbolo) + número (la unidad atómica del modo, §2.5)
+function mchip(mkey,amount){ const it=spec.mineral[mkey]||{}; const s=it.symbol?`<span class="msym">${esc(it.symbol)}</span>`:"";
+  return `${ico('mineral',mkey)}${s} ${Math.round(amount)}`; }
+function togglePicto(){ const on=!pictoGlobal(); localStorage.setItem('ui.pictographic',on?'1':'0');
+  document.body.classList.toggle('pictomode',on); $("pictotoggle").textContent=on?"🖼":"🔤";
+  renderCost(); renderTrainCost(); renderExpInfo(); if(token) refresh(); }
+function applyPicto(){ const on=pictoGlobal(); document.body.classList.toggle('pictomode',on);
+  const b=$("pictotoggle"); if(b) b.textContent=on?"🖼":"🔤"; }
+// TTS: tocar un ícono "dice qué es" (para lo difícil de representar). Web Speech API, sin infra.
+let _ttsVoice=null;
+function ttsVoice(){ const ss=window.speechSynthesis; if(!ss) return null; const vs=ss.getVoices()||[];
+  const by=p=>vs.find(v=>(v.lang||"").toLowerCase().replace("_","-").startsWith(p));
+  _ttsVoice = lang==="en" ? (by("en")||null) : (by("es-ar")||by("es-419")||by("es-mx")||by("es")||null);
+  return _ttsVoice; }
+function speak(text){ try{ const ss=window.speechSynthesis; if(!ss||!text) return; ss.cancel();
+  const u=new SpeechSynthesisUtterance(text); const v=_ttsVoice||ttsVoice(); if(v) u.voice=v;
+  u.lang=(v&&v.lang)||(lang==="en"?"en-US":"es-AR"); u.rate=1.0; ss.speak(u); }catch(e){} }
+if(window.speechSynthesis && 'onvoiceschanged' in window.speechSynthesis)
+  window.speechSynthesis.onvoiceschanged=()=>{ _ttsVoice=null; };
+// delegación: en modo dibujos, un clic en cualquier ícono lo lee en voz alta
+document.addEventListener('click',e=>{ if(!document.body.classList.contains('pictomode')) return;
+  const el=e.target.closest('.ico'); if(el && el.getAttribute('aria-label')) speak(el.getAttribute('aria-label')); });
 // resolve a role-based cost ({structural:N}) to real minerals using the player's race
 function raceRoles(){ const r=(catalog.races||[]).find(x=>x.key===(state&&state.race_key)); return r?r.resource_roles:{}; }
 function resolveCost(roleCost){ const roles=raceRoles(); const out={}; for(const[role,amt]of Object.entries(roleCost||{})){ const m=roles[role]; if(m&&amt) out[m]=(out[m]||0)+amt; } return out; }
-function costStr(mc){ return Object.entries(mc).map(([m,a])=>`${m} ${Math.round(a)}`).join(", ")||"gratis"; }
-function affordText(mc, energyCost, planet){
+function costStr(mc,panel){ const e=Object.entries(mc); if(!e.length) return isPicto(panel)?"✓":"gratis";
+  if(isPicto(panel)) return e.map(([m,a])=>mchip(m,a)).join(" · ");
+  return e.map(([m,a])=>`${m} ${Math.round(a)}`).join(", "); }
+function affordText(mc, energyCost, planet, panel){
   if(!state) return "";
   // el material se chequea EN EL PLANETA de la base (SDD 42); la energía es global del jugador
   const stocks=(planet&&planet!==state.planet_key)?((state.stocks_by_planet||{})[planet]||{}):state.stocks;
+  if(isPicto(panel)){
+    const out=[];
+    for(const[m,a]of Object.entries(mc)){ const have=stocks[m]||0; if(have<a)
+      out.push(`${ico('mineral',m)}<span class="bad">❌ −${Math.round(a-have)}</span>`); }
+    if(energyCost && state.energy<energyCost) out.push(`<span class="bad">⚡❌ −${Math.round(energyCost-state.energy)}</span>`);
+    return out.length? ` — ${out.join(" ")}` : ` — <span class="ok">✓</span>`;
+  }
   const lacks=[];
   for(const[m,a]of Object.entries(mc)){ if((stocks[m]||0)<a) lacks.push(`${m}`); }
   if(energyCost && state.energy<energyCost) lacks.push("⚡energía");
@@ -471,18 +517,21 @@ function affordText(mc, energyCost, planet){
 }
 // SDD 1 (árbol de tech): muestra si falta edificio previo o investigación para hacer la cosa.
 function techName(k){ const t=(catalog&&catalog.technologies||[]).find(x=>x.key===k); return t?t.name:k; }
-function reqLock(o, base){
+function reqLock(o, base, panel){
   if(!state) return "";
+  const pic=isPicto(panel);
   const lacks=[];
   const rb=o.requires;
   if(rb && rb!=="headquarters"){
     const has=base ? (base.buildings||[]).some(x=>x.building_key===rb && x.status==="active")
                    : (state.bases||[]).some(bs=>(bs.buildings||[]).some(x=>x.building_key===rb && x.status==="active"));
-    if(!has) lacks.push("🏗 "+(spec.build[rb]?spec.build[rb].name:rb));
+    if(!has) lacks.push(pic? ico('build',rb) : "🏗 "+(spec.build[rb]?spec.build[rb].name:rb));
   }
   if(o.requires_tech && !(state.technologies||[]).includes(o.requires_tech))
-    lacks.push("🔬 "+techName(o.requires_tech));
-  return lacks.length? ` · <span class="bad">🔒 ${lacks.map(esc).join(" + ")}</span>` : "";
+    lacks.push(pic? ico('tech',o.requires_tech) : "🔬 "+techName(o.requires_tech));
+  if(!lacks.length) return "";
+  return pic? ` · <span class="bad">🔒 ${lacks.join(" ")}</span>`
+           : ` · <span class="bad">🔒 ${lacks.map(esc).join(" + ")}</span>`;
 }
 function renderCost(){ const b=spec.build[$("building").value]; if(!b) return; $("mineral").classList.toggle("hidden",b.category!=="mine");
   const base=(state&&state.bases||[]).find(x=>String(x.id)===String(($("buildbase")||{}).value))||(state&&state.bases&&state.bases[0]);
@@ -490,16 +539,18 @@ function renderCost(){ const b=spec.build[$("building").value]; if(!b) return; $
   if(base&&base.base_type==='orbital'){ const m2={}; for(const k in mc) m2[k]=Math.round(mc[k]*1.5); mc=m2; }  // SDD 37: orbital cuesta 1.5×
   const planet=base?base.planet_key:null;
   const where=(base&&planet!==state.planet_key)?` · 📍${esc(planetName(planet))}`:"";
-  $("buildcost").innerHTML=`costo ${costStr(mc)} · ⚡${b.energy_cost} · ${b.build_seconds}s${where}${reqLock(b,base)}${affordText(mc,b.energy_cost,planet)}`; }
+  $("buildcost").innerHTML=`costo ${costStr(mc,'acciones')} · ⚡${b.energy_cost} · ${b.build_seconds}s${where}${reqLock(b,base,'acciones')}${affordText(mc,b.energy_cost,planet,'acciones')}`; }
 function renderTrainCost(){ const u=spec.unit[$("unit").value]; if(!u) return; const qty=Math.max(1,+$("qty").value||1);
   const mc=resolveCost(u.cost); for(const k in mc) mc[k]*=qty; const e=(u.energy_cost||0)*qty;
-  $("traincost").innerHTML=`x${qty}: ${costStr(mc)} · ⚡${e}${reqLock(u,null)}${affordText(mc,e)}`; }
+  $("traincost").innerHTML=`x${qty}: ${costStr(mc,'acciones')} · ⚡${e}${reqLock(u,null,'acciones')}${affordText(mc,e,null,'acciones')}`; }
 function renderExpInfo(){ const m=spec.moon[$("moon").value]; if(!m) return; const e=(m.expedition||{}).energy_cost||0;
-  const grants=Object.entries(m.grants||{}).map(([k,v])=>`${k}+${v}`).join(", ");
+  const pic=isPicto('acciones');
+  const grants=Object.entries(m.grants||{}).map(([k,v])=>pic?`${ico('mineral',k)}+${v}`:`${k}+${v}`).join(pic?" · ":", ");
   const req=(m.expedition||{}).requires_unit; const reach=(state&&state.galaxy_key)?"":"";
   const lacks=[]; if(state&&state.energy<e) lacks.push("⚡energía"); if(req&&state&&(state.units[req]||0)<1) lacks.push(req);
   const warn=lacks.length?` — <span class="bad">⚠ te falta: ${lacks.join(", ")}</span>`:` — <span class="ok">✓ listo</span>`;
-  $("expinfo").innerHTML=`⚡${e} · requiere ${req||"-"} · trae ${grants||"-"}${warn}${reach}`; }
+  const reqTxt=pic&&req?ico('unit',req):(req||"-");
+  $("expinfo").innerHTML=`⚡${e} · requiere ${reqTxt} · trae ${grants||"-"}${warn}${reach}`; }
 async function onboard(){ try{ await api("/api/v1/players/onboard","POST",{galaxy_key:"milky_way",planet_key:$("planet").value,race_key:$("race").value}); boot(); }catch(e){ msg(e.message,false);} }
 
 // actions
@@ -746,8 +797,9 @@ async function refresh(){
   $("energy").textContent="⚡ "+state.energy+"/"+state.energy_max;
   $("unread").textContent="🔔 "+state.unread_notifications;
   $("ebar").style.width=Math.min(100,100*state.energy/state.energy_max)+"%"; $("etxt").textContent=state.energy+"/"+state.energy_max;
-  $("minerals").innerHTML=Object.entries(state.stocks).map(([k,v])=>`<span class="chip">${esc(k)}: ${Math.round(v)}</span>`).join("")||'<span class="muted">—</span>';
-  $("units").innerHTML=Object.entries(state.units).filter(([,v])=>v>0).map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join("")||`<span class="muted">${esc(tr('nounits'))}</span>`;
+  const picE=isPicto('imperio');
+  $("minerals").innerHTML=Object.entries(state.stocks).map(([k,v])=>picE?`<span class="chip">${mchip(k,v)}</span>`:`<span class="chip">${esc(k)}: ${Math.round(v)}</span>`).join("")||'<span class="muted">—</span>';
+  $("units").innerHTML=Object.entries(state.units).filter(([,v])=>v>0).map(([k,v])=>picE?`<span class="chip">${ico('unit',k)} ${v}</span>`:`<span class="chip">${esc(k)}: ${v}</span>`).join("")||`<span class="muted">${esc(tr('nounits'))}</span>`;
   $("boons").innerHTML=(state.boons||[]).map(b=>`<span class="chip ok">boon ${esc(b.effect)} ×${b.magnitude}</span>`).join(" ");
   const baseTag=b=>b.base_type==='lunar'?'🌙':(b.base_type==='orbital'?'🛰':(b.planet_key!==state.planet_key?'🪐':'⭐'));
   // selector de base para construir (incluye colonias/orbitales); preserva la elección
@@ -1428,7 +1480,7 @@ function startStream(){
 
 async function showDb(){ try{ const h=await (await fetch(API+"/health")).json(); $("dbpill").textContent="🗄 "+h.db; }catch{} }
 async function boot(){
-  showDb(); $("sound").textContent=soundOn?"🔊":"🔇"; applyI18n();
+  showDb(); $("sound").textContent=soundOn?"🔊":"🔇"; applyPicto(); applyI18n();
   const authed=!!token;
   $("adminconsole").classList.add("hidden");   // visible solo en la rama admin
   if(!authed){ $("u").value=localStorage.getItem("lastuser")||""; }
