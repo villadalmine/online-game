@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Docs: SDD de colonización sincronizado
+- `docs/sdd-colonization.md` registra el estado **v1.6**: pre-cálculo de costo en `/colonize/options`
+  (`energy_surface`/`energy_orbital`/`shuttle_cost`) visible en el modal, y errores de energía con
+  detalle compartidos con build/training/research.
+
 ## [1.62.0] - 2026-06-26
 
 ### 2026-06-26 — Colonizar: costo visible antes de hacer click + error con detalle

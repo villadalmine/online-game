@@ -1,6 +1,6 @@
 # SDD 37 — Colonización multi-planeta (grafo raza × planeta × atributos)
 
-> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
+> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-26
 > **Relacionado:** [SDD 13 precisión científica](sdd-scientific-accuracy.md) (atributos físicos +
 > multiplicadores gravedad/insolación/temperatura), [SDD 8 límites de galaxia](sdd-galaxy-limits.md),
 > `content/planets.yaml` (gravity_g, mean_temp_c, atmosphere, has_liquid_water, insolation, abundance),
@@ -124,6 +124,17 @@ can_colonize = atmo_ok-o-no-letal  AND  habitability >= min_habitability   # umb
   (compat no se aplica) → backward-compatible.
 - Tests: tech desbloquea mundos hostiles, cúpulas vencen "sin atmósfera", fundar requiere
   tech+transbordador, e2e. **266 verdes.**
+
+## 7.quinquies Estado v1.6 (2026-06-26) — costo visible + errores de energía con detalle
+- **Pre-cálculo del costo (UX):** `GET /colonize/options` ahora expone, por planeta,
+  `energy_surface`/`energy_orbital` (la energía de fundar AHÍ ahora, escalando con el nº de colonias
+  actuales) y `shuttle_cost`. El modal del planeta los muestra **antes de tocar Colonizar**,
+  comparados con lo que tenés (en rojo si no alcanza) — así no hacés click a ciegas.
+- **Error de energía con detalle:** "Energía insuficiente para colonizar" ahora dice cuánto
+  necesitás, cuánto tenés, cuánto falta y en cuánto se recarga (helper compartido
+  `energy.energy_shortfall_msg`, también usado por build/training/research). La energía es **global
+  del jugador, no por planeta**.
+- Tests: e2e de `/colonize/options` verifica los campos de costo. **320 verdes.**
 
 ## 7.quater Visión v2 (diseño, NO implementado) — colonización rica
 Idea (del usuario): la colonización se entrelaza con **edificios, investigación y exploración**, con
