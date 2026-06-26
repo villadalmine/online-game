@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.88.0] - 2026-06-26
+
 ### 2026-06-26 — Calculadora de combate web + asistente aterrizado (SDD 34 completo)
 - **Calculadora de combate 🧮** (panel nuevo): poné unidades del atacante y del defensor (+ torretas)
   y te dice **en vivo si ganás y cuánto pierde cada lado** — usa `POST /combat/simulate`, el **mismo
