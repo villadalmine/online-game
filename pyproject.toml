@@ -61,6 +61,11 @@ testpaths = ["tests"]
 # Browser (Playwright) tests live in tests/browser and run via `make test-ui`
 # (they need a browser). Keep them out of the default fast suite.
 addopts = "--ignore=tests/browser"
+markers = [
+    # SDD 45: tests de UI con browser real (Playwright+Chromium). Corren en el step e2e-chrome
+    # del gate y en `make test-ui`; se saltean solos si no hay Chromium.
+    "chrome: tests de frontend con un browser real (Playwright)",
+]
 filterwarnings = [
     # Tests use a short dev JWT secret; not a concern for the suite.
     "ignore::UserWarning",

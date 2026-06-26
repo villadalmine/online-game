@@ -398,18 +398,34 @@ def hub_intrinsic(mineral_key: str) -> float:
 
 
 async def _hub_row(session: AsyncSession, galaxy_key: str, mineral_key: str):
+    from sqlalchemy.exc import IntegrityError
+
     from app.models import MarketPrice
-    row = (await session.execute(
-        select(MarketPrice).where(
+
+    def _q():
+        return select(MarketPrice).where(
             MarketPrice.galaxy_key == galaxy_key, MarketPrice.mineral_key == mineral_key
         )
-    )).scalar_one_or_none()
-    if row is None:
-        row = MarketPrice(galaxy_key=galaxy_key, mineral_key=mineral_key,
-                          price=hub_intrinsic(mineral_key))
-        session.add(row)
-        await session.flush()
-    return row
+
+    # tolerante a duplicados preexistentes (.first() no explota como scalar_one_or_none)
+    row = (await session.execute(_q())).scalars().first()
+    if row is not None:
+        return row
+    # No existe: crear. En Postgres dos requests concurrentes pueden insertar a la vez → el 2º
+    # viola uq_market_price (IntegrityError). Lo hacemos en un SAVEPOINT: si choca, releemos la
+    # fila que ganó la carrera sin abortar la transacción del request.
+    try:
+        async with session.begin_nested():
+            row = MarketPrice(galaxy_key=galaxy_key, mineral_key=mineral_key,
+                              price=hub_intrinsic(mineral_key))
+            session.add(row)
+            await session.flush()
+        return row
+    except IntegrityError:
+        row = (await session.execute(_q())).scalars().first()
+        if row is None:
+            raise
+        return row
 
 
 async def hub_prices(session: AsyncSession, galaxy_key: str) -> dict[str, float]:

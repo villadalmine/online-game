@@ -1,12 +1,13 @@
-# CD de un paso (SDD 44): build (Kaniko) + deploy (helm) in-cluster, en un solo Workflow.
-# El tag de imagen es un PARÁMETRO — no se edita el YAML por release.
+# CD CON GATE DE TESTS (SDD 44 + 45): build + tests (e2e API + Chrome) + promote a prod, en un
+# Workflow. Si los tests NO pasan, promote-prod NO corre → prod queda intacto.
+# El tag de imagen es un PARÁMETRO (no se edita el YAML).
 #
 # Pre-requisito (una vez): kubectl apply -f deploy/build/cicd-rbac.yaml
 # Disparar:                make deploy V=<X.Y.Z>
-#   (equivale a: argo submit deploy/build/online-game-cicd.yaml -n kaniko -p image_tag=<X.Y.Z> --watch)
+#   (= argo submit deploy/build/online-game-cicd.yaml -n kaniko -p image_tag=<X.Y.Z> --watch)
 #
-# Fallback manual (cambios de chart/values, ver SDD 17): build con online-game-kaniko.yaml + helm
-# upgrade -f deploy/helm/values-local.yaml --set image.tag=<tag>.
+# Emergencia (sin gate): make deploy-force V=<X.Y.Z>  (ver SDD 45 §8 F3).
+# Instancia de testing real para smoke manual: make dt-up V=<tag> (galaxy-dt, SDD 45 §5).
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -16,10 +17,10 @@ metadata:
     app: online-game-cicd
 spec:
   entrypoint: pipeline
-  serviceAccountName: og-deployer        # SA con RBAC para desplegar en online-game (SDD 44)
+  serviceAccountName: og-deployer
   arguments:
     parameters:
-      - name: image_tag                  # override: argo submit ... -p image_tag=X.Y.Z
+      - name: image_tag
         value: "latest"
   ttlStrategy:
     secondsAfterSuccess: 3600
@@ -41,26 +42,32 @@ spec:
         storageClassName: longhorn-nvme
         resources:
           requests:
-            storage: 5Gi
+            storage: 8Gi
   templates:
     - name: pipeline
       dag:
         tasks:
-          - name: build
+          - name: build               # imagen del juego
             template: build-image
-          - name: deploy
-            template: helm-deploy
-            dependencies: [build]
+          - name: build-test          # imagen de test (con Chromium horneado, SDD 45 §4)
+            template: build-test-image
+          - name: e2e-api             # GATE 1: suite API (pytest -m "not chrome")
+            template: test-api
+            dependencies: [build-test]
+          - name: e2e-chrome          # GATE 2: tests de UI con browser real (pytest -m chrome)
+            template: test-chrome
+            dependencies: [build-test]
+          - name: promote-prod        # solo si build + ambos gates pasaron
+            template: helm-promote
+            dependencies: [build, e2e-api, e2e-chrome]
 
+    # ---- build de la imagen del juego (Kaniko) ----
     - name: build-image
       inputs:
         artifacts:
           - name: source
             path: /workspace/source
-            git:
-              repo: "https://github.com/villadalmine/online-game.git"
-              revision: main
-              depth: 1
+            git: { repo: "https://github.com/villadalmine/online-game.git", revision: main, depth: 1 }
       container:
         image: gcr.io/kaniko-project/executor:latest
         args:
@@ -73,31 +80,73 @@ spec:
           - "--compression=zstd"
           - "--compression-level=1"
         resources:
-          requests:
-            cpu: "1"
-            memory: "2Gi"
-          limits:
-            cpu: "4"
-            memory: "8Gi"
-        volumeMounts:
-          - name: workspace
-            mountPath: /workspace
+          requests: { cpu: "1", memory: "2Gi" }
+          limits: { cpu: "4", memory: "8Gi" }
+        volumeMounts: [{ name: workspace, mountPath: /workspace }]
 
-    - name: helm-deploy
-      # reusa el chart clonado por el step de build (PVC compartido) y los values del release VIVO
-      # (--reuse-values): no maneja secretos. Solo pisa image.tag. Ver SDD 44 §3.2.
+    # ---- build de la imagen de TEST (Kaniko, Dockerfile.test) ----
+    - name: build-test-image
+      inputs:
+        artifacts:
+          - name: source
+            path: /workspace/test-src
+            git: { repo: "https://github.com/villadalmine/online-game.git", revision: main, depth: 1 }
+      container:
+        image: gcr.io/kaniko-project/executor:latest
+        args:
+          - "--dockerfile=/workspace/test-src/deploy/Dockerfile.test"
+          - "--context=dir:///workspace/test-src"
+          - "--destination=registry.registry:5000/online-game-test:{{workflow.parameters.image_tag}}"
+          - "--insecure"
+          - "--skip-tls-verify"
+          - "--snapshot-mode=redo"
+          - "--compression=zstd"
+          - "--compression-level=1"
+        resources:
+          requests: { cpu: "1", memory: "2Gi" }
+          limits: { cpu: "4", memory: "8Gi" }
+        volumeMounts: [{ name: workspace, mountPath: /workspace }]
+
+    # ---- GATE 1: e2e API (la imagen de test es self-contained: SQLite + fakeredis) ----
+    - name: test-api
+      container:
+        image: registry.registry:5000/online-game-test:{{workflow.parameters.image_tag}}
+        command: ["python", "-m", "pytest", "-m", "not chrome", "-q"]
+        workingDir: /app
+        resources:
+          requests: { cpu: "1", memory: "1Gi" }
+          limits: { cpu: "2", memory: "4Gi" }
+
+    # ---- GATE 2: e2e Chrome (Playwright; el test levanta su propio uvicorn efímero) ----
+    - name: test-chrome
+      container:
+        image: registry.registry:5000/online-game-test:{{workflow.parameters.image_tag}}
+        command: ["python", "-m", "pytest", "-m", "chrome", "tests/test_web_smoke.py", "-q"]
+        workingDir: /app
+        env:
+          - { name: ALLOWED_EMAILS, value: "" }
+          - { name: SIGNUP_REQUIRES_APPROVAL, value: "false" }
+        resources:
+          requests: { cpu: "1", memory: "2Gi" }
+          limits: { cpu: "2", memory: "4Gi" }
+
+    # ---- promote a PROD (solo tras gates verdes): helm upgrade --reuse-values (SDD 44) ----
+    - name: helm-promote
+      inputs:
+        artifacts:
+          - name: source
+            path: /workspace/chart-src
+            git: { repo: "https://github.com/villadalmine/online-game.git", revision: main, depth: 1 }
       container:
         image: dtzar/helm-kubectl:3.16.2
         command: ["sh", "-c"]
         args:
           - |
             set -e
-            helm upgrade galaxy /workspace/source/deploy/helm \
+            helm upgrade galaxy /workspace/chart-src/deploy/helm \
               -n online-game \
               --reuse-values \
               --set image.tag={{workflow.parameters.image_tag}} \
-              --wait --timeout 5m
-            kubectl rollout status deploy/galaxy-api -n online-game --timeout=180s
-        volumeMounts:
-          - name: workspace
-            mountPath: /workspace
+              --wait --timeout 8m
+            kubectl rollout status deploy/galaxy-api -n online-game --timeout=300s
+        volumeMounts: [{ name: workspace, mountPath: /workspace }]

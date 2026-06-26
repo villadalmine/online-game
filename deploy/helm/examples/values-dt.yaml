@@ -1,0 +1,48 @@
+# Instancia de TESTING `galaxy-dt` (SDD 45): mismo chart que prod, release/label distinto, EFÍMERA
+# y SIN SECRETOS (apta para el repo). Para probar las FUNCIONALES de la web sin límites de recursos
+# ni accesos externos. No usar para prod.
+#
+#   helm upgrade --install galaxy-dt deploy/helm -n online-game-dt --create-namespace -f deploy/helm/examples/values-dt.yaml --set image.tag=<tag>
+image:
+  repository: registry.registry:5000/online-game
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# Sin ingress público: el gate le pega por DNS interno (galaxy-dt-api.online-game-dt.svc).
+gateway:
+  create: false
+  enabled: false
+
+env:
+  ENVIRONMENT: testing
+  JWT_SECRET: "dt-testing-secret-not-for-prod-0123456789"
+  REDIS_ENABLED: "false"          # sin dependencias externas
+  PHYSICS_ENABLED: "false"        # determinista para e2e
+  AUTO_TICK_SECONDS: "0"          # sin tick automático; los tests fuerzan advance por lectura
+  # Sin límites para probar funcionalidad de UI (SDD 45 §5): energía enorme.
+  ENERGY_REGEN_PER_HOUR: "100000"
+  ENERGY_MAX: "100000000"
+  ENERGY_START: "100000000"
+  ALLOWED_EMAILS: ""              # registro abierto: los tests crean usuarios
+  SIGNUP_REQUIRES_APPROVAL: "false"
+
+npc:
+  brain: "rules"                  # sin LLM/OpenRouter: cero costo/acceso externo
+
+# DB efímera: Postgres del chart pero SIN persistencia (emptyDir) → datos desechables por corrida.
+postgres:
+  enabled: true
+  persistence:
+    enabled: false
+
+redis:
+  enabled: false
+
+backup:
+  enabled: false
+
+# recursos chicos: es efímero
+api:
+  replicas: 1
+autoscaling:
+  enabled: false

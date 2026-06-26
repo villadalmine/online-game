@@ -154,9 +154,15 @@ async def health():
     return {"status": "ok", "app": settings.app_name, "db": settings.db_backend}
 
 
-# El HTML se sirve con `no-cache`: el navegador igual usa ETag para 304s, pero SIEMPRE revalida →
-# tras un deploy ves la versión nueva sin hard-refresh (antes quedaba cacheado el HTML viejo).
-_NOCACHE = {"Cache-Control": "no-cache"}
+# El HTML se sirve con `no-store`: el navegador NO lo guarda → tras un deploy SIEMPRE ves la versión
+# nueva, sin hard-refresh y sin quedar pegado a un HTML viejo cacheado (con `no-cache` algunos
+# browsers/edge seguían sirviendo lo viejo aunque hicieras Shift+R). Pragma/Expires para cachés
+# intermedias viejas (HTTP/1.0). El HTML es chico y el contenido pesado viaja por la API igual.
+_NOCACHE = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
 
 
 @app.get("/", include_in_schema=False)

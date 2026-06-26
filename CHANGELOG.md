@@ -7,6 +7,21 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Fix erratismo de mercado/hub + cache del HTML + gate de tests (SDD 45)
+- **Hub/mercado erráticos (500 intermitente, p.ej. vender hierro):** `_hub_row` hacía select→insert
+  sin manejar la carrera; en Postgres dos requests concurrentes (la carga del hub crea filas de
+  precio para todos los minerales) chocaban con el unique constraint → `IntegrityError` 500. Ahora se
+  crea en un **savepoint** y, si pierde la carrera, **relee** la fila — sin 500. Tolerante también a
+  duplicados preexistentes (`.first()` en vez de `scalar_one_or_none`).
+- **"Se me fue la base orbital / quedó pegado a una versión vieja":** el HTML se sirve con
+  `Cache-Control: no-store` (antes `no-cache`) → el browser **no** guarda el index y siempre ves la
+  versión nueva tras un deploy, sin hard-refresh.
+- **Gate de tests (SDD 45):** marker `chrome`; `tests/test_web_smoke.py` abre **todos los paneles**
+  (normal + dibujos, usuario sembrado sin límites) y falla ante cualquier error JS; e2e API
+  `test_all_keys_no_server_error` barre **todos los minerales/edificios/unidades** y falla si alguno
+  da 500. `make test`/`test-ui`/`e2e-local`; `make dt-up/dt-down` (instancia `galaxy-dt`);
+  `make deploy` con gate (build→test→promote) y `make deploy-force` de emergencia.
+
 ## [1.66.0] - 2026-06-26
 
 ### 2026-06-26 — CD de un paso: build + deploy in-cluster (SDD 44)

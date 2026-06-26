@@ -165,6 +165,56 @@ async def test_catalog(client):
     assert any(b["key"] == "mine" for b in body["buildings"])
 
 
+async def test_all_keys_no_server_error(client):
+    """SDD 45: barre TODOS los keys (minerales en hub buy/sell, edificios en build, unidades en
+    train) y falla si ALGUNO devuelve 500. Atrapa errores key-específicos (p.ej. el de 'iron')."""
+    from app.models import ResourceStock
+    h = await _register(client.http, "sweeper")
+    state = await _onboard(client.http, h, planet="earth", race="terran")
+    base_id = state["bases"][0]["id"]
+    planet = "earth"
+    cat = (await client.http.get("/api/v1/catalog")).json()
+    minerals = [m["key"] for m in cat["minerals"]]
+    buildings = [b["key"] for b in cat["buildings"] if b["key"] != "headquarters"]
+    units = [u["key"] for u in (cat["personnel"] + cat["heavy_units"])]
+    # sembrar sin límites: energía enorme, naves de carga, y stock de TODOS los minerales en casa
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "sweeper"))).scalar_one()
+        p.energy = 10_000_000
+        s.add(UnitStock(player_id=p.id, unit_key="cargo_ship", quantity=50))
+        for m in minerals:
+            row = (await s.execute(select(ResourceStock).where(
+                ResourceStock.player_id == p.id, ResourceStock.mineral_key == m,
+                ResourceStock.planet_key == planet))).scalar_one_or_none()
+            if row:
+                row.amount = 10_000_000
+            else:
+                s.add(ResourceStock(player_id=p.id, mineral_key=m, amount=10_000_000,
+                                    planet_key=planet))
+        await s.commit()
+
+    fails = []
+    for m in minerals:
+        for side in ("buy", "sell"):
+            r = await client.http.post(f"/api/v1/market/hub/{side}", headers=h,
+                                       json={"mineral_key": m, "qty": 1})
+            if r.status_code >= 500:
+                fails.append(f"hub {side} {m}: {r.status_code} {r.text[:120]}")
+    for b in buildings:
+        body = {"building_key": b}
+        if b == "mine":
+            body["target_mineral"] = "iron"
+        r = await client.http.post(f"/api/v1/bases/{base_id}/build", headers=h, json=body)
+        if r.status_code >= 500:
+            fails.append(f"build {b}: {r.status_code} {r.text[:120]}")
+    for u in units:
+        r = await client.http.post(f"/api/v1/bases/{base_id}/train", headers=h,
+                                   json={"unit_key": u, "quantity": 1})
+        if r.status_code >= 500:
+            fails.append(f"train {u}: {r.status_code} {r.text[:120]}")
+    assert not fails, "errores 500 por key:\n" + "\n".join(fails)
+
+
 async def test_catalog_pictographic_icons(client):
     # SDD 43 F1: el catálogo expone icon (universal) en minerales/unidades/edificios y symbol en
     # minerales (la "letra"), para el modo pictográfico. No se localiza.

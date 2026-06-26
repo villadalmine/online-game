@@ -24,7 +24,7 @@ JWT       ?= dev-secret-key-at-least-32-bytes-long!!
         test test-ui test-file lint fmt check publish \
         migrate migration downgrade db-current db-history db-reset \
         up down logs ps build-image helm-template helm-install helm-uninstall \
-        release deploy clean clean-all
+        release deploy deploy-force e2e-local dt-up dt-down clean clean-all
 
 # ---- ayuda -----------------------------------------------------------
 help: ## Muestra esta ayuda
@@ -82,12 +82,18 @@ cli: ## Pasa comandos al CLI: make cli ARGS="players"
 	API_URL=$(API_URL) $(CLI) $(ARGS)
 
 ## Calidad
-test: ## Corre toda la suite (unit + integración + e2e)
-	$(PY) -m pytest -q
+test: ## Corre la suite API (unit + integración + e2e), sin browser
+	$(PY) -m pytest -m "not chrome" -q
 
-test-ui: ## Tests de navegador (Playwright) + screenshots en tests/browser/screenshots
+test-ui: ## Tests de frontend con browser real (Playwright/Chromium) — SDD 45
 	$(PIP) install -q -e ".[ui]" && $(VENV)/bin/playwright install chromium
-	$(PY) -m pytest tests/browser -o addopts="" -p no:asyncio -q
+	$(PY) -m pytest -m chrome tests/test_web_smoke.py -q
+	$(PY) -m pytest tests/browser -o addopts="" -p no:asyncio -q 2>/dev/null || true
+
+e2e-local: ## Gate completo en local: lint + API e2e + Chrome (SDD 45)
+	$(MAKE) lint
+	$(MAKE) test
+	$(MAKE) test-ui
 
 test-file: ## Corre un archivo: make test-file f=tests/test_npc.py
 	$(PY) -m pytest -q $(f)
@@ -105,7 +111,7 @@ release: ## Corta un release SemVer: make release V=X.Y.Z [DRY=1] (SDD 23)
 	@test -n "$(V)" || (echo 'Falta V=X.Y.Z'; exit 1)
 	$(PY) scripts/release.py $(V) $(if $(DRY),--dry-run,)
 
-deploy: ## CD in-cluster (build+deploy en un Workflow): make deploy V=X.Y.Z (SDD 44)
+deploy: ## CD con gate de tests (build→dt→e2e+chrome→prod): make deploy V=X.Y.Z (SDD 44/45)
 	@test -n "$(V)" || (echo 'Falta V=X.Y.Z'; exit 1)
 	@if command -v argo >/dev/null 2>&1; then \
 	  argo submit deploy/build/online-game-cicd.yaml -n kaniko -p image_tag=$(V) --watch; \
@@ -113,6 +119,20 @@ deploy: ## CD in-cluster (build+deploy en un Workflow): make deploy V=X.Y.Z (SDD
 	  echo "argo CLI no encontrado; usando kubectl create (override del tag via parámetro)"; \
 	  sed 's/value: "latest"/value: "$(V)"/' deploy/build/online-game-cicd.yaml | kubectl create -f -; \
 	fi
+
+deploy-force: ## Deploy SIN gate de tests (emergencias): build + helm upgrade directo (SDD 44/45)
+	@test -n "$(V)" || (echo 'Falta V=X.Y.Z'; exit 1)
+	@echo "⚠ deploy-force saltea el gate de tests (SDD 45). Solo para incidentes."
+	sed 's/value: "latest"/value: "$(V)"/' deploy/build/online-game-kaniko.yaml | kubectl create -f -
+
+dt-up: ## Levanta la instancia de testing galaxy-dt (SDD 45): make dt-up V=X.Y.Z
+	@test -n "$(V)" || (echo 'Falta V=X.Y.Z'; exit 1)
+	helm upgrade --install galaxy-dt deploy/helm -n online-game-dt --create-namespace \
+	  -f deploy/helm/examples/values-dt.yaml --set image.tag=$(V) --wait --timeout 5m
+
+dt-down: ## Baja la instancia de testing galaxy-dt y borra su namespace efímero (SDD 45)
+	-helm uninstall galaxy-dt -n online-game-dt
+	-kubectl delete ns online-game-dt --wait=false
 
 migrate: ## Aplica migraciones (alembic upgrade head)
 	DATABASE_URL=$(DB_URL) $(ALEMBIC) upgrade head

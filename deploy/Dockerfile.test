@@ -1,0 +1,18 @@
+# Imagen de TEST (SDD 45): el juego + dev/ui extras + Chromium horneado, para correr el gate de
+# tests (e2e API + Chrome) in-cluster y OFFLINE (no baja browsers ni paquetes en cada corrida).
+# Se buildea con Kaniko al registry interno: registry.registry:5000/online-game-test:<tag>.
+FROM python:3.12-slim-bookworm
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+WORKDIR /app
+COPY . /app
+
+# deps del juego + test (dev) + browser (ui), y Chromium con sus libs del sistema.
+RUN pip install --no-cache-dir -e ".[dev,ui]" \
+    && python -m playwright install --with-deps chromium
+
+# Por defecto corre la suite API (sin browser); el step de Chrome la sobreescribe con -m chrome.
+CMD ["python", "-m", "pytest", "-m", "not chrome", "-q"]

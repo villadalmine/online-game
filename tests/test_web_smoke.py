@@ -34,7 +34,10 @@ def _chromium_ok() -> bool:
         return False
 
 
-pytestmark = pytest.mark.skipif(not _chromium_ok(), reason="Chromium de Playwright no disponible")
+pytestmark = [
+    pytest.mark.chrome,
+    pytest.mark.skipif(not _chromium_ok(), reason="Chromium de Playwright no disponible"),
+]
 
 
 def _req(path, method="GET", body=None, token=None):
@@ -59,6 +62,7 @@ def server(tmp_path_factory):
         "ALLOWED_EMAILS": "",            # registro abierto para el test
         "SIGNUP_REQUIRES_APPROVAL": "false",
         "AUTO_TICK_SECONDS": "0",
+        "NPC_BRAIN": "rules",            # SDD 45: sin LLM/créditos en el gate
     }
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "app.main:app",
@@ -76,7 +80,7 @@ def server(tmp_path_factory):
                 time.sleep(0.5)
         else:
             raise RuntimeError("uvicorn no levantó")
-        yield
+        yield str(db)
     finally:
         proc.terminate()
         try:
@@ -98,14 +102,35 @@ def _token(username):
     if st != 201:
         st, d = _req("/api/v1/auth/login", "POST", {"username": username, "password": "pw12345"})
     tok = d["access_token"]
-    if not _req("/api/v1/players/me", token=tok)[1].get("race_key"):
+    me = _req("/api/v1/players/me", token=tok)[1]
+    if not me.get("race_key"):
         _req("/api/v1/players/onboard", "POST",
              {"galaxy_key": "milky_way", "planet_key": "earth", "race_key": "terran"}, token=tok)
-    return tok
+        me = _req("/api/v1/players/me", token=tok)[1]
+    return tok, me["id"]
 
 
-def test_pictographic_mode_renders_without_js_errors(server):
-    tok = _token("web_picto")
+def _seed_unlimited(db_path, pid):
+    """SDD 45: el entorno de testing NO frena por recursos — se siembra al usuario con energía
+    altísima, naves, escolta, minerales y techs para poder ejercitar TODA acción de la UI."""
+    import sqlite3
+    con = sqlite3.connect(db_path)
+    con.execute("UPDATE players SET energy=999999, energy_updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (pid,))
+    for u, q in (("cargo_ship", 50), ("soldier", 100), ("shuttle", 10), ("spy", 10)):
+        con.execute("INSERT INTO unit_stocks (player_id, unit_key, quantity) VALUES (?,?,?)",
+                    (pid, u, q))
+    # minerales abundantes en el planeta natal (las filas las creó el onboarding; subimos el monto)
+    con.execute("UPDATE resource_stocks SET amount=999999 WHERE player_id=?", (pid,))
+    con.commit()
+    con.close()
+
+
+def test_all_panels_render_without_js_errors(server):
+    """SDD 45: abre TODOS los paneles en modo normal y en modo dibujos, con el usuario sembrado
+    sin límites, y falla ante cualquier console.error / pageerror. Atrapa los 500/JS de render."""
+    tok, pid = _token("web_panels")
+    _seed_unlimited(server, pid)
     errors = []
     with sync_playwright() as p:
         b = p.chromium.launch()
@@ -115,21 +140,35 @@ def test_pictographic_mode_renders_without_js_errors(server):
         pg.goto(BASE + "/")
         pg.evaluate("(t)=>localStorage.setItem('token', t)", tok)
         pg.goto(BASE + "/")
-        pg.wait_for_timeout(1200)
+        pg.wait_for_timeout(1500)
         assert _shown(pg, "#game"), "el juego no se mostró"
-        pg.click("#pictotoggle")          # modo dibujos ON
-        pg.wait_for_timeout(1000)
-        # los minerales se renderizan como íconos, sin romper
-        minerals = pg.eval_on_selector("#minerals", "el=>el.innerHTML")
-        assert "ico" in minerals, "el modo dibujos no renderizó íconos de mineral"
-        assert _shown(pg, "#game"), "el juego desapareció en picto"
+        panels = pg.eval_on_selector_all("[data-panel]", "els=>els.map(e=>e.dataset.panel)")
+        assert len(panels) >= 10, f"se esperaban muchos paneles, hubo {panels}"
+
+        def expand_all():
+            # des-colapsar todo para forzar el render del contenido de cada card
+            pg.evaluate("document.querySelectorAll('.card.collapsed>h2').forEach(h=>h.click())")
+            pg.wait_for_timeout(800)
+
+        expand_all()
+        # modo normal: el contenido de cada panel está renderizado
+        for name in panels:
+            html = pg.eval_on_selector(f'[data-panel="{name}"]', "el=>el.innerHTML")
+            assert html and len(html) > 0, f"panel {name} vacío en modo normal"
+        # modo dibujos ON: re-render de todo
+        pg.click("#pictotoggle")
+        pg.wait_for_timeout(1200)
+        expand_all()
+        assert _shown(pg, "#game"), "el juego desapareció en modo dibujos"
+        # íconos de mineral presentes en el imperio
+        assert "ico" in pg.eval_on_selector("#minerals", "el=>el.innerHTML"), "sin íconos en picto"
         b.close()
-    assert not errors, f"errores de JS en runtime: {errors}"
+    assert not errors, f"errores de JS en runtime (paneles): {errors}"
 
 
 def test_boot_does_not_logout_on_transient_5xx(server):
     """Un fallo transitorio de /players/me (deploy/pod rolando) NO debe desloguear."""
-    tok = _token("web_resil")
+    tok, _ = _token("web_resil")
     with sync_playwright() as p:
         b = p.chromium.launch()
         pg = b.new_page()
@@ -153,7 +192,7 @@ def test_boot_does_not_logout_on_transient_5xx(server):
 
 def test_boot_logs_out_on_401(server):
     """Un 401 (token inválido) SÍ debe desloguear y volver al login."""
-    tok = _token("web_401")
+    tok, _ = _token("web_401")
     with sync_playwright() as p:
         b = p.chromium.launch()
         pg = b.new_page()
