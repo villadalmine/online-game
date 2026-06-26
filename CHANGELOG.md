@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.73.0] - 2026-06-26
+
 ## [1.72.0] - 2026-06-26
 
 ### 2026-06-26 — NPC AI observable: panel en admin + dashboard Grafana (SDD 19 §9)
