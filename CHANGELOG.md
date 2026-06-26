@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Fix: requisitos de unidades por planeta (entrenar en colonias)
+- **El research es global** (por jugador): si lo investigaste en tu planeta origen, ya vale para
+  TODAS tus colonias. Lo que bloquea entrenar en una colonia es el **edificio requerido en ESA base**
+  (ej. Fábrica/Cuartel), no el research.
+- **Front:** el menú de **Entrenar** ahora refleja la **base seleccionada** — el 🔒 (edificio/tech
+  faltante) y la afford (mineral del planeta) se calculan para la **colonia** elegida, no para la base
+  origen. Antes mostraba "buildable" si tenías el edificio en cualquier base y recién al hacer click
+  el server lo rechazaba. Cambiar de base ahora también refresca el costo de entrenamiento, y muestra
+  `📍 <planeta>` cuando entrenás fuera del mundo natal.
+- **Backend:** las **restricciones físicas** (atmósfera/agua) se evaluaban en el planeta de **origen**;
+  ahora se evalúan en el planeta de la **base** donde entrenás (un barco pide agua de la colonia, no
+  de tu casa). Test `test_physical_restriction_checks_colony_planet_not_home`.
+
 ## [1.81.0] - 2026-06-26
 
 ### 2026-06-26 — Admin: ver el dashboard de Grafana DENTRO de la consola (SDD 19 §9.3)

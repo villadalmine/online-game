@@ -199,7 +199,7 @@
       <h2>Acciones</h2>
       <div class="row">
         <button onclick="build()" data-i18n="build">🏗 Construir</button>
-        <select id="buildbase" onchange="renderCost()" title="en qué base"></select>
+        <select id="buildbase" onchange="renderCost();renderTrainCost()" title="en qué base"></select>
         <select id="building" onchange="renderCost()"></select>
         <select id="mineral" class="hidden"></select>
       </div>
@@ -548,7 +548,7 @@ function renderActionGrids(){ const on=isPicto('acciones');
   const usel=$("unit"); const qty=Math.max(1,+($("qty")||{}).value||1);
   if(usel&&$("traingrid")) $("traingrid").innerHTML=[...usel.options].map(o=>{ const k=o.value; const u=spec.unit[k]||{};
     const mc=resolveCost(u.cost); for(const x in mc)mc[x]*=qty; const e=(u.energy_cost||0)*qty;
-    return `<button class="picbtn${k===usel.value?' on':''}" onclick="pickOpt('unit','${k}')">${ico('unit',k)}<sub>${statusMark(reqLockBad(u,null),affOk(mc,e,null))}</sub></button>`;
+    return `<button class="picbtn${k===usel.value?' on':''}" onclick="pickOpt('unit','${k}')">${ico('unit',k)}<sub>${statusMark(reqLockBad(u,base),affOk(mc,e,planet))}</sub></button>`;
   }).join("");
   const msel=$("moon");
   if(msel&&$("moongrid")) $("moongrid").innerHTML=[...msel.options].map(o=>{ const k=o.value;
@@ -605,7 +605,12 @@ function renderCost(){ const b=spec.build[$("building").value]; if(!b) return; $
   renderActionGrids(); }
 function renderTrainCost(){ const u=spec.unit[$("unit").value]; if(!u) return; const qty=Math.max(1,+$("qty").value||1);
   const mc=resolveCost(u.cost); for(const k in mc) mc[k]*=qty; const e=(u.energy_cost||0)*qty;
-  $("traincost").innerHTML=`x${qty}: ${costStr(mc,'acciones')} · ⚡${e}${reqLock(u,null,'acciones')}${affordText(mc,e,null,'acciones')}`;
+  // SDD 42: se entrena en la base seleccionada y se paga con el mineral DE ESE planeta. Pasamos la
+  // base para que el 🔒 (edificio/tech faltante) y la afford reflejen LA COLONIA, no la base origen.
+  const base=(state&&state.bases||[]).find(x=>String(x.id)===String(($("buildbase")||{}).value))||(state&&state.bases&&state.bases[0]);
+  const planet=base?base.planet_key:null;
+  const where=(base&&planet!==state.planet_key)?` · 📍${esc(planetName(planet))}`:"";
+  $("traincost").innerHTML=`x${qty}: ${costStr(mc,'acciones')} · ⚡${e}${where}${reqLock(u,base,'acciones')}${affordText(mc,e,planet,'acciones')}`;
   renderActionGrids(); }
 function renderExpInfo(){ const m=spec.moon[$("moon").value]; if(!m) return; const e=(m.expedition||{}).energy_cost||0;
   const pic=isPicto('acciones');

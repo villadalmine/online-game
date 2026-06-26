@@ -112,11 +112,12 @@ async def start_training(
             raise TrainingError(f"Requiere investigar: {rtech}")
 
     # Restricciones físicas del planeta (SDD 13): aviones necesitan atmósfera, barcos agua líquida.
-    planet = content.planets.get(player.planet_key, {})
+    # Se evalúa el planeta de la BASE donde se entrena (puede ser una colonia), no el de origen.
+    planet = content.planets.get(base.planet_key, {})
     if spec.get("requires_atmosphere") and planet.get("atmosphere", "none") == "none":
-        raise TrainingError(f"{unit_key} necesita atmósfera; {player.planet_key} no tiene.")
+        raise TrainingError(f"{unit_key} necesita atmósfera; {base.planet_key} no tiene.")
     if spec.get("requires_liquid_water") and not planet.get("has_liquid_water", False):
-        raise TrainingError(f"{unit_key} necesita agua líquida; {player.planet_key} no tiene.")
+        raise TrainingError(f"{unit_key} necesita agua líquida; {base.planet_key} no tiene.")
 
     # Bring economy + queues up to date before charging.
     await finalize_due_builds(session, player, now)

@@ -45,6 +45,48 @@ async def test_train_requires_building(session):
         await start_training(session, p, base, "tank", 1)
 
 
+async def test_physical_restriction_checks_colony_planet_not_home(session):
+    # Bug: las restricciones físicas (agua/atmósfera) se evaluaban en el planeta de ORIGEN, no en
+    # el de la BASE donde se entrena. Hogar=Tierra (con agua), colonia=Marte (sin agua): entrenar
+    # un barco (requiere agua) en Marte DEBE fallar mencionando Marte, aunque la Tierra tenga agua.
+    from sqlalchemy import select
+
+    from app.content.registry import get_content
+    from app.models import Base_, Building, PlayerTech, UnitStock
+    from app.services.colonization import found_colony
+    from app.services.economy import get_or_create_stock
+
+    p = Player(username="navy", password_hash="x")
+    session.add(p)
+    await session.flush()
+    await onboard_player(session, p, "milky_way", "earth", "terran")
+    p.energy = 99999.0
+    session.add(PlayerTech(player_id=p.id, tech_key="antigravity"))
+    session.add(PlayerTech(player_id=p.id, tech_key="thermal_shielding"))
+    session.add(UnitStock(player_id=p.id, unit_key="shuttle", quantity=1))
+    await session.commit()
+
+    mars = await found_colony(session, p, "mars")
+    # fábrica activa en Marte + minerales en Marte para que el ÚNICO bloqueo sea el agua
+    session.add(Building(base_id=mars.id, building_key="factory", status="active"))
+    for m in get_content().minerals:
+        (await get_or_create_stock(session, p.id, m, "mars")).amount = 100000.0
+    await session.commit()
+
+    with pytest.raises(TrainingError) as ei:
+        await start_training(session, p, mars, "ship", 1)
+    assert "mars" in str(ei.value).lower()
+
+    # control: en casa (Tierra, con agua) el mismo barco se entrena bien
+    home = (await session.execute(
+        select(Base_).where(Base_.player_id == p.id, Base_.planet_key == "earth")
+    )).scalars().first()
+    session.add(Building(base_id=home.id, building_key="factory", status="active"))
+    await session.commit()
+    order = await start_training(session, p, home, "ship", 1)
+    assert order.unit_key == "ship"
+
+
 async def test_training_delivers_units_after_timer(session):
     p, base = await _onboarded(session)
     order = await start_training(session, p, base, "worker", 3)
