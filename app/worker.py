@@ -109,7 +109,29 @@ async def run_tick(session: AsyncSession) -> dict:
 
 async def tick() -> dict:
     async with SessionLocal() as session:
-        return await run_tick(session)
+        result = await run_tick(session)
+    _push_metrics()   # SDD 19 §7.quater: el tick es efímero → empuja sus métricas a la Pushgateway
+    return result
+
+
+def _push_metrics() -> None:
+    """Empuja las métricas del tick (NPC actions/decisions, tick) a la Pushgateway, para que
+    Prometheus las scrapee de ahí (el CronJob no es scrapeable directo). No-op si no hay URL."""
+    from app.core.config import get_settings
+    url = get_settings().pushgateway_url
+    if not url:
+        return
+    try:
+        import urllib.request
+        body = metrics.render().encode()
+        req = urllib.request.Request(
+            f"{url.rstrip('/')}/metrics/job/galaxy-tick",
+            data=body, method="PUT",  # PUT reemplaza el grupo del job (no acumula entre corridas)
+            headers={"Content-Type": "text/plain"},
+        )
+        urllib.request.urlopen(req, timeout=10)
+    except Exception as e:  # nunca romper el tick por las métricas
+        print(f"pushgateway push failed: {e}")
 
 
 async def _main() -> None:

@@ -397,3 +397,12 @@ def test_unit_ready_checks_required_building():
     c = get_content()
     assert _unit_ready("aircraft", {"factory"}, c)        # factory activo
     assert not _unit_ready("aircraft", {"barracks"}, c)   # falta factory
+
+
+def test_push_metrics_noop_without_url(monkeypatch):
+    # SDD 19 §7.quater: sin pushgateway_url, el push del tick es no-op (no rompe el tick).
+    from app.core.config import get_settings
+    from app.worker import _push_metrics
+    monkeypatch.setattr(get_settings(), "pushgateway_url", "")
+    _push_metrics()  # no debe lanzar
+    assert get_settings().pushgateway_url == ""

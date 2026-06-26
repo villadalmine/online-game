@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Métricas del tick/NPC visibles en Grafana (Pushgateway)
+- El **tick** (CronJob `galaxy-tick`) es un pod efímero no-scrapeable → sus métricas (`game_npc_*`,
+  `game_tick_*`) no llegaban a Prometheus. Ahora `worker.tick()` **empuja** sus métricas a una
+  **Pushgateway** (`PUSHGATEWAY_URL`, p.ej. `http://pushgateway.monitoring:9091`), de donde
+  kube-prometheus-stack las scrapea → el dashboard **NPC AI** (incl. GPU vs nube) se llena solo.
+- Infra (repo `infra-ai`): nuevo rol **`install-pushgateway`** (Pushgateway en ns `monitoring` +
+  ServiceMonitor con `honorLabels`, label del release). Cableado en `bootstrap.yml`
+  (`--tags pushgateway`). SDD 19 §7.quater marcado **RESUELTO**.
+
 ## [1.73.0] - 2026-06-26
 
 ## [1.72.0] - 2026-06-26

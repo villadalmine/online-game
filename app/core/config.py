@@ -108,6 +108,9 @@ class Settings(BaseSettings):
     # mejor (score/win-rate) y quién decide más por LLM. "" = todos GPU.
     npc_cloud_username: str = ""
     npc_cloud_model: str = "gemma4-paid"
+    # SDD 19 §7.quater: el tick (CronJob) es un pod efímero no-scrapeable → empuja sus métricas
+    # (NPC actions/decisions, tick) a la Pushgateway. Vacío = no empuja (dev/local).
+    pushgateway_url: str = ""
     # Presupuesto del asesor por jugador/día (anti-quema de créditos): pasado el cupo NO se llama al
     # LLM (cero tokens) y se cae a los tips deterministas. = patrón DAILY_CAP del repo shooter.
     advisor_llm_calls_per_day: int = 40

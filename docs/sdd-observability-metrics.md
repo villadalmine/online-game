@@ -146,11 +146,14 @@ consultar vía la API de Prometheus (`/api/v1/query?query=...`) para responder p
 > Nota: los counters resetean al reiniciar el pod (normal); por eso se usan `increase()`/`rate()`,
 > no el valor absoluto.
 
-## 7.quater Limitación conocida
-El **tick** corre en el CronJob `galaxy-tick` (proceso aparte) y el ServiceMonitor scrapea solo la
-API → `game_tick_*` queda vacío en Prometheus. Los eventos por **advance-on-access** (cuando el
-jugador lee `/players/me`) sí se cuentan en la API. Follow-up: Pushgateway para el worker, o correr
-el tick in-process (AUTO_TICK>0) en una réplica dedicada, o exponer/scrapear el worker.
+## 7.quater Limitación conocida → RESUELTA (Pushgateway, 2026-06-26)
+El **tick** corre en el CronJob `galaxy-tick` (proceso aparte), no scrapeable directo → antes
+`game_tick_*` / `game_npc_*` quedaban vacíos en Prometheus. **Resuelto:** al terminar, `worker.tick()`
+**empuja** sus métricas (`worker._push_metrics`) a una **Pushgateway** (rol `install-pushgateway` en
+infra-ai, ns `monitoring`, con ServiceMonitor `honorLabels`), de donde kube-prometheus-stack las
+scrapea. Se activa con `PUSHGATEWAY_URL` (env del CronJob, p.ej.
+`http://pushgateway.monitoring:9091`); vacío = no empuja (dev). PUT a `/metrics/job/galaxy-tick`
+reemplaza el grupo cada corrida (no acumula). Así el dashboard "NPC AI" y `game_tick_*` se llenan.
 
 ## 9. NPC AI — observar cómo juega la IA y si mejora (2026-06-26)
 
