@@ -7,6 +7,21 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Performance/estabilidad: paneles que se quedaban cargando + escala a más jugadores
+- **Causa raíz del "se queda cargando / paneles vacíos / base no encontrada":** el cliente disparaba
+  **~12-15 requests en paralelo cada 4 s** (todos los loaders de panel en cada `refresh`, + en cada
+  evento SSE). Con varios jugadores eso **saturaba el pool de conexiones** (5+10) → requests
+  esperaban hasta 30 s → los últimos paneles (hub/mercado/colonización) quedaban vacíos y `baseId()`
+  caía a un id inválido → "base no encontrada".
+- **Fix de carga (cliente):** el ciclo rápido de 4 s ahora solo trae el **estado** (3 fetch) y hace
+  renders locales. Los paneles secundarios se recargan **cada 20 s y solo si están abiertos**
+  (los colapsados no piden datos), o al **expandirlos**. **Se pausa todo con la pestaña en segundo
+  plano** (`document.hidden`) → tabs idle = 0 carga. De ~3 req/s/cliente a ~1.
+- **Fix de escala (server):** pool de DB 10+20 (antes 5+10) y `pool_timeout` 10 s (antes 30) → bajo
+  saturación los requests **fallan rápido** y el cliente reintenta, en vez de **colgar** el panel.
+- **UX:** construir/entrenar avisan "esperá que cargue" si el estado aún no llegó (no más "base no
+  encontrada" engañoso). Completado el pictográfico (panel meta + selects de mineral).
+
 ## [1.67.0] - 2026-06-26
 
 ### 2026-06-26 — Fix erratismo de mercado/hub + cache del HTML + gate de tests (SDD 45)

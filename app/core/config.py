@@ -25,9 +25,11 @@ class Settings(BaseSettings):
     # baja drásticamente la carga (0.5 rps/CCU a 2 s → 0.2 a 5 s). El pool de DB es por
     # réplica; pool_size × n_réplicas ≤ max_connections de Postgres (techo real → PgBouncer).
     stream_interval: float = 2.0          # default del SSE (s) si el cliente no pide otro
-    db_pool_size: int = 5                 # conexiones persistentes por réplica (no-sqlite)
-    db_max_overflow: int = 10             # conexiones extra bajo ráfaga
-    db_pool_timeout: int = 30             # s a esperar una conexión del pool antes de fallar
+    db_pool_size: int = 10                # conexiones persistentes por réplica (no-sqlite)
+    db_max_overflow: int = 20             # conexiones extra bajo ráfaga
+    db_pool_timeout: int = 10             # s a esperar una conexión del pool antes de fallar
+    # (timeout corto: si el pool se satura, el request falla rápido y el cliente reintenta en el
+    # próximo ciclo — mejor que colgar 30s y dejar el panel "cargando" eternamente)
     db_pool_recycle: int = 1800           # reciclar conexiones cada N s (evita stale en PgBouncer)
 
     jwt_secret: str = "change-me-in-prod"

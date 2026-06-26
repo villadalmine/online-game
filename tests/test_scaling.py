@@ -33,7 +33,7 @@ def test_scaling_defaults_present():
     s = Settings()
     # Defaults conservadores: comportamiento actual si no se setea nada.
     assert s.stream_interval == 2.0
-    assert s.db_pool_size == 5
+    assert s.db_pool_size == 10        # SDD perf: subido de 5 para soportar más jugadores
     assert s.llm_timeout_seconds == 20.0
     assert s.advisor_rate_limit_per_min == 6
 
