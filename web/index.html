@@ -695,11 +695,24 @@ async function expedition(){ try{ await api("/api/v1/expeditions","POST",{moon_k
 async function recall(id){ try{ await api(`/api/v1/combat/missions/${id}/recall`,"POST"); msg("Flota retirándose"); refresh(); }catch(e){ msg(e.message,false);} }
 async function doTick(){ try{ const d=await api("/api/v1/admin/tick","POST"); msg("Tick: NPC jugaron"); refresh(); }catch(e){ msg(e.message,false);} }
 async function markRead(){ await api("/api/v1/notifications/read","POST",{}); await loadFeed(); refresh(); }
+// ícono de TIPO de notificación (SDD 43: reconocer "qué es" sin leer; el cuerpo es texto → TTS)
+function notiIcon(type){ const t=(type||"").toLowerCase();
+  if(t.includes("attack")||t.includes("ataque")||t.includes("combat")||t.includes("batalla")) return "⚔";
+  if(t.includes("defen")) return "🛡";
+  if(t.includes("research")||t.includes("invest")) return "🔬";
+  if(t.includes("market")||t.includes("mercado")||t.includes("trade")) return "🏪";
+  if(t.includes("exped")) return "🛰";
+  if(t.includes("alli")||t.includes("alianza")) return "🤝";
+  if(t.includes("build")||t.includes("constr")||t.includes("train")||t.includes("entren")) return "🏗";
+  if(t.includes("release")||t.includes("news")||t.includes("nov")||t.includes("anunc")) return "📣";
+  return "🔔"; }
 async function loadFeed(){
   try{ const ns=await api("/api/v1/notifications?unread=true&lang="+lang);
-    $("feed").innerHTML = ns.length ? ns.map(n=>
-      `<div class="note"><b>${esc(n.type)}</b> — ${esc(n.message)} <span class="muted">${new Date(n.created_at).toLocaleTimeString()}</span></div>`
-    ).join("") : `<span class="muted">${esc(tr('nofeed'))}</span>`;
+    const pic=isPicto('notis');
+    $("feed").innerHTML = ns.length ? ns.map(n=>{
+      const head=pic?`<span class="ico" role="img" title="${esc(n.type)}" aria-label="${esc(n.type+'. '+(n.message||''))}">${notiIcon(n.type)}</span>`:`<b>${esc(n.type)}</b>`;
+      return `<div class="note">${head} — ${esc(n.message)} <span class="muted">${new Date(n.created_at).toLocaleTimeString()}</span></div>`;
+    }).join("") : `<span class="muted">${esc(tr('nofeed'))}</span>`;
   }catch(e){}
 }
 async function doResearch(k){ try{ await api("/api/v1/research","POST",{tech_key:k}); msg("Investigando "+k); refresh(); }catch(e){ msg(e.message,false);} }
@@ -856,13 +869,29 @@ function renderGuide(){
   const buildings = (catalog.buildings||[]).map(realItem).join("");
   const units = [...(catalog.personnel||[]),...(catalog.heavy_units||[])].map(realItem).join("");
   const hd=t=>`<div class="muted" style="margin:8px 0 4px">${esc(tr(t))}</div>`;
-  $("guide").innerHTML =
+  // En pictomode la guía es la LEYENDA del modo: cada ícono junto a su nombre (tocá = TTS).
+  let legend="";
+  if(isPicto('guia')){
+    const mins=[...(catalog.minerals||[])];
+    const us=[...(catalog.personnel||[]),...(catalog.heavy_units||[])];
+    const chip=html=>`<span class="chip" style="margin:2px">${html}</span>`;
+    const minL=mins.map(m=>chip(`${ico('mineral',m.key)}${m.symbol?'<span class="msym">'+esc(m.symbol)+'</span>':''} ${esc(m.name)}`)).join("");
+    const bldL=(catalog.buildings||[]).map(b=>chip(`${ico('build',b.key)} ${esc(b.name)}`)).join("");
+    const uL=us.map(u=>chip(`${ico('unit',u.key)} ${esc(u.name)}`)).join("");
+    const plL=(catalog.planets||[]).map(p=>chip(`${ico('planet',p.key)} ${esc(p.name)}`)).join("");
+    legend=hd('guideminerals')+minL+hd('guidebuildings')+bldL+hd('guideunits')+uL+
+      `<div class="muted" style="margin:8px 0 4px">🌍</div>${plL}`+
+      `<div class="muted" style="margin:8px 0 2px">⚡⏱ ✓ ❌ 🔒 🥇🥈🥉</div>`;
+  }
+  $("guide").innerHTML = legend +
     mechanics.map(([t,d])=>`<div class="item"><b>${t}</b><br><span class="muted">${esc(d)}</span></div>`).join("")+
     hd('guideminerals')+minerals+hd('guidebuildings')+buildings+hd('guideunits')+units;
 }
-async function loadRanking(){ try{ const r=await api("/api/v1/players/ranking");
+const MEDAL={1:"🥇",2:"🥈",3:"🥉"};
+function rankCell(rank,pic){ return pic?(MEDAL[rank]||rank):rank; }
+async function loadRanking(){ try{ const r=await api("/api/v1/players/ranking"); const pic=isPicto('ranking');
   $("ranking").innerHTML=`<tr><th>#</th><th>${esc(tr('colplayer'))}</th><th>${esc(tr('colrace'))}</th><th>${esc(tr('colscore'))}</th></tr>`+
-    r.map(e=>`<tr><td>${e.rank}</td><td>${esc(e.username)}${e.is_npc?' 🤖':''}</td><td>${esc(e.race_key||'')}</td><td>${e.score}</td></tr>`).join(""); }catch(e){ msg(e.message,false);} }
+    r.map(e=>`<tr><td>${rankCell(e.rank,pic)}</td><td>${esc(e.username)}${e.is_npc?' 🤖':''}</td><td>${esc(e.race_key||'')}</td><td>${e.score}</td></tr>`).join(""); }catch(e){ msg(e.message,false);} }
 function prefill(id){ $("tbase").value=id; const pl=(players||[]).find(p=>p.home_base_id===id);
   $("tbasename").textContent=pl?("· "+esc(pl.username)):("#"+id); renderAttackCost();
   document.querySelector('[data-panel="atacar"]').scrollIntoView({behavior:"smooth",block:"start"}); }
@@ -875,9 +904,9 @@ function renderSeason(){ if(!state) return; const s=state.season;
   if(state.protected_until && new Date(state.protected_until)>new Date())
     html += `<br><span class="ok">${esc(tr('newbie'))}</span> <span class="muted">(${esc(tr('newbieend').replace('{x}',cdDays(state.protected_until)))})</span>`;
   $("seasoninfo").innerHTML = html; }
-async function loadSeasonRanking(){ try{ const r=await api("/api/v1/seasons/current/ranking");
+async function loadSeasonRanking(){ try{ const r=await api("/api/v1/seasons/current/ranking"); const pic=isPicto('temporada');
   $("seasonranking").innerHTML=`<tr><th>#</th><th>${esc(tr('colplayer'))}</th><th>${esc(tr('colscore'))}</th></tr>`+
-    r.map(e=>`<tr><td>${e.rank}</td><td>${esc(e.username)}</td><td>${e.score}</td></tr>`).join(""); }catch(e){ msg(e.message,false);} }
+    r.map(e=>`<tr><td>${rankCell(e.rank,pic)}</td><td>${esc(e.username)}</td><td>${e.score}</td></tr>`).join(""); }catch(e){ msg(e.message,false);} }
 
 // progress bar from a total duration + completion timestamp
 function bar(total,when){ const rem=(new Date(when)-Date.now())/1000; const pct= total>0?Math.max(0,Math.min(100,100*(total-rem)/total)):0; return `<div class="bar"><div style="width:${pct}%"></div></div>`; }

@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Jugar sin leer (SDD 43): último lote — cobertura completa de paneles
+- **Notificaciones:** cada aviso con un **ícono de tipo** (⚔ ataque, 🛡 defensa, 🔬 research, 🏪 mercado,
+  🛰 expedición, 🤝 alianza, 🏗 construcción, 📣 novedad) en vez del texto del tipo; el cuerpo sigue
+  siendo texto y se lee con TTS al tocar el ícono.
+- **Ranking y Temporada:** los 3 primeros con **medalla** (🥇🥈🥉) en lugar del número.
+- **Guía = leyenda del modo:** en pictomode arranca con el **diccionario ícono↔cosa** (minerales con
+  su letra, edificios, unidades, planetas, y los símbolos de estado ⚡⏱✓❌🔒) — tocás y escuchás.
+- **Atacar, eventos y meta** ya hablaban el modo (selección de fuerza con ícono+⚔, eventos como
+  íconos, meta con unidades como íconos); quedan confirmados en la cobertura.
+- Con esto **SDD 43 cubre todos los paneles jugables**. Único pendiente: fallback TTS de servidor.
+
 ## [1.84.0] - 2026-06-26
 
 ### 2026-06-26 — Jugar sin leer (SDD 43): investigación, colas, bases y galaxias pictográficos

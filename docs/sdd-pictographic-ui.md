@@ -1,12 +1,12 @@
 # SDD 43 — Modo pictográfico de la UI (jugar sin leer)
 
-> **Estado:** **F1 + F2 (parcial) + TTS implementado** (en producción). Paneles ya pictografiados:
-> `acciones`, `imperio`, `mercado`, `hub`, `transitos`, `alianzas`, **`combate`, `investigacion`,
-> `colas`, `bases`, `galaxias`** (botones como íconos; tech/edificio/unidad/planeta/luna como ícono;
-> investigación con 🔒 de prerequisito; colas con ícono+tiempo; bases con stock como chips). Se agregó
-> `icon:` a **planetas** (`content/planets.yaml`) y **lunas** (`content/gods.yaml`), expuestos por
-> `/catalog`. · **⏳ PENDIENTE:** `atacar`, `eventos`, `temporada`, `ranking`, `meta`, `universos`,
-> `notis/anuncios`, `perfil`, `guia` (como leyenda) + fallback TTS de servidor. · **Fecha:**
+> **Estado:** ✅ **Cobertura completa de paneles** (F1 + F2 + TTS, en producción). Todos los paneles
+> jugables hablan el modo: `acciones`, `imperio`, `mercado`, `hub`, `transitos`, `alianzas`, `combate`,
+> `investigacion`, `colas`, `bases`, `galaxias`, `atacar`, `eventos`, `meta`, `ranking`, `temporada`,
+> `notis`, `universos`, `anuncios`, y `guia` como **leyenda** (diccionario ícono↔cosa con TTS). Se
+> agregó `icon:` a **planetas** y **lunas** (`/catalog`). `perfil`/`chat`/`asistente`/`admin` quedan
+> como **texto irreducible** (gestión/lenguaje libre; solo sus controles llevan ícono). · **⏳ Único
+> pendiente:** fallback TTS de **servidor** (espeak-ng) para navegadores sin voces. · **Fecha:**
 > 2026-06-26 · **Autor:** equipo
 > **Ámbito:** principalmente cliente web (`web/index.html`) + un campo **aditivo** `icon:` en
 > `content/*.yaml` expuesto por `/catalog`. **Sin cambios de reglas de juego ni de modelos/DB.**
