@@ -721,7 +721,13 @@ class LlmBrain:
         try:
             state = await _npc_state(session, player)
             state["__user"] = f"npc:{player.username}"  # SDD 28: atribución de uso LLM por NPC
+            # CLAVE (perf): cerrar la transacción ANTES de la llamada lenta al LLM/GPU. Si no, la
+            # conexión queda "idle in transaction" reteniendo snapshot/locks durante los ~20-30s de
+            # la GPU y, con varios NPCs, el tick cuelga el juego ~2 min. Decidimos SIN transacción
+            # abierta y aplicamos después en una transacción corta.
+            await session.commit()
             action = await self._decide(state)
+            player = await session.get(Player, player_id)  # re-cargar tras el commit
             return await dispatch_action(session, player, action)
         except Exception:
             # Any failure (network, rate limit, bad JSON, infeasible action) -> rules.

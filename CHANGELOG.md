@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — NPC con LLM sin colgar el juego (decidir fuera de la transacción)
+- Los NPC con cerebro `llm` leen su estado + el **grafo de dependencias** + las **métricas** y el
+  LLM decide su táctica (igual que un jugador). El problema no era usar la GPU sino que la llamada al
+  LLM se hacía **con la transacción de la DB abierta** → durante los ~20-30 s de la GPU la conexión
+  quedaba "idle in transaction" reteniendo snapshot/locks y, con varios NPCs, el tick **colgaba el
+  juego ~2 min**.
+- **Fix:** `LlmBrain.act` ahora hace **commit antes** de llamar al LLM (lee estado → cierra
+  transacción → decide sin transacción → aplica en una transacción corta). El tick puede tardar por
+  la GPU pero **ya no bloquea** a los jugadores. Reactivado `npc=llm`.
+
 ## [1.69.0] - 2026-06-26
 
 ## [1.68.0] - 2026-06-26
