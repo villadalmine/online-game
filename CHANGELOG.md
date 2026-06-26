@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.62.0] - 2026-06-26
+
 ### 2026-06-26 — Colonizar: costo visible antes de hacer click + error con detalle
 - El menú del planeta ahora muestra **antes de tocar Colonizar** el **costo** de fundar ahí:
   energía de superficie y orbital (escala con cuántas colonias ya tenés) + **transbordadores**
