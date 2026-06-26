@@ -152,6 +152,51 @@ API → `game_tick_*` queda vacío en Prometheus. Los eventos por **advance-on-a
 jugador lee `/players/me`) sí se cuentan en la API. Follow-up: Pushgateway para el worker, o correr
 el tick in-process (AUTO_TICK>0) en una réplica dedicada, o exponer/scrapear el worker.
 
+## 9. NPC AI — observar cómo juega la IA y si mejora (2026-06-26)
+
+Objetivo del usuario: **entender cómo juega la NPC, cómo consume la API/GPU y si se vuelve más
+inteligente con el tiempo.** Hay tres vistas, de menos a más detalle:
+
+### 9.1 Métricas Prometheus (tendencia en el tiempo)
+- **`game_npc_actions_total{action,brain}`** — qué hace la IA cada turno (build/train/attack/
+  research/colonize/expedition/idle). `brain=rules|llm`.
+- **`game_npc_decisions_total{outcome}`** — `outcome=llm` (el LLM decidió y se aplicó) vs `fallback`
+  (la llamada falló → reglas). **Más `llm` y menos `fallback` = la IA razona, no adivina.**
+- Se combinan con las métricas LLM existentes (`game_llm_latency_seconds`, `game_llm_requests_total`)
+  y el uso por NPC (`end_user=online-game:npc:*` en LiteLLM).
+
+### 9.2 Dashboard Grafana `Online Galaxy War — NPC AI`
+`deploy/helm/dashboards/npc-ai.json` (wired en `grafana-dashboard.yaml`): decisiones LLM vs reglas,
+**% de decisiones por LLM** (gauge = "confiabilidad de la IA"), **mezcla de jugadas** (timeseries +
+piechart), latencia p50/p95 del LLM y llamadas ok/error. Queries clave:
+`sum by(outcome)(increase(game_npc_decisions_total[1h]))`,
+`sum by(action)(rate(game_npc_actions_total[15m]))`.
+
+### 9.3 Vista en el panel de ADMIN (sin Grafana)
+`GET /admin/npc-stats` (admin-gated) devuelve un **snapshot por NPC**: score, postura, **mezcla de
+acciones** (del journal), **récord de combate** (wins/battles) y **últimas jugadas**. La **consola de
+admin** lo muestra en una card "🤖 NPC — cómo juega la IA". Es la respuesta a "ver las métricas en
+modo admin" para lo de NPC, sin depender de Grafana.
+
+> **Ver los dashboards de Grafana DENTRO del admin (embed):** posible vía iframe a una *panel embed
+> URL* de Grafana, pero requiere config de Grafana (`allow_embedding=true` + acceso anónimo de
+> sololectura o auth proxy). Decisión: por ahora el admin trae el **snapshot nativo** (9.3) y un
+> **link** al dashboard de Grafana; el embed iframe queda como follow-up de infra (no exponer Grafana
+> con anónimo sin pensar el acceso).
+
+### 9.4 Cuándo se usa la GPU (aclaración)
+Tres call-sites únicos: (a) **NPC decide su jugada** (`npc._llm_decide`, 1× por NPC **por tick**,
+CronJob cada 5 min), (b) **NPC refresca postura** (`npc.decide_strategy`, ocasional), (c) **asistente
+del jugador on-demand** (`advisor`, al tocar "preguntar", con límite diario). NPC `rules` = **0 GPU**.
+
+### 9.5 Follow-up (idea del usuario): turnos de NPC orquestados por Argo, de a uno
+Mover el bucle de NPCs del worker in-process a un **Argo Workflow** que itere los NPCs **uno a la vez**
+(serial), una llamada LLM por NPC, esperando que termine antes de la siguiente. La GPU es serial igual,
+pero Argo aporta: **estados/reportes por NPC**, **reintentos**, **decoupling** del pod de API, y la
+posibilidad de invertir más tokens/calidad por turno. Diseño: endpoint `POST /admin/npc/{id}/turn`
+(corre el turno de UN NPC) + un `CronWorkflow` que lista NPCs (`withParam`) y los corre en pasos
+secuenciales. Pendiente de SDD propio.
+
 ## 8. Follow-up
 - Alertas (PrometheusRule): tick caído (`game_tick_last_run_timestamp` viejo), error-rate alto,
   pool de DB saturado, p95 `/players/me` > objetivo (liga con autoscaling, SDD 7), LLM fallback alto.

@@ -1071,6 +1071,36 @@ async def test_admin_endpoints_gated(client, monkeypatch):
     assert rr.status_code == 200, rr.text
 
 
+async def test_admin_npc_stats_e2e(client, monkeypatch):
+    # Observabilidad NPC: el admin ve un snapshot por NPC (score, acciones, combate). Gated.
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "allowed_emails", "boss@npc.com,plebe@npc.com")
+    monkeypatch.setattr(get_settings(), "admin_email", "boss@npc.com")
+
+    # no-admin → 403
+    r0 = await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "plebe", "password": "secret123", "email": "plebe@npc.com"},
+    )
+    h = {"Authorization": f"Bearer {r0.json()['access_token']}"}
+    assert (await client.http.get("/api/v1/admin/npc-stats", headers=h)).status_code == 403
+
+    # admin → corre un tick (crea + mueve NPCs) y consulta
+    r = await client.http.post(
+        "/api/v1/auth/register",
+        json={"username": "npcboss", "password": "secret123", "email": "boss@npc.com"},
+    )
+    ah = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    await client.http.post("/api/v1/admin/tick", headers=ah)
+    res = await client.http.get("/api/v1/admin/npc-stats", headers=ah)
+    assert res.status_code == 200, res.text
+    stats = res.json()
+    assert len(stats) >= 1
+    s0 = stats[0]
+    assert {"username", "score", "actions", "combat", "recent"} <= set(s0)
+    assert "wins" in s0["combat"] and "battles" in s0["combat"]
+
+
 async def test_admin_approval_flow_e2e(client, monkeypatch):
     # SDD 14: con aprobación activa, el alta nace 'pending' (no juega) hasta que el admin aprueba.
     from app.core.config import get_settings

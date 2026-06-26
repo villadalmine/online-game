@@ -1,19 +1,65 @@
+import json
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from redis.asyncio import Redis
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_admin
 from app.core.db import get_session
 from app.core.redis import get_redis
-from app.models import Player
+from app.models import CombatLog, GameEvent, Player
 from app.schemas import AdminPlayerEdit
 from app.services import presence
 from app.worker import run_tick
 
 router = APIRouter()
+
+
+@router.get("/npc-stats")
+async def npc_stats(
+    admin: Player = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Snapshot por NPC para entender CÓMO juega la IA (SDD): score, postura, mezcla de acciones
+    (del journal), récord de combate y últimas jugadas. Complementa las métricas Prometheus
+    (game_npc_actions_total / game_npc_decisions_total) con una vista puntual sin Grafana."""
+    from app.services.scoring import player_score
+    npcs = (await session.execute(
+        select(Player).where(Player.is_npc.is_(True)).order_by(Player.id)
+    )).scalars().all()
+    out = []
+    for n in npcs:
+        actions = dict((await session.execute(
+            select(GameEvent.type, func.count())
+            .where(GameEvent.player_id == n.id).group_by(GameEvent.type)
+        )).all())
+        # combate: como atacante y como defensor
+        atk = dict((await session.execute(
+            select(CombatLog.outcome, func.count())
+            .where(CombatLog.attacker_id == n.id).group_by(CombatLog.outcome)
+        )).all())
+        dfd = dict((await session.execute(
+            select(CombatLog.outcome, func.count())
+            .where(CombatLog.defender_id == n.id).group_by(CombatLog.outcome)
+        )).all())
+        wins = atk.get("attacker", 0) + dfd.get("defender", 0)
+        losses = atk.get("defender", 0) + dfd.get("attacker", 0)
+        try:
+            mem = json.loads(n.npc_memory or "[]")
+        except Exception:
+            mem = []
+        out.append({
+            "id": n.id, "username": n.username, "race": n.race_key,
+            "score": await player_score(session, n),
+            "posture": n.npc_posture, "strategy": n.npc_strategy,
+            "actions": actions,                       # {build: N, train: N, attack: N, ...}
+            "combat": {"wins": wins, "losses": losses,
+                       "battles": wins + losses},
+            "recent": mem[-8:] if isinstance(mem, list) else [],
+        })
+    return out
 
 
 @router.get("/players")

@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — NPC AI observable: panel en admin + dashboard Grafana (SDD 19 §9)
+- **En el panel de ADMIN** (sin Grafana): nueva card "🤖 NPC — cómo juega la IA" con un snapshot por
+  NPC — score, postura, **mezcla de acciones** (del journal), **récord de combate** y **últimas
+  jugadas**. Endpoint `GET /admin/npc-stats` (admin-gated, e2e).
+- **Dashboard Grafana** `Online Galaxy War — NPC AI` (`deploy/helm/dashboards/npc-ai.json`):
+  decisiones LLM vs reglas, **% por LLM** (confiabilidad de la IA), mezcla de jugadas, latencia
+  p50/p95 y llamadas ok/error. Se importa solo con el chart (configmap opt-in).
+- SDD 19 ampliado (§9): qué métricas de NPC hay, las 3 vistas (Prometheus/Grafana/admin), cuándo se
+  usa la GPU, y el follow-up de orquestar los turnos de NPC con Argo (de a uno, mejor GPU/calidad).
+
 ## [1.71.0] - 2026-06-26
 
 ## [1.70.0] - 2026-06-26

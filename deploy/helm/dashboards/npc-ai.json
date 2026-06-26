@@ -1,0 +1,76 @@
+{
+  "uid": "online-game-npc-ai",
+  "title": "Online Galaxy War — NPC AI (cómo juega y si mejora)",
+  "tags": ["online-game", "npc", "ai"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "query": "prometheus", "current": {}, "hide": 0 }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Decisiones LLM vs reglas (1h) — más 'llm' = más inteligente",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 0 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{outcome}}",
+          "expr": "sum by(outcome) (increase(game_npc_decisions_total[1h]))" }
+      ]
+    },
+    {
+      "id": 2, "type": "gauge", "title": "% de decisiones por LLM (24h) — confiabilidad de la IA",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "refId": "A",
+          "expr": "sum(increase(game_npc_decisions_total{outcome=\"llm\"}[24h])) / clamp_min(sum(increase(game_npc_decisions_total[24h])), 1)" }
+      ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Mezcla de jugadas de NPC (rate 15m) — qué hace la IA",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{action}}",
+          "expr": "sum by(action) (rate(game_npc_actions_total[15m]))" }
+      ]
+    },
+    {
+      "id": 4, "type": "piechart", "title": "Distribución de jugadas (24h)",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{action}}",
+          "expr": "sum by(action) (increase(game_npc_actions_total[24h]))" }
+      ]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Latencia del LLM (p50/p95) — NPC + asistente",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "targets": [
+        { "refId": "A", "legendFormat": "p50",
+          "expr": "histogram_quantile(0.5, sum(rate(game_llm_latency_seconds_bucket[15m])) by (le))" },
+        { "refId": "B", "legendFormat": "p95",
+          "expr": "histogram_quantile(0.95, sum(rate(game_llm_latency_seconds_bucket[15m])) by (le))" }
+      ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Llamadas al LLM por estado (rate 5m) — ok vs error",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{status}}",
+          "expr": "sum by(status) (rate(game_llm_requests_total[5m]))" }
+      ]
+    }
+  ]
+}

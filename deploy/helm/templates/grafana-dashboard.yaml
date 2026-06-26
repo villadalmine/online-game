@@ -12,4 +12,6 @@ data:
 {{ .Files.Get "dashboards/online-game.json" | indent 4 }}
   llm-usage.json: |-
 {{ .Files.Get "dashboards/llm-usage.json" | indent 4 }}
+  npc-ai.json: |-
+{{ .Files.Get "dashboards/npc-ai.json" | indent 4 }}
 {{- end }}
