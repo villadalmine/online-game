@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.67.0] - 2026-06-26
+
 ### 2026-06-26 — Fix erratismo de mercado/hub + cache del HTML + gate de tests (SDD 45)
 - **Hub/mercado erráticos (500 intermitente, p.ej. vender hierro):** `_hub_row` hacía select→insert
   sin manejar la carrera; en Postgres dos requests concurrentes (la carga del hub crea filas de
