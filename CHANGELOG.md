@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.65.0] - 2026-06-26
+
 ### 2026-06-26 — Fix: ya no te desloguea cuando la API parpadea (deploy/red) + e2e de frontend
 - **Bug:** un fallo **transitorio** de `/players/me` (un deploy rolando el pod, un corte de red de un
   segundo) te mandaba al **login** y veías **todo vacío** (incluida la opción de **base orbital**, que
