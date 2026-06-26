@@ -1,7 +1,7 @@
 # SDD 43 — Modo pictográfico de la UI (jugar sin leer)
 
-> **Estado:** **F1 + TTS implementado** (en producción) · resto en diseño · **Fecha:** 2026-06-26
-> · **Autor:** equipo online-game
+> **Estado:** **F1 + F2 (parcial) + TTS implementado** (en producción) · resto en diseño
+> · **Fecha:** 2026-06-26 · **Autor:** equipo online-game
 > **Ámbito:** principalmente cliente web (`web/index.html`) + un campo **aditivo** `icon:` en
 > `content/*.yaml` expuesto por `/catalog`. **Sin cambios de reglas de juego ni de modelos/DB.**
 
@@ -207,8 +207,13 @@ Va como `icon:` en cada YAML; ajustable sin tocar código.
   alta** (Web Speech API `speechSynthesis`, voz por idioma es/en, sin infra). Resuelve "lo difícil de
   representar": tocás y escuchás qué es. Fallback de servidor (proxy espeak-ng, como en el repo
   `shooter`) queda pendiente para navegadores sin voces (Chromium/Linux).
-- **Pendiente (F2):** grilla de botones-ícono para los `<select>`, toggle **por panel**, y el resto
-  de los paneles del §3 (atacar/combate/transitos/mercado/hub/eventos…).
+- **F2 (parcial, hecho):** **grilla de botones-ícono** para los `<select>` de Acciones
+  (construir/entrenar/expedición) con marca `✓`/`❌`/`🔒` por opción (los selects se ocultan en
+  pictomode y los botones setean su `value`); **toggle por panel** (botón 🔤/🖼 en cada `h2`,
+  override en `localStorage["ui.picto.panels"]`); chips de mineral (ícono+letra) en **mercado** y
+  **hub**.
+- **Pendiente (F2 cont.):** aplicar el chip/íconos a `atacar`/`combate`/`transitos`/`eventos`/`meta`
+  y la grilla de botones a los selects de mercado/hub/transporte/alianzas.
 
 ## 5. Alcance incremental (fases)
 - **F1 — base:** `icon:`/`symbol:` en YAML + toggle global + `ico()` + chip de material + ramas

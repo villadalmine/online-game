@@ -35,6 +35,13 @@
   /* SDD 43 modo pictográfico: el ícono y la letra del material. En pictomode los íconos invitan a tocar (TTS). */
   .ico{ font-style:normal; } .msym{ font-size:11px; color:var(--mut); margin-left:1px; }
   body.pictomode .ico{ cursor:pointer; font-size:1.15em; }
+  .ppt{ float:right; font-size:13px; cursor:pointer; opacity:.65; margin-left:8px; } .ppt:hover{ opacity:1; }
+  .picgrid{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0; }
+  .picgrid:empty{ display:none; }
+  .picbtn{ font-size:22px; line-height:1; padding:6px 8px; background:#243056; border:1px solid #2d3a5e; border-radius:10px; cursor:pointer; position:relative; }
+  .picbtn.on{ border-color:#7ee787; background:#1f3a2a; }
+  .picbtn sub{ font-size:11px; position:absolute; right:2px; bottom:1px; }
+  body.pictomode #building, body.pictomode #unit, body.pictomode #moon{ display:none; }
   #toasts{ position:fixed; top:12px; right:12px; z-index:9999; display:flex; flex-direction:column; gap:8px; max-width:min(92vw,360px); }
   .toast{ background:var(--card2); border:1px solid #33406e; border-left-width:4px; border-radius:8px; padding:9px 30px 9px 11px; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.45); position:relative; cursor:pointer; animation:tin .18s ease-out; word-break:break-word; }
   .toast.ok{ border-left-color:#7ee787; color:#cdeacd; } .toast.bad{ border-left-color:#ff8a8a; color:#ffd2d2; }
@@ -188,17 +195,20 @@
         <select id="building" onchange="renderCost()"></select>
         <select id="mineral" class="hidden"></select>
       </div>
+      <div id="buildgrid" class="picgrid"></div>
       <div id="buildcost" class="muted"></div>
       <div class="row">
         <button onclick="train()" data-i18n="train">👷 Entrenar</button>
         <select id="unit" onchange="renderTrainCost()"></select>
         <input id="qty" type="number" value="3" min="1" style="width:56px" oninput="renderTrainCost()" />
       </div>
+      <div id="traingrid" class="picgrid"></div>
       <div id="traincost" class="muted"></div>
       <div class="row">
         <button class="sec" onclick="expedition()" data-i18n="expedition">🌙 Expedición</button>
         <select id="moon" onchange="renderExpInfo()"></select>
       </div>
+      <div id="moongrid" class="picgrid"></div>
       <div id="expinfo" class="muted"></div>
       <div class="row">
         <button class="sec" onclick="refresh()" data-i18n="refresh" title="Relee tu estado del servidor (como F5, pero sin recargar la página). Igual pasa solo cada 4s.">↻ Refrescar</button>
@@ -476,7 +486,7 @@ function mchip(mkey,amount){ const it=spec.mineral[mkey]||{}; const s=it.symbol?
   return `${ico('mineral',mkey)}${s} ${Math.round(amount)}`; }
 function togglePicto(){ const on=!pictoGlobal(); localStorage.setItem('ui.pictographic',on?'1':'0');
   document.body.classList.toggle('pictomode',on); $("pictotoggle").textContent=on?"🖼":"🔤";
-  renderCost(); renderTrainCost(); renderExpInfo(); if(token) refresh(); }
+  injectPanelPictoButtons(); renderCost(); renderTrainCost(); renderExpInfo(); if(token) refresh(); }
 function applyPicto(){ const on=pictoGlobal(); document.body.classList.toggle('pictomode',on);
   const b=$("pictotoggle"); if(b) b.textContent=on?"🖼":"🔤"; }
 // TTS: tocar un ícono "dice qué es" (para lo difícil de representar). Web Speech API, sin infra.
@@ -493,6 +503,50 @@ if(window.speechSynthesis && 'onvoiceschanged' in window.speechSynthesis)
 // delegación: en modo dibujos, un clic en cualquier ícono lo lee en voz alta
 document.addEventListener('click',e=>{ if(!document.body.classList.contains('pictomode')) return;
   const el=e.target.closest('.ico'); if(el && el.getAttribute('aria-label')) speak(el.getAttribute('aria-label')); });
+// F2: toggle POR panel (botón en el h2; el i18n reescribe el texto del h2, así que se re-inyecta)
+function setPanelPicto(id,on){ const o=pictoOverrides(); if(on===null) delete o[id]; else o[id]=on;
+  localStorage.setItem('ui.picto.panels',JSON.stringify(o)); }
+function injectPanelPictoButtons(){ document.querySelectorAll('.card[data-panel] > h2').forEach(h=>{
+  h.querySelectorAll('.ppt').forEach(x=>x.remove());   // evitar duplicados si el h2 no se reescribió
+  const id=h.closest('.card').dataset.panel; let b=document.createElement('span'); b.className='ppt';
+  b.textContent=isPicto(id)?'🖼':'🔤'; b.title='dibujos en este panel';
+  b.onclick=ev=>{ ev.stopPropagation(); setPanelPicto(id,!isPicto(id)); applyI18n(); if(token) refresh();
+    renderCost(); renderTrainCost(); renderExpInfo(); };
+  h.appendChild(b); }); }
+// F2: grilla de botones-ícono para NAVEGAR sin leer (reemplaza los <select> en pictomode)
+function pickOpt(selId,val){ const s=$(selId); if(!s) return; s.value=val; s.dispatchEvent(new Event('change')); }
+function reqLockBad(o,base){ if(!state) return false; const rb=o.requires;
+  if(rb&&rb!=="headquarters"){ const has=base?(base.buildings||[]).some(x=>x.building_key===rb&&x.status==="active")
+    :(state.bases||[]).some(bs=>(bs.buildings||[]).some(x=>x.building_key===rb&&x.status==="active")); if(!has) return true; }
+  return !!(o.requires_tech && !(state.technologies||[]).includes(o.requires_tech)); }
+function affOk(mc,e,planet){ if(!state) return true;
+  const stocks=(planet&&planet!==state.planet_key)?((state.stocks_by_planet||{})[planet]||{}):state.stocks;
+  for(const[m,a]of Object.entries(mc)) if((stocks[m]||0)<a) return false;
+  return !(e&&state.energy<e); }
+function statusMark(locked,ok){ return locked?'🔒':(ok?'<span class="ok">✓</span>':'<span class="bad">❌</span>'); }
+// etiqueta de mineral sensible al panel: ícono+letra en pictomode, nombre en modo normal
+function mname(mkey,panel){ if(!isPicto(panel)) return esc(mineralName(mkey));
+  const sy=(spec.mineral[mkey]||{}).symbol; return `${ico('mineral',mkey)}${sy?'<span class="msym">'+esc(sy)+'</span>':''}`; }
+function renderActionGrids(){ const on=isPicto('acciones');
+  ['buildgrid','traingrid','moongrid'].forEach(g=>{ const el=$(g); if(el&&!on) el.innerHTML=""; });
+  if(!on||!catalog) return;
+  const base=(state&&state.bases||[]).find(x=>String(x.id)===String(($("buildbase")||{}).value))||(state&&state.bases&&state.bases[0]);
+  const planet=base?base.planet_key:null;
+  const bsel=$("building");
+  if(bsel&&$("buildgrid")) $("buildgrid").innerHTML=[...bsel.options].map(o=>{ const k=o.value; const b=spec.build[k]||{};
+    let mc=resolveCost(b.cost); if(base&&base.base_type==='orbital'){ const m2={}; for(const x in mc)m2[x]=Math.round(mc[x]*1.5); mc=m2; }
+    return `<button class="picbtn${k===bsel.value?' on':''}" onclick="pickOpt('building','${k}')">${ico('build',k)}<sub>${statusMark(reqLockBad(b,base),affOk(mc,b.energy_cost,planet))}</sub></button>`;
+  }).join("");
+  const usel=$("unit"); const qty=Math.max(1,+($("qty")||{}).value||1);
+  if(usel&&$("traingrid")) $("traingrid").innerHTML=[...usel.options].map(o=>{ const k=o.value; const u=spec.unit[k]||{};
+    const mc=resolveCost(u.cost); for(const x in mc)mc[x]*=qty; const e=(u.energy_cost||0)*qty;
+    return `<button class="picbtn${k===usel.value?' on':''}" onclick="pickOpt('unit','${k}')">${ico('unit',k)}<sub>${statusMark(reqLockBad(u,null),affOk(mc,e,null))}</sub></button>`;
+  }).join("");
+  const msel=$("moon");
+  if(msel&&$("moongrid")) $("moongrid").innerHTML=[...msel.options].map(o=>{ const k=o.value;
+    return `<button class="picbtn${k===msel.value?' on':''}" onclick="pickOpt('moon','${k}')">${ico('moon',k)}</button>`;
+  }).join("");
+}
 // resolve a role-based cost ({structural:N}) to real minerals using the player's race
 function raceRoles(){ const r=(catalog.races||[]).find(x=>x.key===(state&&state.race_key)); return r?r.resource_roles:{}; }
 function resolveCost(roleCost){ const roles=raceRoles(); const out={}; for(const[role,amt]of Object.entries(roleCost||{})){ const m=roles[role]; if(m&&amt) out[m]=(out[m]||0)+amt; } return out; }
@@ -539,10 +593,12 @@ function renderCost(){ const b=spec.build[$("building").value]; if(!b) return; $
   if(base&&base.base_type==='orbital'){ const m2={}; for(const k in mc) m2[k]=Math.round(mc[k]*1.5); mc=m2; }  // SDD 37: orbital cuesta 1.5×
   const planet=base?base.planet_key:null;
   const where=(base&&planet!==state.planet_key)?` · 📍${esc(planetName(planet))}`:"";
-  $("buildcost").innerHTML=`costo ${costStr(mc,'acciones')} · ⚡${b.energy_cost} · ${b.build_seconds}s${where}${reqLock(b,base,'acciones')}${affordText(mc,b.energy_cost,planet,'acciones')}`; }
+  $("buildcost").innerHTML=`costo ${costStr(mc,'acciones')} · ⚡${b.energy_cost} · ${b.build_seconds}s${where}${reqLock(b,base,'acciones')}${affordText(mc,b.energy_cost,planet,'acciones')}`;
+  renderActionGrids(); }
 function renderTrainCost(){ const u=spec.unit[$("unit").value]; if(!u) return; const qty=Math.max(1,+$("qty").value||1);
   const mc=resolveCost(u.cost); for(const k in mc) mc[k]*=qty; const e=(u.energy_cost||0)*qty;
-  $("traincost").innerHTML=`x${qty}: ${costStr(mc,'acciones')} · ⚡${e}${reqLock(u,null,'acciones')}${affordText(mc,e,null,'acciones')}`; }
+  $("traincost").innerHTML=`x${qty}: ${costStr(mc,'acciones')} · ⚡${e}${reqLock(u,null,'acciones')}${affordText(mc,e,null,'acciones')}`;
+  renderActionGrids(); }
 function renderExpInfo(){ const m=spec.moon[$("moon").value]; if(!m) return; const e=(m.expedition||{}).energy_cost||0;
   const pic=isPicto('acciones');
   const grants=Object.entries(m.grants||{}).map(([k,v])=>pic?`${ico('mineral',k)}+${v}`:`${k}+${v}`).join(pic?" · ":", ");
@@ -550,7 +606,8 @@ function renderExpInfo(){ const m=spec.moon[$("moon").value]; if(!m) return; con
   const lacks=[]; if(state&&state.energy<e) lacks.push("⚡energía"); if(req&&state&&(state.units[req]||0)<1) lacks.push(req);
   const warn=lacks.length?` — <span class="bad">⚠ te falta: ${lacks.join(", ")}</span>`:` — <span class="ok">✓ listo</span>`;
   const reqTxt=pic&&req?ico('unit',req):(req||"-");
-  $("expinfo").innerHTML=`⚡${e} · requiere ${reqTxt} · trae ${grants||"-"}${warn}${reach}`; }
+  $("expinfo").innerHTML=`⚡${e} · requiere ${reqTxt} · trae ${grants||"-"}${warn}${reach}`;
+  renderActionGrids(); }
 async function onboard(){ try{ await api("/api/v1/players/onboard","POST",{galaxy_key:"milky_way",planet_key:$("planet").value,race_key:$("race").value}); boot(); }catch(e){ msg(e.message,false);} }
 
 // actions
@@ -730,6 +787,7 @@ function applyI18n(){ const d=I18N[lang]||I18N.es;
   document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const x=d.ph[el.dataset.i18nPh]; if(x)el.placeholder=x; });
   document.querySelectorAll('[data-i18n-html]').forEach(el=>{ const x=(d.s&&d.s[el.dataset.i18nHtml])||I18N.es.s[el.dataset.i18nHtml]; if(x)el.innerHTML=x; });
   $("langtoggle").textContent="🌐 "+lang.toUpperCase();
+  injectPanelPictoButtons();
 }
 async function toggleLang(){ lang=(lang==="es")?"en":"es"; localStorage.setItem("lang",lang); applyI18n(); if(token){ await loadCatalog(); await refresh(); } }
 const GUIDE_MECH={
@@ -1243,7 +1301,7 @@ function renderMarket(){
   const qty=($("marketqty")&&$("marketqty").value)||"10";
   const opts=marketPlanets.map(p=>`<option value="${esc(p)}"${p===marketSel?' selected':''}>${esc(planetName(p))}</option>`).join("");
   const rows=Object.entries(pr).map(([m,v])=>
-    `<div class="ab"><span>${esc(mineralName(m))} <span class="muted">(${state&&state.stocks[m]?Math.round(state.stocks[m]):0})</span></span>`+
+    `<div class="ab"><span>${mname(m,'mercado')} <span class="muted">(${state&&state.stocks[m]?Math.round(state.stocks[m]):0})</span></span>`+
     `<span class="muted">⚡${v.buy} / ${v.sell}</span>`+
     `<span><button class="sm" onclick="marketTrade('buy','${m}')">${esc(tr('mktbuy'))}</button> `+
     `<button class="sm sec" onclick="marketTrade('sell','${m}')">${esc(tr('mktsell'))}</button></span></div>`).join("");
@@ -1278,7 +1336,7 @@ async function loadHub(){
   const pr=d.prices||{};
   if(!Object.keys(pr).length){ $("hub").innerHTML=`<span class="muted">${esc(tr('nohub'))}</span>`; return; }
   const rows=Object.entries(pr).map(([m,p])=>
-    `<div class="ab"><span>${esc(mineralName(m))}</span><span class="muted">⚡${(+p).toFixed(2)}</span>`+
+    `<div class="ab"><span>${mname(m,'hub')}</span><span class="muted">⚡${(+p).toFixed(2)}</span>`+
     `<span><button class="sm" onclick="hubTrade('buy','${m}')">${esc(tr('mktbuy'))}</button> `+
     `<button class="sm sec" onclick="hubTrade('sell','${m}')">${esc(tr('mktsell'))}</button></span></div>`).join("");
   const others=Object.keys(d.galaxies||{}).filter(g=>g!==d.galaxy);

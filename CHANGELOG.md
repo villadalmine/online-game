@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Modo pictográfico F2: navegar sin leer (SDD 43)
+- En **modo dibujos**, los menús desplegables de **Acciones** (construir/entrenar/expedición) se
+  reemplazan por una **grilla de botones-ícono**: cada opción es su dibujo con una marca
+  **✓ alcanza / ❌ no alcanza / 🔒 bloqueado** — se elige tocando, sin leer.
+- **Toggle por panel:** cada panel tiene un botón **🔤/🖼** en su título para forzar/excluir el modo
+  dibujos solo ahí (override sobre el global).
+- **Mercado** y **Hub** muestran los minerales como chip ícono+letra en modo dibujos.
+- Sin cambios de API (reusa `/catalog`); apagado por default, con el modo off todo queda como hoy.
+
 ## [1.63.0] - 2026-06-26
 
 ### 2026-06-26 — Modo pictográfico F1 + leer en voz alta (SDD 43)
