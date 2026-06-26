@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.71.0] - 2026-06-26
+
 ## [1.70.0] - 2026-06-26
 
 ### 2026-06-26 — Métricas de NPC: entender cómo juega la IA y si mejora
