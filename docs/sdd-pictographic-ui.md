@@ -12,6 +12,12 @@ leer) y a quien no domina el idioma del juego. Queremos un **modo pictográfico*
 que **todo lo que dice texto se muestre como dibujo/ícono**, manteniendo al menos un **número o una
 letra** para las cantidades de material.
 
+**Premisa del usuario (clave):** el juego tiene que ser jugable por alguien que **no sabe leer
+nada**, pero que **sí sabe relacionar tres cosas: números, íconos y la letra/símbolo del material**
+(`Fe`, `Si`, `Ti`…). Por eso el "vocabulario" de este modo es exactamente ese trío —
+**ícono + letra + número** — y **TODOS los paneles** (no solo construir/entrenar) deben hablarlo;
+ver la **cobertura panel por panel** en §3.
+
 Concretamente, en este modo:
 - Cada **unidad, edificio, mineral, tecnología, luna y raza** se muestra con su **ícono**.
 - El **costo** se muestra como `🔩 30 · ⚡ 12 · ⏱ 45s` en vez de "iron 30 · ⚡12 · 45s".
@@ -23,6 +29,12 @@ Concretamente, en este modo:
 No es "modo para niños tontos": es **accesibilidad + idioma-agnóstico**. El texto **no se pierde**:
 sigue disponible como `title`/`aria-label` (tooltip + lectores de pantalla), así también **sirve para
 aprender a leer** (toco el dibujo, veo/escucho la palabra).
+
+> **Invariante (no negociable):** este modo **no puede romper la UI actual**. Es **aditivo** y viene
+> **apagado por default**. Con el modo **desactivado** (global o por panel), **todo queda
+> exactamente como hoy** — mismo HTML, mismas funciones, mismos textos. La rama pictográfica solo se
+> ejecuta cuando `isPicto(...)` es true; si se quita el modo, no queda ningún rastro. No se borra ni
+> se reemplaza ningún render existente: se **agrega** una rama paralela.
 
 ### No-objetivos
 - No quitar el texto para quien sí lee: es un **toggle**, el modo normal queda igual (default).
@@ -97,9 +109,21 @@ Las funciones existentes ganan una rama pictográfica (ejemplos, no exhaustivo):
   `ico('tech',o.requires_tech)` (el candado ya es ícono; cae bien).
 - **`renderTrainCost`/`renderCost`/`renderExpInfo`** usan los de arriba → quedan pictográficos solos.
 
-**Cantidades:** siempre se muestra el **número** (los dígitos se reconocen antes que las letras).
-Como refuerzo opcional para cantidades chicas (≤5), se pueden mostrar **pips** (`●●●`). La **letra**
-del material (símbolo químico: `Fe`, `Si`, `Ti`) sirve de **fallback** cuando no hay ícono claro.
+**El "chip de material" (unidad atómica del modo):** se compone de **ícono + letra + número** y es
+la pieza que se reutiliza en TODOS los paneles (costos, stocks, faltantes, botín, premios, intel):
+
+```
+🔩 Fe 30        (ícono hierro · símbolo · cantidad)
+⚡ 12           (energía: ícono + número)
+⏱ 45s          (tiempo)
+🔩 Fe ❌ −12    (faltan 12 de hierro)
+```
+
+La **letra/símbolo** del mineral (`Fe`, `Si`, `Ti`, `Al`, `S`, `Mg`, `He3`…) **siempre acompaña** al
+ícono (no es solo fallback): el usuario las relaciona aunque no lea palabras, y desambigua dos
+íconos parecidos. Es un campo del catálogo (`symbol:` por mineral; ver §4). El **número** se muestra
+siempre (los dígitos se reconocen temprano); como refuerzo para cantidades chicas (≤5) se pueden
+mostrar **pips** (`●●●`).
 
 ### 2.6 Selects → grilla de botones-ícono
 Los `<select>` nativos (elegir unidad/edificio/luna) son **solo texto**. En pictomode se renderiza,
@@ -112,11 +136,50 @@ normal vuelve a verse.
 Un set chico y consistente, ya parcialmente en uso: `✓` alcanza/listo · `❌` falta · `−N` faltante ·
 `⏳`/`⏱` en curso/tiempo · `🔒` bloqueado (requiere) · `⚠` atención · `⚡` energía · `📍` lugar/planeta.
 
-## 3. Mapa de íconos propuesto (punto de partida, data-driven)
+## 3. Cobertura por panel (TODOS)
+La regla es **cobertura total**: cada panel debe poder jugarse con **ícono + letra + número**. Abajo,
+los 25 paneles (`data-panel`) y cómo hablan el modo. Todos reusan el **chip de material** (§2.5),
+`ico()` (§2.4) y los estados (§2.7).
+
+| Panel (`data-panel`) | En pictomode |
+|---|---|
+| `acciones` (construir/entrenar/expedición) | grilla de botones-ícono (§2.6); costo y faltante como chips; `🔒`+ícono de requisito |
+| `atacar` | selección de unidades como íconos con su número; ⚔ poder propio vs objetivo en número; `⚡`/`✓`/`❌` |
+| `combate` | resultados como íconos: unidades perdidas/sobrevivientes (ícono + número), botín como chips de material |
+| `investigacion` | tecnologías como íconos; costo en chips; `🔒`+íconos de prerequisito; `⏳` en curso con número de tiempo |
+| `bases` | cada base = ícono de planeta + íconos de edificios (con nivel/número); base orbital `🛰`, lunar `🌙` |
+| `imperio` | totales de stock como chips de material; energía `⚡`+número; unidades como íconos+número |
+| `colas` | cada ítem en cola = ícono de lo que se hace + `⏳`+número de tiempo restante (build/train/research/transporte/espía) |
+| `transitos` | misiones en viaje = ícono (ataque/transporte/expedición) + origen→destino con íconos de planeta + `⏱` |
+| `mercado` / `hub` | minerales como chips (ícono+letra); precio compra/venta en número; `🛰`naves y `🏴‍☠️`riesgo % ya son ícono+número |
+| `galaxias` | galaxias/planetas como íconos; abundancias destacadas como chips de material |
+| `mundo` (modal planeta) | atributos como íconos (`🌡`temp+número, `🪨`gravedad, `💧`agua sí/no); colonizar con costo en chips (ya en SDD 37 v1.6) |
+| `eventos` | cada evento = su ícono + efecto como `×N`; estado `🟢`activo / `⏳`/ `🔮` |
+| `temporada` | progreso/ranking de temporada como íconos + número; premios como chips |
+| `ranking` | posición como número grande + medalla (`🥇🥈🥉`); puntaje en número |
+| `meta` | tasas como `%`/número + flechas `▲▼`; "qué ataque gana" con íconos de unidad |
+| `alianzas` | miembros como avatares/íconos; beneficios como `×N`; acciones como botones-ícono |
+| `universos` | cada universo como ícono/emblema + número de jugadores |
+| `notis` / `anuncios` | cada aviso con un **ícono de tipo** (⚔ ataque, 🛡 defensa, 🔬 research, 🏪 mercado, 📣 release) + número; el cuerpo es texto → ver "texto irreducible" abajo |
+| `perfil` | acciones como botones-ícono; energía de nivelado `⚡`+número; estado de cuenta como ícono (`✓`/`⏳`/`🚫`) |
+| `guia` | ya es visual; en pictomode prioriza la fila de íconos con su significado (es la **leyenda** del modo) |
+| `asistente` / `chat` / `admin` | **texto por naturaleza** (lenguaje libre / gestión). No se pictografían los mensajes; se aplican íconos solo a sus **controles** (enviar, modo, aprobar `✓`/rechazar `❌`). Ver abajo. |
+
+**Texto irreducible.** Hay contenido que es lenguaje libre (chat, respuestas del asistente, cuerpo de
+una noticia, gestión de cuentas del admin). No se "dibuja"; el modo:
+1. pictografía **todo lo accionable y numérico** alrededor (botones, costos, estados, tipos);
+2. deja un **ícono de tipo** + el número/fecha para reconocer "qué es" sin leer el cuerpo;
+3. (F3) ofrece **lectura en voz alta** (TTS) de ese texto al tocarlo, para el no-lector total.
+
+La **`guia`** funciona como **leyenda**: en pictomode muestra el diccionario ícono↔cosa, así el
+jugador aprende el vocabulario del juego sin depender de palabras.
+
+## 3.bis Mapa de íconos propuesto (punto de partida, data-driven)
 Va como `icon:` en cada YAML; ajustable sin tocar código.
 
-- **Minerales:** hierro `🔩`, silicio `🪟`, aluminio `🥫`, titanio `🛠`, azufre `🧪`, magnesio `✨`,
-  basalto `🪨`, helio-3 `⚛`, tierras raras `💎`, hielo de agua `🧊`. (Fallback: `🪨` + símbolo `Fe/Si`.)
+- **Minerales (ícono + símbolo):** hierro `🔩 Fe`, silicio `🪟 Si`, aluminio `🥫 Al`, titanio `🛠 Ti`,
+  azufre `🧪 S`, magnesio `✨ Mg`, basalto `🪨 Ba`, helio-3 `⚛ He3`, tierras raras `💎 RE`,
+  hielo de agua `🧊 H₂O`. El **símbolo siempre se muestra** junto al ícono (no es solo fallback).
 - **Unidades:** trabajador `👷`, militar `💂`, científico `🔬`, tanque `🛡`, barco `🚢`, avión `✈`,
   transbordador `🚀`, espía `🕵`, nave de carga `🛰`. (Fallback unidad: `🪖`.)
 - **Edificios:** base central `🏛`, mina `⛏`, planta de energía `⚡`, fábrica `🏭`, laboratorio `🔭`,
@@ -124,15 +187,19 @@ Va como `icon:` en cada YAML; ajustable sin tocar código.
 - **Recursos/estado:** energía `⚡`, tiempo `⏱`, alcanza `✓`, falta `❌`, bloqueado `🔒`.
 
 ## 4. Datos / API
-- **Aditivo:** campo `icon:` opcional en `minerals/units/buildings/technologies/moons/races`. El
-  loader/registry lo pasa tal cual; `/catalog?lang=` lo expone sin localizar.
+- **Aditivo:** campo `icon:` opcional en `minerals/units/buildings/technologies/moons/races` y
+  `symbol:` opcional en `minerals` (la **letra**: `Fe`, `Si`, `He3`…). El loader/registry los pasa
+  tal cual; `/catalog?lang=` los expone **sin localizar** (ícono y símbolo son universales).
 - **Cache:** `/catalog` está cacheado 300s (memoria de proyecto) → tras deploy, los íconos nuevos
   tardan ≤5 min en verse. Sin migraciones, sin cambios de modelos.
 
 ## 5. Alcance incremental (fases)
-- **F1 — base:** `icon:` en YAML + toggle global + `ico()` + ramas pictográficas en
-  `costStr`/`affordText`/`reqLock` (costos y faltantes con íconos y número). Cubre el pedido central.
-- **F2 — navegación sin leer:** grilla de botones-ícono para los `<select>` + toggle **por panel**.
+- **F1 — base:** `icon:`/`symbol:` en YAML + toggle global + `ico()` + chip de material + ramas
+  pictográficas en `costStr`/`affordText`/`reqLock` (costos y faltantes con ícono+letra+número). Cubre
+  el pedido central de construir/entrenar/colas.
+- **F2 — cobertura total + navegación sin leer:** grilla de botones-ícono para los `<select>`,
+  toggle **por panel**, y aplicar el chip/íconos al **resto de los paneles** del §3 (atacar, combate,
+  imperio, transitos, mercado/hub, eventos, etc.).
 - **F3 — no-lectores totales (opcional):** sprite **SVG** propio (consistencia entre SO) y
   **lectura en voz alta (TTS)** al tocar un ícono (`speechSynthesis` con el `name` del catálogo,
   respetando el idioma) — para quien no lee **nada**, no solo "menos texto".
@@ -143,6 +210,8 @@ Va como `icon:` en cada YAML; ajustable sin tocar código.
 - **front:** `node --check` de los `<script>`; el toggle persiste en `localStorage`; `affordText`
   pictográfico muestra el faltante numérico correcto; pictomode **no altera** qué se puede/no comprar
   (solo presentación).
+- **regresión (invariante):** con el modo **apagado**, el DOM/textos de cada panel son **idénticos**
+  a hoy (snapshot antes/después); apagar el modo tras usarlo **revierte** todo sin recargar.
 
 ## 7. Riesgos / decisiones
 - **Ambigüedad de un ícono:** se mitiga con **tooltip+nombre** (`title`/`aria-label`), el **número**
