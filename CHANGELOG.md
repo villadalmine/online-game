@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.84.0] - 2026-06-26
+
 ### 2026-06-26 — Jugar sin leer (SDD 43): investigación, colas, bases y galaxias pictográficos
 - **Investigación:** cada tecnología como **ícono** (×magnitud); botón investigar 🔬; **🔒 + ícono
   del prerequisito** cuando falta la tech previa; listo = ✓.
