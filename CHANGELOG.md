@@ -9,6 +9,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.74.0] - 2026-06-26
 
+### 2026-06-26 — Docs: cómo decide el NPC (rules vs llm, modelo, GPU vs nube)
+- SDD 29 §2.bis: explicación clara del cerebro del NPC — `rules` (determinista, sin GPU) vs `llm`
+  (razona sobre estado/scoreboard/meta; cae a reglas si falla), qué modelo usa cada NPC
+  (`npc_llm_model` GPU local vs `npc_cloud_model` nube por `npc_cloud_username`) y cuándo se usa la
+  GPU. Para tener documentado cómo funciona.
+
 ### 2026-06-26 — Métricas del tick/NPC visibles en Grafana (Pushgateway)
 - El **tick** (CronJob `galaxy-tick`) es un pod efímero no-scrapeable → sus métricas (`game_npc_*`,
   `game_tick_*`) no llegaban a Prometheus. Ahora `worker.tick()` **empuja** sus métricas a una

@@ -25,6 +25,43 @@ un prompt grande y periódico) → util visible en los dashboards (SDD 28).
   2. **No hay postura estratégica persistente**: decide táctico turno a turno, sin un plan que evolucione.
   3. La "memoria" son sólo las últimas acciones, sin reflexión.
 
+## 2.bis Cómo funciona la decisión del NPC (rules vs llm, y qué modelo/GPU usa)
+
+Cada NPC hace **1 acción por tick**; quién la decide es el **cerebro** (`NPC_BRAIN`), enchufable
+(`get_brain()` en `app/services/npc.py`). Las dos implementaciones comparten interfaz
+(`NpcBrain.act(session, player) -> action`) y **ejecutan la acción con los mismos servicios que un
+jugador humano** (build/train/attack/research/expedition):
+
+### `rules` — `RuleBasedBrain` (sin LLM, **sin GPU**)
+Lógica **determinística** por lista de prioridades (¿no tengo mina? → mina; ¿me atacan con flota
+afuera? → repliego; ¿me atacan sin flota? → torreta; ¿puedo investigar? → investigo; ¿hay enemigo
+batible? → ataco). **Rápida (ms), gratis, predecible.** No mira el scoreboard ni se adapta.
+
+### `llm` — `LlmBrain` (usa un modelo: **GPU local o nube**)
+1. `_npc_state(player)` arma un prompt con el **estado**: recursos/unidades/edificios + **costos**, el
+   **grafo de dependencias** (qué puede construir/investigar ya), las **métricas/meta** (SDD 41), el
+   **scoreboard** (§3) y la **personalidad de la raza**.
+2. **Decide SIN transacción abierta** (commit antes de la llamada — clave de perf, ver §9.bis/perf):
+   el modelo devuelve **UN JSON** con la acción (`{"action":"build","building":"mine",...}`).
+3. Se aplica (`dispatch_action`). Ante **cualquier fallo** (timeout, JSON inválido, sin key, acción
+   inviable) → **fallback a `rules`** → el tick nunca se rompe.
+
+**Qué modelo/endpoint usa:** la llamada va al **proxy LiteLLM** (`LLM_BASE_URL`) con un **alias**.
+`npc_llm_choice(player)` elige por NPC (SDD 19 §9.6):
+- NPCs normales → **`npc_llm_model`** (alias `local-gpu` → **Ollama en la GPU local**; el NPC tolera
+  esperar, SDD 9).
+- El NPC designado por **`npc_cloud_username`** → **`npc_cloud_model`** (alias de **nube**, ej.
+  `gemma4-paid`) → para **comparar GPU vs nube** (quién juega mejor).
+
+**Cuándo se usa la GPU/LLM:** (a) decidir la jugada (1×/NPC **por tick**, CronJob ~5 min), (b)
+refrescar la **postura estratégica** (§3, ocasional), (c) el **asistente del jugador** on-demand
+(`advisor`). Con `rules` = **0 GPU**.
+
+**Diferencia en una línea:** `rules` = barato/rápido/predecible pero no se adapta; `llm` = más
+caro/lento pero **razona** (elige rival por scoreboard, cambia de postura, juega el meta, en
+personaje), con red de seguridad a reglas. Las métricas de SDD 19 §9 miden si el `llm` (y cuál:
+GPU vs nube) realmente juega mejor.
+
 ## 3. Diseño
 
 ### 3.1 Cerebro de 2 capas
