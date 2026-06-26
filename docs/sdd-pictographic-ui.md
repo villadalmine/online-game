@@ -1,13 +1,13 @@
 # SDD 43 — Modo pictográfico de la UI (jugar sin leer)
 
 > **Estado:** **F1 + F2 (parcial) + TTS implementado** (en producción). Paneles ya pictografiados:
-> `acciones`, `imperio`, **`mercado`, `hub`, `transitos`, `alianzas`** (botones comprar/vender/trocar
-> como íconos; selectores de planeta/mineral/unidad con ícono; tránsitos con ícono de planeta/luna;
-> minerales como chips). Se agregó `icon:` a **planetas** (`content/planets.yaml`) y **lunas**
-> (`content/gods.yaml`), expuestos por `/catalog`. · **⏳ PENDIENTE:** resto de paneles
-> (`atacar`, `combate`, `investigacion`, `bases`, `colas`, `galaxias`, `eventos`, `temporada`,
-> `ranking`, `meta`, `universos`, `notis/anuncios`, `perfil`, `guia` como leyenda) + fallback TTS de
-> servidor. · **Fecha:** 2026-06-26 · **Autor:** equipo
+> `acciones`, `imperio`, `mercado`, `hub`, `transitos`, `alianzas`, **`combate`, `investigacion`,
+> `colas`, `bases`, `galaxias`** (botones como íconos; tech/edificio/unidad/planeta/luna como ícono;
+> investigación con 🔒 de prerequisito; colas con ícono+tiempo; bases con stock como chips). Se agregó
+> `icon:` a **planetas** (`content/planets.yaml`) y **lunas** (`content/gods.yaml`), expuestos por
+> `/catalog`. · **⏳ PENDIENTE:** `atacar`, `eventos`, `temporada`, `ranking`, `meta`, `universos`,
+> `notis/anuncios`, `perfil`, `guia` (como leyenda) + fallback TTS de servidor. · **Fecha:**
+> 2026-06-26 · **Autor:** equipo
 > **Ámbito:** principalmente cliente web (`web/index.html`) + un campo **aditivo** `icon:` en
 > `content/*.yaml` expuesto por `/catalog`. **Sin cambios de reglas de juego ni de modelos/DB.**
 

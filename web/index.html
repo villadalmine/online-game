@@ -540,7 +540,7 @@ function mname(mkey,panel){ if(!isPicto(panel)) return esc(mineralName(mkey));
 function planetIcon(pkey){ return (spec.planet[pkey]||{}).icon||"🪐"; }
 function moonIcon(mkey){ return (spec.moon[mkey]||{}).icon||"🌙"; }
 // etiqueta de planeta sensible al panel: ícono (del catálogo) en pictomode, nombre en modo normal
-function pname(pkey,panel){ if(!isPicto(panel)) return esc(planetName(pkey));
+function plabel(pkey,panel){ if(!isPicto(panel)) return esc(planetName(pkey));
   return spec.planet[pkey]?ico('planet',pkey):esc(planetName(pkey)); }
 // etiqueta de luna sensible al panel
 function moonLabel(mkey,panel){ if(!isPicto(panel)) return esc(moonName(mkey));
@@ -899,16 +899,20 @@ async function refresh(){
   const bsel=$("buildbase");
   if(bsel && state.bases.length){
     const prev=bsel.value;
-    bsel.innerHTML=state.bases.map(b=>`<option value="${b.id}">${baseTag(b)} ${esc(planetName(b.planet_key))}</option>`).join("");
+    const popB=b=>isPicto('acciones')?`${baseTag(b)} ${planetIcon(b.planet_key)}`:`${baseTag(b)} ${planetName(b.planet_key)}`;
+    bsel.innerHTML=state.bases.map(b=>`<option value="${b.id}">${esc(popB(b))}</option>`).join("");
     if(state.bases.some(b=>String(b.id)===prev)) bsel.value=prev;
     bsel.style.display=state.bases.length>1?"":"none";   // si tenés 1 sola base, no hace falta
   }
   const sbp=state.stocks_by_planet||{};
+  const picB=isPicto('bases');
   const planetStock=p=>{const s=sbp[p]||{};const e=Object.entries(s).filter(([,v])=>v>0);
-    return e.length?` <span class="muted" style="font-size:11px">⛏ ${e.map(([k,v])=>esc(k)+":"+Math.round(v)).join(", ")}</span>`:"";};
-  $("bases").innerHTML=state.bases.map(b=>`<div style="margin-bottom:8px"><b>${baseTag(b)} ${esc(b.name)}</b> <span class="muted">#${b.id} · ${esc(b.planet_key)}</span>${planetStock(b.planet_key)}`+
-    b.buildings.map(bl=>`<div class="item"><div class="top"><span>${esc(bl.building_key)}${bl.production_mineral?` (${esc(bl.production_mineral)})`:""}</span>`+
-      `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?'✓ activo':cd(bl.completes_at)}</span></div>`+
+    if(!e.length) return "";
+    const body=picB?e.map(([k,v])=>mchip(k,v)).join(" "):e.map(([k,v])=>esc(k)+":"+Math.round(v)).join(", ");
+    return ` <span class="muted" style="font-size:11px">⛏ ${body}</span>`;};
+  $("bases").innerHTML=state.bases.map(b=>`<div style="margin-bottom:8px"><b>${baseTag(b)} ${picB?planetIcon(b.planet_key):esc(b.name)}</b> <span class="muted">#${b.id}${picB?'':' · '+esc(b.planet_key)}</span>${planetStock(b.planet_key)}`+
+    b.buildings.map(bl=>`<div class="item"><div class="top"><span>${picB?ico('build',bl.building_key):esc(bl.building_key)}${bl.production_mineral?(picB?' '+mname(bl.production_mineral,'bases'):` (${esc(bl.production_mineral)})`):""}</span>`+
+      `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?(picB?'✓':'✓ activo'):cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`).join("");
   // SÓLO renders locales (sin red) en el ciclo rápido de 4s.
   renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); renderSeason();
@@ -939,13 +943,19 @@ const TECH_CAT={es:{economy:"⛏ Economía",military:"⚔ Militar",espionage:"�
   en:{economy:"⛏ Economy",military:"⚔ Military",espionage:"🕵 Espionage",colonization:"🪐 Colonization",other:"Other"}};
 function renderResearch(){
   if(!catalog||!state) return; const done=new Set(state.technologies||[]);
+  const pic=isPicto('investigacion');
   const techRow=t=>{
     const order=(state.research||[]).find(r=>r.tech_key===t.key);
+    // 🔒 si falta la tech previa (SDD 43: prerequisito como candado)
+    const lockedReq=t.requires_tech && !done.has(t.requires_tech);
     let right;
-    if(done.has(t.key)) right=`<span class="ok">${esc(tr('ready'))}</span>`;
+    if(done.has(t.key)) right=`<span class="ok">${pic?'✓':esc(tr('ready'))}</span>`;
     else if(order) right=`<span class="warn">${cd(order.completes_at)}</span>`;
-    else right=`<button class="sm" onclick="doResearch('${t.key}')">${esc(tr('research'))}</button>`;
-    return `<div class="item"><div class="top"><span title="${esc(t.description||'')}">${esc(t.name)} <span class="muted">(${esc(t.effect)} ×${t.magnitude})</span></span>${right}</div>${order?bar(t.research_seconds,order.completes_at):""}</div>`;
+    else if(lockedReq) right=`<span class="bad">🔒 ${pic?ico('tech',t.requires_tech):esc(techName(t.requires_tech))}</span>`;
+    else right=actbtn('sm',`doResearch('${t.key}')`,'🔬','research','investigacion');
+    const label=pic?`${ico('tech',t.key)} <span class="muted">×${t.magnitude}</span>`
+                   :`${esc(t.name)} <span class="muted">(${esc(t.effect)} ×${t.magnitude})</span>`;
+    return `<div class="item"><div class="top"><span title="${esc(t.description||'')}">${label}</span>${right}</div>${order?bar(t.research_seconds,order.completes_at):""}</div>`;
   };
   // SDD: agrupado por categoría de investigación
   const cats=(TECH_CAT[lang]||TECH_CAT.es);
@@ -1015,20 +1025,30 @@ function renderAllianceList(){
   }).join("")||`<span class="muted">${esc(tr('noally'))}</span>`;
 }
 function renderQueues(){
-  if(!state) return; const q=[];
+  if(!state) return; const q=[]; const pic=isPicto('colas');
   (state.training||[]).forEach(t=>{ const tot=((spec.unit[t.unit_key]||{}).train_seconds||0)*t.quantity;
-    q.push(`<div class="item"><div class="top"><span>🛠 ${t.quantity}× ${esc(t.unit_key)}</span><span class="warn">${cd(t.completes_at)}</span></div>${bar(tot,t.completes_at)}</div>`); });
+    const lbl=pic?`${t.quantity}× ${ico('unit',t.unit_key)}`:`🛠 ${t.quantity}× ${esc(t.unit_key)}`;
+    q.push(`<div class="item"><div class="top"><span>${lbl}</span><span class="warn">${cd(t.completes_at)}</span></div>${bar(tot,t.completes_at)}</div>`); });
   (state.expeditions||[]).forEach(e=>{ const tot=((spec.moon[e.moon_key]||{}).expedition||{}).duration_seconds||0;
-    q.push(`<div class="item"><div class="top"><span>🌙 ${esc(e.moon_key)}</span><span class="warn">${cd(e.completes_at)}</span></div>${bar(tot,e.completes_at)}</div>`); });
-  (state.missions_outgoing||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span>🚀 → base ${m.target_base_id} ${esc(JSON.stringify(m.force))}</span>`+
-    `<span>${m.status==='outbound'?`<button class="sm danger" onclick="recall(${m.id})">${esc(tr('recall'))} ${cd(m.arrives_at)}</button>`:`${esc(tr('returns'))} ${cd(m.returns_at)}`}</span></div></div>`));
-  (state.missions_incoming||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span class="bad">${esc(tr('incoming'))} ${m.target_base_id}</span><span class="bad">${cd(m.arrives_at)}</span></div></div>`));
+    const lbl=pic?ico('moon',e.moon_key):`🌙 ${esc(e.moon_key)}`;
+    q.push(`<div class="item"><div class="top"><span>${lbl}</span><span class="warn">${cd(e.completes_at)}</span></div>${bar(tot,e.completes_at)}</div>`); });
+  (state.missions_outgoing||[]).forEach(m=>{ const dn=pic?planetIcon(planetOfBase(m.target_base_id)):('base '+m.target_base_id);
+    const recallBtn=pic?`<button class="sm danger" onclick="recall(${m.id})" title="${esc(tr('recall'))}">🔙 ${cd(m.arrives_at)}</button>`
+                       :`<button class="sm danger" onclick="recall(${m.id})">${esc(tr('recall'))} ${cd(m.arrives_at)}</button>`;
+    q.push(`<div class="item"><div class="top"><span>🚀 → ${dn} ${pic?'':esc(JSON.stringify(m.force))}</span>`+
+    `<span>${m.status==='outbound'?recallBtn:`${pic?'↩':esc(tr('returns'))} ${cd(m.returns_at)}`}</span></div></div>`); });
+  (state.missions_incoming||[]).forEach(m=> q.push(`<div class="item"><div class="top"><span class="bad">${pic?'☄':esc(tr('incoming'))} ${m.target_base_id}</span><span class="bad">${cd(m.arrives_at)}</span></div></div>`));
   (state.research||[]).forEach(r=>{ const tot=((spec.tech&&spec.tech[r.tech_key])||{}).research_seconds||0;
-    q.push(`<div class="item"><div class="top"><span>🔬 ${esc(techName(r.tech_key))}</span><span class="warn">${cd(r.completes_at)}</span></div>${bar(tot,r.completes_at)}</div>`); });
-  (state.transports||[]).forEach(m=>{ const cargo=Object.entries(m.cargo||{}).map(([k,v])=>v+"×"+k).join(",");
-    q.push(`<div class="item"><div class="top"><span>🚚 ${esc(cargo)} ${esc(planetName(m.from_planet))}→${esc(planetName(m.to_planet))}</span><span class="warn">${cd(m.arrives_at)}</span></div></div>`); });
+    const lbl=pic?ico('tech',r.tech_key):`🔬 ${esc(techName(r.tech_key))}`;
+    q.push(`<div class="item"><div class="top"><span>${lbl}</span><span class="warn">${cd(r.completes_at)}</span></div>${bar(tot,r.completes_at)}</div>`); });
+  (state.transports||[]).forEach(m=>{
+    const cargo=pic?Object.entries(m.cargo||{}).map(([k,v])=>mchip(k,v)).join(" ")
+                   :Object.entries(m.cargo||{}).map(([k,v])=>v+"×"+k).join(",");
+    const route=pic?`${planetIcon(m.from_planet)}→${planetIcon(m.to_planet)}`:`${esc(planetName(m.from_planet))}→${esc(planetName(m.to_planet))}`;
+    q.push(`<div class="item"><div class="top"><span>🚚 ${cargo} ${route}</span><span class="warn">${cd(m.arrives_at)}</span></div></div>`); });
   (state.spy_missions||[]).forEach(m=>{ const ret=m.status==='returning';
-    q.push(`<div class="item"><div class="top"><span>🕵 → base ${m.target_base_id}</span><span class="warn">${ret?esc(tr('returns'))+' '+cd(m.returns_at):cd(m.arrives_at)}</span></div></div>`); });
+    const dn=pic?planetIcon(planetOfBase(m.target_base_id)):('base '+m.target_base_id);
+    q.push(`<div class="item"><div class="top"><span>🕵 → ${dn}</span><span class="warn">${ret?(pic?'↩':esc(tr('returns')))+' '+cd(m.returns_at):cd(m.arrives_at)}</span></div></div>`); });
   $("queues").innerHTML=q.join("")||`<span class="muted">${esc(tr('noqueue'))}</span>`;
 }
 const ORB=new Set(["earth","mars","venus","mercury","vega_prime","nyx"]);
@@ -1049,7 +1069,8 @@ function renderMap(){
         const cls=me?'me':(b.home_base_id?'enemy':''); const clk=(!me&&b.home_base_id)?`onclick="prefill(${b.home_base_id})"`:'';
         return `<span class="base ${cls}" ${clk} title="base ${b.home_base_id??'-'}">${icon} ${esc(b.username)}${b.home_base_id?` <span class="muted">#${b.home_base_id}</span>`:''}</span>`;
       }).join("");
-      return `<div class="planet"><div class="head" onclick="openPlanet('${p.key}')" title="ver detalle"><div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><b>${esc(p.name)}</b></div><div>${bases||`<span class="muted">${esc(tr('nobases'))}</span>`}</div></div>`;
+      const pn=isPicto('galaxias')?ico('planet',p.key):esc(p.name);
+      return `<div class="planet"><div class="head" onclick="openPlanet('${p.key}')" title="ver detalle"><div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><b>${pn}</b></div><div>${bases||`<span class="muted">${esc(tr('nobases'))}</span>`}</div></div>`;
     }).join("");
     return `<div class="galaxy-group ${here?'':'dim'}"><div class="gname">🌌 ${esc(g.name)}${here?esc(tr('here')):''}</div><div class="galaxy">${cards}</div></div>`;
   }).join("");
@@ -1489,7 +1510,7 @@ function bmEstimate(){
   const recv=Math.floor(q*(hubPrices[pay]||0)/((hubPrices[get]||1))*bmRate);
   const pct=raidPct(recv); const net=recv-Math.floor(recv*pct/100);
   const risk=`<span class="${pct>0?'bad':'ok'}"> · 🚢${shipsFor(q)} 🏴‍☠️${pct}%</span>`;
-  const stockBad=have<q?`<span class="bad"> · ${isPicto('hub')?'❌':esc(tr('bmnostock'))} ${have} ${mname(pay,'hub')} @${pname(home,'hub')}</span>`:"";
+  const stockBad=have<q?`<span class="bad"> · ${isPicto('hub')?'❌':esc(tr('bmnostock'))} ${have} ${mname(pay,'hub')} @${plabel(home,'hub')}</span>`:"";
   out.innerHTML=`≈ +${net} ${mname(get,'hub')} (${isPicto('hub')?'📦':esc(tr('bmhave'))} ${have})${risk}${stockBad}`;
 }
 async function blackMarket(){
@@ -1515,7 +1536,7 @@ function trAvail(){
   const sbp=(state&&state.stocks_by_planet&&state.stocks_by_planet[f])||{};
   const have=Math.round(sbp[m]||0);
   const bad=have<q?`<span class="bad"> · ${isPicto('mercado')?'❌':esc(tr('trmissing'))} ${q-have}</span>`:"";
-  out.innerHTML=`${isPicto('mercado')?'📦':esc(tr('travail'))} ${have} ${mname(m,'mercado')} @${pname(f,'mercado')}${bad}`;
+  out.innerHTML=`${isPicto('mercado')?'📦':esc(tr('travail'))} ${have} ${mname(m,'mercado')} @${plabel(f,'mercado')}${bad}`;
 }
 async function transportSend(){
   const f=$("tr_from").value, t=$("tr_to").value, m=$("tr_min").value, q=Math.max(1,+$("tr_qty").value||1);
@@ -1614,9 +1635,9 @@ function transitRow(kind,icon,from,to,prog,eta){
     `<div class="track"><span class="ship" style="left:${(clamp01(prog)*100).toFixed(1)}%">${icon}</span></div></div>`;
 }
 function renderTransits(){
-  if(!state){ return; } const me=pname(state.planet_key,'transitos'), now=Date.now(), rows=[];
+  if(!state){ return; } const me=plabel(state.planet_key,'transitos'), now=Date.now(), rows=[];
   (state.missions_outgoing||[]).forEach(m=>{
-    const dest=planetOfBase(m.target_base_id); const dn=dest?pname(dest,'transitos'):esc("base "+m.target_base_id);
+    const dest=planetOfBase(m.target_base_id); const dn=dest?plabel(dest,'transitos'):esc("base "+m.target_base_id);
     const arr=new Date(m.arrives_at).getTime(), ret=m.returns_at?new Date(m.returns_at).getTime():null;
     if(m.status==='outbound'){
       // one-way leg = returns_at - arrives_at, so departure = arrives_at - leg

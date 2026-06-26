@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Jugar sin leer (SDD 43): investigación, colas, bases y galaxias pictográficos
+- **Investigación:** cada tecnología como **ícono** (×magnitud); botón investigar 🔬; **🔒 + ícono
+  del prerequisito** cuando falta la tech previa; listo = ✓.
+- **Colas:** cada ítem (entrenar/expedición/investigación/transporte/espía/flota) con su **ícono** +
+  ⏱; recall como 🔙; transporte con chips de mineral + ícono de planeta origen→destino.
+- **Bases:** edificios como íconos (mineral de la mina como chip), stock del planeta como chips,
+  planeta como ícono; selector de base con ícono de planeta.
+- **Galaxias:** planetas del mapa como ícono.
+- **Invariante intacto:** con el modo apagado, todo igual que antes (cubierto por el chrome smoke que
+  re-renderiza TODOS los paneles en pictomode sin errores de JS).
+
 ## [1.83.0] - 2026-06-26
 
 ### 2026-06-26 — Jugar sin leer (SDD 43): mercado, hub, transporte y alianzas pictográficos
