@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.81.0] - 2026-06-26
+
 ### 2026-06-26 — Admin: ver el dashboard de Grafana DENTRO de la consola (SDD 19 §9.3)
 - **`GET /admin/dashboards`** (admin-gated, data-driven): devuelve la URL del dashboard **NPC AI**
   solo si se configuró `GRAFANA_NPC_DASHBOARD_URL` (helm `grafana.npcDashboardUrl`). La **consola de
