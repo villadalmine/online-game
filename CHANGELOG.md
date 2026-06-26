@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.90.0] - 2026-06-26
+
 ### 2026-06-26 — Intel → Calculadora de combate (SDD 35 + 34)
 - En el bloque de **intel** de una colonia enemiga (modal de planeta) hay un botón **🧮 "a la
   calculadora"** que abre la Calculadora de combate **precargando el lado defensor** desde lo que tu
