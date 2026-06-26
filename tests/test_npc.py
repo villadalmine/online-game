@@ -65,6 +65,19 @@ async def test_rule_brain_first_action_builds_a_mine(session):
     assert res.first() is not None
 
 
+def test_npc_llm_choice_gpu_vs_cloud(monkeypatch):
+    # Comparación GPU vs nube: el NPC designado usa el modelo de nube; el resto, GPU local.
+    from app.core.config import get_settings
+    from app.models import Player
+    from app.services.npc import npc_llm_choice
+    s = get_settings()
+    monkeypatch.setattr(s, "npc_cloud_username", "npc_venusian")
+    monkeypatch.setattr(s, "npc_cloud_model", "gemma4-paid")
+    monkeypatch.setattr(s, "npc_llm_model", "local-gpu")
+    assert npc_llm_choice(Player(username="npc_venusian")) == ("gemma4-paid", "cloud")
+    assert npc_llm_choice(Player(username="npc_terran")) == ("local-gpu", "gpu")
+
+
 async def test_npc_turn_records_action_metric(session):
     # Observabilidad: cada turno de NPC registra qué hizo (game_npc_actions_total) para entender
     # cómo juega la IA y si mejora. Ver SDD/CHANGELOG métricas NPC.

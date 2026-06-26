@@ -572,6 +572,7 @@ async def _llm_strategy(state: dict) -> dict:
     """LLM estratégico: lee scoreboard+recursos y elige una postura ({posture,target,why})."""
     settings = get_settings()
     user = state.pop("__user", None)
+    model = state.pop("__model", None) or (settings.npc_llm_model or None)  # gpu/cloud por NPC
     system = (
         "You are the STRATEGIST of an NPC race in a turn-based space strategy game. "
         f"Stay in character: {state.get('personality', '')} "
@@ -592,7 +593,7 @@ async def _llm_strategy(state: dict) -> dict:
         max_tokens=settings.npc_strategy_max_tokens,
         json_mode=settings.llm_json_mode,
         user=user,
-        model=settings.npc_llm_model or None,        # SDD 9: NPC tolera esperar → GPU local
+        model=model,
         timeout=settings.npc_llm_timeout_seconds,
     )
     return _extract_json(content)
@@ -626,6 +627,7 @@ async def decide_strategy(
             "under_attack": bool(await _incoming_attacks(session, player)),
             "meta": await _meta_for_npc(session),   # SDD 41: que la NPC juegue el meta aprendido
             "__user": f"npc:{player.username}",
+            "__model": npc_llm_choice(player)[0],   # gpu/cloud por NPC (comparación)
         }
         out = await strategize(state)
         posture = str(out.get("posture", "")).strip()
@@ -689,6 +691,7 @@ async def _llm_decide(state: dict) -> dict:
         '{"action":"attack","target_base_id":7,"force":{"tank":5}}.'
     )
     user = state.pop("__user", None)  # SDD 28: atribución por usuario (no va en el prompt)
+    model = state.pop("__model", None) or (settings.npc_llm_model or None)  # gpu/cloud por NPC
     content = await llm_chat(
         [
             {"role": "system", "content": system},
@@ -697,10 +700,19 @@ async def _llm_decide(state: dict) -> dict:
         max_tokens=120,
         json_mode=settings.llm_json_mode,
         user=user,
-        model=settings.npc_llm_model or None,        # SDD 9: NPC tolera esperar → GPU local
+        model=model,
         timeout=settings.npc_llm_timeout_seconds,
     )
     return _extract_json(content)
+
+
+def npc_llm_choice(player: Player) -> tuple[str | None, str]:
+    """Qué LLM usa ESTE NPC: si su username == npc_cloud_username → modelo de NUBE (backend
+    'cloud'); si no → GPU local (backend 'gpu'). Para comparar quién juega mejor (SDD 19 §9)."""
+    s = get_settings()
+    if s.npc_cloud_username and player.username == s.npc_cloud_username:
+        return (s.npc_cloud_model or None, "cloud")
+    return (s.npc_llm_model or None, "gpu")
 
 
 class LlmBrain:
@@ -719,9 +731,11 @@ class LlmBrain:
         if not settings.llm_key and self._decide is _llm_decide:
             return await self._fallback.act(session, player)
         player_id = player.id  # capture before any rollback expires the instance
+        model, backend = npc_llm_choice(player)   # GPU local vs nube por NPC (comparación)
         try:
             state = await _npc_state(session, player)
             state["__user"] = f"npc:{player.username}"  # SDD 28: atribución de uso LLM por NPC
+            state["__model"] = model                    # qué modelo usa ESTE NPC (gpu/cloud)
             # CLAVE (perf): cerrar la transacción ANTES de la llamada lenta al LLM/GPU. Si no, la
             # conexión queda "idle in transaction" reteniendo snapshot/locks durante los ~20-30s de
             # la GPU y, con varios NPCs, el tick cuelga el juego ~2 min. Decidimos SIN transacción
@@ -730,11 +744,11 @@ class LlmBrain:
             action = await self._decide(state)
             player = await session.get(Player, player_id)  # re-cargar tras el commit
             result = await dispatch_action(session, player, action)
-            metrics.NPC_DECISIONS.inc(outcome="llm")   # el LLM decidió y se aplicó
+            metrics.NPC_DECISIONS.inc(outcome="llm", backend=backend)   # el LLM decidió y se aplicó
             return result
         except Exception:
             # Any failure (network, rate limit, bad JSON, infeasible action) -> rules.
-            metrics.NPC_DECISIONS.inc(outcome="fallback")
+            metrics.NPC_DECISIONS.inc(outcome="fallback", backend=backend)
             await session.rollback()
             player = await session.get(Player, player_id)  # fresh after rollback
             return await self._fallback.act(session, player)

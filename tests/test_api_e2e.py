@@ -1097,7 +1097,8 @@ async def test_admin_npc_stats_e2e(client, monkeypatch):
     stats = res.json()
     assert len(stats) >= 1
     s0 = stats[0]
-    assert {"username", "score", "actions", "combat", "recent"} <= set(s0)
+    assert {"username", "score", "actions", "combat", "recent", "backend", "model"} <= set(s0)
+    assert s0["backend"] in ("gpu", "cloud")
     assert "wins" in s0["combat"] and "battles" in s0["combat"]
 
 

@@ -25,6 +25,7 @@ async def npc_stats(
     """Snapshot por NPC para entender CÓMO juega la IA (SDD): score, postura, mezcla de acciones
     (del journal), récord de combate y últimas jugadas. Complementa las métricas Prometheus
     (game_npc_actions_total / game_npc_decisions_total) con una vista puntual sin Grafana."""
+    from app.services.npc import npc_llm_choice
     from app.services.scoring import player_score
     npcs = (await session.execute(
         select(Player).where(Player.is_npc.is_(True)).order_by(Player.id)
@@ -50,9 +51,11 @@ async def npc_stats(
             mem = json.loads(n.npc_memory or "[]")
         except Exception:
             mem = []
+        model, backend = npc_llm_choice(n)   # con qué juega: gpu local vs nube (comparación)
         out.append({
             "id": n.id, "username": n.username, "race": n.race_key,
             "score": await player_score(session, n),
+            "backend": backend, "model": model or "(default)",
             "posture": n.npc_posture, "strategy": n.npc_strategy,
             "actions": actions,                       # {build: N, train: N, attack: N, ...}
             "combat": {"wins": wins, "losses": losses,

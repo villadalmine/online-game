@@ -189,6 +189,18 @@ Tres call-sites únicos: (a) **NPC decide su jugada** (`npc._llm_decide`, 1× po
 CronJob cada 5 min), (b) **NPC refresca postura** (`npc.decide_strategy`, ocasional), (c) **asistente
 del jugador on-demand** (`advisor`, al tocar "preguntar", con límite diario). NPC `rules` = **0 GPU**.
 
+### 9.6 Comparar GPU local vs nube (qué juega mejor)
+Seteá **`npc_cloud_username`** (p.ej. `npc_venusian`): ese NPC usa el **modelo de nube**
+(`npc_cloud_model`, alias del litellm, ej. `gemma4-paid`) y el resto la **GPU local**
+(`npc_llm_model`). `npc_llm_choice(player)` resuelve `(model, backend)`; las llamadas LLM del NPC
+(acción y postura) usan ese modelo, y `game_npc_decisions_total` se etiqueta por **`backend`**
+(gpu|cloud). Comparás:
+- **Quién juega mejor:** `score` y `combat.wins/battles` por NPC en `/admin/npc-stats` (con su
+  `backend`/`model`) — DB-backed, fiable aunque el tick corra en el CronJob.
+- **Quién decide mejor (menos fallback):** panel "GPU vs Nube" del dashboard
+  (`sum by(backend,outcome)(increase(game_npc_decisions_total[24h]))`).
+- **Qué modelo usa cada uno:** `model`/`backend` en `/admin/npc-stats` y en la card de admin.
+
 ### 9.5 Follow-up (idea del usuario): turnos de NPC orquestados por Argo, de a uno
 Mover el bucle de NPCs del worker in-process a un **Argo Workflow** que itere los NPCs **uno a la vez**
 (serial), una llamada LLM por NPC, esperando que termine antes de la siguiente. La GPU es serial igual,

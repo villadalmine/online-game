@@ -71,6 +71,16 @@
         { "refId": "A", "legendFormat": "{{status}}",
           "expr": "sum by(status) (rate(game_llm_requests_total[5m]))" }
       ]
+    },
+    {
+      "id": 7, "type": "timeseries",
+      "title": "GPU vs Nube: decisiones LLM exitosas (24h) — ¿quién decide mejor?",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 21 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{backend}} {{outcome}}",
+          "expr": "sum by(backend,outcome) (increase(game_npc_decisions_total[24h]))" }
+      ]
     }
   ]
 }

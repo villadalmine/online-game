@@ -176,4 +176,5 @@ LLM_LATENCY = Histogram("game_llm_latency_seconds", "Latencia del LLM")
 # más 'llm' y menos 'fallback' = la IA está razonando, no adivinando.
 NPC_ACTIONS = Counter("game_npc_actions_total", "Acciones de NPC por tipo", ("action", "brain"))
 NPC_DECISIONS = Counter("game_npc_decisions_total",
-                        "Decisiones de NPC: el LLM decidió vs cayó a reglas", ("outcome",))
+                        "Decisiones de NPC: el LLM decidió vs cayó a reglas, por backend gpu/cloud",
+                        ("outcome", "backend"))

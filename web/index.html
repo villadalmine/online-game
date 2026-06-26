@@ -1134,7 +1134,8 @@ async function loadNpcStats(){
     const acts=Object.entries(n.actions||{}).sort((a,b)=>b[1]-a[1])
       .map(([k,v])=>`<span class="chip">${esc(k)}: ${v}</span>`).join(" ")||'<span class="muted">—</span>';
     const c=n.combat||{}; const rec=(n.recent||[]).slice(-5).map(esc).join(" · ");
-    return `<div class="item"><div class="top"><span><b>${esc(n.username)}</b> <span class="muted">${esc(n.race||"")} · ⭐${n.score}</span></span>`+
+    const back=n.backend==="cloud"?`☁️ ${esc(n.model||"")}`:`🖥️ ${esc(n.model||"gpu")}`;
+    return `<div class="item"><div class="top"><span><b>${esc(n.username)}</b> <span class="muted">${esc(n.race||"")} · ⭐${n.score} · ${back}</span></span>`+
       `<span class="muted">⚔ ${c.wins||0}/${c.battles||0} · ${esc(n.posture||"-")}</span></div>`+
       `<div style="margin:4px 0">${acts}</div>`+
       (rec?`<div class="muted" style="font-size:11px">últimas: ${rec}</div>`:"")+`</div>`;

@@ -18,6 +18,10 @@ Registro de todo lo que vamos logrando. Formato basado en
   p50/p95 y llamadas ok/error. Se importa solo con el chart (configmap opt-in).
 - SDD 19 ampliado (§9): qué métricas de NPC hay, las 3 vistas (Prometheus/Grafana/admin), cuándo se
   usa la GPU, y el follow-up de orquestar los turnos de NPC con Argo (de a uno, mejor GPU/calidad).
+- **Comparar GPU local vs nube por NPC:** seteando `npc_cloud_username`, ese NPC juega con un modelo
+  de **nube** (`npc_cloud_model`) y el resto con la **GPU local** → se compara quién juega mejor
+  (score/win-rate en `/admin/npc-stats`, con `backend`/`model`) y quién decide mejor (panel "GPU vs
+  Nube" en el dashboard; `game_npc_decisions_total{backend}`). Helper `npc_llm_choice`.
 
 ## [1.71.0] - 2026-06-26
 

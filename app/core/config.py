@@ -102,6 +102,12 @@ class Settings(BaseSettings):
     assistant_llm_model: str = ""
     npc_llm_timeout_seconds: float = 60.0
     npc_llm_model: str = ""
+    # Comparar GPU local vs nube por NPC (SDD 19 §9): si seteás npc_cloud_username (p.ej.
+    # "npc_venusian"), ESE NPC usa el modelo de nube (npc_cloud_model, alias del litellm) y el resto
+    # la GPU local (npc_llm_model). Las métricas se etiquetan por backend → comparás quién juega
+    # mejor (score/win-rate) y quién decide más por LLM. "" = todos GPU.
+    npc_cloud_username: str = ""
+    npc_cloud_model: str = "gemma4-paid"
     # Presupuesto del asesor por jugador/día (anti-quema de créditos): pasado el cupo NO se llama al
     # LLM (cero tokens) y se cae a los tips deterministas. = patrón DAILY_CAP del repo shooter.
     advisor_llm_calls_per_day: int = 40
