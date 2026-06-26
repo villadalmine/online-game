@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.74.0] - 2026-06-26
+
 ### 2026-06-26 — Métricas del tick/NPC visibles en Grafana (Pushgateway)
 - El **tick** (CronJob `galaxy-tick`) es un pod efímero no-scrapeable → sus métricas (`game_npc_*`,
   `game_tick_*`) no llegaban a Prometheus. Ahora `worker.tick()` **empuja** sus métricas a una
