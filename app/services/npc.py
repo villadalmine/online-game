@@ -7,6 +7,7 @@ optional OpenRouter-backed brain behind the same interface, with a hard fallback
 to rules — so the game never depends on the network to take an NPC turn.
 """
 import json
+import logging
 import re
 from datetime import UTC, datetime
 from typing import Protocol
@@ -746,8 +747,13 @@ class LlmBrain:
             result = await dispatch_action(session, player, action)
             metrics.NPC_DECISIONS.inc(outcome="llm", backend=backend)   # el LLM decidió y se aplicó
             return result
-        except Exception:
+        except Exception as exc:
             # Any failure (network, rate limit, bad JSON, infeasible action) -> rules.
+            # Logueamos el motivo (antes era silencioso → no se sabía por qué la IA caía a reglas).
+            logging.getLogger("npc").warning(
+                "NPC %s (backend=%s) fallback a reglas: %s: %s",
+                getattr(player, "username", player_id), backend, type(exc).__name__, exc,
+            )
             metrics.NPC_DECISIONS.inc(outcome="fallback", backend=backend)
             await session.rollback()
             player = await session.get(Player, player_id)  # fresh after rollback

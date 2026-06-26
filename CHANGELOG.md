@@ -9,6 +9,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.74.0] - 2026-06-26
 
+### 2026-06-26 — NPC: loguear por qué cae a reglas (antes era silencioso)
+- `LlmBrain.act` ahora **loguea un warning** con el motivo cuando una decisión LLM falla y cae a
+  reglas (tipo de excepción + mensaje, NPC y backend). Antes el fallback era silencioso → no se sabía
+  por qué la IA no jugaba por LLM. Lo destapó la Pushgateway: se vio que los NPC estaban 100% en
+  `fallback`; este log permite diagnosticar la causa (JSON inválido del modelo, acción inviable, etc.).
+
 ### 2026-06-26 — Docs: cómo decide el NPC (rules vs llm, modelo, GPU vs nube)
 - SDD 29 §2.bis: explicación clara del cerebro del NPC — `rules` (determinista, sin GPU) vs `llm`
   (razona sobre estado/scoreboard/meta; cae a reglas si falla), qué modelo usa cada NPC
