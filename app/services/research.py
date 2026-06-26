@@ -15,7 +15,7 @@ from app.services.economy import (
     get_or_create_stock,
     planet_stocks,
 )
-from app.services.energy import spend_energy
+from app.services.energy import energy_shortfall_msg, spend_energy
 from app.services.physics import effective_energy_regen
 
 
@@ -103,14 +103,10 @@ async def start_research(session: AsyncSession, player, tech_key: str) -> Resear
     if rtech and rtech not in await researched_techs(session, player.id):
         raise ResearchError(f"Requiere investigar antes: {rtech}")
 
-    if not spend_energy(
-        player,
-        tech.get("energy_cost", 0),
-        now,
-        effective_energy_regen(player, settings),
-        settings.energy_max,
-    ):
-        raise ResearchError("Energia insuficiente.")
+    regen = effective_energy_regen(player, settings)
+    need_e = tech.get("energy_cost", 0)
+    if not spend_energy(player, need_e, now, regen, settings.energy_max):
+        raise ResearchError(energy_shortfall_msg(need_e, player.energy, regen))
 
     cost = content.tech_cost_in_minerals(player.race_key, tech_key)
     here = await planet_stocks(session, player.id, player.planet_key)   # se investiga en casa

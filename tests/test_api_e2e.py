@@ -1304,6 +1304,31 @@ async def test_build_mine(client):
     assert r.json()["status"] == "building"
 
 
+async def test_build_insufficient_energy_message_has_detail(client):
+    # El error de energía debe decir cuánto falta y en cuánto se recarga (no solo "insuficiente").
+    from datetime import UTC, datetime
+
+    from sqlalchemy import select
+
+    h = await _register(client.http, "drained")
+    state = await _onboard(client.http, h)
+    base_id = state["bases"][0]["id"]
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "drained"))).scalar_one()
+        p.energy = 0.0
+        p.energy_updated_at = datetime.now(UTC)  # sin regen acumulada
+        await s.commit()
+    r = await client.http.post(
+        f"/api/v1/bases/{base_id}/build",
+        headers=h,
+        json={"building_key": "mine", "target_mineral": "iron"},
+    )
+    assert r.status_code == 400, r.text
+    detail = r.json()["detail"]
+    assert "necesitás" in detail
+    assert "faltan" in detail
+
+
 async def test_build_on_foreign_base_404(client):
     h1 = await _register(client.http, "alice")
     s1 = await _onboard(client.http, h1)

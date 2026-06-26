@@ -8,7 +8,7 @@ from app.content.registry import get_content
 from app.core.config import get_settings
 from app.models import Base_, Building, Player
 from app.services.economy import collect_mines, finalize_due_builds
-from app.services.energy import spend_energy
+from app.services.energy import energy_shortfall_msg, spend_energy
 from app.services.physics import effective_energy_regen, gravity_build_multiplier
 
 
@@ -61,14 +61,11 @@ async def start_build(
     await collect_mines(session, player, now)
 
     # Charge energy (also applies regen).
-    if not spend_energy(
-        player,
-        spec.get("energy_cost", 0),
-        now,
-        effective_energy_regen(player, settings),
-        settings.energy_max,
-    ):
-        raise BuildError("Energia insuficiente.")
+    regen = effective_energy_regen(player, settings)
+    need_e = spec.get("energy_cost", 0)
+    if not spend_energy(player, need_e, now, regen, settings.energy_max):
+        # spend_energy ya aplicó regen, así que player.energy es el valor actual.
+        raise BuildError(energy_shortfall_msg(need_e, player.energy, regen))
 
     # Charge minerals (role-based cost resolved to this race's minerals).
     cost = content.building_cost_in_minerals(player.race_key, building_key)

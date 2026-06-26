@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Errores de energía con detalle (cuánto falta y cuándo se recarga)
+- Al intentar **construir** (incluida la base orbital), **entrenar** o **investigar** sin energía,
+  el mensaje ahora dice exactamente **cuánta energía necesitás, cuánta tenés, cuánto falta** y
+  **en cuánto tiempo se recarga** (la energía es global del jugador, no por planeta), igual que ya
+  hacía el error de minerales. Antes solo decía "Energía insuficiente" sin contexto.
+- Nuevo helper `energy_shortfall_msg()` reutilizado por build/training/research.
+
 ## [1.60.0] - 2026-06-25
 
 ### 2026-06-25 — Hub y mercado negro: naves + escolta + riesgo pirata determinístico

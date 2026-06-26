@@ -33,3 +33,15 @@ def spend_energy(player, amount: float, now: datetime, regen_per_hour: float, ca
         return False
     player.energy -= amount
     return True
+
+
+def energy_shortfall_msg(need: float, have: float, regen_per_hour: float) -> str:
+    """Mensaje detallado: cuánta energía falta y en cuánto se recarga (global, no por planeta)."""
+    deficit = need - have
+    when = ""
+    if regen_per_hour > 0 and deficit > 0:
+        mins = deficit / regen_per_hour * 60.0
+        when = (f" — se recarga en ~{mins/60:.1f} h" if mins >= 60
+                else f" — se recarga en ~{mins:.0f} min")
+    return (f"Energía insuficiente: necesitás {need:g}, tenés {have:g} "
+            f"(faltan {deficit:g}){when}.")

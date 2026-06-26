@@ -11,7 +11,7 @@ from app.content.registry import get_content
 from app.core.config import get_settings
 from app.models import Base_, Building, Player, TrainingOrder, UnitStock
 from app.services.economy import collect_mines, finalize_due_builds
-from app.services.energy import spend_energy
+from app.services.energy import energy_shortfall_msg, spend_energy
 from app.services.physics import effective_energy_regen
 
 
@@ -124,10 +124,9 @@ async def start_training(
     await finalize_due_training(session, player, now)
 
     energy_cost = spec.get("energy_cost", 0) * quantity
-    if not spend_energy(
-        player, energy_cost, now, effective_energy_regen(player, settings), settings.energy_max
-    ):
-        raise TrainingError("Energia insuficiente.")
+    regen = effective_energy_regen(player, settings)
+    if not spend_energy(player, energy_cost, now, regen, settings.energy_max):
+        raise TrainingError(energy_shortfall_msg(energy_cost, player.energy, regen))
 
     unit_cost = content.unit_cost_in_minerals(player.race_key, unit_key)
     cost = {m: amt * quantity for m, amt in unit_cost.items()}
