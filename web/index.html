@@ -461,7 +461,7 @@ function setToken(t){ token=t; localStorage.setItem("token",t); }
 function logout(){ token=""; localStorage.removeItem("token"); if(es)es.close(); location.reload(); }
 
 // catalog
-const spec={ build:{}, unit:{}, moon:{}, tech:{}, mineral:{} };
+const spec={ build:{}, unit:{}, moon:{}, tech:{}, mineral:{}, planet:{} };
 function fill(id,pairs){ $(id).innerHTML=pairs.map(([v,t])=>`<option value="${v}">${esc(t)}</option>`).join(""); }
 async function loadCatalog(){
   catalog=await api("/api/v1/catalog?lang="+lang);
@@ -470,6 +470,7 @@ async function loadCatalog(){
   catalog.moons.forEach(m=>spec.moon[m.key]=m);
   (catalog.minerals||[]).forEach(m=>spec.mineral[m.key]=m);
   (catalog.technologies||[]).forEach(t=>spec.tech[t.key]=t);
+  (catalog.planets||[]).forEach(p=>spec.planet[p.key]=p);
   fill("planet",catalog.planets.map(p=>[p.key,p.name]));
   fill("race",catalog.races.map(r=>[r.key,r.name]));
   fill("building",catalog.buildings.filter(b=>b.key!=="headquarters").map(b=>[b.key,b.name]));
@@ -485,7 +486,7 @@ const ICON_FALLBACK={mineral:"🪨",unit:"🪖",build:"🏗",tech:"🔬",moon:"�
 function pictoGlobal(){ return localStorage.getItem('ui.pictographic')==='1'; }
 function pictoOverrides(){ try{ return JSON.parse(localStorage.getItem('ui.picto.panels')||'{}'); }catch{ return {}; } }
 function isPicto(panelId){ const o=pictoOverrides(); return (panelId in o)? !!o[panelId] : pictoGlobal(); }
-function picLookup(kind,key){ const t={mineral:spec.mineral,unit:spec.unit,build:spec.build,tech:spec.tech,moon:spec.moon}[kind]; return (t&&t[key])||null; }
+function picLookup(kind,key){ const t={mineral:spec.mineral,unit:spec.unit,build:spec.build,tech:spec.tech,moon:spec.moon,planet:spec.planet}[kind]; return (t&&t[key])||null; }
 // un ícono con su NOMBRE accesible (title/aria-label): el texto se complementa, no se pierde
 function ico(kind,key){ const it=picLookup(kind,key); const sym=(it&&it.icon)||ICON_FALLBACK[kind]||"•"; const name=(it&&it.name)||key;
   return `<span class="ico" role="img" title="${esc(name)}" aria-label="${esc(name)}">${sym}</span>`; }
@@ -494,7 +495,7 @@ function mchip(mkey,amount){ const it=spec.mineral[mkey]||{}; const s=it.symbol?
   return `${ico('mineral',mkey)}${s} ${Math.round(amount)}`; }
 function togglePicto(){ const on=!pictoGlobal(); localStorage.setItem('ui.pictographic',on?'1':'0');
   document.body.classList.toggle('pictomode',on); $("pictotoggle").textContent=on?"🖼":"🔤";
-  injectPanelPictoButtons(); renderCost(); renderTrainCost(); renderExpInfo(); if(token) refresh(); }
+  injectPanelPictoButtons(); renderCost(); renderTrainCost(); renderExpInfo(); if(token){ refresh(); refreshPanels(); } }
 function applyPicto(){ const on=pictoGlobal(); document.body.classList.toggle('pictomode',on);
   const b=$("pictotoggle"); if(b) b.textContent=on?"🖼":"🔤"; }
 // TTS: tocar un ícono "dice qué es" (para lo difícil de representar). Web Speech API, sin infra.
@@ -518,7 +519,7 @@ function injectPanelPictoButtons(){ document.querySelectorAll('.card[data-panel]
   h.querySelectorAll('.ppt').forEach(x=>x.remove());   // evitar duplicados si el h2 no se reescribió
   const id=h.closest('.card').dataset.panel; let b=document.createElement('span'); b.className='ppt';
   b.textContent=isPicto(id)?'🖼':'🔤'; b.title='dibujos en este panel';
-  b.onclick=ev=>{ ev.stopPropagation(); setPanelPicto(id,!isPicto(id)); applyI18n(); if(token) refresh();
+  b.onclick=ev=>{ ev.stopPropagation(); setPanelPicto(id,!isPicto(id)); applyI18n(); if(token){ refresh(); refreshPanels(); }
     renderCost(); renderTrainCost(); renderExpInfo(); };
   h.appendChild(b); }); }
 // F2: grilla de botones-ícono para NAVEGAR sin leer (reemplaza los <select> en pictomode)
@@ -535,6 +536,18 @@ function statusMark(locked,ok){ return locked?'🔒':(ok?'<span class="ok">✓</
 // etiqueta de mineral sensible al panel: ícono+letra en pictomode, nombre en modo normal
 function mname(mkey,panel){ if(!isPicto(panel)) return esc(mineralName(mkey));
   const sy=(spec.mineral[mkey]||{}).symbol; return `${ico('mineral',mkey)}${sy?'<span class="msym">'+esc(sy)+'</span>':''}`; }
+// emoji crudo del planeta/luna (para texto de <option>, que no admite HTML)
+function planetIcon(pkey){ return (spec.planet[pkey]||{}).icon||"🪐"; }
+function moonIcon(mkey){ return (spec.moon[mkey]||{}).icon||"🌙"; }
+// etiqueta de planeta sensible al panel: ícono (del catálogo) en pictomode, nombre en modo normal
+function pname(pkey,panel){ if(!isPicto(panel)) return esc(planetName(pkey));
+  return spec.planet[pkey]?ico('planet',pkey):esc(planetName(pkey)); }
+// etiqueta de luna sensible al panel
+function moonLabel(mkey,panel){ if(!isPicto(panel)) return esc(moonName(mkey));
+  return spec.moon[mkey]?ico('moon',mkey):esc(moonName(mkey)); }
+// botón de acción sensible al panel: en pictomode muestra el ícono; si no, el texto i18n
+function actbtn(cls,onclick,icon,txtKey,panel){
+  return `<button class="${cls}" onclick="${onclick}" title="${esc(tr(txtKey))}">${isPicto(panel)?icon:esc(tr(txtKey))}</button>`; }
 function renderActionGrids(){ const on=isPicto('acciones');
   ['buildgrid','traingrid','moongrid'].forEach(g=>{ const el=$(g); if(el&&!on) el.innerHTML=""; });
   if(!on||!catalog) return;
@@ -960,7 +973,7 @@ function renderAlliances(){
 function renderMyAlliance(){
   const t=allianceType(state.alliance_type);
   const members=(players||[]).filter(p=>p.alliance_id===state.alliance_id);
-  let html=`<div class="item"><div class="top"><span>🤝 <b>${esc(state.alliance_name||"")}</b> <span class="muted">${esc(t.name||state.alliance_type||"")}</span></span><button class="sm danger" onclick="allianceLeave()">${esc(tr('leave'))}</button></div>`+
+  let html=`<div class="item"><div class="top"><span>🤝 <b>${esc(state.alliance_name||"")}</b> <span class="muted">${esc(t.name||state.alliance_type||"")}</span></span>${actbtn('sm danger',`allianceLeave()`,'🚪','leave','alianzas')}</div>`+
     `<div style="margin-top:6px"><b class="muted">${esc(tr('benefits'))}</b>${benefitsHtml(t.benefits)}</div>`+
     `<div style="margin-top:6px"><b class="muted">${esc(tr('members'))} (${members.length}):</b> ${members.map(m=>esc(m.username)+(m.is_npc?' 🤖':'')).join(", ")||"-"}</div></div>`;
   if((state.alliance_incoming||[]).length)
@@ -969,8 +982,9 @@ function renderMyAlliance(){
     const allies=members.filter(p=>p.id!==state.id);
     if(allies.length){
       const allyOpts=allies.map(p=>`<option value="${p.id}">${esc(p.username)}</option>`).join("");
-      const minOpts=catalog.minerals.map(m=>`<option value="${m.key}">${esc(m.name)}</option>`).join("");
-      html+=`<div class="item"><b class="muted">${esc(tr('trade'))}</b><div class="row">${esc(tr('tradesend'))} <select id="trmin">${minOpts}</select><input id="tramt" type="number" value="100" style="width:64px"> ${esc(tr('tradeto'))} <select id="trto">${allyOpts}</select><button class="sm" onclick="allianceTransfer()">${esc(tr('tradesend'))}</button></div></div>`;
+      const moptA=m=>isPicto('alianzas')?`${m.icon||''} ${esc(m.symbol||m.name)}`:esc(m.name);
+      const minOpts=catalog.minerals.map(m=>`<option value="${m.key}">${moptA(m)}</option>`).join("");
+      html+=`<div class="item"><b class="muted">${esc(tr('trade'))}</b><div class="row">${esc(tr('tradesend'))} <select id="trmin">${minOpts}</select><input id="tramt" type="number" value="100" style="width:64px"> ${esc(tr('tradeto'))} <select id="trto">${allyOpts}</select>${actbtn('sm',`allianceTransfer()`,'📤','tradesend','alianzas')}</div></div>`;
     }
   } else {
     html+=`<div class="muted">${esc(tr('notrade'))}</div>`;
@@ -982,7 +996,7 @@ function renderAllianceForm(){
   $("alliances").innerHTML=
     `<div class="muted">${esc(tr('allyform'))}</div>`+
     `<div class="row"><input id="aname" placeholder="${esc(tr('create'))}…" style="flex:1"><input id="atag" placeholder="tag" style="width:60px"></div>`+
-    `<div class="row"><select id="atype" onchange="renderTypeHelp()">${typeOpts}</select><button class="sm" onclick="allianceCreate()">${esc(tr('create'))}</button></div>`+
+    `<div class="row"><select id="atype" onchange="renderTypeHelp()">${typeOpts}</select>${actbtn('sm',`allianceCreate()`,'🆕','create','alianzas')}</div>`+
     `<div id="atypehelp"></div>`+
     `<div style="margin-top:8px"><b class="muted">${esc(tr('existing'))}</b></div><div id="ally-list"></div>`;
   renderTypeHelp();
@@ -996,7 +1010,7 @@ function renderAllianceList(){
   const npcIds=npcAllianceIds();
   $("ally-list").innerHTML=(alliances||[]).map(a=>{
     const isNpc=npcIds.has(a.id);
-    const right=isNpc?`<span class="muted">${esc(tr('npcnojoin'))}</span>`:`<button class="sm" onclick="allianceJoin(${a.id})">${esc(tr('join'))}</button>`;
+    const right=isNpc?`<span class="muted">${isPicto('alianzas')?'🤖🚫':esc(tr('npcnojoin'))}</span>`:actbtn('sm',`allianceJoin(${a.id})`,'➕','join','alianzas');
     return `<div class="item"><div class="top"><span>[${esc(a.tag)}] ${esc(a.name)} <span class="muted">${esc((allianceType(a.type).name)||a.type)} · ${a.member_count}👥</span></span>${right}</div></div>`;
   }).join("")||`<span class="muted">${esc(tr('noally'))}</span>`;
 }
@@ -1394,22 +1408,24 @@ function renderMarket(){
   if(!marketPlanets.length){ el.innerHTML=`<span class="muted">${esc(tr('nomarket'))}</span>`; return; }
   const pr=marketPrices[marketSel]||{};
   const qty=($("marketqty")&&$("marketqty").value)||"10";
-  const opts=marketPlanets.map(p=>`<option value="${esc(p)}"${p===marketSel?' selected':''}>${esc(planetName(p))}</option>`).join("");
+  const popt=p=>isPicto('mercado')?`${planetIcon(p)} ${planetName(p)}`:planetName(p);
+  const opts=marketPlanets.map(p=>`<option value="${esc(p)}"${p===marketSel?' selected':''}>${esc(popt(p))}</option>`).join("");
   const rows=Object.entries(pr).map(([m,v])=>
     `<div class="ab"><span>${mname(m,'mercado')} <span class="muted">(${state&&state.stocks[m]?Math.round(state.stocks[m]):0})</span></span>`+
-    `<span class="muted">⚡${v.buy} / ${v.sell}</span>`+
-    `<span><button class="sm" onclick="marketTrade('buy','${m}')">${esc(tr('mktbuy'))}</button> `+
-    `<button class="sm sec" onclick="marketTrade('sell','${m}')">${esc(tr('mktsell'))}</button></span></div>`).join("");
+    `<span class="muted">🛒${v.buy} / 💰${v.sell}</span>`+
+    `<span>${actbtn('sm',`marketTrade('buy','${m}')`,'🛒','mktbuy','mercado')} `+
+    `${actbtn('sm sec',`marketTrade('sell','${m}')`,'💰','mktsell','mercado')}</span></div>`).join("");
   // transporte entre planetas donde tenés base (SDD 42 Fase 2)
   const planets=[...new Set((state&&state.bases||[]).map(b=>b.planet_key))];
   let transp="";
   if(planets.length>=2){
-    const psel=id=>`<select id="${id}" onchange="trAvail()">${planets.map(p=>`<option value="${esc(p)}">${esc(planetName(p))}</option>`).join("")}</select>`;
+    const psel=id=>`<select id="${id}" onchange="trAvail()">${planets.map(p=>`<option value="${esc(p)}">${esc(popt(p))}</option>`).join("")}</select>`;
     const mopt=m=>isPicto('mercado')?`${m.icon||''} ${esc(m.symbol||m.name)}`:esc(m.name);
     const minsel=`<select id="tr_min" onchange="trAvail()">${catalog.minerals.map(m=>`<option value="${esc(m.key)}">${mopt(m)}</option>`).join("")}</select>`;
     const mil=[...(catalog.personnel||[]),...(catalog.heavy_units||[])].filter(u=>(u.stats&&u.stats.attack>0&&u.key!=="cargo_ship"));
+    const uopt=u=>isPicto('mercado')?`${u.icon||'🪖'} ${esc(u.name)}`:esc(u.name);
     const escsel=`<select id="tr_esc"><option value="">${esc(tr('noescort'))}</option>`+
-      mil.map(u=>`<option value="${esc(u.key)}">${esc(u.name)}</option>`).join("")+`</select>`;
+      mil.map(u=>`<option value="${esc(u.key)}">${uopt(u)}</option>`).join("")+`</select>`;
     transp=`<div class="muted" style="font-size:11px;margin:6px 0 2px">🚚 ${esc(tr('transport'))}</div>`+
       `<div class="row">${psel('tr_from')} → ${psel('tr_to')} ${minsel} `+
       `<input id="tr_qty" type="number" value="100" min="1" style="width:56px" oninput="trAvail()"> `+
@@ -1433,14 +1449,15 @@ async function loadHub(){
   if(!Object.keys(pr).length){ $("hub").innerHTML=`<span class="muted">${esc(tr('nohub'))}</span>`; return; }
   const rows=Object.entries(pr).map(([m,p])=>
     `<div class="ab"><span>${mname(m,'hub')}</span><span class="muted">⚡${(+p).toFixed(2)}</span>`+
-    `<span><button class="sm" onclick="hubTrade('buy','${m}')">${esc(tr('mktbuy'))}</button> `+
-    `<button class="sm sec" onclick="hubTrade('sell','${m}')">${esc(tr('mktsell'))}</button></span></div>`).join("");
+    `<span>${actbtn('sm',`hubTrade('buy','${m}')`,'🛒','mktbuy','hub')} `+
+    `${actbtn('sm sec',`hubTrade('sell','${m}')`,'💰','mktsell','hub')}</span></div>`).join("");
   const others=Object.keys(d.galaxies||{}).filter(g=>g!==d.galaxy);
   const cmp=others.length?`<div class="muted" style="font-size:11px;margin-top:4px">🌐 ${esc(tr('othergx'))}: `+
     others.map(g=>esc((catalog.galaxies.find(x=>x.key===g)||{}).name||g)).join(", ")+`</div>`:"";
   hubPrices=pr; bmRate=d.black_market_rate||0.7;
   hubMeta={strength:d.pirate_strength||0.02, cap:d.pirate_loss_cap||0.5, cargo:d.cargo_capacity||500};
-  const escopt=`<option value="">${esc(tr('noescort'))}</option>`+_milUnits().map(u=>`<option value="${esc(u.key)}">${esc(u.name)}</option>`).join("");
+  const uoptH=u=>isPicto('hub')?`${u.icon||'🪖'} ${esc(u.name)}`:esc(u.name);
+  const escopt=`<option value="">${esc(tr('noescort'))}</option>`+_milUnits().map(u=>`<option value="${esc(u.key)}">${uoptH(u)}</option>`).join("");
   const escrow=`<div class="row" style="margin-top:2px">🛡 <select id="hub_esc" onchange="hubRisk();bmEstimate()">${escopt}</select> `+
     `<input id="hub_escn" type="number" value="0" min="0" style="width:48px" oninput="hubRisk();bmEstimate()"> `+
     `<span id="hub_risk" class="muted" style="font-size:11px"></span></div>`;
@@ -1452,7 +1469,7 @@ async function loadHub(){
   const bm=`<div style="margin-top:8px;border-top:1px solid #333;padding-top:6px">`+
     `<div class="muted" style="font-size:11px">🕶 ${esc(tr('blackmkt'))} — ${shipline}</div>`+
     `<div class="row"><input id="bm_qty" type="number" value="100" min="1" style="width:64px" oninput="bmEstimate()"> ${bmsel('bm_pay')} → ${bmsel('bm_get')} `+
-    `<button class="sm" onclick="blackMarket()">${esc(tr('bmtrade'))}</button></div>`+
+    `${actbtn('sm',`blackMarket()`,'🔄','bmtrade','hub')}</div>`+
     `<div id="bm_est" class="muted" style="font-size:11px"></div>`+
     `<div class="muted" style="font-size:11px">${esc(tr('bmtip'))}</div></div>`;
   // preservar lo que el usuario tenía elegido (el auto-refresh re-renderiza el panel cada 4s)
@@ -1472,8 +1489,8 @@ function bmEstimate(){
   const recv=Math.floor(q*(hubPrices[pay]||0)/((hubPrices[get]||1))*bmRate);
   const pct=raidPct(recv); const net=recv-Math.floor(recv*pct/100);
   const risk=`<span class="${pct>0?'bad':'ok'}"> · 🚢${shipsFor(q)} 🏴‍☠️${pct}%</span>`;
-  const stockBad=have<q?`<span class="bad"> · ${esc(tr('bmnostock'))} ${have} ${esc(mineralName(pay))} @${esc(planetName(home))}</span>`:"";
-  out.innerHTML=`≈ +${net} ${esc(mineralName(get))} (${esc(tr('bmhave'))} ${have})${risk}${stockBad}`;
+  const stockBad=have<q?`<span class="bad"> · ${isPicto('hub')?'❌':esc(tr('bmnostock'))} ${have} ${mname(pay,'hub')} @${pname(home,'hub')}</span>`:"";
+  out.innerHTML=`≈ +${net} ${mname(get,'hub')} (${isPicto('hub')?'📦':esc(tr('bmhave'))} ${have})${risk}${stockBad}`;
 }
 async function blackMarket(){
   const pay=$("bm_pay").value, get=$("bm_get").value, q=Math.max(1,+$("bm_qty").value||1);
@@ -1497,8 +1514,8 @@ function trAvail(){
   const f=$("tr_from").value, m=$("tr_min").value, q=Math.max(1,+($("tr_qty")||{}).value||1);
   const sbp=(state&&state.stocks_by_planet&&state.stocks_by_planet[f])||{};
   const have=Math.round(sbp[m]||0);
-  const bad=have<q?`<span class="bad"> · ${esc(tr('trmissing'))} ${q-have}</span>`:"";
-  out.innerHTML=`${esc(tr('travail'))} ${have} ${esc(mineralName(m))} @${esc(planetName(f))}${bad}`;
+  const bad=have<q?`<span class="bad"> · ${isPicto('mercado')?'❌':esc(tr('trmissing'))} ${q-have}</span>`:"";
+  out.innerHTML=`${isPicto('mercado')?'📦':esc(tr('travail'))} ${have} ${mname(m,'mercado')} @${pname(f,'mercado')}${bad}`;
 }
 async function transportSend(){
   const f=$("tr_from").value, t=$("tr_to").value, m=$("tr_min").value, q=Math.max(1,+$("tr_qty").value||1);
@@ -1590,15 +1607,16 @@ const _seen={};  // fallback progress when we can't derive the leg duration from
 function seenProg(key,etaIso){ const eta=new Date(etaIso).getTime(), now=Date.now();
   if(!_seen[key]||_seen[key].eta!==eta) _seen[key]={t0:now,eta}; const s=_seen[key];
   return (now-s.t0)/Math.max(1000,s.eta-s.t0); }
+// from/to llegan como HTML ya armado (pname/ico/esc) — los controlamos nosotros, no se re-escapan
 function transitRow(kind,icon,from,to,prog,eta){
-  return `<div class="transit ${kind}"><div class="ends"><span>${esc(from)}</span>`+
-    `<span class="muted">⏱ ${cd(eta)}</span><span>${esc(to)}</span></div>`+
+  return `<div class="transit ${kind}"><div class="ends"><span>${from}</span>`+
+    `<span class="muted">⏱ ${cd(eta)}</span><span>${to}</span></div>`+
     `<div class="track"><span class="ship" style="left:${(clamp01(prog)*100).toFixed(1)}%">${icon}</span></div></div>`;
 }
 function renderTransits(){
-  if(!state){ return; } const me=planetName(state.planet_key), now=Date.now(), rows=[];
+  if(!state){ return; } const me=pname(state.planet_key,'transitos'), now=Date.now(), rows=[];
   (state.missions_outgoing||[]).forEach(m=>{
-    const dest=planetOfBase(m.target_base_id); const dn=dest?planetName(dest):("base "+m.target_base_id);
+    const dest=planetOfBase(m.target_base_id); const dn=dest?pname(dest,'transitos'):esc("base "+m.target_base_id);
     const arr=new Date(m.arrives_at).getTime(), ret=m.returns_at?new Date(m.returns_at).getTime():null;
     if(m.status==='outbound'){
       // one-way leg = returns_at - arrives_at, so departure = arrives_at - leg
@@ -1613,10 +1631,11 @@ function renderTransits(){
     const dur=(((spec.moon[e.moon_key]||{}).expedition)||{}).duration_seconds;
     const comp=new Date(e.completes_at).getTime();
     const prog=dur?1-(comp-now)/1000/dur:seenProg('e'+e.id,e.completes_at);
-    rows.push(transitRow('exp','🛰',me,'🌙 '+((spec.moon[e.moon_key]||{}).name||e.moon_key),prog,e.completes_at));
+    const moonLbl=isPicto('transitos')?ico('moon',e.moon_key):('🌙 '+esc((spec.moon[e.moon_key]||{}).name||e.moon_key));
+    rows.push(transitRow('exp','🛰',me,moonLbl,prog,e.completes_at));
   });
   (state.missions_incoming||[]).forEach(m=>{
-    rows.push(transitRow('inc','☄','???',me+' #'+m.target_base_id,seenProg('i'+m.id,m.arrives_at),m.arrives_at));
+    rows.push(transitRow('inc','☄','❓',me+' <span class="muted">#'+m.target_base_id+'</span>',seenProg('i'+m.id,m.arrives_at),m.arrives_at));
   });
   $("transits").innerHTML=rows.join("")||`<span class="muted">${esc(tr('noflights'))}</span>`;
 }

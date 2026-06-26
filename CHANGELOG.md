@@ -7,6 +7,25 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Jugar sin leer (SDD 43): mercado, hub, transporte y alianzas pictográficos
+- **Mercado y Hub:** botones **comprar/vender/trocar** como íconos (🛒/💰/🔄) en pictomode; precios
+  con 🛒/💰; selectores de planeta, mineral, unidad de escolta con su **ícono**; estimaciones del
+  mercado negro y disponibilidad de transporte con chips de mineral + ícono de planeta.
+- **Transportes en tránsito:** origen/destino se muestran con el **ícono del planeta/luna** (antes
+  solo el nombre en texto).
+- **Alianzas:** crear/unirse/salir/transferir como botones-ícono; minerales del trueque con ícono.
+- **Datos:** `icon:` agregado a **planetas** (`content/planets.yaml`) y **lunas** (`content/gods.yaml`),
+  expuesto sin localizar por `/catalog` (aditivo, sin migraciones). e2e en `test_catalog_pictographic_icons`.
+- **Invariante intacto:** con el modo apagado, todos estos paneles se ven exactamente como antes.
+- Toggle global/por-panel ahora refresca también los paneles secundarios (mercado/hub) al instante.
+- **Pendiente** (SDD 43): resto de paneles (atacar/combate/investigación/bases/colas/galaxias/etc.).
+
+### 2026-06-26 — Admin: el embed de Grafana queda como link (no iframe)
+- El iframe cross-domain de Grafana no funciona en Firefox (X-Frame-Options + aislamiento de cookies
+  de terceros). Se revirtió en infra-ai el `allow_embedding`/`cookie_samesite=none` (rompía el login
+  de Grafana). La consola de admin usa el **link "📊 Ver en Grafana"** (configurable por
+  `GRAFANA_NPC_DASHBOARD_URL`). El iframe se reconsiderará cuando Grafana viva bajo el mismo dominio.
+
 ## [1.82.0] - 2026-06-26
 
 ### 2026-06-26 — Fix: requisitos de unidades por planeta (entrenar en colonias)

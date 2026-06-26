@@ -6,6 +6,7 @@
 moons:
   - key: luna
     name: "Luna"
+    icon: "🌕"
     name_en: "The Moon"
     planet: earth
     god: "Selene"
@@ -22,6 +23,7 @@ moons:
       duration_seconds: 3600
   - key: phobos
     name: "Fobos"
+    icon: "🌑"
     name_en: "Phobos"
     planet: mars
     god: "Fobos"
@@ -37,6 +39,7 @@ moons:
       duration_seconds: 3600
   - key: deimos
     name: "Deimos"
+    icon: "🌘"
     name_en: "Deimos"
     planet: mars
     god: "Deimos"
@@ -52,6 +55,7 @@ moons:
       duration_seconds: 3600
   - key: zoozve
     name: "Zoozve (cuasi-luna 2002 VE68)"
+    icon: "🌙"
     name_en: "Zoozve (quasi-moon 2002 VE68)"
     planet: venus
     god: "Zoozve"

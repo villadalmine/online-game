@@ -225,11 +225,18 @@ async def test_catalog_pictographic_icons(client):
     assert builds["mine"]["icon"]
     units = {u["key"]: u for u in (body["personnel"] + body["heavy_units"])}
     assert units["worker"]["icon"] and units["tank"]["icon"]
+    # SDD 43 (mercado/hub/transitos): planetas y lunas traen icon para selectores/tránsitos
+    planets = {p["key"]: p for p in body["planets"]}
+    assert planets["earth"]["icon"] and planets["mars"]["icon"]
+    moons = {m["key"]: m for m in body["moons"]}
+    assert moons["luna"]["icon"]
     # universal: el icon es igual en inglés (no se traduce)
     en = (await client.http.get("/api/v1/catalog?lang=en")).json()
     en_iron = {m["key"]: m for m in en["minerals"]}["iron"]
     assert en_iron["icon"] == minerals["iron"]["icon"]
     assert en_iron["symbol"] == "Fe"
+    en_earth = {p["key"]: p for p in en["planets"]}["earth"]
+    assert en_earth["icon"] == planets["earth"]["icon"]   # ícono universal, no se traduce
 
 
 async def test_catalog_i18n(client):
