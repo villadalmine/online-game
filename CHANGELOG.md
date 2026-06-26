@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.70.0] - 2026-06-26
+
 ### 2026-06-26 — NPC con LLM sin colgar el juego (decidir fuera de la transacción)
 - Los NPC con cerebro `llm` leen su estado + el **grafo de dependencias** + las **métricas** y el
   LLM decide su táctica (igual que un jugador). El problema no era usar la GPU sino que la llamada al
