@@ -379,7 +379,7 @@ async def _llm_or_fallback(
             msgs.append({"role": m.role, "content": m.body})
         msgs.append({"role": "user", "content": f"{message}\n\nCONTEXTO:\n{json.dumps(context)}"})
         reply = await llm_chat(
-            msgs, max_tokens=400, user=f"player:{player.username}",   # SDD 28
+            msgs, max_tokens=400, user=f"player:{player.username}", kind="advisor",   # SDD 28
             model=model, timeout=s.assistant_llm_timeout_seconds,
             api_key=api_key, base_url=base_url,   # solo seteados en BYOK
         )

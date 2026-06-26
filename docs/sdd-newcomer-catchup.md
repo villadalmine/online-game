@@ -67,8 +67,12 @@ Al onboardear (una sola vez por cuenta), calcular un paquete:
 - Config: `catchup_enabled`, `catchup_percentile` (0.4), `catchup_min_peers` (3).
 - Tests `tests/test_catchup.py`: nivela al P40 (debajo de la mediana), defensa+energía full;
   partida joven no aplica; nunca por encima del baseline. **195 verdes.**
-- **Pendiente**: factor explícito por **días** (hoy es implícito vía stock de pares); afinar P40 por
-  retención (métricas SDD 19/21); considerar score completo (no solo minerales) como baseline.
+- **Factor por días (§2.2) — HECHO (2026-06-26):** el grant ahora escala explícito por antigüedad de
+  la temporada: `target = P40 × min(1, días_desde_inicio / catchup_full_after_days)` (default 7d).
+  Entrar el día 0 → ~0 (nadie está nivelado todavía); entrar tarde → nivela al P40 completo.
+  `catchup_full_after_days=0` vuelve al v1 (top-up directo al P40). Tests
+  `test_catchup_scales_with_season_days_young` y `test_catchup_full_when_season_old`.
+- **Pendiente**: afinar P40 por retención (métricas SDD 19/21); score completo (no solo minerales).
 
 ## 6. Riesgos / decisiones
 - **Abuso** (crear cuentas para farmear el grant): cap por percentil + una vez + invite-only (SDD 14)

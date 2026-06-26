@@ -325,6 +325,14 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
                  outcome=result.outcome, force=force, attacker_losses=result.attacker_losses,
                  defender_losses=result.defender_losses, loot=loot)
 
+    # SDD 29 §3.7: reflexión post-batalla de los NPC involucrados (ajustan postura por resultado).
+    from app.services.npc import reflect_on_battle
+    atk_won = result.outcome == "attacker"
+    if attacker.is_npc:
+        await reflect_on_battle(session, attacker, "attacker", atk_won, defender.username)
+    if defender.is_npc:
+        await reflect_on_battle(session, defender, "defender", not atk_won, attacker.username)
+
     mission.details = json.dumps({"outcome": result.outcome, "survivors": survivors, "loot": loot})
     if survivors or loot:
         mission.status = "returning"

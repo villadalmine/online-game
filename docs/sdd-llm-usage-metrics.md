@@ -110,8 +110,13 @@ driver directo: DaemonSet `runtimeClassName: nvidia` + privileged). Solo telemet
   **tabla spend por usuario × backend (24h)**, fallbacks/s → free, y **GPU por placa** (HAMI:
   `hami_gpu_memory_allocated_bytes`, `hami_gpu_core_allocated_ratio`). Métricas verificadas en vivo
   (`litellm_*_metric_total` con label `end_user`/`requested_model`/`model`; HAMI `hami_gpu_*`).
-- **Pendiente (follow-up)**: DCGM-exporter para % de cómputo real (HAMI da asignado, no utilización);
-  virtual keys de LiteLLM con budget por jugador (cortar/cobrar automático).
+- **Métrica propia del juego (§3.5) — HECHA (2026-06-26):** `game_llm_calls_total{kind,status}`
+  (kind=advisor|npc|other) en `llm_chat` → correlación in-app de uso por tipo, baja cardinalidad
+  (sin player). La fuente de verdad de tokens/costo/backend sigue siendo LiteLLM (`end_user`). Test
+  `test_llm_calls_metric_by_kind`.
+- **Pendiente (follow-up, INFRA)**: DCGM-exporter para % de cómputo real (HAMI da asignado, no
+  utilización) — es un DaemonSet **privilegiado** en el nodo GPU compartido, se aplica con supervisión;
+  dashboards Grafana "LLM billing"/"GPU en vivo"; virtual keys de LiteLLM con budget por jugador.
 
 ## 6. Riesgos / decisiones
 - **Cardinalidad**: `end_user` por jugador es alta cardinalidad en Prometheus. Mitigar: solo humanos

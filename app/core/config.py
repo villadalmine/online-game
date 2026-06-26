@@ -144,6 +144,10 @@ class Settings(BaseSettings):
     catchup_enabled: bool = True
     catchup_percentile: float = 0.4
     catchup_min_peers: int = 3
+    # SDD 25 follow-up: factor EXPLÍCITO por días de temporada. El grant escala de 0 (día 0) a full
+    # (P40 de pares) a los `catchup_full_after_days` días → entrar temprano da poco, tarde nivela. 0
+    # = sin escalado por días (vuelve al comportamiento v1, top-up directo al P40).
+    catchup_full_after_days: float = 7.0
 
     # Espionaje / inteligencia (SDD 35).
     spy_energy_cost: float = 5.0

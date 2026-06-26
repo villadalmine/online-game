@@ -176,7 +176,13 @@ Migración Alembic aditiva (`server_default` en SQLite, ver CLAUDE.md).
 - **Tests**: `tests/test_npc_strategy.py` (scoreboard scope+delta+leader; postura/objetivo seteados;
   postura inválida ignorada; sin LLM mantiene postura; cadencia no recalcula) + e2e (el tick corre la
   capa sin romper). **226 verdes.**
-- **Pendiente**: fase 2 reflexión post-batalla; tunear cadencia/posturas con datos reales.
+- **Reflexión post-batalla (§3.7) — HECHO (2026-06-26):** `npc.reflect_on_battle(session, npc, role,
+  won, opponent)` corre desde el resolver de combate para cada NPC involucrado. Es **determinista
+  (sin GPU por batalla)**: anota el resultado en `npc_memory` y **ajusta la postura** — perdió
+  defendiendo→`defensive`, falló atacando→`expand`, ganó atacando→`raid`, ganó defendiendo→mantiene;
+  guarda `last_battle` en `npc_strategy` y registra `npc_reflection` en el journal. Test
+  `test_reflect_on_battle_learns_from_result`. → los NPC **aprenden del resultado** sin costo de LLM.
+- **Pendiente**: tunear cadencia/posturas con datos reales; variante con mini-LLM (más caro) opcional.
 
 ## 10. Implementación (orden sugerido)
 1. Modelo + migración (campos `npc_*`). 

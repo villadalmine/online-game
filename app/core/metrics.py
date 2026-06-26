@@ -170,6 +170,9 @@ TICK_LAST_RUN = Gauge("game_tick_last_run_timestamp", "Unix ts del último tick 
 # LLM (IA): no escala como la API (SDD 9). status=ok|error
 LLM_REQUESTS = Counter("game_llm_requests_total", "Llamadas al LLM", ("status",))
 LLM_LATENCY = Histogram("game_llm_latency_seconds", "Latencia del LLM")
+# SDD 28 §3.5: correlación propia del juego — llamadas LLM por TIPO (advisor|npc|other), baja
+# cardinalidad (sin player). La fuente de verdad de tokens/costo/backend sigue siendo LiteLLM.
+LLM_CALLS = Counter("game_llm_calls_total", "Llamadas al LLM por tipo", ("kind", "status"))
 
 # NPC (SDD): entender CÓMO juega la IA y si "mejora". `action` = qué hizo (build/train/attack/...);
 # `brain` = rules|llm. `outcome` = llm (el LLM decidió) | fallback (falló y cayó a reglas) →

@@ -72,3 +72,40 @@ async def test_catchup_never_above_baseline(session):
     newbie = await _onboard(session, "rich_newbie")
     total = await catchup._stock_total(session, newbie.id)
     assert total > 100  # mantiene su STARTING (no se le quita), pero no se le suma de más
+
+
+async def _season(session, days_ago: float):
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import Season
+    now = datetime.now(UTC)
+    s = Season(seq=1, name="S1", status="active",
+               starts_at=now - timedelta(days=days_ago), ends_at=now + timedelta(days=28))
+    session.add(s)
+    await session.commit()
+    return s
+
+
+async def test_catchup_scales_with_season_days_young(session, monkeypatch):
+    # SDD 25 follow-up: entrar el día 0 de la temporada → factor≈0 → casi sin catch-up aunque
+    # los pares sean ricos.
+    monkeypatch.setattr(get_settings(), "catchup_full_after_days", 7.0)
+    peers = [await _onboard(session, f"sp{i}") for i in range(4)]
+    for p, total in zip(peers, [2000, 4000, 6000, 8000], strict=False):
+        await _set_total(session, p, total)             # P40 = 4000
+    await _season(session, days_ago=0.0)
+    newbie = await _onboard(session, "fresh_join")
+    total = await catchup._stock_total(session, newbie.id)
+    assert total < 4000                                  # NO lo nivelaron al P40 (entró temprano)
+
+
+async def test_catchup_full_when_season_old(session, monkeypatch):
+    # temporada vieja (≥ catchup_full_after_days) → factor=1 → nivela al P40 completo.
+    monkeypatch.setattr(get_settings(), "catchup_full_after_days", 7.0)
+    peers = [await _onboard(session, f"op{i}") for i in range(4)]
+    for p, total in zip(peers, [2000, 4000, 6000, 8000], strict=False):
+        await _set_total(session, p, total)             # P40 = 4000
+    await _season(session, days_ago=14.0)
+    newbie = await _onboard(session, "late_join")
+    total = await catchup._stock_total(session, newbie.id)
+    assert total == pytest.approx(4000)

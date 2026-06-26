@@ -110,3 +110,34 @@ async def test_cadence_skips_when_not_due(session, monkeypatch):
 
     posture = await decide_strategy(session, npc, strategize=fake)
     assert posture == "defensive" and called["n"] == 0  # no recalculó por cadencia
+
+
+async def test_reflect_on_battle_learns_from_result(session):
+    """SDD 29 §3.7: tras una batalla el NPC ajusta su postura y anota el resultado."""
+    import json
+
+    from app.services.npc import reflect_on_battle
+
+    npc = Player(username="npc_reflect", password_hash="x", is_npc=True,
+                 npc_posture="opportunist")
+    session.add(npc)
+    await session.flush()
+
+    # lo atacan y pierde defendiendo → se vuelve defensivo
+    await reflect_on_battle(session, npc, "defender", False, "human1")
+    assert npc.npc_posture == "defensive"
+    assert any("perdí" in m for m in json.loads(npc.npc_memory))
+
+    # gana atacando → pasa a raid (sigue presionando)
+    await reflect_on_battle(session, npc, "attacker", True, "human2")
+    assert npc.npc_posture == "raid"
+    strat = json.loads(npc.npc_strategy)
+    assert strat["last_battle"]["opponent"] == "human2" and strat["last_battle"]["won"] is True
+
+    # un humano (no NPC) no refleja nada
+    human = Player(username="human_x", password_hash="x", is_npc=False,
+                   npc_posture="opportunist")
+    session.add(human)
+    await session.flush()
+    await reflect_on_battle(session, human, "defender", False, "npc_reflect")
+    assert human.npc_posture == "opportunist"

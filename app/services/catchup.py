@@ -4,6 +4,8 @@ Mira a los **pares de su galaxia** (SDD 8) y lleva al nuevo al **percentil bajo-
 stock de minerales — nunca por encima (equalizar, no boostear) —, le da **energía full** para poder
 actuar y asegura **defensa** (mina + torreta). Nada ofensivo. Corre una vez, en el onboarding.
 """
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +14,7 @@ from app.core.config import get_settings
 from app.models import Base_, Building, Player, ResourceStock
 from app.services.economy import get_or_create_stock
 from app.services.physics import effective_energy_max
+from app.services.seasons import current_season
 
 
 def _percentile(values: list[float], p: float) -> float:
@@ -55,9 +58,21 @@ async def apply_catchup(session: AsyncSession, player: Player) -> dict | None:
     baseline = _percentile(totals, settings.catchup_percentile)
     mine_total = await _stock_total(session, player.id)
 
+    # SDD 25 follow-up: factor EXPLÍCITO por días de temporada (temprano → poco; tarde → full P40).
+    day_factor = 1.0
+    if settings.catchup_full_after_days > 0:
+        season = await current_season(session)
+        if season is not None:
+            start = season.starts_at
+            start = start if start.tzinfo else start.replace(tzinfo=UTC)
+            days = max(0.0, (datetime.now(UTC) - start).total_seconds() / 86400.0)
+            day_factor = min(1.0, days / settings.catchup_full_after_days)
+    target = baseline * day_factor   # tope efectivo de catch-up (≤ P40)
+
     granted: dict[str, float] = {}
-    # Top-up de minerales SOLO hasta el baseline P40 (nunca por encima → sin ventaja).
-    if baseline > mine_total:
+    # Top-up de minerales SOLO hasta el target (P40 escalado por días; nunca por encima del P40).
+    if target > mine_total:
+        baseline = target  # el resto del cálculo usa este tope
         content = get_content()
         roles = list(dict.fromkeys(content.races[player.race_key]["resource_roles"].values()))
         per = (baseline - mine_total) / max(1, len(roles))

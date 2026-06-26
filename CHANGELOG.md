@@ -7,6 +7,22 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — NPC que aprende de cada batalla (SDD 29 §3.7 reflexión post-batalla)
+- Tras cada combate, los NPC involucrados **reflexionan** (determinista, **sin gastar GPU**): anotan
+  el resultado y **ajustan su postura** — perdió defendiendo→`defensive`, falló atacando→`expand`,
+  ganó atacando→`raid`, ganó defendiendo→mantiene. Guarda `last_battle` y registra `npc_reflection`
+  en el journal. Así la IA **aprende del resultado** sin costo de LLM por batalla.
+
+### 2026-06-26 — Catch-up del recién llegado escalado por días de temporada (SDD 25)
+- El nivelado al P40 de los pares ahora escala **explícito por antigüedad de la temporada**: entrar
+  el día 0 da ~0 (nadie está nivelado aún), entrar tarde nivela al P40 completo (full a los
+  `catchup_full_after_days`=7d). `=0` vuelve al comportamiento previo (top-up directo).
+
+### 2026-06-26 — Métrica propia de uso de LLM por tipo (SDD 28 §3.5)
+- `game_llm_calls_total{kind,status}` (kind=advisor|npc) en `llm_chat` → ver en las métricas del
+  juego cuánto usa el LLM el asistente vs los NPC, sin alta cardinalidad. La atribución por jugador
+  (`end_user` = `player:`/`npc:`) ya viajaba a LiteLLM. (DCGM-exporter + dashboards = follow-up infra.)
+
 ## [1.88.0] - 2026-06-26
 
 ### 2026-06-26 — Calculadora de combate web + asistente aterrizado (SDD 34 completo)

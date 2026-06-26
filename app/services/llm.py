@@ -28,6 +28,7 @@ async def llm_chat(
     temperature: float = 0.0,
     json_mode: bool = False,
     user: str | None = None,
+    kind: str = "other",
     model: str | None = None,
     timeout: float | None = None,
     api_key: str | None = None,
@@ -67,9 +68,11 @@ async def llm_chat(
             resp.raise_for_status()
             out = resp.json()["choices"][0]["message"]["content"]
         metrics.LLM_REQUESTS.inc(status="ok")  # SDD 19
+        metrics.LLM_CALLS.inc(kind=kind, status="ok")  # SDD 28 §3.5
         return out
     except Exception:
         metrics.LLM_REQUESTS.inc(status="error")
+        metrics.LLM_CALLS.inc(kind=kind, status="error")
         raise
     finally:
         metrics.LLM_LATENCY.observe(time.perf_counter() - _t0)

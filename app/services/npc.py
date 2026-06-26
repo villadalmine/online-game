@@ -517,6 +517,39 @@ def _remember(player: Player, entry: str) -> None:
     player.npc_memory = json.dumps(mem[-MEMORY_LEN:])
 
 
+async def reflect_on_battle(
+    session: AsyncSession, npc: Player, role: str, won: bool, opponent: str
+) -> None:
+    """SDD 29 §3.7 — reflexión post-batalla DETERMINISTA (sin GPU por batalla): el NPC anota el
+    resultado en su memoria y **ajusta su postura** según cómo le fue. Así "aprende" del resultado:
+    si lo atacaron y perdió → se hace defensivo; si ganó atacando → sigue presionando (raid); si
+    falló un ataque → se repliega a crecer (expand). Lo llama el resolver de combate por batalla."""
+    if not npc.is_npc:
+        return
+    verbo = ("gané" if won else "perdí")
+    como = "defendiendo de" if role == "defender" else "atacando a"
+    _remember(npc, f"{verbo} {como} {opponent}")
+    if role == "defender" and not won:
+        new_posture = "defensive"      # me reventaron en casa → proteger
+    elif role == "attacker" and not won:
+        new_posture = "expand"         # mi ataque falló → reagrupar economía
+    elif role == "attacker" and won:
+        new_posture = "raid"           # ganó atacando → seguir presionando
+    else:
+        new_posture = npc.npc_posture  # ganó defendiendo → mantener
+    npc.npc_posture = new_posture
+    try:
+        strat = json.loads(npc.npc_strategy or "{}")
+    except Exception:
+        strat = {}
+    strat["last_battle"] = {"role": role, "won": won, "opponent": opponent,
+                            "posture": new_posture}
+    npc.npc_strategy = json.dumps(strat)
+    from app.services.journal import record
+    await record(session, "npc_reflection", npc.id,
+                 role=role, won=won, opponent=opponent, posture=new_posture)
+
+
 async def _recent_battles(session: AsyncSession, player: Player) -> list[dict]:
     res = await session.execute(
         select(CombatLog)
@@ -604,6 +637,7 @@ async def _llm_strategy(state: dict) -> dict:
         max_tokens=settings.npc_strategy_max_tokens,
         json_mode=settings.llm_json_mode,
         user=user,
+        kind="npc",
         model=model,
         timeout=settings.npc_llm_timeout_seconds,
     )
@@ -715,6 +749,7 @@ async def _llm_decide(state: dict) -> dict:
         max_tokens=120,
         json_mode=settings.llm_json_mode,
         user=user,
+        kind="npc",
         model=model,
         timeout=settings.npc_llm_timeout_seconds,
     )
