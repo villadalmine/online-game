@@ -478,7 +478,9 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
         "planet": player.planet_key,
         "personality": content.races[player.race_key].get("personality", ""),
         "posture": player.npc_posture,  # SDD 29: estrategia vigente (sesga la decisión táctica)
-        "energy": round(_current_energy(player), 1),
+        "energy": round(energy_now, 1),
+        # ¿alcanza la energía para atacar / espiar? (evita elegir un ataque impagable → fallback)
+        "can_attack": energy_now >= get_settings().attack_energy_cost,
         "minerals": {k: round(v, 1) for k, v in stocks.items()},
         "units": units,
         "my_buildings": [
@@ -685,8 +687,8 @@ async def _llm_decide(state: dict) -> dict:
         "'expand' -> mines/buildings/expedition. "
         "CRITICAL: `build_options`/`train_options` already list ONLY what you can afford now; "
         "pick a build/train ONLY from those keys. If both are empty, do NOT build/train — choose "
-        "another action or {\"action\":\"none\"}. Check `recent_actions` and do NOT repeat a move "
-        "that just failed. "
+        "another action or {\"action\":\"none\"}. Only `attack` if `can_attack` is true. Check "
+        "`recent_actions` and do NOT repeat a move that just failed. "
         "Given your state, choose exactly ONE affordable action consistent with your personality. "
         'Respond with ONLY JSON, one of: '
         '{"action":"build","building":"<key>","mineral":"<key|null>"} (mineral only for a mine), '

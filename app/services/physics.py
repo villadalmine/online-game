@@ -60,10 +60,14 @@ def temperature_energy_multiplier(
 
 
 def effective_energy_regen(player, settings: Settings | None = None) -> float:
-    """Regen efectiva: base × insolación (sol) × temperatura (refrigeración) del planeta."""
+    """Regen efectiva: base × insolación (sol) × temperatura (refrigeración) del planeta.
+    Los NPC regeneran más rápido (npc_energy_regen_mult) para que no queden 'ahogados' de energía
+    y puedan jugar de verdad por LLM (si no, casi todas las jugadas caen a fallback por energía)."""
     s = settings or get_settings()
+    npc_mult = s.npc_energy_regen_mult if getattr(player, "is_npc", False) else 1.0
     return (
         s.energy_regen_per_hour
+        * npc_mult
         * insolation_energy_multiplier(player.planet_key, s)
         * temperature_energy_multiplier(player.planet_key, s)
     )

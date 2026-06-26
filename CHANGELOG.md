@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — NPC sin ahogo de energía + no atacar sin energía (más jugadas por LLM)
+- **#1 Energía NPC:** los NPC regeneran energía ×`npc_energy_regen_mult` (default 4) → dejan de
+  quedar 'ahogados' (~6 de energía con todo costando ≥10) y pueden jugar de verdad por LLM en vez de
+  caer a fallback por energía. No afecta a los jugadores humanos.
+- **#2 Atacar factible:** el estado del NPC trae `can_attack` (¿alcanza la energía de ataque?) y el
+  prompt solo permite `attack` si es true → mata el fallback "Energía insuficiente para atacar".
+- Las métricas (panel admin 🧠 % + dashboard) deberían mostrar subir el `llm_rate` y bajar
+  `fallback_reason=energy`.
+
 ## [1.78.0] - 2026-06-26
 
 ### 2026-06-26 — IA: pasarle al modelo SOLO las jugadas pagables (menos fallback)

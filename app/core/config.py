@@ -108,6 +108,9 @@ class Settings(BaseSettings):
     # mejor (score/win-rate) y quién decide más por LLM. "" = todos GPU.
     npc_cloud_username: str = ""
     npc_cloud_model: str = "gemma4-paid"
+    # Los NPC regeneran energía más rápido (×) para no quedar 'ahogados' y poder jugar por LLM en
+    # vez de caer a fallback por energía. No afecta a los jugadores humanos.
+    npc_energy_regen_mult: float = 4.0
     # SDD 19 §7.quater: el tick (CronJob) es un pod efímero no-scrapeable → empuja sus métricas
     # (NPC actions/decisions, tick) a la Pushgateway. Vacío = no empuja (dev/local).
     pushgateway_url: str = ""
