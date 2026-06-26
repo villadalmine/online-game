@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.80.0] - 2026-06-26
+
 ### 2026-06-26 — Docs: IA del juego documentada en la página tech + qué queda pendiente
 - **Página `/tech`**: nuevas cards de la inteligencia agregada — NPC estratega (lee grafo + métricas
   + scoreboard y decide como un jugador, solo jugadas pagables), **aprende de sus errores**
