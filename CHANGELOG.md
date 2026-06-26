@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.77.0] - 2026-06-26
+
 ### 2026-06-26 — Afinar la IA (jugar lo que puede pagar) + métrica "¿aprendió?" en el admin
 - **IA afinada:** el estado que ve el NPC marca cada opción con **`affordable`** (puede pagar
   minerales+energía y tiene el edificio requerido) y el prompt le exige elegir **solo affordable** y
