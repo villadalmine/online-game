@@ -733,6 +733,7 @@ class LlmBrain:
             return await self._fallback.act(session, player)
         player_id = player.id  # capture before any rollback expires the instance
         model, backend = npc_llm_choice(player)   # GPU local vs nube por NPC (comparación)
+        action = None
         try:
             state = await _npc_state(session, player)
             state["__user"] = f"npc:{player.username}"  # SDD 28: atribución de uso LLM por NPC
@@ -757,6 +758,10 @@ class LlmBrain:
             metrics.NPC_DECISIONS.inc(outcome="fallback", backend=backend)
             await session.rollback()
             player = await session.get(Player, player_id)  # fresh after rollback
+            # APRENDIZAJE: la NPC recuerda QUÉ intentó y por qué falló → el próximo prompt lo trae
+            # en `recent_actions` y el modelo evita repetir la jugada inviable (ej. sin energía).
+            tried = (action or {}).get("action", "?") if isinstance(action, dict) else "?"
+            _remember(player, f"intento LLM '{tried}' falló: {str(exc)[:80]}")
             return await self._fallback.act(session, player)
 
 

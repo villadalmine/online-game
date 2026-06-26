@@ -1,10 +1,10 @@
 {
   "uid": "online-game-npc-ai",
-  "title": "Online Galaxy War — NPC AI (cómo juega y si mejora)",
+  "title": "Online Galaxy War — NPC AI (¿juega bien la IA?)",
   "tags": ["online-game", "npc", "ai"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "time": { "from": "now-24h", "to": "now" },
   "templating": {
@@ -14,48 +14,75 @@
   },
   "panels": [
     {
-      "id": 1, "type": "stat", "title": "Decisiones LLM vs reglas (1h) — más 'llm' = más inteligente",
+      "id": 100, "type": "text", "title": "Cómo leer este dashboard",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+      "options": { "mode": "markdown", "content": "**Cada NPC con `brain=llm` llama a un modelo por turno (cada tick ~5 min).** Dos etiquetas:\n\n- **`backend`** = qué modelo se consultó: **`gpu`** (tu GPU local) o **`cloud`** (modelo pago). *Se usa el modelo en AMBOS casos de outcome* — la GPU/nube se gasta aunque después caiga a reglas.\n- **`outcome`** = qué pasó con esa jugada: **`llm`** = la jugada del modelo **se aplicó** (✅ jugó de verdad por IA) · **`fallback`** = el modelo respondió pero su jugada **no se pudo aplicar** (acción inviable / sin energía / JSON malo) → ese turno jugó **reglas**.\n\n**La métrica que querés (\"usó GPU y le salió bien\"):** `game_npc_decisions_total{backend=\"gpu\", outcome=\"llm\"}`.\n\n**¿Juega bien?** Mirá el **% de jugadas aplicadas** (`llm / (llm+fallback)`) por backend → más alto = la IA acierta más. **¿Cuánto gasta?** total de decisiones por backend + `game_llm_latency_seconds`." }
+    },
+    {
+      "id": 1, "type": "stat",
+      "title": "✅ Jugadas de la IA que se aplicaron (24h) — por backend",
+      "description": "game_npc_decisions_total{outcome=\"llm\"}: el modelo decidió Y la jugada se aplicó. Es 'la IA jugó de verdad'. Separado por gpu (GPU local) y cloud (modelo pago).",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 0 },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 6 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
       "targets": [
-        { "refId": "A", "legendFormat": "{{outcome}}",
-          "expr": "sum by(outcome) (increase(game_npc_decisions_total[1h]))" }
+        { "refId": "A", "legendFormat": "{{backend}}",
+          "expr": "sum by(backend) (increase(game_npc_decisions_total{outcome=\"llm\"}[24h]))" }
       ]
     },
     {
-      "id": 2, "type": "gauge", "title": "% de decisiones por LLM (24h) — confiabilidad de la IA",
+      "id": 2, "type": "gauge",
+      "title": "% de jugadas que la IA logró aplicar (24h) — ¿juega bien?",
+      "description": "llm / (llm+fallback) por backend. Alto = el modelo elige jugadas válidas (juega bien). Bajo = elige acciones inviables (ej. sin energía) y cae a reglas. Comparás gpu vs cloud: quién acierta más.",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
-      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1,
+        "thresholds": { "steps": [ {"color":"red","value":0}, {"color":"orange","value":0.4}, {"color":"green","value":0.7} ] } }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 6 },
       "targets": [
-        { "refId": "A",
-          "expr": "sum(increase(game_npc_decisions_total{outcome=\"llm\"}[24h])) / clamp_min(sum(increase(game_npc_decisions_total[24h])), 1)" }
+        { "refId": "A", "legendFormat": "{{backend}}",
+          "expr": "sum by(backend) (increase(game_npc_decisions_total{outcome=\"llm\"}[24h])) / clamp_min(sum by(backend) (increase(game_npc_decisions_total[24h])), 1)" }
       ]
     },
     {
-      "id": 3, "type": "timeseries", "title": "Mezcla de jugadas de NPC (rate 15m) — qué hace la IA",
+      "id": 3, "type": "timeseries",
+      "title": "GPU vs Nube: jugadas aplicadas (llm) vs caídas a reglas (fallback)",
+      "description": "Comparación directa. Querés ver subir las líneas 'outcome=llm' y bajar las 'fallback'. Cada serie es backend+outcome.",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 11 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{backend}} · {{outcome}}",
+          "expr": "sum by(backend,outcome) (increase(game_npc_decisions_total[1h]))" }
+      ]
+    },
+    {
+      "id": 4, "type": "timeseries",
+      "title": "Qué hace la IA (jugadas por tipo, rate 15m)",
+      "description": "game_npc_actions_total: el primer verbo de la acción aplicada cada turno (build/train/attack/research/colonize/expedition/idle). 'idle' = no hizo nada (sin recursos o cayó a reglas sin jugada).",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
       "targets": [
         { "refId": "A", "legendFormat": "{{action}}",
           "expr": "sum by(action) (rate(game_npc_actions_total[15m]))" }
       ]
     },
     {
-      "id": 4, "type": "piechart", "title": "Distribución de jugadas (24h)",
+      "id": 5, "type": "piechart",
+      "title": "Distribución de jugadas (24h)",
+      "description": "Proporción de tipos de jugada de los NPC en el último día.",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
       "targets": [
         { "refId": "A", "legendFormat": "{{action}}",
           "expr": "sum by(action) (increase(game_npc_actions_total[24h]))" }
       ]
     },
     {
-      "id": 5, "type": "timeseries", "title": "Latencia del LLM (p50/p95) — NPC + asistente",
+      "id": 6, "type": "timeseries",
+      "title": "Cuánto gasta el modelo: latencia LLM p50/p95 (s)",
+      "description": "game_llm_latency_seconds: cuánto tarda cada llamada (NPC + asistente). En GPU local suele ser segundos; la nube suele ser más rápida. Sube si la GPU está saturada.",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 27 },
       "targets": [
         { "refId": "A", "legendFormat": "p50",
           "expr": "histogram_quantile(0.5, sum(rate(game_llm_latency_seconds_bucket[15m])) by (le))" },
@@ -64,22 +91,14 @@
       ]
     },
     {
-      "id": 6, "type": "timeseries", "title": "Llamadas al LLM por estado (rate 5m) — ok vs error",
+      "id": 7, "type": "timeseries",
+      "title": "Llamadas al LLM ok vs error (rate 5m)",
+      "description": "game_llm_requests_total{status}: 'error' = la llamada al modelo falló (red/timeout). Distinto de 'fallback' (la llamada anduvo pero la jugada no se pudo aplicar).",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 27 },
       "targets": [
         { "refId": "A", "legendFormat": "{{status}}",
           "expr": "sum by(status) (rate(game_llm_requests_total[5m]))" }
-      ]
-    },
-    {
-      "id": 7, "type": "timeseries",
-      "title": "GPU vs Nube: decisiones LLM exitosas (24h) — ¿quién decide mejor?",
-      "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 21 },
-      "targets": [
-        { "refId": "A", "legendFormat": "{{backend}} {{outcome}}",
-          "expr": "sum by(backend,outcome) (increase(game_npc_decisions_total[24h]))" }
       ]
     }
   ]

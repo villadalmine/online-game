@@ -78,6 +78,21 @@ def test_npc_llm_choice_gpu_vs_cloud(monkeypatch):
     assert npc_llm_choice(Player(username="npc_terran")) == ("local-gpu", "gpu")
 
 
+async def test_llm_fallback_is_remembered_for_learning(session):
+    # APRENDIZAJE: cuando la jugada del LLM falla, la NPC la memoriza con el motivo → el próximo
+    # prompt la trae en recent_actions y el modelo no la repite.
+    await ensure_npcs(session)
+    npc = await _npc(session)
+
+    async def boom(state):
+        raise RuntimeError("sin energia")
+
+    await LlmBrain(decide=boom).act(session, npc)
+    await session.commit()
+    npc = await _npc(session)
+    assert any("intento LLM" in e and "falló" in e for e in _load_memory(npc))
+
+
 async def test_npc_turn_records_action_metric(session):
     # Observabilidad: cada turno de NPC registra qué hizo (game_npc_actions_total) para entender
     # cómo juega la IA y si mejora. Ver SDD/CHANGELOG métricas NPC.

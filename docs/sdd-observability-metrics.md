@@ -168,6 +168,34 @@ inteligente con el tiempo.** Hay tres vistas, de menos a más detalle:
 - Se combinan con las métricas LLM existentes (`game_llm_latency_seconds`, `game_llm_requests_total`)
   y el uso por NPC (`end_user=online-game:npc:*` en LiteLLM).
 
+### 9.1.bis Glosario (qué significa cada métrica — clave para no confundirse)
+Dos ejes **independientes** en `game_npc_decisions_total`:
+- **`backend`** = a qué modelo se consultó: `gpu` (GPU local) | `cloud` (modelo pago). **La GPU/nube
+  se usa en AMBOS outcomes** — gastás el modelo aunque después caiga a reglas.
+- **`outcome`** = qué pasó con esa jugada: `llm` = la jugada del modelo **se aplicó** (✅ la IA jugó
+  de verdad) | `fallback` = el modelo respondió pero la jugada **no se pudo aplicar** (inviable / sin
+  energía / JSON malo) → ese turno jugó **reglas**.
+
+| Quiero saber… | Métrica |
+|---|---|
+| **"usó GPU y la jugada salió bien"** | `game_npc_decisions_total{backend="gpu",outcome="llm"}` |
+| "usó nube y salió bien" | `…{backend="cloud",outcome="llm"}` |
+| **¿juega bien? (acierto)** | `llm / (llm+fallback)` por backend (más alto = mejor) |
+| ¿cuánto gasta cada backend? | `sum by(backend)(increase(game_npc_decisions_total[…]))` + `game_llm_latency_seconds` |
+| qué hace | `game_npc_actions_total{action}` |
+| ¿falló la llamada misma (red)? | `game_llm_requests_total{status="error"}` (≠ `fallback`) |
+
+> **`fallback` NO es "no usó GPU".** Es "usó el modelo pero su jugada no servía". El único caso sin
+> GPU/nube es `brain=rules` (o sin API key, que ni cuenta como decisión).
+
+### 9.1.ter Aprendizaje: la NPC aprende de sus propias jugadas
+Cuando una jugada del LLM **falla**, la NPC la **memoriza con el motivo** (`LlmBrain.act` →
+`_remember("intento LLM 'build' falló: Energía insuficiente…")`). Esa memoria entra en
+`recent_actions` del **próximo prompt** → el modelo **ve su error y no lo repite** (p.ej. deja de
+intentar construir sin energía). Es el lazo de "leer su resultado y mejorar"; combinado con el `meta`
+(SDD 41, win-rate por unidad) la NPC juega lo que estadísticamente funciona. Las métricas de §9.1
+miden si ese aprendizaje **sube el ratio `llm`** con el tiempo.
+
 ### 9.2 Dashboard Grafana `Online Galaxy War — NPC AI`
 `deploy/helm/dashboards/npc-ai.json` (wired en `grafana-dashboard.yaml`): decisiones LLM vs reglas,
 **% de decisiones por LLM** (gauge = "confiabilidad de la IA"), **mezcla de jugadas** (timeseries +

@@ -11,6 +11,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.74.0] - 2026-06-26
 
+### 2026-06-26 — Métricas NPC claras (Grafana comentado) + la NPC aprende de sus fallos
+- **Dashboard "NPC AI" reescrito con lenguaje claro + comentarios**: panel de texto-glosario arriba,
+  títulos en castellano y `description` (tooltip "i") en cada panel. Aclara la confusión: **la métrica
+  "usó GPU y la jugada salió bien" es `game_npc_decisions_total{backend="gpu",outcome="llm"}`**; el
+  `fallback` significa que **sí se usó el modelo** pero su jugada no se pudo aplicar (no que no usó GPU).
+  Panel "¿juega bien?" = `llm/(llm+fallback)` por backend.
+- **Aprendizaje:** cuando una jugada del LLM falla, la NPC la **memoriza con el motivo**; el próximo
+  prompt lo trae en `recent_actions` → el modelo evita repetir la jugada inviable (ej. construir sin
+  energía). SDD 19 §9.1.bis (glosario) + §9.1.ter (aprendizaje).
+
 ### 2026-06-26 — NPC: loguear por qué cae a reglas (antes era silencioso)
 - `LlmBrain.act` ahora **loguea un warning** con el motivo cuando una decisión LLM falla y cae a
   reglas (tipo de excepción + mensaje, NPC y backend). Antes el fallback era silencioso → no se sabía
