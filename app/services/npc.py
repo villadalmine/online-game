@@ -424,26 +424,26 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
     # `affordable`: ¿se puede pagar AHORA (minerales+energía) y está el edificio requerido?
     # El LLM tiende a elegir lo que no puede pagar (→ fallback); marcarlo sube el ratio de jugadas
     # aplicadas (la afinación). El prompt le pide elegir SOLO opciones con affordable=true.
-    build_options = {}
-    for key, spec in content.buildings.items():
-        if key == "headquarters":
-            continue
-        cost = content.building_cost_in_minerals(player.race_key, key)
-        req = spec.get("requires")
-        build_options[key] = {
-            "minerals": cost, "energy": spec.get("energy_cost", 0), "category": spec["category"],
-            "affordable": (_can_afford(stocks, energy_now, cost, spec.get("energy_cost", 0))
-                           and (not req or req == "headquarters" or req in active_bld)),
-        }
-    train_options = {}
-    for key, spec in content.units.items():
-        cost = content.unit_cost_in_minerals(player.race_key, key)
-        req = spec.get("requires")
-        train_options[key] = {
-            "minerals": cost, "energy": spec.get("energy_cost", 0), "requires": req,
-            "affordable": (_can_afford(stocks, energy_now, cost, spec.get("energy_cost", 0))
-                           and (not req or req == "headquarters" or req in active_bld)),
-        }
+    # Solo opciones PAGABLES ahora (minerales+energía y edificio requerido). Pasarle al LLM solo lo
+    # factible evita que el modelo (sobre todo los chicos) elija lo impagable → menos fallback.
+    def _afford(cost, ecost, req):
+        return (_can_afford(stocks, energy_now, cost, ecost)
+                and (not req or req == "headquarters" or req in active_bld))
+    build_options = {
+        key: {"minerals": content.building_cost_in_minerals(player.race_key, key),
+              "energy": spec.get("energy_cost", 0), "category": spec["category"]}
+        for key, spec in content.buildings.items()
+        if key != "headquarters" and _afford(
+            content.building_cost_in_minerals(player.race_key, key),
+            spec.get("energy_cost", 0), spec.get("requires"))
+    }
+    train_options = {
+        key: {"minerals": content.unit_cost_in_minerals(player.race_key, key),
+              "energy": spec.get("energy_cost", 0), "requires": spec.get("requires")}
+        for key, spec in content.units.items()
+        if _afford(content.unit_cost_in_minerals(player.race_key, key),
+                   spec.get("energy_cost", 0), spec.get("requires"))
+    }
     enemies = []
     for b in await _enemy_bases(session, player):
         owner = await session.get(Player, b.player_id)
@@ -683,10 +683,10 @@ async def _llm_decide(state: dict) -> dict:
         "Honor your `posture`: 'aggressive'/'raid' -> prioritize attacking a beatable enemy "
         "(prefer enemies[].is_target=true, then is_human=true); 'defensive' -> turret/recall; "
         "'expand' -> mines/buildings/expedition. "
-        "CRITICAL: only choose build/train options whose `affordable` is true (you can pay "
-        "minerals + energy now and have the required building); never pick affordable=false. If "
-        "nothing is affordable, pick a cheaper one or {\"action\":\"none\"}. Check "
-        "`recent_actions` for past failures and do NOT repeat a move that just failed. "
+        "CRITICAL: `build_options`/`train_options` already list ONLY what you can afford now; "
+        "pick a build/train ONLY from those keys. If both are empty, do NOT build/train — choose "
+        "another action or {\"action\":\"none\"}. Check `recent_actions` and do NOT repeat a move "
+        "that just failed. "
         "Given your state, choose exactly ONE affordable action consistent with your personality. "
         'Respond with ONLY JSON, one of: '
         '{"action":"build","building":"<key>","mineral":"<key|null>"} (mineral only for a mine), '

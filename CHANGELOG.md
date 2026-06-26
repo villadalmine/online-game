@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — IA: pasarle al modelo SOLO las jugadas pagables (menos fallback)
+- Refuerzo de la afinación: `_npc_state` ahora **filtra** `build_options`/`train_options` a **solo lo
+  pagable ahora** (el modelo no puede ni elegir lo impagable). Las métricas en vivo mostraron que el
+  modelo de **nube ya jugaba por LLM** pero el **chico de GPU** ignoraba el flag `affordable` y caía
+  por energía → este filtro lo corrige también.
+
 ## [1.77.0] - 2026-06-26
 
 ### 2026-06-26 — Afinar la IA (jugar lo que puede pagar) + métrica "¿aprendió?" en el admin
