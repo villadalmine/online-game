@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import get_content
+from app.core import metrics
 from app.core.config import get_settings
 from app.core.security import hash_password
 from app.models import AttackMission, Base_, Building, CombatLog, Player
@@ -728,9 +729,12 @@ class LlmBrain:
             await session.commit()
             action = await self._decide(state)
             player = await session.get(Player, player_id)  # re-cargar tras el commit
-            return await dispatch_action(session, player, action)
+            result = await dispatch_action(session, player, action)
+            metrics.NPC_DECISIONS.inc(outcome="llm")   # el LLM decidió y se aplicó
+            return result
         except Exception:
             # Any failure (network, rate limit, bad JSON, infeasible action) -> rules.
+            metrics.NPC_DECISIONS.inc(outcome="fallback")
             await session.rollback()
             player = await session.get(Player, player_id)  # fresh after rollback
             return await self._fallback.act(session, player)
@@ -751,4 +755,7 @@ async def run_npc_turn(session: AsyncSession, player: Player) -> str | None:
     # Re-fetch (act() may have rolled back/replaced the instance) before writing memory.
     player = await session.get(Player, player.id)
     _remember(player, action or "idle")
+    # Métrica: qué hizo la IA (primer token del action: build/train/attack/research/...).
+    verb = (action or "idle").split()[0] if (action or "idle").strip() else "idle"
+    metrics.NPC_ACTIONS.inc(action=verb, brain=get_settings().npc_brain)
     return action

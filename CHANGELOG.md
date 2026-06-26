@@ -9,6 +9,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.70.0] - 2026-06-26
 
+### 2026-06-26 — Métricas de NPC: entender cómo juega la IA y si mejora
+- Nuevos contadores Prometheus: **`game_npc_actions_total{action,brain}`** (qué hace cada turno:
+  build/train/attack/research/colonize/idle…) y **`game_npc_decisions_total{outcome}`** con
+  `outcome=llm` (el LLM razonó la jugada) vs `fallback` (falló y cayó a reglas). **Más `llm` y menos
+  `fallback` = la IA está pensando, no adivinando.** Se combinan con las métricas LLM existentes
+  (latencia, uso por NPC vía `end_user`) para ver en Grafana si la IA mejora con el tiempo.
+- Queries útiles: `sum by(action)(rate(game_npc_actions_total[15m]))` (mezcla de jugadas);
+  `sum by(outcome)(rate(game_npc_decisions_total[1h]))` (ratio LLM vs reglas).
+
 ### 2026-06-26 — NPC con LLM sin colgar el juego (decidir fuera de la transacción)
 - Los NPC con cerebro `llm` leen su estado + el **grafo de dependencias** + las **métricas** y el
   LLM decide su táctica (igual que un jugador). El problema no era usar la GPU sino que la llamada al

@@ -170,3 +170,10 @@ TICK_LAST_RUN = Gauge("game_tick_last_run_timestamp", "Unix ts del último tick 
 # LLM (IA): no escala como la API (SDD 9). status=ok|error
 LLM_REQUESTS = Counter("game_llm_requests_total", "Llamadas al LLM", ("status",))
 LLM_LATENCY = Histogram("game_llm_latency_seconds", "Latencia del LLM")
+
+# NPC (SDD): entender CÓMO juega la IA y si "mejora". `action` = qué hizo (build/train/attack/...);
+# `brain` = rules|llm. `outcome` = llm (el LLM decidió) | fallback (falló y cayó a reglas) →
+# más 'llm' y menos 'fallback' = la IA está razonando, no adivinando.
+NPC_ACTIONS = Counter("game_npc_actions_total", "Acciones de NPC por tipo", ("action", "brain"))
+NPC_DECISIONS = Counter("game_npc_decisions_total",
+                        "Decisiones de NPC: el LLM decidió vs cayó a reglas", ("outcome",))

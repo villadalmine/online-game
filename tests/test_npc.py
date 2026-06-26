@@ -65,6 +65,18 @@ async def test_rule_brain_first_action_builds_a_mine(session):
     assert res.first() is not None
 
 
+async def test_npc_turn_records_action_metric(session):
+    # Observabilidad: cada turno de NPC registra qué hizo (game_npc_actions_total) para entender
+    # cómo juega la IA y si mejora. Ver SDD/CHANGELOG métricas NPC.
+    from app.core import metrics
+    await ensure_npcs(session)
+    npc = await _npc(session)
+    await run_npc_turn(session, npc)
+    await session.commit()
+    out = metrics.render()
+    assert "game_npc_actions_total" in out
+
+
 async def test_llm_brain_dispatches_decided_action(session):
     await ensure_npcs(session)
     npc = await _npc(session)
