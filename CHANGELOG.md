@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.75.0] - 2026-06-26
+
 ## [1.74.0] - 2026-06-26
 
 ### 2026-06-26 — NPC: loguear por qué cae a reglas (antes era silencioso)
