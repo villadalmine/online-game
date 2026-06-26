@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.63.0] - 2026-06-26
+
 ### 2026-06-26 — Modo pictográfico F1 + leer en voz alta (SDD 43)
 - Nuevo botón **🔤/🖼** en el header: el **modo dibujos** muestra el **chip ícono + letra + número**
   (`🔩 Fe 30`) en costos de construir/entrenar/expedición, en los faltantes (`🔩 ❌ −12`, `⚡❌ −N`),
