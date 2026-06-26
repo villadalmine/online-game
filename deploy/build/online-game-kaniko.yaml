@@ -1,4 +1,7 @@
 # Build de la imagen online-game con Kaniko vía Argo Workflows (in-cluster, arm64).
+# NOTA: este Workflow es BUILD-ONLY (fallback / build sin deploy). Para CD de un paso
+# (build + deploy en una corrida) usá `make deploy V=X.Y.Z` → deploy/build/online-game-cicd.yaml
+# (SDD 44). El helm upgrade manual de abajo queda como referencia (SDD 17).
 # Adaptado del patrón de infra-ai (roles/install-leloir-image): un Workflow clona el repo
 # (inputs.artifacts.git) y Kaniko builda desde deploy/Dockerfile, empujando al registry interno.
 #

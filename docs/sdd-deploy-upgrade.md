@@ -21,6 +21,11 @@ El paso a paso para llevar **código nuevo de `main` a producción** sin perder 
 
 ## 3. Upgrade rutinario (código nuevo)
 
+> **Camino recomendado (CD de un paso, SDD 44):** `make deploy V=<X.Y.Z>` corre **build + deploy en
+> un solo Argo Workflow** (`deploy/build/online-game-cicd.yaml`), sin el `helm upgrade` manual. Lo de
+> abajo es el **camino manual de referencia / fallback** (cambios de chart o de values nuevos, donde
+> `--reuse-values` no alcanza).
+
 ```sh
 # 1) Código a main (Kaniko clona de GitHub, no del disco)
 git push origin main

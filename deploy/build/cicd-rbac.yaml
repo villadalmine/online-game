@@ -1,0 +1,80 @@
+# RBAC mínima para el CD in-cluster (SDD 44). El Workflow corre en ns `kaniko` con el SA
+# `og-deployer` y despliega el release helm `galaxy` en ns `online-game`.
+#
+# Aplicar (una sola vez):  kubectl apply -f deploy/build/cicd-rbac.yaml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: og-deployer
+  namespace: kaniko
+---
+# Permisos del executor de Argo en su propio namespace (lo que el step necesita para correr).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: og-deployer-executor
+  namespace: kaniko
+rules:
+  - apiGroups: ["argoproj.io"]
+    resources: ["workflowtaskresults"]
+    verbs: ["create", "patch"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: og-deployer-executor
+  namespace: kaniko
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: og-deployer-executor
+subjects:
+  - kind: ServiceAccount
+    name: og-deployer
+    namespace: kaniko
+---
+# Permisos que helm necesita para hacer `upgrade` del chart en online-game. Namespaced y mínimos:
+# solo los tipos de recurso que el chart `deploy/helm` administra (incluido el Secret donde helm
+# guarda el estado del release: sh.helm.release.v1.galaxy.*).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: og-deployer
+  namespace: online-game
+rules:
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps", "services", "serviceaccounts",
+                "persistentvolumeclaims", "pods"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes", "gateways"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # rollout status / verificación
+  - apiGroups: ["apps"]
+    resources: ["deployments/status"]
+    verbs: ["get"]
+---
+# RoleBinding cross-namespace: liga el SA de `kaniko` al Role de `online-game`.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: og-deployer
+  namespace: online-game
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: og-deployer
+subjects:
+  - kind: ServiceAccount
+    name: og-deployer
+    namespace: kaniko

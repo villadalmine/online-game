@@ -1,0 +1,103 @@
+# CD de un paso (SDD 44): build (Kaniko) + deploy (helm) in-cluster, en un solo Workflow.
+# El tag de imagen es un PARÁMETRO — no se edita el YAML por release.
+#
+# Pre-requisito (una vez): kubectl apply -f deploy/build/cicd-rbac.yaml
+# Disparar:                make deploy V=<X.Y.Z>
+#   (equivale a: argo submit deploy/build/online-game-cicd.yaml -n kaniko -p image_tag=<X.Y.Z> --watch)
+#
+# Fallback manual (cambios de chart/values, ver SDD 17): build con online-game-kaniko.yaml + helm
+# upgrade -f deploy/helm/values-local.yaml --set image.tag=<tag>.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: cicd-online-game-
+  namespace: kaniko
+  labels:
+    app: online-game-cicd
+spec:
+  entrypoint: pipeline
+  serviceAccountName: og-deployer        # SA con RBAC para desplegar en online-game (SDD 44)
+  arguments:
+    parameters:
+      - name: image_tag                  # override: argo submit ... -p image_tag=X.Y.Z
+        value: "latest"
+  ttlStrategy:
+    secondsAfterSuccess: 3600
+    secondsAfterFailure: 86400
+  nodeSelector:
+    kubernetes.io/hostname: srv-rk1-nvme-01    # arm64, como el nodo del juego
+  tolerations:
+    - key: "node.kubernetes.io/unreachable"
+      operator: Exists
+      effect: NoExecute
+    - key: "node.kubernetes.io/not-ready"
+      operator: Exists
+      effect: NoExecute
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn-nvme
+        resources:
+          requests:
+            storage: 5Gi
+  templates:
+    - name: pipeline
+      dag:
+        tasks:
+          - name: build
+            template: build-image
+          - name: deploy
+            template: helm-deploy
+            dependencies: [build]
+
+    - name: build-image
+      inputs:
+        artifacts:
+          - name: source
+            path: /workspace/source
+            git:
+              repo: "https://github.com/villadalmine/online-game.git"
+              revision: main
+              depth: 1
+      container:
+        image: gcr.io/kaniko-project/executor:latest
+        args:
+          - "--dockerfile=/workspace/source/deploy/Dockerfile"
+          - "--context=dir:///workspace/source"
+          - "--destination=registry.registry:5000/online-game:{{workflow.parameters.image_tag}}"
+          - "--insecure"
+          - "--skip-tls-verify"
+          - "--snapshot-mode=redo"
+          - "--compression=zstd"
+          - "--compression-level=1"
+        resources:
+          requests:
+            cpu: "1"
+            memory: "2Gi"
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+
+    - name: helm-deploy
+      # reusa el chart clonado por el step de build (PVC compartido) y los values del release VIVO
+      # (--reuse-values): no maneja secretos. Solo pisa image.tag. Ver SDD 44 §3.2.
+      container:
+        image: dtzar/helm-kubectl:3.16.2
+        command: ["sh", "-c"]
+        args:
+          - |
+            set -e
+            helm upgrade galaxy /workspace/source/deploy/helm \
+              -n online-game \
+              --reuse-values \
+              --set image.tag={{workflow.parameters.image_tag}} \
+              --wait --timeout 5m
+            kubectl rollout status deploy/galaxy-api -n online-game --timeout=180s
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace

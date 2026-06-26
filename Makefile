@@ -24,7 +24,7 @@ JWT       ?= dev-secret-key-at-least-32-bytes-long!!
         test test-ui test-file lint fmt check publish \
         migrate migration downgrade db-current db-history db-reset \
         up down logs ps build-image helm-template helm-install helm-uninstall \
-        clean clean-all
+        release deploy clean clean-all
 
 # ---- ayuda -----------------------------------------------------------
 help: ## Muestra esta ayuda
@@ -104,6 +104,15 @@ check: lint test ## Lint + tests (lo que corre CI)
 release: ## Corta un release SemVer: make release V=X.Y.Z [DRY=1] (SDD 23)
 	@test -n "$(V)" || (echo 'Falta V=X.Y.Z'; exit 1)
 	$(PY) scripts/release.py $(V) $(if $(DRY),--dry-run,)
+
+deploy: ## CD in-cluster (build+deploy en un Workflow): make deploy V=X.Y.Z (SDD 44)
+	@test -n "$(V)" || (echo 'Falta V=X.Y.Z'; exit 1)
+	@if command -v argo >/dev/null 2>&1; then \
+	  argo submit deploy/build/online-game-cicd.yaml -n kaniko -p image_tag=$(V) --watch; \
+	else \
+	  echo "argo CLI no encontrado; usando kubectl create (override del tag via parámetro)"; \
+	  sed 's/value: "latest"/value: "$(V)"/' deploy/build/online-game-cicd.yaml | kubectl create -f -; \
+	fi
 
 migrate: ## Aplica migraciones (alembic upgrade head)
 	DATABASE_URL=$(DB_URL) $(ALEMBIC) upgrade head

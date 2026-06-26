@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — CD de un paso: build + deploy in-cluster (SDD 44)
+- Nuevo Argo Workflow `deploy/build/online-game-cicd.yaml` que **buildea (Kaniko) y despliega (helm)
+  en una sola corrida**, con el tag como **parámetro** (no se edita YAML). `make deploy V=X.Y.Z` lo
+  dispara. El deploy usa `helm upgrade --reuse-values --set image.tag=…`: reutiliza los values del
+  release vivo (incluida la key de OpenRouter) → **el Workflow no maneja secretos**.
+- RBAC mínima namespaced (`deploy/build/cicd-rbac.yaml`): SA `og-deployer` + Roles/Bindings.
+- El `helm upgrade` **manual** queda documentado como **fallback** (cambios de chart/values) en
+  SDD 17; el build-only (`online-game-kaniko.yaml`) se conserva. Doc: `docs/sdd-cicd-in-cluster.md`.
+
 ## [1.65.0] - 2026-06-26
 
 ### 2026-06-26 — Fix: ya no te desloguea cuando la API parpadea (deploy/red) + e2e de frontend
