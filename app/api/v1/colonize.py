@@ -37,6 +37,23 @@ async def colonize_options(
     modifiers y el porqué. Es el grafo para decidir a dónde expandirse."""
     if player.race_key is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Primero completá el onboarding.")
+    from sqlalchemy import func, select
+
+    from app.core.config import get_settings
+    from app.models import Base_
     from app.services.research import researched_techs
     techs = await researched_techs(session, player.id)
-    return [ColonizeOptionOut(**o) for o in options(player.race_key, player.galaxy_key, techs)]
+    s = get_settings()
+    # Costo de la PRÓXIMA colonia: escala con cuántas ya tenés (sin contar el mundo natal).
+    n_bases = (await session.execute(
+        select(func.count()).select_from(Base_).where(Base_.player_id == player.id)
+    )).scalar_one()
+    colonies = max(0, n_bases - 1)
+    e_surface = s.colonize_energy_cost * (1 + colonies)
+    e_orbital = e_surface * s.orbital_cost_mult
+    return [
+        ColonizeOptionOut(
+            **o, energy_surface=round(e_surface, 1), energy_orbital=round(e_orbital, 1)
+        )
+        for o in options(player.race_key, player.galaxy_key, techs)
+    ]

@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Colonizar: costo visible antes de hacer click + error con detalle
+- El menú del planeta ahora muestra **antes de tocar Colonizar** el **costo** de fundar ahí:
+  energía de superficie y orbital (escala con cuántas colonias ya tenés) + **transbordadores**
+  necesarios, comparado con lo que tenés (en rojo si no alcanza). `GET /colonize/options` expone
+  `energy_surface`/`energy_orbital`/`shuttle_cost`.
+- El error "Energía insuficiente para colonizar" ahora también dice **cuánto falta y en cuánto se
+  recarga** (mismo helper que build/training/research).
+
 ## [1.61.0] - 2026-06-26
 
 ### 2026-06-26 — Errores de energía con detalle (cuánto falta y cuándo se recarga)

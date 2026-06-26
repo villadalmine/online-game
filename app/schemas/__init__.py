@@ -219,6 +219,10 @@ class ColonizeOptionOut(BaseModel):
     reasons: list[str]
     is_home: bool = False
     abundance_highlights: list[str] = []
+    # Pre-cálculo: costo que tendría fundar acá ahora (energía + transbordadores), por modo.
+    energy_surface: float = 0.0
+    energy_orbital: float = 0.0
+    shuttle_cost: int = 1
 
 
 class ActiveEventOut(BaseModel):

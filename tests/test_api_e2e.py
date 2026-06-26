@@ -555,6 +555,11 @@ async def test_colonize_options_e2e(client):
     assert opts and all("verdict" in o for o in opts)
     home = [o for o in opts if o["is_home"]]
     assert home and home[0]["verdict"] == "great"
+    # pre-cálculo de costo: cada opción expone energía (surface/orbital) y transbordadores.
+    o0 = opts[0]
+    assert o0["energy_surface"] > 0
+    assert o0["energy_orbital"] >= o0["energy_surface"]  # orbital cuesta más (mult >= 1)
+    assert o0["shuttle_cost"] >= 1
 
 
 async def test_colonize_with_tech_e2e(client):
