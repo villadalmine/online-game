@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.64.0] - 2026-06-26
+
 ### 2026-06-26 — Modo pictográfico F2: navegar sin leer (SDD 43)
 - En **modo dibujos**, los menús desplegables de **Acciones** (construir/entrenar/expedición) se
   reemplazan por una **grilla de botones-ícono**: cada opción es su dibujo con una marca
