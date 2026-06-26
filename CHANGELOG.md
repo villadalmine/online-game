@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.86.0] - 2026-06-26
+
 ### 2026-06-26 — Jugar sin leer (SDD 43 COMPLETO): TTS de servidor (espeak-ng)
 - **`GET /api/v1/tts?text=&lang=`**: sintetiza el texto con **espeak-ng** y devuelve un WAV. Es el
   **fallback** del modo pictográfico para navegadores **sin voces** (típico Chromium/Linux), donde el
