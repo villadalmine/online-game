@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Intel → Calculadora de combate (SDD 35 + 34)
+- En el bloque de **intel** de una colonia enemiga (modal de planeta) hay un botón **🧮 "a la
+  calculadora"** que abre la Calculadora de combate **precargando el lado defensor** desde lo que tu
+  espionaje reveló: unidades exactas si la profundidad ≥0.8, torretas si ≥0.6 (lo no revelado queda
+  en 0). Así calculás un ataque realista contra un objetivo concreto sin tipear a mano.
+
 ## [1.89.0] - 2026-06-26
 
 ### 2026-06-26 — NPC que aprende de cada batalla (SDD 29 §3.7 reflexión post-batalla)

@@ -113,8 +113,12 @@ La intel se revela **graduada** — el contraespionaje del defensor baja tu `dep
   confianza coloreada por antigüedad + aviso de desactualización, campos graduados) + botones
   **🕵 espiar** (`POST /spy`) y **⚔ atacar**; la intel se recarga (`GET /intel`) en cada refresh.
   Bilingüe ES/EN. Sin intel → solo info pública.
-- **Pendiente (follow-up):** integrar la intel en la calculadora de combate (SDD 34) y en el asistente
-  IA (SDD 1/2); técnicas `espionage`/`counter_espionage`; visión de alianza como intel base.
+- **Intel → combate (HECHO):** `/combat/plan` (SDD 34) ya estima la defensa **desde tu intel**; y la
+  **Calculadora de combate** tiene un botón **🧮 "a la calculadora"** en el bloque de intel que
+  precarga el lado defensor desde lo revelado (unidades exactas si depth≥0.8, torretas si ≥0.6). El
+  asistente IA tiene la intel en contexto + grounding `mech_combat_planning` para usar las herramientas.
+- **Pendiente (follow-up):** técnicas `espionage`/`counter_espionage` (tech tree); visión de alianza
+  como intel base.
 
 ## 10. Riesgos / decisiones
 - **Balance:** `spy`/`counter_power`/half-life se afinan por YAML; arrancar conservador (que espiar

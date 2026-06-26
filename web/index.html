@@ -858,7 +858,7 @@ const I18N={
       iScore:"score",iAtk:"⚔ ataque",iDef:"🛡 defensa",iMin:"⛏ minerales",iTurrets:"🔫 torretas",iBuildings:"🏗 edificios",iUnits:"👥 unidades",
       iDepth:"profundidad",iConf:"confianza",iAsOf:"hace",iStale:"⚠ desactualizada — re-espiá",iShared:"🤝 aliado",
       planBtn:"📊 planear",planLoading:"calculando…",planLoss:"pierde",planDef:"defensa est.",planMargin:"margen",planNeed:"poder de ataque",planUse:"usar",planTarget:"objetivo",needtarget:"poné el id de la base objetivo (o tocá una en el mapa)",
-      calc_title:"Calculadora de combate",calc_help:"Probá fuerzas sin gastar nada: te dice si ganás y cuánto pierde cada lado (mismo cálculo que el combate real).",calc_attacker:"⚔ Atacante",calc_defender:"🛡 Defensor",calc_turrets:"🛡 torretas (defensa fija)",calc_win:"🟢 Ganás",calc_lose:"🔴 Perdés",calc_youlose:"perdés",calc_theylose:"el rival pierde",calc_none:"poné unidades en los dos lados",
+      calc_title:"Calculadora de combate",calc_help:"Probá fuerzas sin gastar nada: te dice si ganás y cuánto pierde cada lado (mismo cálculo que el combate real).",calc_attacker:"⚔ Atacante",calc_defender:"🛡 Defensor",calc_turrets:"🛡 torretas (defensa fija)",calc_win:"🟢 Ganás",calc_lose:"🔴 Perdés",calc_youlose:"perdés",calc_theylose:"el rival pierde",calc_none:"poné unidades en los dos lados",calc_fromintel:"a la calculadora",
       youhave:"tenés",nospies:"No tenés espías — entrenalos en el cuartel/laboratorio primero.",noattackunits:"no tenés unidades de ataque — entrená soldados/tanques primero",lowenergy:"poca energía",unitssel:"unidades",pickunits:"elegí cuántas unidades mandás",fleetsent:"🚀 Flota despachada, llega",trainfirst:"entrená {u} primero",
       cNone:"nada",cYouAtk:"vos →",cAtkYou:"te atacó",cWon:"✓ ganaste",cLost:"✗ perdiste",cYouLost:"perdiste",cTheyLost:"perdió",cLoot:"botín",cLooted:"te saquearon",cNoReports:"todavía no hubo batallas",
       perunit:"de ataque c/u",atkperunit:"Ataque por unidad (sumás esto × cantidad al mandar la flota)",
@@ -876,7 +876,7 @@ const I18N={
       iScore:"score",iAtk:"⚔ attack",iDef:"🛡 defense",iMin:"⛏ minerals",iTurrets:"🔫 turrets",iBuildings:"🏗 buildings",iUnits:"👥 units",
       iDepth:"depth",iConf:"confidence",iAsOf:"as of",iStale:"⚠ stale — re-spy",iShared:"🤝 ally",
       planBtn:"📊 plan",planLoading:"calculating…",planLoss:"loses",planDef:"est. defense",planMargin:"margin",planNeed:"attack power",planUse:"use",planTarget:"target",needtarget:"enter the target base id (or click one on the map)",
-      calc_title:"Combat calculator",calc_help:"Try forces without spending anything: tells you if you win and how much each side loses (same math as real combat).",calc_attacker:"⚔ Attacker",calc_defender:"🛡 Defender",calc_turrets:"🛡 turrets (fixed defense)",calc_win:"🟢 You win",calc_lose:"🔴 You lose",calc_youlose:"you lose",calc_theylose:"enemy loses",calc_none:"put units on both sides",
+      calc_title:"Combat calculator",calc_help:"Try forces without spending anything: tells you if you win and how much each side loses (same math as real combat).",calc_attacker:"⚔ Attacker",calc_defender:"🛡 Defender",calc_turrets:"🛡 turrets (fixed defense)",calc_win:"🟢 You win",calc_lose:"🔴 You lose",calc_youlose:"you lose",calc_theylose:"enemy loses",calc_none:"put units on both sides",calc_fromintel:"to calculator",
       youhave:"you have",nospies:"You have no spies — train them at the barracks/lab first.",noattackunits:"no attack units — train soldiers/tanks first",lowenergy:"low energy",unitssel:"units",pickunits:"pick how many units to send",fleetsent:"🚀 Fleet dispatched, arrives",trainfirst:"train {u} first",
       cNone:"nothing",cYouAtk:"you →",cAtkYou:"attacked you",cWon:"✓ you won",cLost:"✗ you lost",cYouLost:"you lost",cTheyLost:"they lost",cLoot:"loot",cLooted:"looted from you",cNoReports:"no battles yet",
       perunit:"attack each",atkperunit:"Attack per unit (this × quantity is added when you send the fleet)",
@@ -1473,9 +1473,23 @@ function intelHtml(playerId){
   if(p.units&&Object.keys(p.units).length) rows.push(`<div class="ab"><span>${esc(tr('iUnits'))}</span><span class="muted">${Object.entries(p.units).map(([k,v])=>`${esc(k)}:${fmtVal(v)}`).join(", ")}</span></div>`);
   const stale=r.confidence<0.3?` <span class="bad">${esc(tr('iStale'))}</span>`:"";
   const shared=r.shared?` <span class="pill" style="font-size:10px">${esc(tr('iShared'))}${r.via?" "+esc(r.via):""}</span>`:"";
+  // SDD 34+35: llevar la intel del defensor a la Calculadora de combate (si la depth reveló algo).
+  const canCalc=(p.units&&Object.keys(p.units).length)||p.turrets!=null;
+  const calcBtn=canCalc?`<button class="sm sec" onclick='calcFromIntel(${playerId})' title="${esc(tr('calc_title'))}">🧮 ${esc(tr('calc_fromintel'))}</button>`:"";
   return `<div class="muted" style="margin:4px 0">🕵 ${esc(tr('iDepth'))} <b>${Math.round(r.depth*100)}%</b>${shared} · `+
     `${esc(tr('iConf'))} <b class="${confClass(r.confidence)}">${Math.round(r.confidence*100)}%</b> · `+
-    `${esc(tr('iAsOf'))} ${ageStr(r.as_of)}${stale}</div>${rows.join("")}`;
+    `${esc(tr('iAsOf'))} ${ageStr(r.as_of)}${stale}</div>${rows.join("")}${calcBtn?`<div style="margin-top:4px">${calcBtn}</div>`:""}`;
+}
+// Precarga el lado DEFENSOR de la calculadora desde la intel del objetivo (unidades exactas si la
+// depth ≥0.8; torretas si ≥0.6) y abre el panel. Best-effort: lo que la intel no revela queda en 0.
+function calcFromIntel(playerId){
+  const r=intel[playerId]; if(!r) return; const p=r.payload||{};
+  const card=document.querySelector('[data-panel="calc"]'); if(!card) return;
+  card.classList.remove('collapsed'); renderCombatCalc();   // asegura inputs armados
+  document.querySelectorAll('[data-calc="d"]').forEach(i=>{ i.value=(p.units&&p.units[i.dataset.u])||0; });
+  const t=$("calc_turrets"); if(t) t.value=p.turrets!=null?p.turrets:0;
+  runCombatCalc();
+  card.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function renderPlan(p, el, baseId){
   const opts=p.options.filter(o=>o.qty>0).slice(0,4).map(o=>
