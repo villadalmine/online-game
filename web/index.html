@@ -260,6 +260,12 @@
       <p class="muted" data-i18n="attacktip">Tip: tocá una base enemiga en el mapa para elegir objetivo.</p>
     </div>
 
+    <div class="card collapsed" data-panel="calc">
+      <h2>🧮 <span data-i18n="calc_title">Calculadora de combate</span></h2>
+      <p class="muted" data-i18n="calc_help">Probá fuerzas sin gastar nada: te dice si ganás y cuánto pierde cada lado (mismo cálculo que el combate real).</p>
+      <div id="calc"></div>
+    </div>
+
     <div class="card" data-panel="investigacion">
       <h2>🔬 Investigación</h2>
       <div id="research"></div>
@@ -684,6 +690,43 @@ function renderAttackCost(){
   const lack = state.energy<cost ? ` <span class="bad">⚠ ${esc(tr('lowenergy'))}</span>` : "";
   $("attackcost").innerHTML = `⚡ ${cost} (${esc(tr('youhave'))} ${Math.round(state.energy)})${lack} · ${n} ${esc(tr('unitssel'))}`;
 }
+// SDD 34: calculadora de combate. Sliders de unidades → POST /combat/simulate (mismo cálculo
+// determinista que el combate real, sin gastar nada). Picto-aware. Debounced para no spamear.
+let _calcT=null;
+function renderCombatCalc(){
+  const el=$("calc"); if(!el||!catalog) return;
+  const pic=isPicto('calc');
+  if(el.dataset.built===String(pic)){ runCombatCalc(); return; }   // ya armado para este modo
+  const units=[...(catalog.personnel||[]),...(catalog.heavy_units||[])];
+  const atk=units.filter(u=>u.stats&&u.stats.attack>0);
+  const def=units.filter(u=>u.stats&&u.stats.defense>0);
+  const lbl=u=>pic?ico('unit',u.key):esc(u.name);
+  const inp=(side,u)=>`<label style="display:inline-flex;align-items:center;gap:3px;margin:2px 6px 2px 0">${lbl(u)} <input type="number" min="0" value="0" data-calc="${side}" data-u="${esc(u.key)}" oninput="runCombatCalc()" style="width:50px"></label>`;
+  el.innerHTML=
+    `<div style="margin-bottom:6px"><b class="muted">${esc(tr('calc_attacker'))}</b><div class="row">${atk.map(u=>inp('a',u)).join("")}</div></div>`+
+    `<div><b class="muted">${esc(tr('calc_defender'))}</b><div class="row">${def.map(u=>inp('d',u)).join("")}</div>`+
+    `<label style="display:inline-flex;align-items:center;gap:3px;margin:4px 0 0">${esc(tr('calc_turrets'))} <input type="number" min="0" value="0" id="calc_turrets" oninput="runCombatCalc()" style="width:50px"></label></div>`+
+    `<div id="calc_out" class="muted" style="margin-top:8px"></div>`;
+  el.dataset.built=String(pic);
+  runCombatCalc();
+}
+function _calcForce(side){ const f={}; document.querySelectorAll(`[data-calc="${side}"]`).forEach(i=>{ const q=+i.value||0; if(q>0)f[i.dataset.u]=q; }); return f; }
+function runCombatCalc(){
+  if(_calcT) clearTimeout(_calcT);
+  _calcT=setTimeout(async ()=>{
+    const out=$("calc_out"); if(!out) return;
+    const a=_calcForce('a'), d=_calcForce('d');
+    const turrets=Math.max(0,+($("calc_turrets")||{}).value||0);
+    if(!Object.keys(a).length){ out.innerHTML=`<span class="muted">${esc(tr('calc_none'))}</span>`; return; }
+    let r; try{ r=await api("/api/v1/combat/simulate","POST",{attacker_force:a,defender_force:d,defender_flat_defense:turrets*40}); }
+    catch(e){ out.innerHTML=`<span class="bad">${esc(e.message)}</span>`; return; }
+    const won=r.outcome==='attacker'; const pic=isPicto('calc');
+    const chips=o=>Object.entries(o||{}).filter(([,v])=>v>0).map(([k,v])=>pic?`${ico('unit',k)} ${v}`:`${esc(k)} ${v}`).join(" ")||"—";
+    out.innerHTML=`<div class="${won?'ok':'bad'}" style="font-weight:600">${esc(won?tr('calc_win'):tr('calc_lose'))} `+
+      `<span class="muted">⚔${Math.round(r.attack_score)} vs 🛡${Math.round(r.defense_score)}</span></div>`+
+      `<div class="muted" style="margin-top:3px">${esc(tr('calc_youlose'))}: ${chips(r.attacker_losses)} · ${esc(tr('calc_theylose'))}: ${chips(r.defender_losses)}</div>`;
+  }, 300);
+}
 // fill the picker from a combat plan option and jump to the attack panel
 function usePlan(baseId, unit, qty){
   closePlanet();   // si vino del modal de planeta, cerralo para ver el panel de ataque
@@ -815,6 +858,7 @@ const I18N={
       iScore:"score",iAtk:"⚔ ataque",iDef:"🛡 defensa",iMin:"⛏ minerales",iTurrets:"🔫 torretas",iBuildings:"🏗 edificios",iUnits:"👥 unidades",
       iDepth:"profundidad",iConf:"confianza",iAsOf:"hace",iStale:"⚠ desactualizada — re-espiá",iShared:"🤝 aliado",
       planBtn:"📊 planear",planLoading:"calculando…",planLoss:"pierde",planDef:"defensa est.",planMargin:"margen",planNeed:"poder de ataque",planUse:"usar",planTarget:"objetivo",needtarget:"poné el id de la base objetivo (o tocá una en el mapa)",
+      calc_title:"Calculadora de combate",calc_help:"Probá fuerzas sin gastar nada: te dice si ganás y cuánto pierde cada lado (mismo cálculo que el combate real).",calc_attacker:"⚔ Atacante",calc_defender:"🛡 Defensor",calc_turrets:"🛡 torretas (defensa fija)",calc_win:"🟢 Ganás",calc_lose:"🔴 Perdés",calc_youlose:"perdés",calc_theylose:"el rival pierde",calc_none:"poné unidades en los dos lados",
       youhave:"tenés",nospies:"No tenés espías — entrenalos en el cuartel/laboratorio primero.",noattackunits:"no tenés unidades de ataque — entrená soldados/tanques primero",lowenergy:"poca energía",unitssel:"unidades",pickunits:"elegí cuántas unidades mandás",fleetsent:"🚀 Flota despachada, llega",trainfirst:"entrená {u} primero",
       cNone:"nada",cYouAtk:"vos →",cAtkYou:"te atacó",cWon:"✓ ganaste",cLost:"✗ perdiste",cYouLost:"perdiste",cTheyLost:"perdió",cLoot:"botín",cLooted:"te saquearon",cNoReports:"todavía no hubo batallas",
       perunit:"de ataque c/u",atkperunit:"Ataque por unidad (sumás esto × cantidad al mandar la flota)",
@@ -832,6 +876,7 @@ const I18N={
       iScore:"score",iAtk:"⚔ attack",iDef:"🛡 defense",iMin:"⛏ minerals",iTurrets:"🔫 turrets",iBuildings:"🏗 buildings",iUnits:"👥 units",
       iDepth:"depth",iConf:"confidence",iAsOf:"as of",iStale:"⚠ stale — re-spy",iShared:"🤝 ally",
       planBtn:"📊 plan",planLoading:"calculating…",planLoss:"loses",planDef:"est. defense",planMargin:"margin",planNeed:"attack power",planUse:"use",planTarget:"target",needtarget:"enter the target base id (or click one on the map)",
+      calc_title:"Combat calculator",calc_help:"Try forces without spending anything: tells you if you win and how much each side loses (same math as real combat).",calc_attacker:"⚔ Attacker",calc_defender:"🛡 Defender",calc_turrets:"🛡 turrets (fixed defense)",calc_win:"🟢 You win",calc_lose:"🔴 You lose",calc_youlose:"you lose",calc_theylose:"enemy loses",calc_none:"put units on both sides",
       youhave:"you have",nospies:"You have no spies — train them at the barracks/lab first.",noattackunits:"no attack units — train soldiers/tanks first",lowenergy:"low energy",unitssel:"units",pickunits:"pick how many units to send",fleetsent:"🚀 Fleet dispatched, arrives",trainfirst:"train {u} first",
       cNone:"nothing",cYouAtk:"you →",cAtkYou:"attacked you",cWon:"✓ you won",cLost:"✗ you lost",cYouLost:"you lost",cTheyLost:"they lost",cLoot:"loot",cLooted:"looted from you",cNoReports:"no battles yet",
       perunit:"attack each",atkperunit:"Attack per unit (this × quantity is added when you send the fleet)",
@@ -972,6 +1017,7 @@ function refreshPanels(){
   if(panelOpen('anuncios')) loadAnnouncements();
   if(panelOpen('universos')) loadUniverses();
   if(panelOpen('meta')) loadInsights();
+  if(panelOpen('calc')) renderCombatCalc();
   if(panelOpen('mercado')) loadMarket();
   if(panelOpen('hub')) loadHub();
   if(panelOpen('admin')) loadAdmin();

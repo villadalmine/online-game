@@ -114,8 +114,16 @@ combate real. Medible/atribuible por `player:<id>` (SDD 28).
 - **Web:** botón 📊 planear en el panel de intel (modal de planeta).
 - **Tests:** helpers vs la matriz, `simulate`==combate real, plan requiere intel + gana al simular;
   e2e. **242 verdes.**
-- **Pendiente (follow-up):** que el asistente IA llame a `/combat/plan` y narre el resultado
-  (hoy ya tiene tu intel en contexto, SDD 35); calculadora web con sliders (`/combat/simulate`).
+## 7.ter Estado de implementación (2026-06-26) — v2 (follow-ups cerrados)
+- **Calculadora web 🧮:** panel `data-panel="calc"` ("Calculadora de combate") con inputs por unidad
+  (atacante/defensor) + torretas; llama a `POST /combat/simulate` debounced y muestra en vivo
+  ganás/perdés, ⚔ vs 🛡 y las pérdidas de cada lado como chips. **Picto-aware** (SDD 43). No gasta
+  nada (cálculo puro).
+- **Asistente IA aterrizado:** nuevo documento de grounding `mech_combat_planning` (depgraph) le dice
+  al modelo que **NO calcule de memoria** y use `/combat/plan` (estima defensa desde tu intel) y
+  `/combat/simulate`, con la regla práctica "2-3× la defensa". Sumado al `mech_combat` que ya tenía la
+  fórmula → el asistente explica/recomienda con números reales, no inventados.
+- **SDD 34 COMPLETO.**
 
 ## 8. Riesgos / decisiones
 - **`hp` sin usar:** dejar claro en la calculadora que hoy decide el poder (attack/defense), no hp; si

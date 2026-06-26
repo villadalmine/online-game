@@ -412,6 +412,24 @@ def mechanics_documents() -> list[dict]:
                          "llevar", "mandar", "viaje", "torreta", "defensa", "saqueo", "botin"],
         },
         {
+            "id": "mech_combat_planning", "type": "mechanic",
+            "text": (
+                "PLANIFICAR UN ATAQUE (SDD 34): NO calcules pérdidas de memoria — usá las "
+                "herramientas deterministas del server. 'POST /combat/plan "
+                "{target_base_id, margin}' estima la defensa DESDE TU INTEL (espiá primero) y "
+                "dice cuánto poder de ataque y qué mezcla de unidades llevar. 'POST "
+                "/combat/simulate {attacker_force, defender_force}' prueba fuerzas exactas (la "
+                "Calculadora de la web usa esto). Regla práctica: llevá 2-3× la defensa del "
+                "objetivo para ganar con pérdidas razonables (~25-33%); apenas por encima = "
+                "victoria pírrica (perdés casi la mitad). Las torretas suman defensa fija que "
+                "NO se pierde: defensa barata. Da números reales de esas herramientas, nunca "
+                "inventados."
+            ),
+            "keywords": ["planear", "plan", "cuanto necesito", "cuánto necesito", "para ganar",
+                         "calcular", "calculadora", "simular", "margen", "pérdidas", "perdidas",
+                         "cuantos tanques", "cuántos tanques", "winrate", "conviene atacar"],
+        },
+        {
             "id": "mech_expedition", "type": "mechanic",
             "text": (
                 "EXPEDICIONES: mandás un transbordador (shuttle) a una luna; vuelve con recursos "

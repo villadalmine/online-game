@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Calculadora de combate web + asistente aterrizado (SDD 34 completo)
+- **Calculadora de combate 🧮** (panel nuevo): poné unidades del atacante y del defensor (+ torretas)
+  y te dice **en vivo si ganás y cuánto pierde cada lado** — usa `POST /combat/simulate`, el **mismo
+  cálculo determinista** que el combate real, sin gastar nada. Picto-aware (íconos de unidad).
+- **Asistente IA sin alucinar:** nuevo grounding `mech_combat_planning` → el modelo usa
+  `/combat/plan` (estima la defensa desde tu intel) y `/combat/simulate` en vez de inventar números,
+  con la regla práctica "llevá 2-3× la defensa". Junto al `mech_combat` que ya tenía la fórmula.
+- Cierra los follow-ups del SDD 34 (la base —`/combat/simulate`, `/combat/plan`, botón planear— ya
+  estaba); el ROADMAP estaba desactualizado marcándolo como "diseño".
+
 ## [1.87.0] - 2026-06-26
 
 ### 2026-06-26 — Fix: la planta de energía ahora SÍ sube el tope (y la regen) de energía
