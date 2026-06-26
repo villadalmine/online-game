@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.87.0] - 2026-06-26
+
 ### 2026-06-26 — Fix: la planta de energía ahora SÍ sube el tope (y la regen) de energía
 - **Bug:** el edificio "Planta de energía" prometía "aumenta el tope/regen" pero **no hacía nada**:
   `energy_max` era una constante fija (240) y la regen solo dependía del planeta. Por más plantas que
