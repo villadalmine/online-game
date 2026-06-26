@@ -1,7 +1,8 @@
 # SDD 43 — Modo pictográfico de la UI (jugar sin leer)
 
-> **Estado:** **F1 + F2 (parcial) + TTS implementado** (en producción) · resto en diseño
-> · **Fecha:** 2026-06-26 · **Autor:** equipo online-game
+> **Estado:** **F1 + F2 (parcial) + TTS implementado** (en producción) · **⏳ PENDIENTE: completar
+> "jugar sin leer"** — llevar íconos/grilla al resto de paneles (mercado/hub/transporte/alianzas) y
+> pulir. **Es lo principal que queda del proyecto.** · **Fecha:** 2026-06-26 · **Autor:** equipo
 > **Ámbito:** principalmente cliente web (`web/index.html`) + un campo **aditivo** `icon:` en
 > `content/*.yaml` expuesto por `/catalog`. **Sin cambios de reglas de juego ni de modelos/DB.**
 

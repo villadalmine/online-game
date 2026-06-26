@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Docs: IA del juego documentada en la página tech + qué queda pendiente
+- **Página `/tech`**: nuevas cards de la inteligencia agregada — NPC estratega (lee grafo + métricas
+  + scoreboard y decide como un jugador, solo jugadas pagables), **aprende de sus errores**
+  (memoriza fallos), y **GPU local vs nube medido** (panel admin 🧠 % + Grafana). Modelo local
+  actualizado a **qwen2.5:7b**.
+- **PENDIENTE (próximo):** terminar **"jugar sin leer" (SDD 43, modo pictográfico)** — falta llevar
+  los íconos/grilla al resto de paneles (mercado/hub/transporte/alianzas) y pulir; la base (F1 + F2
+  parcial + TTS) ya está. Follow-ups de IA: orquestar el tick por **Argo** (SDD 19 §9.5, un NPC a la
+  vez), y publicar `game_npc_*` por **Pushgateway** ya hecho (la card admin es DB-backed igual).
+
 ## [1.79.0] - 2026-06-26
 
 ### 2026-06-26 — NPC sin ahogo de energía + no atacar sin energía (más jugadas por LLM)

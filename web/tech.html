@@ -189,10 +189,13 @@
 
   <h2><span data-i18n="s_ai">Cómo usa la IA el juego</span> <small data-i18n="s_ai_sm">GPU propia primero</small></h2>
   <div class="grid">
-    <div class="card"><div class="k">🖥️ GPU local</div><h3 data-i18n="ai1h">Tu GPU primero</h3><p data-i18n="ai1p">El asistente y las NPC corren en <strong>2 GPUs caseras</strong> (Ollama, modelo chico) vía LiteLLM. Gratis, sin tope diario y ~1–3 s. Cero dependencia de nube en el camino feliz.</p></div>
+    <div class="card"><div class="k">🖥️ GPU local</div><h3 data-i18n="ai1h">Tu GPU primero</h3><p data-i18n="ai1p">El asistente y las NPC corren en <strong>2 GPUs caseras</strong> (Ollama, <strong>qwen2.5:7b</strong>) vía LiteLLM. Gratis, sin tope diario. Cero dependencia de nube en el camino feliz.</p></div>
     <div class="card"><div class="k">🧠 RAG / grafo</div><h3 data-i18n="ai2h">Subgrafo, no todo</h3><p data-i18n="ai2p">El asistente <strong>indexa el grafo</strong> del juego y manda solo el <em>subgrafo relevante</em> a tu pregunta — prompt chico que la GPU resuelve sin truncar. El razonamiento (qué te falta, prerequisitos) es <strong>determinista</strong>; la IA solo redacta.</p></div>
     <div class="card"><div class="k">🔁 fallback</div><h3 data-i18n="ai3h">Cadena con red</h3><p data-i18n="ai3p">Si la GPU no llega, cae a un modelo <strong>pago barato</strong> (el <em>free</em> de la nube se bloquea por día). Si todo falla, responde con <strong>tips deterministas</strong>: el juego <strong>siempre</strong> contesta.</p></div>
     <div class="card"><div class="k">🤖 NPC + budget</div><h3 data-i18n="ai4h">Coherente y barato</h3><p data-i18n="ai4p">Las NPC (atacar, comerciar, chatear en la alianza) usan la GPU y <em>toleran esperar</em>. Hay un <strong>presupuesto por jugador/día</strong> para que charlar no queme créditos.</p></div>
+    <div class="card"><div class="k">♟️ NPC estratega</div><h3 data-i18n="ai5h">Piensa como un jugador</h3><p data-i18n="ai5p">Cada NPC <strong>lee su estado + el grafo + las métricas (meta) + el scoreboard</strong> y el LLM elige su táctica (construir/investigar/atacar) — igual que vos. Cambia de postura (agresivo/defensivo/expandir) y <strong>solo elige jugadas que puede pagar</strong>.</p></div>
+    <div class="card"><div class="k">📚 Aprende</div><h3 data-i18n="ai6h">Aprende de sus errores</h3><p data-i18n="ai6p">Si una jugada del LLM no se puede aplicar, la NPC <strong>memoriza el motivo</strong> y el próximo turno no la repite. Combinado con el meta (qué unidad gana más), juega lo que estadísticamente funciona.</p></div>
+    <div class="card"><div class="k">📊 Medible</div><h3 data-i18n="ai7h">GPU local vs nube, medido</h3><p data-i18n="ai7p">Un NPC juega con la <strong>nube</strong> y el resto con la <strong>GPU local</strong>; métricas en Grafana y en el panel admin (🧠 % de jugadas aplicadas, win-rate, motivos de fallo) muestran <strong>quién juega mejor y si la IA mejora con el tiempo</strong>.</p></div>
   </div>
 
   <h2><span data-i18n="s_hw">Hardware</span> <small data-i18n="s_hw_sm">bare-metal en casa</small></h2>
@@ -252,7 +255,10 @@ const T = {
     sc3h:"Por turnos", sc3p:"Sin requisitos de baja latencia → muchísimo más barato de escalar que tiempo real.",
     sc4h:"Aislamiento", sc4p:"El juego corre en su propio vCluster: API propia, RBAC y CRDs sin tocar el clúster anfitrión.",
     s_ai:"Cómo usa la IA el juego", s_ai_sm:"GPU propia primero",
-    ai1h:"Tu GPU primero", ai1p:"El asistente y las NPC corren en <strong>2 GPUs caseras</strong> (Ollama, modelo chico) vía LiteLLM. Gratis, sin tope diario y ~1–3 s. Cero dependencia de nube en el camino feliz.",
+    ai1h:"Tu GPU primero", ai1p:"El asistente y las NPC corren en <strong>2 GPUs caseras</strong> (Ollama, <strong>qwen2.5:7b</strong>) vía LiteLLM. Gratis, sin tope diario. Cero dependencia de nube en el camino feliz.",
+    ai5h:"Piensa como un jugador", ai5p:"Cada NPC <strong>lee su estado + el grafo + las métricas (meta) + el scoreboard</strong> y el LLM elige su táctica — igual que vos. Cambia de postura (agresivo/defensivo/expandir) y <strong>solo elige jugadas que puede pagar</strong>.",
+    ai6h:"Aprende de sus errores", ai6p:"Si una jugada del LLM no se puede aplicar, la NPC <strong>memoriza el motivo</strong> y no la repite. Con el meta (qué unidad gana más) juega lo que funciona.",
+    ai7h:"GPU local vs nube, medido", ai7p:"Un NPC juega con la <strong>nube</strong> y el resto con la <strong>GPU local</strong>; métricas en Grafana y en el panel admin (🧠 % de jugadas aplicadas, win-rate, motivos de fallo) muestran <strong>quién juega mejor y si la IA mejora</strong>.",
     ai2h:"Subgrafo, no todo", ai2p:"El asistente <strong>indexa el grafo</strong> del juego y manda solo el <em>subgrafo relevante</em> a tu pregunta — prompt chico que la GPU resuelve sin truncar. El razonamiento (qué te falta, prerequisitos) es <strong>determinista</strong>; la IA solo redacta.",
     ai3h:"Cadena con red", ai3p:"Si la GPU no llega, cae a un modelo <strong>pago barato</strong> (el <em>free</em> de la nube se bloquea por día). Si todo falla, responde con <strong>tips deterministas</strong>: el juego <strong>siempre</strong> contesta.",
     ai4h:"Coherente y barato", ai4p:"Las NPC (atacar, comerciar, chatear en la alianza) usan la GPU y <em>toleran esperar</em>. Hay un <strong>presupuesto por jugador/día</strong> para que charlar no queme créditos.",
@@ -304,7 +310,10 @@ const T = {
     sc3h:"Turn-based", sc3p:"No low-latency requirements → far cheaper to scale than real-time.",
     sc4h:"Isolation", sc4p:"The game runs in its own vCluster: own API, RBAC and CRDs without touching the host cluster.",
     s_ai:"How the game uses AI", s_ai_sm:"own GPU first",
-    ai1h:"Your GPU first", ai1p:"The assistant and the NPCs run on <strong>2 home GPUs</strong> (Ollama, small model) via LiteLLM. Free, no daily cap, ~1–3 s. Zero cloud dependency on the happy path.",
+    ai1h:"Your GPU first", ai1p:"The assistant and the NPCs run on <strong>2 home GPUs</strong> (Ollama, <strong>qwen2.5:7b</strong>) via LiteLLM. Free, no daily cap. Zero cloud dependency on the happy path.",
+    ai5h:"Thinks like a player", ai5p:"Each NPC <strong>reads its state + the graph + the meta metrics + the scoreboard</strong> and the LLM picks its tactic — just like you. It shifts posture (aggressive/defensive/expand) and <strong>only picks moves it can afford</strong>.",
+    ai6h:"Learns from mistakes", ai6p:"If an LLM move can't be applied, the NPC <strong>remembers why</strong> and won't repeat it. With the meta (best win-rate unit) it plays what works.",
+    ai7h:"Local GPU vs cloud, measured", ai7p:"One NPC plays on the <strong>cloud</strong>, the rest on the <strong>local GPU</strong>; metrics in Grafana and the admin panel (🧠 % of applied moves, win-rate, failure reasons) show <strong>who plays better and whether the AI improves</strong>.",
     ai2h:"Subgraph, not all", ai2p:"The assistant <strong>indexes the game graph</strong> and sends only the <em>relevant subgraph</em> for your question — a small prompt the GPU handles without truncating. The reasoning (what you're missing, prerequisites) is <strong>deterministic</strong>; the AI only writes prose.",
     ai3h:"Chain with a net", ai3p:"If the GPU can't keep up, it falls back to a <strong>cheap paid</strong> model (the cloud <em>free</em> tier gets daily-blocked). If everything fails, it answers with <strong>deterministic tips</strong>: the game <strong>always</strong> replies.",
     ai4h:"Coherent and cheap", ai4p:"NPCs (attack, trade, alliance chat) use the GPU and <em>tolerate waiting</em>. There's a <strong>per-player daily budget</strong> so chatting doesn't burn credits.",
