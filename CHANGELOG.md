@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.85.0] - 2026-06-26
+
 ### 2026-06-26 — Jugar sin leer (SDD 43): último lote — cobertura completa de paneles
 - **Notificaciones:** cada aviso con un **ícono de tipo** (⚔ ataque, 🛡 defensa, 🔬 research, 🏪 mercado,
   🛰 expedición, 🤝 alianza, 🏗 construcción, 📣 novedad) en vez del texto del tipo; el cuerpo sigue
