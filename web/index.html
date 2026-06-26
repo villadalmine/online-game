@@ -504,9 +504,17 @@ function ttsVoice(){ const ss=window.speechSynthesis; if(!ss) return null; const
   const by=p=>vs.find(v=>(v.lang||"").toLowerCase().replace("_","-").startsWith(p));
   _ttsVoice = lang==="en" ? (by("en")||null) : (by("es-ar")||by("es-419")||by("es-mx")||by("es")||null);
   return _ttsVoice; }
-function speak(text){ try{ const ss=window.speechSynthesis; if(!ss||!text) return; ss.cancel();
-  const u=new SpeechSynthesisUtterance(text); const v=_ttsVoice||ttsVoice(); if(v) u.voice=v;
-  u.lang=(v&&v.lang)||(lang==="en"?"en-US":"es-AR"); u.rate=1.0; ss.speak(u); }catch(e){} }
+// TTS del servidor (espeak-ng, SDD 43): para navegadores SIN voces (Chromium/Linux). Reproduce el
+// WAV por el canal de audio normal. Solo se usa como fallback (si el navegador no tiene voces).
+function serverSpeak(text){ try{ const a=new Audio(API+"/api/v1/tts?lang="+encodeURIComponent(lang)+"&text="+encodeURIComponent(text.slice(0,600))); a.play().catch(()=>{}); }catch(e){} }
+function speak(text){ if(!text) return;
+  try{ const ss=window.speechSynthesis; const voices=ss?(ss.getVoices()||[]):[];
+    if(ss && voices.length){ ss.cancel();
+      const u=new SpeechSynthesisUtterance(text); const v=_ttsVoice||ttsVoice(); if(v) u.voice=v;
+      u.lang=(v&&v.lang)||(lang==="en"?"en-US":"es-AR"); u.rate=1.0; ss.speak(u); return; }
+  }catch(e){}
+  serverSpeak(text);   // navegador sin voces → TTS del servidor
+}
 if(window.speechSynthesis && 'onvoiceschanged' in window.speechSynthesis)
   window.speechSynthesis.onvoiceschanged=()=>{ _ttsVoice=null; };
 // delegación: en modo dibujos, un clic en cualquier ícono lo lee en voz alta

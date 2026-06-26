@@ -239,6 +239,21 @@ async def test_catalog_pictographic_icons(client):
     assert en_earth["icon"] == planets["earth"]["icon"]   # ícono universal, no se traduce
 
 
+async def test_tts_server_fallback(client):
+    # SDD 43: TTS de servidor (espeak-ng) para navegadores sin voces. Texto vacío -> 400; con texto,
+    # devuelve audio/wav (o 503 si el binario no está en este entorno — sin romper la suite).
+    import shutil
+    bad = await client.http.get("/api/v1/tts?text=")
+    assert bad.status_code == 400
+    r = await client.http.get("/api/v1/tts", params={"text": "hierro", "lang": "es"})
+    if shutil.which("espeak-ng"):
+        assert r.status_code == 200, r.text
+        assert r.headers["content-type"] == "audio/wav"
+        assert r.content[:4] == b"RIFF"   # cabecera WAV
+    else:
+        assert r.status_code == 503
+
+
 async def test_catalog_i18n(client):
     def names(body):
         return {b["key"]: b["name"] for b in body["buildings"]}

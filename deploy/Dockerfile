@@ -2,6 +2,10 @@ FROM python:3.12-slim AS base
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 
+# espeak-ng: TTS de servidor (SDD 43) para navegadores sin voces (Chromium/Linux). Liviano (~5MB).
+RUN apt-get update && apt-get install -y --no-install-recommends espeak-ng \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # The package (setuptools) needs its source dirs present to build, so copy the code

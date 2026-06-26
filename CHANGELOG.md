@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Jugar sin leer (SDD 43 COMPLETO): TTS de servidor (espeak-ng)
+- **`GET /api/v1/tts?text=&lang=`**: sintetiza el texto con **espeak-ng** y devuelve un WAV. Es el
+  **fallback** del modo pictográfico para navegadores **sin voces** (típico Chromium/Linux), donde el
+  `speechSynthesis` del navegador no suena. El front usa el navegador si tiene voces y, si no, pide
+  este audio y lo reproduce. Texto acotado (600), pasado por stdin a un proceso sin shell.
+- **Imagen:** `espeak-ng` agregado al Dockerfile (~5MB). e2e `test_tts_server_fallback` (400 sin
+  texto; audio/wav con cabecera RIFF; 503 si el binario no está).
+- Con esto **SDD 43 queda completo**: todos los paneles jugables hablan el modo y la lectura en voz
+  alta funciona en cualquier navegador.
+
 ## [1.85.0] - 2026-06-26
 
 ### 2026-06-26 — Jugar sin leer (SDD 43): último lote — cobertura completa de paneles

@@ -22,6 +22,7 @@ from app.api.v1 import (
     public,
     research,
     seasons,
+    tts,
     universes,
     world,
 )
@@ -50,3 +51,4 @@ api_router.include_router(universes.router, prefix="/universes", tags=["universe
 api_router.include_router(colonize.router, prefix="/colonize", tags=["colonize"])
 api_router.include_router(market.router, prefix="/market", tags=["market"])
 api_router.include_router(advisor.router, prefix="/players/me/advisor", tags=["advisor"])
+api_router.include_router(tts.router, tags=["tts"])
