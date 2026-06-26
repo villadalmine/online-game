@@ -43,6 +43,9 @@ class Player(Base):
 
     energy: Mapped[float] = mapped_column(Float, default=0.0)
     energy_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    # Plantas de energía ACTIVAS (cacheado, recomputado en finalize_due_builds): suben el tope y la
+    # regen de energía. Lazy-state: se mantiene fresco antes de toda operación de energía.
+    active_power_plants: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     # NPC short-term memory: JSON list of recent action descriptions (last N).

@@ -16,7 +16,7 @@ from app.services.economy import (
     planet_stocks,
 )
 from app.services.energy import energy_shortfall_msg, spend_energy
-from app.services.physics import effective_energy_regen
+from app.services.physics import effective_energy_max, effective_energy_regen
 
 
 class ResearchError(Exception):
@@ -105,7 +105,7 @@ async def start_research(session: AsyncSession, player, tech_key: str) -> Resear
 
     regen = effective_energy_regen(player, settings)
     need_e = tech.get("energy_cost", 0)
-    if not spend_energy(player, need_e, now, regen, settings.energy_max):
+    if not spend_energy(player, need_e, now, regen, effective_energy_max(player, settings)):
         raise ResearchError(energy_shortfall_msg(need_e, player.energy, regen))
 
     cost = content.tech_cost_in_minerals(player.race_key, tech_key)

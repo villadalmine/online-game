@@ -9,7 +9,11 @@ from app.core.config import get_settings
 from app.models import Base_, Building, Player
 from app.services.economy import collect_mines, finalize_due_builds
 from app.services.energy import energy_shortfall_msg, spend_energy
-from app.services.physics import effective_energy_regen, gravity_build_multiplier
+from app.services.physics import (
+    effective_energy_max,
+    effective_energy_regen,
+    gravity_build_multiplier,
+)
 
 
 class BuildError(Exception):
@@ -63,7 +67,7 @@ async def start_build(
     # Charge energy (also applies regen).
     regen = effective_energy_regen(player, settings)
     need_e = spec.get("energy_cost", 0)
-    if not spend_energy(player, need_e, now, regen, settings.energy_max):
+    if not spend_energy(player, need_e, now, regen, effective_energy_max(player, settings)):
         # spend_energy ya aplicó regen, así que player.energy es el valor actual.
         raise BuildError(energy_shortfall_msg(need_e, player.energy, regen))
 

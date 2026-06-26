@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     energy_regen_per_hour: float = 10.0
     energy_max: float = 240.0
     energy_start: float = 60.0
+    # Cada planta de energía ACTIVA sube el tope y la regen (antes el edificio no hacía nada pese a
+    # prometerlo). El tope efectivo = energy_max + plantas×energy_max_per_power_plant.
+    energy_max_per_power_plant: float = 120.0
+    energy_regen_per_power_plant: float = 5.0
 
     # Colonización (SDD 37): fundar bases en otros planetas.
     max_colonies: int = 3                 # máximo de colonias (además del mundo natal)

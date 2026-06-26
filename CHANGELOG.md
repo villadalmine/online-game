@@ -7,6 +7,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Fix: la planta de energía ahora SÍ sube el tope (y la regen) de energía
+- **Bug:** el edificio "Planta de energía" prometía "aumenta el tope/regen" pero **no hacía nada**:
+  `energy_max` era una constante fija (240) y la regen solo dependía del planeta. Por más plantas que
+  construyeras, tu energía nunca pasaba de 240.
+- **Ahora:** cada **planta de energía ACTIVA** sube el **tope** (+`energy_max_per_power_plant`=120) y
+  la **regen** (+`energy_regen_per_power_plant`=5/h, escalada por la física del planeta). El tope
+  efectivo = 240 + plantas×120. El conteo de plantas activas se cachea en el jugador
+  (`active_power_plants`, migración aditiva) y se recomputa en cada acción/lectura (lazy-state).
+- Aplicado en TODOS los cobros/topes de energía (construir, entrenar, investigar, atacar, expedición,
+  espiar, mercado, hub, colonizar, catch-up, asistente) y en el `energy_max` que ve la UI.
+- Tests: `test_physics.py` (puros + end-to-end construir→activar→sube el tope).
+
 ## [1.86.0] - 2026-06-26
 
 ### 2026-06-26 — Jugar sin leer (SDD 43 COMPLETO): TTS de servidor (espeak-ng)

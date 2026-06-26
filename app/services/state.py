@@ -34,7 +34,7 @@ from app.services.economy import collect_mines, finalize_due_builds, player_stoc
 from app.services.energy import apply_regen
 from app.services.expedition import finalize_due_expeditions
 from app.services.notifications import unread_count
-from app.services.physics import effective_energy_regen
+from app.services.physics import effective_energy_max, effective_energy_regen
 from app.services.research import finalize_due_research, in_progress, researched_techs
 from app.services.training import finalize_due_training, player_units
 
@@ -60,7 +60,7 @@ async def advance(session: AsyncSession, player: Player) -> None:
     regen = effective_energy_regen(player, settings) * await event_multiplier(
         session, "energy_regen", now
     )
-    apply_regen(player, now, regen, settings.energy_max)
+    apply_regen(player, now, regen, effective_energy_max(player, settings))
     await grant_due_free_units(session, player, now)
     await session.commit()
 
@@ -228,7 +228,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         planet_key=player.planet_key,
         race_key=player.race_key,
         energy=round(player.energy, 2),
-        energy_max=settings.energy_max,
+        energy_max=round(effective_energy_max(player, settings), 2),
         stocks={k: round(v, 2) for k, v in stocks.items()},
         stocks_by_planet=by_planet,
         units=units,

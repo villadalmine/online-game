@@ -20,7 +20,7 @@ from app.services.economy import player_stocks
 from app.services.effects import multiplier
 from app.services.energy import spend_energy
 from app.services.notifications import notify
-from app.services.physics import effective_energy_regen
+from app.services.physics import effective_energy_max, effective_energy_regen
 from app.services.scoring import player_score
 from app.services.training import get_or_create_unit_stock, player_units
 
@@ -138,7 +138,7 @@ async def start_spy(
 
     if not spend_energy(
         observer, settings.spy_energy_cost, now,
-        effective_energy_regen(observer, settings), settings.energy_max,
+        effective_energy_regen(observer, settings), effective_energy_max(observer, settings),
     ):
         raise SpyError("Energía insuficiente para espiar.")
 

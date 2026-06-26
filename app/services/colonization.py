@@ -148,7 +148,7 @@ async def found_colony(
 
     from app.core.config import get_settings
     from app.services.energy import energy_shortfall_msg, spend_energy
-    from app.services.physics import effective_energy_regen
+    from app.services.physics import effective_energy_max, effective_energy_regen
     from app.services.research import researched_techs
     from app.services.training import get_or_create_unit_stock, player_units
 
@@ -209,7 +209,7 @@ async def found_colony(
     if mode in ("orbital", "lunar"):
         energy_cost *= s.orbital_cost_mult
     regen = effective_energy_regen(player, s)
-    if not spend_energy(player, energy_cost, now, regen, s.energy_max):
+    if not spend_energy(player, energy_cost, now, regen, effective_energy_max(player, s)):
         raise ColonizeError(
             energy_shortfall_msg(energy_cost, player.energy, regen).replace(
                 "Energía insuficiente", "Energía insuficiente para colonizar"

@@ -16,7 +16,7 @@ from app.core.config import get_settings
 from app.models import Base_, Building, Player
 from app.services.economy import get_or_create_stock
 from app.services.energy import spend_energy
-from app.services.physics import effective_energy_regen
+from app.services.physics import effective_energy_max, effective_energy_regen
 
 
 class MarketError(Exception):
@@ -136,7 +136,8 @@ async def buy(
     await _check_rate_limit(session, player, planet_key, mineral_key, qty, "buy", held)
 
     cost = mineral_price(planet_key, mineral_key) * qty
-    if not spend_energy(player, cost, now, effective_energy_regen(player, s), s.energy_max):
+    cap = effective_energy_max(player, s)
+    if not spend_energy(player, cost, now, effective_energy_regen(player, s), cap):
         raise MarketError(f"Energía insuficiente (cuesta {round(cost, 1)}).")
     (await get_or_create_stock(session, player.id, mineral_key, planet_key)).amount += qty
 
@@ -163,7 +164,7 @@ async def sell(
 
     gain = mineral_price(planet_key, mineral_key) * s.market_sell_spread * qty
     stock.amount -= qty
-    player.energy = min(s.energy_max, player.energy + gain)
+    player.energy = min(effective_energy_max(player, s), player.energy + gain)
     player.energy_updated_at = datetime.now(UTC)
 
     from app.services.journal import record
@@ -478,7 +479,8 @@ async def hub_trade(
     home = player.planet_key
     if side == "buy":
         cost = row.price * qty
-        if not spend_energy(player, cost, now, effective_energy_regen(player, s), s.energy_max):
+        cap = effective_energy_max(player, s)
+        if not spend_energy(player, cost, now, effective_energy_regen(player, s), cap):
             raise MarketError(f"Energía insuficiente (cuesta {round(cost, 1)}).")
         risk = trade_raid_risk(escort, qty, s)   # piratas: te roban parte del cargamento
         lost = int(qty * risk)
@@ -496,7 +498,7 @@ async def hub_trade(
             raise MarketError(f"No tenés {qty} de {mineral_key} en {home}.")
         gain = row.price * s.market_sell_spread * qty
         stock.amount -= qty
-        player.energy = min(s.energy_max, player.energy + gain)
+        player.energy = min(effective_energy_max(player, s), player.energy + gain)
         player.energy_updated_at = now
         row.price = _clamp_hub(row.price * (1 - s.market_hub_impact * qty), mineral_key)
         result = {"sold": qty, "energy_gained": round(gain, 1)}

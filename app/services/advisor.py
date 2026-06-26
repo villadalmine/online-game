@@ -21,7 +21,7 @@ from app.services.economy import get_or_create_stock, player_stocks
 from app.services.energy import compute_energy
 from app.services.llm import llm_chat
 from app.services.notifications import notify
-from app.services.physics import effective_energy_regen
+from app.services.physics import effective_energy_max, effective_energy_regen
 from app.services.state import advance
 
 HISTORY_LEN = 10
@@ -51,7 +51,7 @@ async def build_snapshot(session: AsyncSession, player: Player) -> depgraph.Play
     s = get_settings()
     energy = compute_energy(
         player.energy, player.energy_updated_at, datetime.now(UTC),
-        effective_energy_regen(player, s), s.energy_max,
+        effective_energy_regen(player, s), effective_energy_max(player, s),
     )
     rows = (
         await session.execute(
@@ -489,11 +489,12 @@ async def grant_assist_energy(session: AsyncSession, player: Player) -> dict:
                 "left": assist_energy_left(player, now),
                 "message": "Estás en o sobre el promedio: no necesitás nivelar."}
 
-    headroom = max(0.0, s.energy_max - player.energy)
-    target = max(s.assist_energy_normal, deficit * s.energy_max)   # piso para los que están debajo
-    grant = round(min(target, s.energy_max, headroom), 1)
+    cap = effective_energy_max(player, s)
+    headroom = max(0.0, cap - player.energy)
+    target = max(s.assist_energy_normal, deficit * cap)   # piso para los que están debajo
+    grant = round(min(target, cap, headroom), 1)
 
-    player.energy = min(s.energy_max, player.energy + grant)
+    player.energy = min(cap, player.energy + grant)
     player.energy_updated_at = now
     if not _same_day(player.assist_energy_reset_at, now):
         player.assist_energy_used = 0

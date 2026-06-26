@@ -81,7 +81,8 @@ async def finalize_due_builds(
 
     now = now or _now()
     count = 0
-    for b in await _player_buildings(session, player.id):
+    buildings = await _player_buildings(session, player.id)
+    for b in buildings:
         if b.status == "building" and _aware(b.completes_at) <= now:
             b.status = "active"
             if get_content().buildings[b.building_key]["category"] == "mine":
@@ -91,6 +92,11 @@ async def finalize_due_builds(
                 {"building": b.building_key, "base_id": b.base_id},
             )
             count += 1
+    # Cacheo de plantas de energía activas (suben tope/regen). Se recomputa siempre: este paso corre
+    # antes de toda operación de energía (es el primer paso de cada acción y del advance).
+    player.active_power_plants = sum(
+        1 for b in buildings if b.status == "active" and b.building_key == "power_plant"
+    )
     if count:
         from app.services.stats import bump
         await bump(session, player.id, buildings_built=count)

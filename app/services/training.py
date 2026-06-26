@@ -12,7 +12,7 @@ from app.core.config import get_settings
 from app.models import Base_, Building, Player, TrainingOrder, UnitStock
 from app.services.economy import collect_mines, finalize_due_builds
 from app.services.energy import energy_shortfall_msg, spend_energy
-from app.services.physics import effective_energy_regen
+from app.services.physics import effective_energy_max, effective_energy_regen
 
 
 class TrainingError(Exception):
@@ -126,7 +126,7 @@ async def start_training(
 
     energy_cost = spec.get("energy_cost", 0) * quantity
     regen = effective_energy_regen(player, settings)
-    if not spend_energy(player, energy_cost, now, regen, settings.energy_max):
+    if not spend_energy(player, energy_cost, now, regen, effective_energy_max(player, settings)):
         raise TrainingError(energy_shortfall_msg(energy_cost, player.energy, regen))
 
     unit_cost = content.unit_cost_in_minerals(player.race_key, unit_key)

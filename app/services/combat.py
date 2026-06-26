@@ -24,7 +24,7 @@ from app.services.economy import (
 )
 from app.services.energy import spend_energy
 from app.services.notifications import notify
-from app.services.physics import effective_energy_regen
+from app.services.physics import effective_energy_max, effective_energy_regen
 from app.services.training import (
     finalize_due_training,
     get_or_create_unit_stock,
@@ -176,7 +176,7 @@ async def start_attack(
         settings.attack_energy_cost,
         now,
         effective_energy_regen(attacker, settings),
-        settings.energy_max,
+        effective_energy_max(attacker, settings),
     ):
         raise CombatError("Energia insuficiente para atacar.")
 

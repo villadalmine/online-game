@@ -77,3 +77,66 @@ def test_effective_energy_regen_combines_insolation_and_temperature():
     # off ⇒ regen base intacta
     off = Settings(physics_enabled=False, energy_regen_per_hour=10.0)
     assert physics.effective_energy_regen(_P(), off) == 10.0
+
+
+# ── Plantas de energía: suben tope y regen (antes el edificio no hacía nada) ──────────────
+class _FakePlayer:
+    def __init__(self, plants, planet="earth", is_npc=False):
+        self.active_power_plants = plants
+        self.planet_key = planet
+        self.is_npc = is_npc
+
+
+def test_power_plants_raise_energy_cap():
+    s = Settings(energy_max=240.0, energy_max_per_power_plant=120.0)
+    assert physics.effective_energy_max(_FakePlayer(0), s) == 240.0
+    assert physics.effective_energy_max(_FakePlayer(2), s) == 480.0
+
+
+def test_power_plants_raise_regen():
+    # physics off ⇒ multiplicadores de planeta = 1; regen = base + plantas×bonus
+    s = Settings(physics_enabled=False, energy_regen_per_hour=10.0,
+                 energy_regen_per_power_plant=5.0)
+    assert physics.effective_energy_regen(_FakePlayer(0), s) == pytest.approx(10.0)
+    assert physics.effective_energy_regen(_FakePlayer(3), s) == pytest.approx(25.0)
+
+
+def test_no_plants_cap_is_base():
+    # sin el atributo (jugador viejo) ⇒ tope base, sin romper
+    class _Bare:
+        planet_key = "earth"
+        is_npc = False
+    s = Settings(energy_max=240.0, energy_max_per_power_plant=120.0)
+    assert physics.effective_energy_max(_Bare(), s) == 240.0
+
+
+async def test_building_power_plant_raises_cap_end_to_end(session):
+    """Construir y activar una planta sube active_power_plants y el tope efectivo (bug reportado:
+    el tope quedaba clavado en 240 por más plantas que hicieras)."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.core.config import get_settings
+    from app.core.security import hash_password
+    from app.models import Player
+    from app.services.build import start_build
+    from app.services.economy import finalize_due_builds
+    from app.services.onboarding import onboard_player
+    from app.services.physics import effective_energy_max
+
+    p = Player(username="ppower", password_hash=hash_password("secret123"))
+    session.add(p)
+    await session.flush()
+    base = await onboard_player(session, p, "milky_way", "earth", "terran")
+    p.energy = 99999.0
+    await session.commit()
+    s = get_settings()
+    before = effective_energy_max(p, s)
+
+    order = await start_build(session, p, base, "power_plant")
+    order.completes_at = datetime.now(UTC) - timedelta(seconds=1)   # forzar fin del timer
+    await session.commit()
+    await finalize_due_builds(session, p)
+    await session.commit()
+
+    assert p.active_power_plants == 1
+    assert effective_energy_max(p, s) == before + s.energy_max_per_power_plant

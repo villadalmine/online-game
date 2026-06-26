@@ -11,6 +11,7 @@ from app.content.registry import get_content
 from app.core.config import get_settings
 from app.models import Base_, Building, Player, ResourceStock
 from app.services.economy import get_or_create_stock
+from app.services.physics import effective_energy_max
 
 
 def _percentile(values: list[float], p: float) -> float:
@@ -66,7 +67,7 @@ async def apply_catchup(session: AsyncSession, player: Player) -> dict | None:
             granted[role] = per
 
     # Energía full para poder actuar ya (transitorio, regenera; no es ventaja persistente).
-    player.energy = settings.energy_max
+    player.energy = effective_energy_max(player, settings)
 
     # Defensa priorizada: asegurar mina (producción) + torreta (defensa) activas. Nada ofensivo.
     base = (

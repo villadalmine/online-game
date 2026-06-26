@@ -60,14 +60,25 @@ def temperature_energy_multiplier(
 
 
 def effective_energy_regen(player, settings: Settings | None = None) -> float:
-    """Regen efectiva: base × insolación (sol) × temperatura (refrigeración) del planeta.
+    """Regen efectiva: (base + plantas de energía) × insolación (sol) × temperatura del planeta.
+    Las plantas de energía ACTIVAS suben la regen (player.active_power_plants, cacheado).
     Los NPC regeneran más rápido (npc_energy_regen_mult) para que no queden 'ahogados' de energía
     y puedan jugar de verdad por LLM (si no, casi todas las jugadas caen a fallback por energía)."""
     s = settings or get_settings()
     npc_mult = s.npc_energy_regen_mult if getattr(player, "is_npc", False) else 1.0
+    plants = getattr(player, "active_power_plants", 0) or 0
+    base = s.energy_regen_per_hour + plants * s.energy_regen_per_power_plant
     return (
-        s.energy_regen_per_hour
+        base
         * npc_mult
         * insolation_energy_multiplier(player.planet_key, s)
         * temperature_energy_multiplier(player.planet_key, s)
     )
+
+
+def effective_energy_max(player, settings: Settings | None = None) -> float:
+    """Tope de energía efectivo = base + plantas de energía ACTIVAS × bonus por planta.
+    Antes el tope era fijo (240) y construir plantas no hacía nada; ahora cada planta lo sube."""
+    s = settings or get_settings()
+    plants = getattr(player, "active_power_plants", 0) or 0
+    return s.energy_max + plants * s.energy_max_per_power_plant

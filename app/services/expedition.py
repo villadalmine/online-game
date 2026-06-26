@@ -11,7 +11,7 @@ from app.core.config import get_settings
 from app.models import ActiveBoon, ExpeditionOrder, Player
 from app.services.economy import collect_mines, finalize_due_builds, get_or_create_stock
 from app.services.energy import spend_energy
-from app.services.physics import effective_energy_regen
+from app.services.physics import effective_energy_max, effective_energy_regen
 from app.services.training import finalize_due_training, player_units
 
 
@@ -100,7 +100,7 @@ async def start_expedition(session: AsyncSession, player: Player, moon_key: str)
         exp.get("energy_cost", 0),
         now,
         effective_energy_regen(player, settings),
-        settings.energy_max,
+        effective_energy_max(player, settings),
     ):
         raise ExpeditionError("Energia insuficiente para la expedicion.")
 
