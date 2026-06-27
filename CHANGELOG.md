@@ -7,7 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
-## [1.91.0] - 2026-06-26
+### 2026-06-27 — Build: límite de ephemeral-storage para Kaniko (evita evicción del build)
+- Los builds Kaniko extraen las capas al **disco efímero del nodo** (no la PVC ni la DB); en el
+  pipeline de CD corren **dos en paralelo** (imagen del juego + imagen de test) sobre el mismo nodo
+  pineado, y eso llenaba el disco → el build se **evictaba a mitad** ("node was low on resource:
+  ephemeral-storage", pasó con 1.90.0). Ahora cada container Kaniko declara
+  `ephemeral-storage` (request 4Gi / limit 8Gi) en `deploy/build/online-game-cicd.yaml` y
+  `online-game-kaniko.yaml`: el scheduler reserva el piso y un build desbocado se **autoexpulsa**
+  (falla limpio) en vez de presionar al nodo y evictar vecinos. Sin cambio de comportamiento del
+  juego (solo infra de build).
 
 ### 2026-06-26 — Fix: el panel de mercado/hub se refresca al instante tras comprar
 - Bug: al comprar mineral/energía (mercado, hub, mercado negro, transporte) el **stock mostrado en el

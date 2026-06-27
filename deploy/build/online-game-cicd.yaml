@@ -80,8 +80,12 @@ spec:
           - "--compression=zstd"
           - "--compression-level=1"
         resources:
-          requests: { cpu: "1", memory: "2Gi" }
-          limits: { cpu: "4", memory: "8Gi" }
+          # ephemeral-storage: Kaniko extrae las capas al disco efímero del NODO (no la PVC ni la DB).
+          # Con dos builds en paralelo (juego + test) eso llenaba el nodo → evicción. Reservamos un
+          # piso (request) y ponemos techo (limit) para que un build desbocado se autoexpulse en vez
+          # de presionar al nodo y evictar vecinos. Ver pending-next-session / SDD 44-45.
+          requests: { cpu: "1", memory: "2Gi", ephemeral-storage: "4Gi" }
+          limits: { cpu: "4", memory: "8Gi", ephemeral-storage: "8Gi" }
         volumeMounts: [{ name: workspace, mountPath: /workspace }]
 
     # ---- build de la imagen de TEST (Kaniko, Dockerfile.test) ----
@@ -103,8 +107,12 @@ spec:
           - "--compression=zstd"
           - "--compression-level=1"
         resources:
-          requests: { cpu: "1", memory: "2Gi" }
-          limits: { cpu: "4", memory: "8Gi" }
+          # ephemeral-storage: Kaniko extrae las capas al disco efímero del NODO (no la PVC ni la DB).
+          # Con dos builds en paralelo (juego + test) eso llenaba el nodo → evicción. Reservamos un
+          # piso (request) y ponemos techo (limit) para que un build desbocado se autoexpulse en vez
+          # de presionar al nodo y evictar vecinos. Ver pending-next-session / SDD 44-45.
+          requests: { cpu: "1", memory: "2Gi", ephemeral-storage: "4Gi" }
+          limits: { cpu: "4", memory: "8Gi", ephemeral-storage: "8Gi" }
         volumeMounts: [{ name: workspace, mountPath: /workspace }]
 
     # ---- GATE 1: e2e API (la imagen de test es self-contained: SQLite + fakeredis) ----

@@ -63,12 +63,17 @@ spec:
           - "--compression=zstd"
           - "--compression-level=1"
         resources:
+          # ephemeral-storage: Kaniko extrae las capas al disco efímero del NODO (no la PVC ni la DB).
+          # Reservamos un piso (request) y ponemos techo (limit) para evitar evicción por presión de
+          # disco del nodo (que mataba el build a mitad de camino). Ver pending-next-session.
           requests:
             cpu: "1"
             memory: "2Gi"
+            ephemeral-storage: "4Gi"
           limits:
             cpu: "4"
             memory: "8Gi"
+            ephemeral-storage: "8Gi"
         volumeMounts:
           - name: workspace
             mountPath: /workspace
