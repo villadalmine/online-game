@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.95.0] - 2026-06-27
+
 ### 2026-06-27 — UI de SDD 47/46: panel "📦 Economía / capacidad"
 - Nueva card en el dashboard que pinta lo que la API ya exponía: **staffing de minería** (👷 obreros
   disponibles/requeridos + "minas al X%"), **almacenamiento** (🛢 barra stock/cap por planeta/mineral,
