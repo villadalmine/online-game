@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.93.0] - 2026-06-27
+
 ### 2026-06-27 — SDD 48 v1: no saturar la API al spamear comprar/construir
 - **Bug:** clickear muchas veces "comprar/construir/entrenar" muy rápido daba **409 "ya tenés una
   acción en curso"** o, en dev/SQLite (sin Redis), **500 internal error** (dos requests del mismo
