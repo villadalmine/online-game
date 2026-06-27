@@ -159,3 +159,22 @@ subjects:
   - kind: ServiceAccount
     name: og-deployer
     namespace: kaniko
+# ---------------------------------------------------------------------------------------------------
+# OPCIÓN B (NO aplicada — documentada): si en vez de reconciliar a mano (Opción A, ver más abajo) se
+# prefiere que el CD se autorreconcilie SIEMPRE sin intervención, reemplazar el ClusterRole de arriba
+# por este (agrega update/patch; NUNCA create/delete sobre un recurso compartido). Es una elevación de
+# privilegio cluster-wide del SA del CD sobre infra cert-manager → aplicar con criterio:
+#
+#   kind: ClusterRole
+#   metadata: { name: og-deployer-clusterissuers }
+#   rules:
+#     - apiGroups: ["cert-manager.io"]
+#       resources: ["clusterissuers"]
+#       verbs: ["get", "list", "watch", "update", "patch"]   # sin create/delete
+#   # + su ClusterRoleBinding al SA kaniko/og-deployer
+#
+# OPCIÓN A (recomendada, sin dar escritura al CD) — reconciliar UNA vez con un kubeconfig admin:
+#   helm upgrade galaxy deploy/helm -n online-game --reuse-values --set image.tag=<tag> --wait
+# Tras eso, el 3-way merge del CD sobre los ClusterIssuers queda vacío y la lectura (RO de arriba)
+# alcanza para que `promote-prod` cierre verde. Ver docs/sdd-cicd-in-cluster.md y pending-next-session.
+# ---------------------------------------------------------------------------------------------------

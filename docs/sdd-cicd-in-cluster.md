@@ -100,3 +100,21 @@ Un target `make deploy V=X.Y.Z` lo envuelve (intenta `argo submit -p`, cae a `ku
 ## 7. Estado / fallback
 El **build-only** (`deploy/build/online-game-kaniko.yaml`, SDD 15) se conserva como fallback para
 cuando se quiera buildear sin desplegar, o para el camino manual de SDD 17 ante cambios de chart.
+
+## 8. RBAC del CD: recursos del chart fuera del Deployment (2026-06-27)
+`helm upgrade --wait` hace un GET (y a veces PATCH) de **todos** los recursos que el chart administra,
+no solo el Deployment. Si el SA del CD (`og-deployer`) no puede leerlos, el `promote-prod` marca
+*failed* **aunque el Deployment ya se haya aplicado** (el pod queda en la versión nueva). Por eso
+`deploy/build/cicd-rbac.yaml` cubre, además de core/apps/batch: `autoscaling/hpa`, `policy/pdb`,
+`monitoring.coreos.com/{prometheusrules,servicemonitors}` (ns online-game) y, en el ns `gateway`,
+`cert-manager/certificates` + `gateway.networking/{gateways,httproutes}` (CRUD) + `rbac/{roles,
+rolebindings}` (RO).
+
+**ClusterIssuers (cluster-scoped, compartidos):** helm a veces necesita **PATCH** para reconciliar su
+metadata. Dos caminos:
+- **A (recomendado, mínimo privilegio):** el CD queda con **read-only** sobre clusterissuers; un admin
+  reconcilia **una vez** con `helm upgrade galaxy deploy/helm -n online-game --reuse-values --set
+  image.tag=<tag> --wait`. Desde ahí el 3-way merge del CD queda vacío y la lectura alcanza.
+- **B (durable, eleva el CD):** dar `update/patch` (sin create/delete) cluster-wide al SA del CD sobre
+  `clusterissuers`. Bloque comentado en `cicd-rbac.yaml`. Elegir con criterio: es escritura cluster-wide
+  sobre infra cert-manager compartida.
