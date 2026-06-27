@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — UI de SDD 47/46: panel "📦 Economía / capacidad"
+- Nueva card en el dashboard que pinta lo que la API ya exponía: **staffing de minería** (👷 obreros
+  disponibles/requeridos + "minas al X%"), **almacenamiento** (🛢 barra stock/cap por planeta/mineral,
+  **roja si rebalsa**) y **alojamiento** (🏠 plazas ocupadas/capacidad por dominio). Local, sin red
+  (entra en el ciclo de 4s). i18n ES/EN. Con los flags off muestra al menos las plazas de alojamiento;
+  staffing/almacén aparecen al prender `mining_staffing_enabled`/`storage_caps_enabled`.
+
 ### 2026-06-27 — Fix infra: CD helm-promote "failed" era RBAC (no el timeout arm)
 - **Causa real** del `promote-prod` que marcaba *failed* desde 1.92.0 (mi hipótesis previa del
   "arranque arm lento" estaba equivocada): el SA del CD `og-deployer` no tenía permiso para los CRDs
