@@ -7,6 +7,23 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — SDD 47/46 v1.5: minería y alojamiento PRENDIDOS (balance suave) + NPC los usa
+> Cierre de SDD 47 (minería) y SDD 46 (alojamiento): pasan de "medido detrás de flags" a **activos**,
+> con balance que **no rompe a los nuevos**, y el **NPC** juega con las nuevas reglas.
+- **Flags ON por default** (apagables por env): `mining_staffing_enabled`, `storage_caps_enabled`,
+  `housing_enforced`. Antes default OFF.
+- **Balance suave (clave para no frustrar):**
+  - `mining_staffing_floor=0.34` → una mina sin obreros igual rinde ~34% (no se zerea a quien recién
+    empieza); los obreros la llevan de ahí a 1.0. Aplicado en `economy.mining_staffing` (lo usan
+    `collect_mines` y `/players/me`).
+  - `base_housing_per_domain=10` → cada dominio arranca con 10 plazas de **gracia** aunque no tengas el
+    edificio → podés entrenar desde el inicio; ampliás construyendo. Nunca destruye unidades.
+- **NPC (`npc.py`):** ahora **entrena obreros** para mantener las minas con staffing, **construye silos**
+  cuando un mineral rebalsa, y **respeta el alojamiento** (no intenta entrenar sin plazas → no rompe su
+  turno con `TrainingError`). Test `test_rule_brain_trains_worker_to_staff_mines`.
+- Tests ajustados a la nueva realidad (formula pura con staffing off; e2e con piso/gracia 0 para probar
+  la mecánica estricta). Suite verde.
+
 ### 2026-06-27 — Test: smoke de Chrome robusto (sin flake por sleep fijo)
 - `test_all_panels_render_without_js_errors` flakeaba en CI ("el juego no se mostró"): esperaba `#game`
   con un `wait_for_timeout(1500)` fijo y, bajo carga, el boot tardaba más → falso negativo (frenó el

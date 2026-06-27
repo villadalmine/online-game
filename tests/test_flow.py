@@ -56,7 +56,12 @@ async def test_build_rejects_insufficient_energy(session):
         await start_build(session, p, base, "mine", target_mineral="iron")
 
 
-async def test_mine_produces_after_completion(session):
+async def test_mine_produces_after_completion(session, monkeypatch):
+    # Prueba la FÓRMULA de producción pura; apagamos staffing/silos (SDD 47) para no mezclar
+    # factores (sin obreros aplicaría el piso). staffing/overflow tienen su test en test_mining.
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "mining_staffing_enabled", False)
+    monkeypatch.setattr(get_settings(), "storage_caps_enabled", False)
     p = await _new_player(session)
     base = await onboard_player(session, p, "milky_way", "mars", "martian")
     await session.commit()

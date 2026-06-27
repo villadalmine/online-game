@@ -363,6 +363,7 @@ async def test_mining_staffing_and_storage_e2e(client, monkeypatch):
     monkeypatch.setattr(s_, "mining_staffing_enabled", True)
     monkeypatch.setattr(s_, "storage_caps_enabled", True)
     monkeypatch.setattr(s_, "base_storage_per_mineral", 1000.0)
+    monkeypatch.setattr(s_, "mining_staffing_floor", 0.0)   # piso 0: probamos staffing puro
 
     h = await _register(client.http, "miner")
     state = await _onboard(client.http, h, planet="earth", race="terran")
@@ -421,6 +422,7 @@ async def test_unit_housing_capacity_enforced_e2e(client, monkeypatch):
     from app.core.config import get_settings
     from app.models import ResourceStock
     monkeypatch.setattr(get_settings(), "housing_enforced", True)
+    monkeypatch.setattr(get_settings(), "base_housing_per_domain", 0)   # sin gracia: enforce puro
 
     h = await _register(client.http, "barracker")
     state = await _onboard(client.http, h, planet="earth", race="terran")

@@ -1,6 +1,9 @@
 # SDD 47 — Minería: producción, trabajadores y almacenamiento (silos)
 
-> **Estado:** **v1 implementado** (detrás de flags, default OFF) · **Fecha:** 2026-06-27
+> **Estado:** **v1.5 — ACTIVO** (flags ON con balance suave; apagables por env) · **Fecha:** 2026-06-27
+> Prendido: `mining_staffing_enabled`/`storage_caps_enabled` ON + `mining_staffing_floor=0.34` (piso de
+> producción sin obreros, no se zerea a los nuevos). El **NPC** entrena obreros para staffing y construye
+> silos al rebalsar (`npc.py`). Pendiente: balance fino con datos reales; v2 por-mina.
 > Hecho: fórmula documentada; `staffing_ratio`/`apply_overflow`/`storage_caps_by_planet`
 > (`production.py`/`economy.py`, puras + tests); integración en `collect_mines` tras
 > `mining_staffing_enabled`/`storage_caps_enabled`; bloques `mining`/`storage` en `/players/me`;

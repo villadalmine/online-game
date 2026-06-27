@@ -1,7 +1,10 @@
 # SDD 46 — Alojamiento y capacidad de unidades (grafo unidad ↔ edificio)
 
-> **Estado:** **v1 implementado** (enforce detrás de flag `housing_enforced`, default OFF) ·
+> **Estado:** **v1.5 — ACTIVO** (`housing_enforced` ON con gracia; apagable por env) ·
 > **Fecha:** 2026-06-27
+> Prendido: enforce ON + `base_housing_per_domain=10` (gracia por dominio aun sin el edificio → no
+> frena a los nuevos; ampliás construyendo). El **NPC** respeta plazas (no entrena sin lugar).
+> Pendiente: balance fino; v2 por base/planeta.
 > Hecho: `domain`/`housing_size` en units, `houses` en edificios + `port` (naval) en YAML
 > (→ /catalog); `app/services/housing.py` (capacity/occupancy/can_train/`housing_matrix`, puras +
 > tests); enforce en `start_training` (mensaje accionable i18n); bloque `housing` en `/players/me`;

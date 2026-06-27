@@ -127,9 +127,8 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
     # SDD 46/47: alojamiento (housing) + minería (staffing) + almacenamiento (silos), derivados
     # del contenido data-driven para que el cliente y la IA vean el estado real.
     from app.content.registry import get_content
-    from app.services.economy import storage_caps_by_planet
+    from app.services.economy import mining_staffing, storage_caps_by_planet
     from app.services.housing import housing_report
-    from app.services.production import staffing_ratio
     content = get_content()
     active_keys = [b.building_key for b in all_buildings if b.status == "active"]
     queued_units: dict[str, int] = {}
@@ -137,16 +136,11 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         queued_units[o.unit_key] = queued_units.get(o.unit_key, 0) + o.quantity
     housing_block = housing_report(active_keys, units, queued_units)
 
-    mining_power = content.units.get("worker", {}).get("mining_power", 1)
-    available_w = units.get("worker", 0) * mining_power
-    required_w = sum(
-        content.buildings.get(b.building_key, {}).get("worker_slots", 0)
-        for b in all_buildings
-        if b.status == "active"
-        and content.buildings.get(b.building_key, {}).get("category") == "mine"
+    staffing_v, available_w, required_w = await mining_staffing(
+        session, player.id, all_buildings, content
     )
     mining_block = {
-        "staffing": round(staffing_ratio(available_w, required_w), 3),
+        "staffing": round(staffing_v, 3),
         "available_workers": available_w,
         "required_workers": required_w,
         "enforced": settings.mining_staffing_enabled,

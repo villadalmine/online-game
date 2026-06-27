@@ -155,7 +155,12 @@ async def mining_staffing(
         if b.status == "active"
         and content.buildings.get(b.building_key, {}).get("category") == "mine"
     )
-    return staffing_ratio(available, required), float(available), float(required)
+    # SDD 47: piso de staffing → aun con 0 obreros las minas rinden un mínimo (no se zerea a los
+    # nuevos); los obreros llevan de ese piso a 1.0. Sin minas (required=0) ⇒ 1.0 (sin penalidad).
+    from app.core.config import get_settings
+    ratio = staffing_ratio(available, required)
+    floor = get_settings().mining_staffing_floor if required > 0 else 0.0
+    return max(floor, ratio), float(available), float(required)
 
 
 async def collect_mines(

@@ -149,19 +149,21 @@ class Settings(BaseSettings):
     # = sin escalado por días (vuelve al comportamiento v1, top-up directo al P40).
     catchup_full_after_days: float = 7.0
 
-    # Minería: trabajadores (staffing) + almacenamiento (silos) (SDD 47). Flags default OFF →
-    # comportamiento IDÉNTICO al actual (staffing=1, capacidad=∞); se prenden por release tras
-    # balancear, sin romper partidas vivas (nunca borran stock por encima del tope, solo frenan
-    # producción NUEVA). Ver docs/sdd-mining-workers-storage.md.
-    mining_staffing_enabled: bool = False
-    storage_caps_enabled: bool = False
+    # Minería: staffing (obreros) + almacén (silos) (SDD 47). PRENDIDOS con balance suave para no
+    # romper a los nuevos: `mining_staffing_floor` da un piso de producción con 0 obreros (de ahí a
+    # 1.0 con obreros); el storage arranca generoso (base + HQ). Nunca borran stock sobre el tope,
+    # solo frenan producción nueva. Apagables por env.
+    mining_staffing_enabled: bool = True
+    storage_caps_enabled: bool = True
     base_storage_per_mineral: float = 5000.0   # colchón por mineral por planeta aun sin silos
+    mining_staffing_floor: float = 0.34        # producción mínima sin obreros (≈ 1 mina sin staff)
 
-    # Alojamiento de unidades (SDD 46): cada unidad ocupa una plaza de su dominio; cada edificio
-    # provee plazas. Con enforce OFF (default) solo se MIDE/expone (no bloquea entrenar) → no rompe
-    # partidas existentes. Se prende en release posterior. Ver docs/sdd-unit-housing-capacity.md.
-    housing_enforced: bool = False
-    base_housing_per_domain: int = 0           # plazas de gracia por dominio sin edificio que aloje
+    # Alojamiento de unidades (SDD 46): cada unidad ocupa una plaza de su dominio; cada edificio da
+    # plazas. ENFORCE con GRACIA (`base_housing_per_domain`): cada dominio arranca con N plazas aun
+    # sin el edificio → no frena a los nuevos; ampliás construyendo. Nunca destruye unidades.
+    # Apagable por env. Ver docs/sdd-unit-housing-capacity.md.
+    housing_enforced: bool = True
+    base_housing_per_domain: int = 10          # plazas de gracia por dominio aun sin edificio
 
     # Espionaje / inteligencia (SDD 35).
     spy_energy_cost: float = 5.0

@@ -65,6 +65,30 @@ async def test_rule_brain_first_action_builds_a_mine(session):
     assert res.first() is not None
 
 
+async def test_rule_brain_trains_worker_to_staff_mines(session):
+    # SDD 47: con minas activas y sin obreros, el NPC entrena un obrero para operarlas (staffing).
+    from app.content.registry import get_content
+    from app.models import TrainingOrder
+    from app.services.economy import get_or_create_stock
+    await ensure_npcs(session)
+    npc = await _npc(session)
+    base = await _base_of(session, npc)
+    roles = get_content().races[npc.race_key]["resource_roles"]
+    for mineral in (roles["structural"], roles["energetic"]):   # minas core ya presentes y activas
+        session.add(Building(base_id=base.id, building_key="mine", status="active",
+                             production_mineral=mineral))
+    for m in get_content().minerals:                            # recursos de sobra en su planeta
+        (await get_or_create_stock(session, npc.id, m, npc.planet_key)).amount = 100000
+    npc.energy = 100000
+    await session.flush()
+    action = await run_npc_turn(session, npc)
+    await session.commit()
+    assert action == "train worker (staffing)", action
+    q = await session.execute(select(TrainingOrder).where(TrainingOrder.base_id == base.id,
+                                                          TrainingOrder.unit_key == "worker"))
+    assert q.first() is not None
+
+
 def test_npc_llm_choice_gpu_vs_cloud(monkeypatch):
     # Comparación GPU vs nube: el NPC designado usa el modelo de nube; el resto, GPU local.
     from app.core.config import get_settings

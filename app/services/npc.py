@@ -256,9 +256,29 @@ class RuleBasedBrain:
             cost = content.building_cost_in_minerals(player.race_key, key)
             return _can_afford(stocks, energy, cost, spec.get("energy_cost", 0))
 
+        # SDD 46: alojamiento — el NPC respeta las plazas (no entrena sin lugar → no rompe el turno
+        # con TrainingError) y construye el edificio que aloja cuando hace falta.
+        from app.services.housing import (
+            can_train,
+            housing_capacity,
+            housing_occupancy,
+            unit_domain,
+        )
+        _hcap = housing_capacity([b.building_key for b in buildings if b.status == "active"])
+        _hocc = housing_occupancy(units)
+        _settings = get_settings()
+
+        def house_ok(unit_key: str, qty: int) -> bool:
+            if not _settings.housing_enforced:
+                return True
+            d = unit_domain(unit_key)
+            return can_train(unit_key, qty, _hcap.get(d, 0) - _hocc.get(d, 0))
+
         def afford_units(unit_key: str, qty: int) -> bool:
             spec = content.units[unit_key]
             if not _gated(spec):
+                return False
+            if not house_ok(unit_key, qty):   # sin plazas libres → no entrenar (no rompe el turno)
                 return False
             unit_cost = content.unit_cost_in_minerals(player.race_key, unit_key)
             cost = {m: a * qty for m, a in unit_cost.items()}
@@ -280,6 +300,31 @@ class RuleBasedBrain:
             if mineral not in mines and afford_building("mine"):
                 await start_build(session, player, base, "mine", target_mineral=mineral)
                 return f"build mine ({mineral})"
+
+        # 1.5) SDD 47: operá las minas con obreros (staffing) y poné silos si rebalsás.
+        active_mines = sum(
+            1 for b in buildings if b.building_key == "mine" and b.status == "active"
+        )
+        if active_mines:
+            slots = active_mines * content.buildings["mine"].get("worker_slots", 0)
+            mp = content.units.get("worker", {}).get("mining_power", 1)
+            if units.get("worker", 0) * mp < slots and afford_units("worker", 1):
+                await start_training(session, player, base, "worker", 1)
+                return "train worker (staffing)"
+        if _settings.storage_caps_enabled and afford_building("silo"):
+            from app.services.economy import planet_stocks, storage_caps_by_planet
+            bres = await session.execute(select(Base_).where(Base_.player_id == player.id))
+            base_info = {b.id: (b.planet_key, b.base_type) for b in bres.scalars()}
+            caps = storage_caps_by_planet(
+                content, buildings, base_info,
+                _settings.base_storage_per_mineral, content.minerals.keys(),
+            )
+            for planet, mins in caps.items():
+                ps = await planet_stocks(session, player.id, planet)
+                over = next((m for m, cap in mins.items() if ps.get(m, 0.0) >= cap), None)
+                if over:
+                    await start_build(session, player, base, "silo", target_mineral=over)
+                    return f"build silo ({over})"
 
         # 2) Ciencia + industria (árbol de tech): laboratorio → investigar → fábrica.
         if "research_lab" not in keys and afford_building("research_lab"):

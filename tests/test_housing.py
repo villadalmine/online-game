@@ -21,9 +21,11 @@ def test_unit_domain_and_size_from_content():
 
 
 def test_capacity_sums_active_buildings():
+    from app.core.config import get_settings
+    base = get_settings().base_housing_per_domain   # gracia por dominio (SDD 46)
     cap = housing_capacity(["headquarters", "research_lab", "barracks", "barracks"])
-    assert cap["personnel"] == 20 + 10    # HQ + laboratorio
-    assert cap["infantry"] == 30 + 30     # dos cuarteles
+    assert cap["personnel"] == base + 20 + 10   # gracia + HQ + laboratorio
+    assert cap["infantry"] == base + 30 + 30    # gracia + dos cuarteles
 
 
 def test_occupancy_counts_stock_and_queue_by_size():
