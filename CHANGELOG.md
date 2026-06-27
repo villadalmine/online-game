@@ -7,6 +7,24 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — Fix infra: CD helm-promote "failed" era RBAC (no el timeout arm)
+- **Causa real** del `promote-prod` que marcaba *failed* desde 1.92.0 (mi hipótesis previa del
+  "arranque arm lento" estaba equivocada): el SA del CD `og-deployer` no tenía permiso para los CRDs
+  que el chart administra además del Deployment, y `helm upgrade --wait` los **GETea** en el 3-way
+  merge → `... is forbidden`. El Deployment igual se aplicaba (por eso el pod quedaba en la versión
+  nueva pero la release figuraba *failed*). Las releases viejas "deployed" se hacían a mano.
+- **Fix RBAC** (`deploy/build/cicd-rbac.yaml`, aplicado al cluster + verificado con `auth can-i`):
+  Role `og-deployer` (ns online-game) + `autoscaling/hpa`, `policy/pdb`,
+  `monitoring.coreos.com/{prometheusrules,servicemonitors}`. Nuevo Role `og-deployer-gateway`
+  (ns gateway): `cert-manager/certificates` + `gateway.networking/{gateways,httproutes}` (CRUD) +
+  `rbac/{roles,rolebindings}` **solo lectura** (sin escalada). ClusterIssuers **RO** cluster-wide.
+- **Evicción de pods de test:** los gates `e2e-api`/`e2e-chrome` tenían `ephemeral-storage` request 0
+  → BestEffort → primeros en caer si el nodo de build entra en **DiskPressure** (agravado por builds
+  Kaniko concurrentes de otro proyecto en el mismo nodo). Ahora declaran request 1Gi / limit 2Gi.
+- **Pendiente (ops, decisión del usuario):** el nodo de build `srv-rk1-nvme-01` quedó con
+  `DiskPressure=True`; limpiar caché de imágenes / workflows viejos para que el CD cierre verde. La
+  app 1.94.0 **ya está viva** (corre en otro nodo, sana); el promote verde es cosmético.
+
 ## [1.94.0] - 2026-06-27
 
 ### 2026-06-27 — SDD 47 v1: minería con trabajadores (staffing) + almacenamiento (silos)

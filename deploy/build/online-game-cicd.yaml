@@ -122,8 +122,11 @@ spec:
         command: ["python", "-m", "pytest", "-m", "not chrome", "-q"]
         workingDir: /app
         resources:
-          requests: { cpu: "1", memory: "1Gi" }
-          limits: { cpu: "2", memory: "4Gi" }
+          # ephemeral-storage request: sin esto el pod es BestEffort en disco efímero y es el PRIMERO
+          # en ser evictado si el NODO entra en DiskPressure (p.ej. por builds Kaniko concurrentes).
+          # Usa ~5Mi reales; el request lo protege de la evicción (queda último en la cola del kubelet).
+          requests: { cpu: "1", memory: "1Gi", ephemeral-storage: "1Gi" }
+          limits: { cpu: "2", memory: "4Gi", ephemeral-storage: "2Gi" }
 
     # ---- GATE 2: e2e Chrome (Playwright; el test levanta su propio uvicorn efímero) ----
     - name: test-chrome
@@ -135,8 +138,10 @@ spec:
           - { name: ALLOWED_EMAILS, value: "" }
           - { name: SIGNUP_REQUIRES_APPROVAL, value: "false" }
         resources:
-          requests: { cpu: "1", memory: "2Gi" }
-          limits: { cpu: "2", memory: "4Gi" }
+          # ephemeral-storage request (ver test-api): protege al pod de la evicción por DiskPressure
+          # del nodo. Chromium + el uvicorn efímero usan algo de disco; 1Gi de piso, 2Gi de techo.
+          requests: { cpu: "1", memory: "2Gi", ephemeral-storage: "1Gi" }
+          limits: { cpu: "2", memory: "4Gi", ephemeral-storage: "2Gi" }
 
     # ---- promote a PROD (solo tras gates verdes): helm upgrade --reuse-values (SDD 44) ----
     - name: helm-promote
