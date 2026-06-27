@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.96.0] - 2026-06-27
+
 ### 2026-06-27 — Fix UX: el pre-cálculo de acciones ahora coincide con lo que cobra el server
 > Reportes del usuario: "compro silicio, imperio dice que tengo más pero en acciones figura menos y no
 > me deja", "el research parece global", "los eventos muestran rebaja de construcción pero no sé si se
