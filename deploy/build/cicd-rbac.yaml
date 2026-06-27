@@ -59,6 +59,18 @@ rules:
   - apiGroups: ["gateway.networking.k8s.io"]
     resources: ["httproutes", "gateways"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # autoescalado + disponibilidad (hpa.yaml, pdb.yaml)
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # observabilidad: el chart administra PrometheusRule + ServiceMonitor (Prometheus Operator).
+  # helm los GETea en el 3-way merge → sin esto el upgrade falla con "prometheusrules ... forbidden".
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["prometheusrules", "servicemonitors"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # rollout status / verificación
   - apiGroups: ["apps"]
     resources: ["deployments/status"]
@@ -79,31 +91,43 @@ subjects:
     name: og-deployer
     namespace: kaniko
 ---
-# cert-manager (SDD 17/TLS público): el chart administra un `Certificate` en el ns `gateway`
-# (gateway.tls.enabled). `helm upgrade --wait` hace un GET de ese recurso para el 3-way merge; sin
-# este permiso el upgrade falla con "certificates.cert-manager.io ... is forbidden" AUNQUE el
-# Deployment ya se aplicó (por eso el pod queda en la versión nueva pero la release figura 'failed').
-# Las releases viejas que funcionaban se deployaban a mano (kubeconfig completo); el CD (og-deployer)
-# nunca tuvo este permiso. CRUD completo pero acotado al ns `gateway` (recurso namespaced, bajo riesgo).
+# Recursos que el chart administra en el ns `gateway` (SDD 17/TLS público + listener del Gateway):
+#   - Certificate (cert-manager.io) — certificate.yaml
+#   - Gateway / HTTPRoute (gateway.networking.k8s.io) — gateway.yaml / httproute.yaml
+#   - Role / RoleBinding — gateway-ensure-listener.yaml (parchea el listener del Gateway compartido)
+# `helm upgrade --wait` hace un GET de TODOS para el 3-way merge; sin permiso el upgrade falla AUNQUE
+# el Deployment ya se aplicó (por eso el pod queda en la versión nueva pero la release figura 'failed').
+# Las releases viejas que andaban se deployaban a mano (kubeconfig completo). CRUD acotado al ns
+# `gateway` (namespaced, bajo riesgo). El RoleBinding cumple el anti-escalado: og-deployer tiene
+# gateways get/patch, que es lo que el Role del ensure-listener otorga.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: og-deployer-certs
+  name: og-deployer-gateway
   namespace: gateway
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["gateways", "httproutes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # roles/rolebindings SOLO LECTURA: el chart (ensure-listener) ya los creó y no los cambia entre
+  # releases; helm solo los GETea en el 3-way merge. NO damos create/update → og-deployer no puede
+  # otorgarse permisos (sin vector de escalada). Si alguna vez cambian, se aplican a mano.
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: og-deployer-certs
+  name: og-deployer-gateway
   namespace: gateway
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: og-deployer-certs
+  name: og-deployer-gateway
 subjects:
   - kind: ServiceAccount
     name: og-deployer
