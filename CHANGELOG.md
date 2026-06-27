@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.91.0] - 2026-06-26
+
 ### 2026-06-26 — Fix: el panel de mercado/hub se refresca al instante tras comprar
 - Bug: al comprar mineral/energía (mercado, hub, mercado negro, transporte) el **stock mostrado en el
   panel no se actualizaba** hasta el ciclo de 20s (había que refrescar la página). Las funciones de
