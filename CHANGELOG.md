@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — Diseño: SDD 48 (concurrencia de acciones / no saturar la API al spamear)
+- `docs/sdd-action-concurrency-queue.md`: diagnostica el 409 "ya tenés una acción en curso" (lock por
+  jugador, correcto) y el 500 al spamear sin Redis (dev/SQLite). Diseña: deshabilitar el botón
+  mientras hay request en vuelo, lock in-process de respaldo (saca el 500), 409 en vez de 500 ante
+  contención, y una **cola FIFO del lado del cliente** (valida cada acción al enviarla → si falta
+  material, esa falla con toast y las demás siguen; sin cola server-side diferida). Diseño, no implementado.
+
 ## [1.92.0] - 2026-06-27
 
 ### 2026-06-27 — Panel de batallas: quién atacó a quién y quién ganó (general + admin)
