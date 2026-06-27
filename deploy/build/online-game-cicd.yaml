@@ -35,6 +35,9 @@ spec:
       operator: Exists
       effect: NoExecute
   volumeClaimTemplates:
+    # PVC efímera del workflow (Longhorn-NVMe): Argo la crea al arrancar y la BORRA al terminar.
+    # Aloja la fuente, el contexto y el TMPDIR de Kaniko (ver env TMPDIR abajo) → el grueso del scratch
+    # va a NVMe-Longhorn, NO al SD/eMMC interno del nodo. Más grande para que entre el tmp de Kaniko.
     - metadata:
         name: workspace
       spec:
@@ -42,7 +45,7 @@ spec:
         storageClassName: longhorn-nvme
         resources:
           requests:
-            storage: 8Gi
+            storage: 20Gi
   templates:
     - name: pipeline
       dag:
@@ -79,13 +82,15 @@ spec:
           - "--snapshot-mode=redo"
           - "--compression=zstd"
           - "--compression-level=1"
+        env:
+          # SDD: mandamos el scratch de Kaniko a la PVC Longhorn-NVMe (no al SD/eMMC del nodo).
+          - { name: TMPDIR, value: /workspace }
         resources:
-          # ephemeral-storage: Kaniko extrae las capas al disco efímero del NODO (no la PVC ni la DB).
-          # Con dos builds en paralelo (juego + test) eso llenaba el nodo → evicción. Reservamos un
-          # piso (request) y ponemos techo (limit) para que un build desbocado se autoexpulse en vez
-          # de presionar al nodo y evictar vecinos. Ver pending-next-session / SDD 44-45.
-          requests: { cpu: "1", memory: "2Gi", ephemeral-storage: "4Gi" }
-          limits: { cpu: "4", memory: "8Gi", ephemeral-storage: "8Gi" }
+          # El grueso del scratch va a la PVC (TMPDIR). El ephemeral-storage del NODO solo lo usa el
+          # rootfs del contenedor (overlay) durante la extracción; lo acotamos para no presionar el
+          # disco del nodo (un build desbocado se autoexpulsa). Ver pending-next-session / SDD 44-45.
+          requests: { cpu: "1", memory: "2Gi", ephemeral-storage: "2Gi" }
+          limits: { cpu: "4", memory: "8Gi", ephemeral-storage: "6Gi" }
         volumeMounts: [{ name: workspace, mountPath: /workspace }]
 
     # ---- build de la imagen de TEST (Kaniko, Dockerfile.test) ----
@@ -106,13 +111,15 @@ spec:
           - "--snapshot-mode=redo"
           - "--compression=zstd"
           - "--compression-level=1"
+        env:
+          # SDD: mandamos el scratch de Kaniko a la PVC Longhorn-NVMe (no al SD/eMMC del nodo).
+          - { name: TMPDIR, value: /workspace }
         resources:
-          # ephemeral-storage: Kaniko extrae las capas al disco efímero del NODO (no la PVC ni la DB).
-          # Con dos builds en paralelo (juego + test) eso llenaba el nodo → evicción. Reservamos un
-          # piso (request) y ponemos techo (limit) para que un build desbocado se autoexpulse en vez
-          # de presionar al nodo y evictar vecinos. Ver pending-next-session / SDD 44-45.
-          requests: { cpu: "1", memory: "2Gi", ephemeral-storage: "4Gi" }
-          limits: { cpu: "4", memory: "8Gi", ephemeral-storage: "8Gi" }
+          # El grueso del scratch va a la PVC (TMPDIR). El ephemeral-storage del NODO solo lo usa el
+          # rootfs del contenedor (overlay) durante la extracción; lo acotamos para no presionar el
+          # disco del nodo (un build desbocado se autoexpulsa). Ver pending-next-session / SDD 44-45.
+          requests: { cpu: "1", memory: "2Gi", ephemeral-storage: "2Gi" }
+          limits: { cpu: "4", memory: "8Gi", ephemeral-storage: "6Gi" }
         volumeMounts: [{ name: workspace, mountPath: /workspace }]
 
     # ---- GATE 1: e2e API (la imagen de test es self-contained: SQLite + fakeredis) ----

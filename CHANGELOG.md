@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — Fix: loadActiveEvents pegaba a un path 404 (lo atajó el gate de Chrome)
+- El fetch de eventos activos usaba `GET /api/v1/events` (no existe → 404) en vez de
+  `GET /api/v1/events/active`. Generaba 2 errores de consola → el gate `e2e-chrome`
+  (`test_all_panels_render_without_js_errors`) **falló y frenó el promote** (el 1.96.0 buggeado NO
+  llegó a prod). Además rompía el propio Fix del descuento de evento (gBuildMult nunca cargaba).
+  Corregido el path.
+- **CI (scratch de Kaniko a PVC, no al SD/eMMC del nodo):** el workflow ya usaba una PVC Longhorn-NVMe
+  efímera (auto-borrada al terminar); ahora Kaniko manda su `TMPDIR` a esa PVC y se agrandó a 20Gi →
+  el grueso del scratch va a NVMe-Longhorn, no al disco interno del nodo. El `ephemeral-storage` del
+  nodo (solo el rootfs/overlay de la extracción) se acotó a 2–6Gi. Nota: la extracción del rootfs de
+  Kaniko es inherentemente en el overlay del nodo; eliminarla del todo requeriría mover el data-dir de
+  containerd a NVMe o usar BuildKit con caché en PVC (follow-up).
+
 ## [1.96.0] - 2026-06-27
 
 ### 2026-06-27 — Fix UX: el pre-cálculo de acciones ahora coincide con lo que cobra el server

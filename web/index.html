@@ -1274,7 +1274,7 @@ async function loadWorld(){
 // SDD 36: traigo los eventos activos para reflejar la REBAJA de construcción en el costo mostrado
 // (el server ya la aplica al construir; antes la UI mostraba el precio sin descuento → confundía).
 async function loadActiveEvents(){
-  let ev; try{ ev=await api("/api/v1/events"); }catch{ return; }
+  let ev; try{ ev=await api("/api/v1/events/active"); }catch{ return; }
   const m=(ev||[]).filter(e=>e.effect==="build_cost").reduce((a,e)=>a*(e.magnitude||1),1);
   if(m!==gBuildMult){ gBuildMult=m; if(state){ renderCost(); } }   // re-pinta si cambió
 }
