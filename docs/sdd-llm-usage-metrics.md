@@ -1,6 +1,6 @@
 # SDD 28 — Métricas de uso de LLM por usuario (monetización) + GPU en tiempo real
 
-> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
+> **Estado:** **completo** (app + infra vivos; solo virtual-key budgets queda "a futuro") · **Fecha:** 2026-06-24
 > **Relacionado:** [SDD 9 LLM en GPU](sdd-local-gpu-llm.md), [SDD 19 métricas](sdd-observability-metrics.md),
 > [SDD 21 presencia/métricas por entidad](sdd-presence-dimensional-metrics.md), `app/services/llm.py`,
 > LiteLLM (`ai/litellm-proxy`), HAMI, Prometheus/Grafana.
@@ -114,9 +114,16 @@ driver directo: DaemonSet `runtimeClassName: nvidia` + privileged). Solo telemet
   (kind=advisor|npc|other) en `llm_chat` → correlación in-app de uso por tipo, baja cardinalidad
   (sin player). La fuente de verdad de tokens/costo/backend sigue siendo LiteLLM (`end_user`). Test
   `test_llm_calls_metric_by_kind`.
-- **Pendiente (follow-up, INFRA)**: DCGM-exporter para % de cómputo real (HAMI da asignado, no
-  utilización) — es un DaemonSet **privilegiado** en el nodo GPU compartido, se aplica con supervisión;
-  dashboards Grafana "LLM billing"/"GPU en vivo"; virtual keys de LiteLLM con budget por jugador.
+- **DCGM-exporter — HECHO y VIVO** (verificado 2026-06-27): DaemonSet `dcgm-exporter` en ns `ai`
+  (label `gpu=on`), rol `install-dcgm-exporter` + `make dcgm` en infra-ai. Ver §5.ter.
+- **Dashboards Grafana — HECHOS y VIVOS** (verificado 2026-06-27): `grafana-dashboard-gpu-dcgm`
+  ("GPU en vivo", ns ai), `grafana-dashboard-gpu-llm-billing` + `grafana-dashboard-gpu-tenants`
+  ("LLM billing", ns monitoring), `litellm-ai-traffic-dashboard`, y los del juego
+  (`galaxy-grafana-dashboard`: online-game + npc-ai + llm-usage).
+- **Único pendiente (opcional, "a futuro"): LiteLLM virtual keys con budget por jugador** — corta/
+  cobra automático por `end_user`. Hoy la **medición ya funciona** vía `end_user` (no bloquea nada);
+  solo hace falta cuando se monetice de verdad (decidir política de free tier + cutoff). Requiere
+  decisión de producto + cambio app (key por jugador) + LiteLLM (`/key/generate`, `max_budget`).
 
 ## 6. Riesgos / decisiones
 - **Cardinalidad**: `end_user` por jugador es alta cardinalidad en Prometheus. Mitigar: solo humanos
