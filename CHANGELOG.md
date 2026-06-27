@@ -7,6 +7,28 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — 🌳 Árbol/tabla calculado: `GET /catalog/tree` + modal web + "Explicar con IA"
+- **Endpoint calculado (determinista):** `GET /catalog/tree?race=&planet=` (`depgraph.build_tree`)
+  devuelve el **skill tree** (tecnologías con `requires`/`requires_tech`, efecto, costo YA resuelto a
+  minerales de la raza) + **tablas de unidades** (dominio, edificio, tech, costo, stats,
+  prerequisites) + edificios. Cacheado (Redis, TTL catálogo). Es la **misma verdad** que ya consume la
+  IA por el grafo (`graph_documents`/`retrieve`) — ahora también estructurada para clientes.
+- **Web:** botón **🌳 Árbol y tabla** (card "Tu imperio") abre una **ventana/modal** (como el detalle
+  de planeta) con el árbol + tabla, con íconos (pictográfico). Botón **🧠 Explicar con IA** dentro del
+  modal → usa el asesor (GPU/cloud/BYOK, SDD 9) para explicar qué conviene primero. i18n ES/EN.
+- e2e: `test_catalog_tree_computed`. Cambiar balance sigue siendo **editar YAML** (sin código).
+
+### 2026-06-27 — Diseño: SDD 49 (lanzadera de misiles) + SDD 50 (drones intra-planeta)
+- **SDD 49 — Lanzadera de misiles** (`docs/sdd-missile-launcher.md`): edificio `launcher` + misiles
+  **sónico → transatlántico → nuclear**, cada uno detrás de su tech (`rocketry → ballistics →
+  nuclear_fission`); golpe **intra-planeta** con **intercepción determinista** por torretas (enjambre
+  satura; el nuclear casi no se frena). Data-driven + grafo + UI pictográfica. Diseño, no implementado.
+- **SDD 50 — Drones intra-planeta** (`docs/sdd-drones-intraplanet.md`): `drone_factory` + drones
+  **espía** (3 tipos: durabilidad↑ ⇒ consumo↑) que **orbitan dando intel en tiempo real** mientras
+  tengan energía (mueren al agotarla) y caen ante torretas (matemática de supervivencia §4), + drones
+  de **ataque masivo**. Solo dentro del planeta (se construyen en cualquiera, no se envían fuera).
+  Energía/duración calculable en el panel (pictográfico). Lazy por timestamp. Diseño, no implementado.
+
 ### 2026-06-27 — 📌 Pendientes / roadmap (estado de cierre, para retomar)
 > Snapshot de lo que queda. La app está **viva** (1.96.1 con los bugfixes).
 **Infra / CI:**
@@ -29,7 +51,7 @@ Registro de todo lo que vamos logrando. Formato basado en
 **SDD 48:** `Idempotency-Key` server-side (opcional, para botones de pago).
 **Solo diseño (sin implementar):** SDD 5 (Telegram — bloqueado: falta token), 30 (runbook resiliencia),
 31 (Postgres HA CNPG), 33 (hardening: no-root/NetworkPolicy/RBAC runtime), 28 §8 (virtual keys con
-budget), 7/9 (load test real).
+budget), 7/9 (load test real), **49 (lanzadera de misiles), 50 (drones intra-planeta)**.
 **Bloqueadores para publicar:** secretos fuertes, email real, backup offsite cifrado + PITR, target de
 hosting, bot Telegram (SDD 5).
 **Decidido (no tocar):** la PV vieja de Postgres `pvc-b23ba706…` (Released/Retain, pre-Longhorn) **se

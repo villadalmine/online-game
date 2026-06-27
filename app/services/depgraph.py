@@ -278,6 +278,65 @@ def build_graph(race_key: str, planet_key: str) -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# Computed "tree" view (GET /catalog/tree): skill tree + unit/building tables with
+# costs ALREADY resolved per race and dependencies spelled out. Deterministic, derived
+# 100% from content → the single source the web modal renders AND the AI grounds on.
+# --------------------------------------------------------------------------- #
+def build_tree(race_key: str, planet_key: str) -> dict:
+    """Structured, race-resolved tree: buildings, technologies and units with concrete mineral
+    costs + dependencies (requires building / requires_tech / prerequisites). Pure."""
+    content = get_content()
+
+    # inverse of `requires`: what each building unlocks (units + techs)
+    unlocks: dict[str, list[str]] = {}
+    for key, u in content.units.items():
+        if u.get("requires"):
+            unlocks.setdefault(u["requires"], []).append(key)
+    for key, t in content.technologies.items():
+        if t.get("requires"):
+            unlocks.setdefault(t["requires"], []).append(key)
+
+    buildings = []
+    for key, b in content.buildings.items():
+        cost = target_cost(race_key, key)
+        buildings.append({
+            "key": key, "name": b.get("name", key), "category": b.get("category"),
+            "cost": cost.minerals, "energy": cost.energy,
+            "build_seconds": b.get("build_seconds", 0),
+            "requires": b.get("requires"), "requires_tech": b.get("requires_tech"),
+            "houses": b.get("houses", {}), "unlocks": unlocks.get(key, []),
+        })
+
+    technologies = []
+    for key, t in content.technologies.items():
+        cost = target_cost(race_key, key)
+        technologies.append({
+            "key": key, "name": t.get("name", key), "category": t.get("category"),
+            "effect": t.get("effect"), "magnitude": t.get("magnitude"),
+            "cost": cost.minerals, "energy": cost.energy,
+            "research_seconds": t.get("research_seconds", 0),
+            "requires_building": t.get("requires"), "requires_tech": t.get("requires_tech"),
+        })
+
+    units = []
+    for key, u in content.units.items():
+        cost = target_cost(race_key, key)
+        units.append({
+            "key": key, "name": u.get("name", key),
+            "domain": u.get("domain", "personnel"), "housing_size": u.get("housing_size", 1),
+            "cost": cost.minerals, "energy": cost.energy,
+            "train_seconds": u.get("train_seconds", 0), "stats": u.get("stats", {}),
+            "requires": u.get("requires"), "requires_tech": u.get("requires_tech"),
+            "prerequisites": prerequisites(key),
+        })
+
+    return {
+        "race": race_key, "planet": planet_key,
+        "buildings": buildings, "technologies": technologies, "units": units,
+    }
+
+
+# --------------------------------------------------------------------------- #
 # RAG: the graph as a retrievable document corpus (for the LLM)
 # --------------------------------------------------------------------------- #
 # Lightweight ES/EN synonyms so a Spanish question hits English content keys.

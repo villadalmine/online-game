@@ -64,6 +64,17 @@ async def catalog_graph(race: str, planet: str, redis: Redis | None = Depends(ge
     )
 
 
+@router.get("/tree")
+async def catalog_tree(race: str, planet: str, redis: Redis | None = Depends(get_redis)):
+    """Árbol calculado (skill tree + tablas de edificios/unidades) con costos YA resueltos para la
+    raza y dependencias explícitas. Determinista → cacheable. Lo consume el modal web y la IA."""
+    _validate_race_planet(race, planet)
+    return await cached_json(
+        redis, f"tree:{race}:{planet}", get_settings().catalog_cache_ttl,
+        lambda: depgraph.build_tree(race, planet),
+    )
+
+
 @router.get("/graph/docs")
 async def catalog_graph_docs(race: str, planet: str, redis: Redis | None = Depends(get_redis)):
     """RAG corpus: the graph serialized as short retrievable documents."""

@@ -215,6 +215,26 @@ async def test_all_keys_no_server_error(client):
     assert not fails, "errores 500 por key:\n" + "\n".join(fails)
 
 
+async def test_catalog_tree_computed(client):
+    """/catalog/tree: skill tree + tablas con costos resueltos por raza y dependencias
+    (lo consume el modal web y la IA)."""
+    r = await client.http.get("/api/v1/catalog/tree", params={"race": "terran", "planet": "earth"})
+    assert r.status_code == 200, r.text
+    t = r.json()
+    assert t["race"] == "terran" and {"buildings", "technologies", "units"} <= set(t)
+    units = {u["key"]: u for u in t["units"]}
+    # terrícola: estructural→hierro; el tanque cuesta hierro y depende de fábrica + tech weapons
+    tank = units["tank"]
+    assert tank["cost"].get("iron", 0) > 0
+    assert tank["requires"] == "factory" and tank["requires_tech"] == "weapons"
+    assert tank["domain"] == "ground" and "research_lab" in tank["prerequisites"]
+    techs = {t_["key"]: t_ for t_ in t["technologies"]}
+    assert techs["deep_core_mining"]["requires_tech"] == "mining_efficiency"  # árbol/prereq
+    # raza desconocida → 404
+    bad = await client.http.get("/api/v1/catalog/tree", params={"race": "zzz", "planet": "earth"})
+    assert bad.status_code == 404
+
+
 async def test_catalog_pictographic_icons(client):
     # SDD 43 F1: el catálogo expone icon (universal) en minerales/unidades/edificios y symbol en
     # minerales (la "letra"), para el modo pictográfico. No se localiza.

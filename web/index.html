@@ -307,6 +307,7 @@
     </div>
     <div class="card" data-panel="imperio">
       <h2>Tu imperio</h2>
+      <button class="sm sec" onclick="openTree()" data-i18n="tree_btn">🌳 Árbol y tabla</button>
       <div class="row"><span class="muted" style="width:58px" data-i18n="energy">Energía</span>
         <div class="bar" style="flex:1"><div id="ebar"></div></div><span id="etxt" class="muted"></span></div>
       <div style="margin:9px 0"><span class="muted" data-i18n="minerals">Minerales</span><div id="minerals" class="row"></div></div>
@@ -413,6 +414,9 @@
 <!-- PLANET DETAIL -->
 <div id="pmodal" class="modal hidden" onclick="if(event.target===this)closePlanet()">
   <div class="box"><button class="x sm" onclick="closePlanet()">✕</button><div id="pbody"></div></div>
+</div>
+<div id="treemodal" class="modal hidden" onclick="if(event.target===this)closeTree()">
+  <div class="box"><button class="x sm" onclick="closeTree()">✕</button><div id="treebody"></div></div>
 </div>
 
 <script>
@@ -888,7 +892,7 @@ const I18N={
     s:{nofeed:"sin notificaciones sin leer",nomarket:"construí un Mercado en un planeta para comerciar",mktbuy:"comprar",mktsell:"vender",mktcols:"mineral (tenés) · ⚡compra/venta",transport:"Transportar (necesita nave de carga)",noescort:"sin escolta",escorttip:"escolta opcional: defiende el convoy de piratas",nohub:"sin precios de hub aún",hubdyn:"precios por oferta/demanda",hubof:"hub de",othergx:"otras galaxias",acct_pending:"Tu cuenta espera la aprobación del admin. Te avisamos cuando esté lista.",acct_inactive:"Tu cuenta no está activa. Contactá al admin.",admin_none:"No hay altas pendientes.",admin_approve:"Aprobar",admin_reject:"Rechazar",admin_resetpass:"reset clave",admin_reset_confirm:"¿Resetear la contraseña de",admin_reset_done:"Contraseña temporal de",ac_del_confirm:"¿BORRAR definitivamente la cuenta y su imperio de",ahint_gpu:"Corre en nuestra GPU local: gratis, sin tope diario, rápido para preguntas concretas.",ahint_cloud:"Intenta un modelo free de la nube; si está bloqueado por día, usa uno pago barato. Con límite diario para no abusar.",ahint_byok:"Usás tu propia API key de OpenRouter y el modelo que elijas. Lo pagás vos; la key no se guarda en el server.",byok_missing:"Poné tu API key y el modelo de OpenRouter.",blackmkt:"Mercado negro (trueque, sin energía)",bmtrade:"Trocar",bmtip:"Pagás con un mineral y recibís otro al cambio del hub, con premium ilegal. Requiere nave de carga.",bmsame:"elegí minerales distintos",cargoships:"naves de carga",needcargo:"necesitás una nave de carga (se entrena en la Fábrica)",piraterisk:"riesgo pirata",bmhave:"tenés",bmnostock:"no te alcanza: solo tenés",travail:"disponible en origen:",trmissing:"faltan",trsame:"origen y destino iguales",nometa:"aún sin datos de meta (jugá batallas)",metawin:"los ataques ganan",pfok:"✓ perfil actualizado:",lvlok:"⚡ Energía de nivelado:",lvlbottom:"⚡ Estás último: energía a tope",lvlleft:"quedan hoy:",pfnothing:"poné un usuario o una contraseña nueva",loadingwait:"esperá: todavía está cargando tu imperio",noevents:"sin eventos activos ahora",evActive:"🟢 Activos ahora",evRecent:"🕓 Pasaron (2 días)",evPossible:"🔮 Pueden aparecer",evEnded:"terminó",colonize:"🪐 Colonización (tu raza)",cyourhome:"tu mundo natal",verdict_great:"Ideal para colonizar",verdict_ok:"Colonizable",verdict_poor:"Hostil (rinde poco)",verdict_impossible:"Imposible de colonizar",colonizebtn:"🪐 Colonizar",lunarbtn:"🌙 Base lunar",colonized:"✓ colonizado",ccost:"costo",ctransb:"transbordador",orbitalbtn:"🛰 Base orbital",orbitaltip:"Estación con robots: extrae recursos sin habitar el mundo (rinde menos, cuesta más).",needorbital:"hostil — investigá Robótica orbital para una base orbital",authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
       otphelp:"Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta. Una vez dentro, quedás logueado en este dispositivo (no te pide código cada vez).",
       advdefault:"Preguntá y te aconsejo según el grafo del juego.",noseason:"Sin temporada activa.",closesin:"cierra en",closing:"cerrando…",newbie:"🛡 Protección de novato",newbieend:"termina en {x}; atacar a un jugador la cancela",
-      colplayer:"jugador",colrace:"raza",colscore:"score",nounits:"sin unidades",nobases:"sin colonias",noqueue:"nada en cola",cap_mining:"Minería (trabajadores)",cap_workers:"obreros",cap_minesat:"minas al",cap_storage:"Almacenamiento (silos)",cap_housing:"Alojamiento (plazas)",dom_personnel:"👷 Personal",dom_infantry:"🪖 Infantería",dom_ground:"🛡 Terrestres",dom_air:"✈ Aéreas",dom_space:"🚀 Espaciales",dom_naval:"🚢 Navales",noflights:"sin flotas en vuelo",nomsgs:"sin mensajes — escribí el primero",noworld:"todavía no pasó nada en la galaxia",noally:"no hay alianzas aún",nocols:"sin colonias todavía",nomoons:"sin lunas",ranklist:"ranking de temporada",
+      colplayer:"jugador",colrace:"raza",colscore:"score",nounits:"sin unidades",nobases:"sin colonias",noqueue:"nada en cola",cap_mining:"Minería (trabajadores)",cap_workers:"obreros",cap_minesat:"minas al",cap_storage:"Almacenamiento (silos)",cap_housing:"Alojamiento (plazas)",dom_personnel:"👷 Personal",dom_infantry:"🪖 Infantería",dom_ground:"🛡 Terrestres",dom_air:"✈ Aéreas",dom_space:"🚀 Espaciales",dom_naval:"🚢 Navales",tree_btn:"🌳 Árbol y tabla",tree_explain:"Explicar con IA",tree_techs:"Tecnologías (árbol)",tree_units:"Unidades",noflights:"sin flotas en vuelo",nomsgs:"sin mensajes — escribí el primero",noworld:"todavía no pasó nada en la galaxia",noally:"no hay alianzas aún",nocols:"sin colonias todavía",nomoons:"sin lunas",ranklist:"ranking de temporada",
       live:"● en vivo",reconnect:"○ reconectando…",ready:"✓ lista",active:"✓ activo",research:"investigar",leave:"salir",create:"crear",join:"unirse",npcnojoin:"🤖 NPC (no unible)",benefits:"Beneficios:",members:"Miembros",notrade:"Este tipo no permite comercio.",trade:"Comercio",tradeto:"a",tradesend:"enviar",allyform:"Creá una alianza: elegí un tipo (define qué beneficios da) o unite a una de abajo.",existing:"Alianzas existentes",noagg:"Solo no-agresión (no se atacan entre sí).",allyattack:"⚠ aliados bajo ataque:",abundance:"Abundancia mineral",abundancesub:"(multiplicador de minas)",moons:"Lunas",colonies:"Colonias",attackbtn:"⚔ atacar",youtag:" (vos)",here:" · estás acá",guideminerals:"Minerales (in-game ↔ real):",guidebuildings:"Edificios (in-game ↔ real):",guideunits:"Unidades (in-game ↔ real):",guidereal:"real",incoming:"⚠ ataque entrante → base",recall:"↩ recall",returns:"vuelve",
       spyBtn:"🕵 espiar",nointel:"sin intel — espialo para ver qué tiene",spyPrompt:"¿Cuántos espías mandás a",spySent:"🕵 Espías en camino:",spyintel:"el intel aparece en 🔔 al aterrizar",
       iScore:"score",iAtk:"⚔ ataque",iDef:"🛡 defensa",iMin:"⛏ minerales",iTurrets:"🔫 torretas",iBuildings:"🏗 edificios",iUnits:"👥 unidades",
@@ -906,7 +910,7 @@ const I18N={
     s:{nofeed:"no unread notifications",nomarket:"build a Market on a planet to trade",mktbuy:"buy",mktsell:"sell",mktcols:"mineral (have) · ⚡buy/sell",transport:"Transport (needs cargo ship)",noescort:"no escort",escorttip:"optional escort: defends the convoy from pirates",nohub:"no hub prices yet",hubdyn:"supply/demand prices",hubof:"hub of",othergx:"other galaxies",acct_pending:"Your account is awaiting admin approval. We'll let you know when it's ready.",acct_inactive:"Your account is not active. Contact the admin.",admin_none:"No pending signups.",admin_approve:"Approve",admin_reject:"Reject",admin_resetpass:"reset pwd",admin_reset_confirm:"Reset the password of",admin_reset_done:"Temp password for",ac_del_confirm:"PERMANENTLY delete the account and empire of",ahint_gpu:"Runs on our local GPU: free, no daily cap, fast for concrete questions.",ahint_cloud:"Tries a free cloud model; if it's daily-blocked, uses a cheap paid one. Daily limit to avoid abuse.",ahint_byok:"Use your own OpenRouter API key and chosen model. You pay; the key isn't stored on the server.",byok_missing:"Enter your OpenRouter API key and model.",blackmkt:"Black market (barter, no energy)",bmtrade:"Barter",bmtip:"Pay with one mineral and get another at the hub rate, with an illegal premium. Needs a cargo ship.",bmsame:"pick different minerals",cargoships:"cargo ships",needcargo:"you need a cargo ship (trained at the Factory)",piraterisk:"pirate risk",bmhave:"you have",bmnostock:"not enough: you only have",travail:"available at origin:",trmissing:"missing",trsame:"same origin and destination",nometa:"no meta data yet (play battles)",metawin:"attacks win",pfok:"✓ profile updated:",lvlok:"⚡ Level-up energy:",lvlbottom:"⚡ You're last: energy filled",lvlleft:"left today:",pfnothing:"enter a new username or password",loadingwait:"hold on: your empire is still loading",noevents:"no active events right now",evActive:"🟢 Active now",evRecent:"🕓 Past (2 days)",evPossible:"🔮 Can appear",evEnded:"ended",colonize:"🪐 Colonization (your race)",cyourhome:"your homeworld",verdict_great:"Ideal to colonize",verdict_ok:"Colonizable",verdict_poor:"Hostile (low yield)",verdict_impossible:"Cannot colonize",colonizebtn:"🪐 Colonize",lunarbtn:"🌙 Lunar base",colonized:"✓ colonized",ccost:"cost",ctransb:"shuttle",orbitalbtn:"🛰 Orbital base",orbitaltip:"Robot station: extracts resources without living on the world (lower yield, higher cost).",needorbital:"hostile — research Orbital robotics for an orbital base",authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
       otphelp:"We send a <b>code</b> to your email. First time, it creates your account. Once in, you stay logged in on this device (no code each time).",
       advdefault:"Ask and I'll advise you based on the game's dependency graph.",noseason:"No active season.",closesin:"closes in",closing:"closing…",newbie:"🛡 Newbie protection",newbieend:"ends in {x}; attacking a player cancels it",
-      colplayer:"player",colrace:"race",colscore:"score",nounits:"no units",nobases:"no colonies",noqueue:"nothing queued",cap_mining:"Mining (workers)",cap_workers:"workers",cap_minesat:"mines at",cap_storage:"Storage (silos)",cap_housing:"Housing (slots)",dom_personnel:"👷 Personnel",dom_infantry:"🪖 Infantry",dom_ground:"🛡 Ground",dom_air:"✈ Air",dom_space:"🚀 Space",dom_naval:"🚢 Naval",noflights:"no fleets in flight",nomsgs:"no messages — write the first",noworld:"nothing has happened in the galaxy yet",noally:"no alliances yet",nocols:"no colonies yet",nomoons:"no moons",ranklist:"season ranking",
+      colplayer:"player",colrace:"race",colscore:"score",nounits:"no units",nobases:"no colonies",noqueue:"nothing queued",cap_mining:"Mining (workers)",cap_workers:"workers",cap_minesat:"mines at",cap_storage:"Storage (silos)",cap_housing:"Housing (slots)",dom_personnel:"👷 Personnel",dom_infantry:"🪖 Infantry",dom_ground:"🛡 Ground",dom_air:"✈ Air",dom_space:"🚀 Space",dom_naval:"🚢 Naval",tree_btn:"🌳 Tree & table",tree_explain:"Explain with AI",tree_techs:"Technologies (tree)",tree_units:"Units",noflights:"no fleets in flight",nomsgs:"no messages — write the first",noworld:"nothing has happened in the galaxy yet",noally:"no alliances yet",nocols:"no colonies yet",nomoons:"no moons",ranklist:"season ranking",
       live:"● live",reconnect:"○ reconnecting…",ready:"✓ done",active:"✓ active",research:"research",leave:"leave",create:"create",join:"join",npcnojoin:"🤖 NPC (can't join)",benefits:"Benefits:",members:"Members",notrade:"This type doesn't allow trade.",trade:"Trade",tradeto:"to",tradesend:"send",allyform:"Create an alliance: pick a type (defines its benefits) or join one below.",existing:"Existing alliances",noagg:"Non-aggression only (members don't attack each other).",allyattack:"⚠ allies under attack:",abundance:"Mineral abundance",abundancesub:"(mine multiplier)",moons:"Moons",colonies:"Colonies",attackbtn:"⚔ attack",youtag:" (you)",here:" · you're here",guideminerals:"Minerals (in-game ↔ real):",guidebuildings:"Buildings (in-game ↔ real):",guideunits:"Units (in-game ↔ real):",guidereal:"real",incoming:"⚠ incoming attack → base",recall:"↩ recall",returns:"returns",
       spyBtn:"🕵 spy",nointel:"no intel — spy them to see what they have",spyPrompt:"How many spies do you send to",spySent:"🕵 Spies en route:",spyintel:"intel shows up in 🔔 on arrival",
       iScore:"score",iAtk:"⚔ attack",iDef:"🛡 defense",iMin:"⛏ minerals",iTurrets:"🔫 turrets",iBuildings:"🏗 buildings",iUnits:"👥 units",
@@ -1841,6 +1845,47 @@ function openPlanet(key){
   $("pmodal").classList.remove("hidden");
 }
 function closePlanet(){ $("pmodal").classList.add("hidden"); }
+
+// 🌳 Árbol tecnológico + tabla de unidades en una ventana (como el modal de planeta). Los datos vienen
+// del ENDPOINT CALCULADO /catalog/tree (costos ya resueltos por raza + dependencias) → la misma verdad
+// que usa la IA. "Explicar con IA" usa el asesor (GPU/cloud, SDD 9).
+function raceName(k){ return ((catalog&&catalog.races||[]).find(r=>r.key===k)||{}).name||k; }
+async function openTree(){
+  const race=(state&&state.race_key)||'terran', planet=(state&&state.planet_key)||'earth';
+  let t; try{ t=await api(`/api/v1/catalog/tree?race=${race}&planet=${planet}`); }catch(e){ msg(e.message,false); return; }
+  const cost=c=>Object.entries(c||{}).map(([m,a])=>`${ico('mineral',m)}${Math.round(a)}`).join(" ")||"—";
+  const byCat={}; t.technologies.forEach(x=>{(byCat[x.category||'other']=byCat[x.category||'other']||[]).push(x);});
+  const techHtml=Object.keys(byCat).map(c=>
+    `<div class="muted" style="margin:8px 0 2px">${esc((TECH_CAT[lang]||TECH_CAT.es)[c]||c)}</div>`+
+    byCat[c].map(x=>`<div class="item"><div class="top"><span>${ico('tech',x.key)} ${esc(gameName(x.key))}`+
+      (x.requires_tech?` <span class="muted">← ${ico('tech',x.requires_tech)} ${esc(gameName(x.requires_tech))}</span>`:"")+
+      (x.effect?` <span class="ok">${esc(x.effect)} ×${x.magnitude}</span>`:"")+`</span>`+
+      `<span class="muted" style="font-size:11px">${cost(x.cost)} · ⚡${Math.round(x.energy)}</span></div></div>`).join("")
+  ).join("");
+  const unitHtml=t.units.map(u=>{const s=u.stats||{};
+    return `<div class="item"><div class="top"><span>${ico('unit',u.key)} ${esc(gameName(u.key))} <span class="muted">[${esc(u.domain)}]</span></span>`+
+    `<span class="muted" style="font-size:11px">${cost(u.cost)} · ⚡${Math.round(u.energy)}</span></div>`+
+    `<div class="muted" style="font-size:11px">🏗 ${u.requires?(ico('build',u.requires)+' '+esc(gameName(u.requires))):'—'}`+
+    (u.requires_tech?` · 🔬 ${ico('tech',u.requires_tech)} ${esc(gameName(u.requires_tech))}`:"")+
+    ` · ⚔${s.attack||0}/🛡${s.defense||0}/❤${s.hp||0}</div></div>`;}).join("");
+  $("treebody").innerHTML=`<h2 style="margin-top:0">🌳 ${esc(raceName(race))} · ${esc(planetName(planet))}</h2>`+
+    `<button class="sm" onclick="explainTree()">🧠 ${esc(tr('tree_explain'))}</button> <span id="treeai" class="muted"></span>`+
+    `<h2>${esc(tr('tree_techs'))}</h2>${techHtml}`+
+    `<h2 style="margin-top:12px">${esc(tr('tree_units'))}</h2>${unitHtml}`;
+  $("treemodal").classList.remove("hidden");
+}
+function closeTree(){ $("treemodal").classList.add("hidden"); }
+async function explainTree(){
+  const el=$("treeai"); if(el) el.textContent="⏳…";
+  const mode=($("advmode")||{}).value||"gpu";
+  try{ const r=await api("/api/v1/players/me/advisor/ask","POST",{
+        message:"Explicame el árbol tecnológico y la tabla de unidades de mi raza: qué conviene investigar y construir primero, y por qué.",
+        model_mode:mode});
+    if(el) el.textContent="";
+    const box=document.createElement("div"); box.className="muted"; box.style.cssText="margin-top:8px;white-space:pre-wrap";
+    box.textContent=r.reply||""; $("treebody").appendChild(box);
+  }catch(e){ if(el) el.textContent=""; msg(e.message,false); }
+}
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")closePlanet(); });
 
 // "naves viajando": animate every in-flight fleet (attacks out/back, expeditions, inbound).
