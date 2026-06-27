@@ -7,7 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
-### 2026-06-27 — Build: límite de ephemeral-storage para Kaniko (evita evicción del build)
+### 2026-06-27 — Diseño: SDD 46 (alojamiento de unidades) + SDD 47 (minería/trabajadores/silos)
+- **SDD 46 — Alojamiento y capacidad de unidades** (`docs/sdd-unit-housing-capacity.md`): grafo
+  data-driven unidad→dominio→edificio (worker→base, soldado→cuartel, avión→hangar, barco→puerto…),
+  tope de plazas por dominio (`houses` en edificios, `domain`/`housing_size` en unidades), enforcement
+  en entrenamiento, exposición en `/catalog`+`/players/me` y en el grafo de la IA. Diseño, no implementado.
+- **SDD 47 — Minería: producción, trabajadores y almacenamiento** (`docs/sdd-mining-workers-storage.md`):
+  documenta la fórmula de producción (`horas·base_output·abundancia·mult`), diseña **staffing** de
+  trabajadores (más minas con pocos obreros ⇒ cada una rinde menos), y **almacenamiento con silos** (tope
+  por mineral; overflow se desperdicia; silo guarda un solo mineral). Todo objeto data-driven + en el
+  grafo de la IA. Diseño, no implementado.
 - Los builds Kaniko extraen las capas al **disco efímero del nodo** (no la PVC ni la DB); en el
   pipeline de CD corren **dos en paralelo** (imagen del juego + imagen de test) sobre el mismo nodo
   pineado, y eso llenaba el disco → el build se **evictaba a mitad** ("node was low on resource:
