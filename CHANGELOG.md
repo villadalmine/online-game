@@ -7,6 +7,34 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — 📌 Pendientes / roadmap (estado de cierre, para retomar)
+> Snapshot de lo que queda. La app está **viva** (1.96.1 con los bugfixes).
+**Infra / CI:**
+- **CD verde:** resuelto (RBAC completo + Opción B en clusterissuers + nodo descordonado). Validar que
+  1.96.1 cierre el `promote-prod` en verde (en curso al cierre).
+- **Kaniko en SD interno:** mitigado (scratch a PVC Longhorn-NVMe vía TMPDIR + PVC 20Gi auto-borrada).
+  Queda *inherente* la extracción del rootfs en el overlay del nodo → fix profundo (follow-up): mover
+  el data-dir de containerd a NVMe, **o** pasar a BuildKit con caché en PVC.
+- **nodeSelector clavado a `srv-rk1-nvme-01`:** si ese nodo se cordonea/llena, el CD se traba. Relajar a
+  un `nodeAffinity` sobre el pool `srv-rk1-nvme-01..04` (los 4 de 30GB; las Pi/super6c de 8GB no entran
+  por el límite de 8Gi). Pendiente.
+- **Argo UI sin logs de pasos terminados:** falta configurar un *artifact repository* (hay MinIO
+  `loki-minio` en `monitoring`) + `archiveLogs: true`. Es infra compartida del ns `argo` → con criterio.
+**SDD 47/46 (implementados v1, flags default OFF):**
+- Prender `mining_staffing_enabled` / `storage_caps_enabled` / `housing_enforced` **tras balancear**
+  (hoy off para no romper partidas).
+- **NPC**: que use minería (equilibrar obreros/silos) y respete alojamiento en su build order.
+- UI: el panel "📦 Economía / capacidad" ya está; falta pulido (tooltip/disable de botón por plaza).
+- v2 alojamiento **por base/planeta** (hoy es agregado por jugador).
+**SDD 48:** `Idempotency-Key` server-side (opcional, para botones de pago).
+**Solo diseño (sin implementar):** SDD 5 (Telegram — bloqueado: falta token), 30 (runbook resiliencia),
+31 (Postgres HA CNPG), 33 (hardening: no-root/NetworkPolicy/RBAC runtime), 28 §8 (virtual keys con
+budget), 7/9 (load test real).
+**Bloqueadores para publicar:** secretos fuertes, email real, backup offsite cifrado + PITR, target de
+hosting, bot Telegram (SDD 5).
+**Decidido (no tocar):** la PV vieja de Postgres `pvc-b23ba706…` (Released/Retain, pre-Longhorn) **se
+deja** (respaldo; borrar el objeto Retain ni libera disco).
+
 ## [1.96.1] - 2026-06-27
 
 ### 2026-06-27 — Fix: loadActiveEvents pegaba a un path 404 (lo atajó el gate de Chrome)
