@@ -25,6 +25,24 @@ Registro de todo lo que vamos logrando. Formato basado en
   `DiskPressure=True`; limpiar caché de imágenes / workflows viejos para que el CD cierre verde. La
   app 1.94.0 **ya está viva** (corre en otro nodo, sana); el promote verde es cosmético.
 
+### 2026-06-27 — 📌 Estado de SDDs + qué sigue (snapshot)
+> 48 SDDs (`docs/sdd-*.md`). Casi todos implementados con código+tests; quedan pocos en diseño.
+- **Implementados (código + tests + e2e):** SDD 1–4, 6–29, 32, 34–48 (núcleo del juego, deploy/CI,
+  observabilidad, mercado, espionaje, NPCs, asistente, paneles, minería/alojamiento/concurrencia).
+- **Solo diseño (sin implementar todavía):**
+  - **SDD 5** bot de Telegram — ⛔ bloqueado: necesita `TELEGRAM_BOT_TOKEN` real.
+  - **SDD 30** runbook de resiliencia / apagar GPU.
+  - **SDD 31** Postgres HA con CNPG.
+  - **SDD 33** hardening (pods no-root, NetworkPolicy, RBAC del runtime).
+  - **SDD 28 §8** virtual keys de LiteLLM con budget por jugador (diseñado; recién con monetización).
+  - **SDD 7/9** load test / benchmark real de saturación (parcial).
+- **Qué sigue (sugerido, por valor):**
+  1. **UI de 47/46**: barras stock/cap + staffing + plazas por dominio (hoy la API/IA ya lo exponen).
+  2. **NPC** que use minería (equilibrar obreros/silos) y alojamiento (no entrenar sin plazas).
+  3. **Prender flags** `mining_staffing_enabled`/`storage_caps_enabled`/`housing_enforced` tras balancear.
+  4. **SDD 33 hardening** (camino a publicar) + bloqueadores de publicación (secretos fuertes, email
+     real, backup offsite cifrado + PITR, target de hosting, **SDD 5 Telegram**).
+
 ## [1.94.0] - 2026-06-27
 
 ### 2026-06-27 — SDD 47 v1: minería con trabajadores (staffing) + almacenamiento (silos)
