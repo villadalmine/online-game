@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.97.0] - 2026-06-27
+
 ### 2026-06-27 — 🌳 Árbol/tabla calculado: `GET /catalog/tree` + modal web + "Explicar con IA"
 - **Endpoint calculado (determinista):** `GET /catalog/tree?race=&planet=` (`depgraph.build_tree`)
   devuelve el **skill tree** (tecnologías con `requires`/`requires_tech`, efecto, costo YA resuelto a
