@@ -139,4 +139,63 @@ driver directo: DaemonSet `runtimeClassName: nvidia` + privileged). Solo telemet
 1. App: `user` en `call_llm` + callers (advisor/npc). Test. (Desbloquea TODO lo demás.)
 2. Dashboard "LLM usage/billing" (LiteLLM ya tiene los datos). 
 3. DCGM-exporter + dashboard "GPU en vivo" (infra-ai, idempotente, igual que el tier ollama).
-4. (Futuro) LiteLLM virtual keys con budget por jugador para cortar/cobrar automático.
+4. (Futuro) LiteLLM virtual keys con budget por jugador para cortar/cobrar automático → **§8**.
+
+## 8. Diseño: virtual keys con budget por jugador (a futuro, no implementado)
+
+> **Estado:** **diseño** (decisión 2026-06-27: documentar, no codear hasta monetizar). Hoy la medición
+> por `end_user` ya da el dato; esto agrega el **corte/cobro automático**. Es el único pendiente de
+> SDD 28. **No arrancar sin usuarios reales pagando** (sería optimización prematura).
+
+### 8.1 Por qué virtual keys (y no seguir solo con `end_user`)
+`end_user` **mide** (tokens/spend por jugador, ya vivo) pero **no corta**: un jugador puede pedirle al
+asistente sin límite más allá del `advisor_rate_limit_per_min` (SDD 9). Una **virtual key de LiteLLM
+por jugador** con `max_budget` hace que **LiteLLM mismo** rechace (HTTP 400 "budget exceeded") cuando el
+jugador supera su presupuesto → corte sin lógica de cobro en la app, y el spend queda atribuido a la
+key (= jugador). Es la pieza que convierte "medir" en "cobrar/limitar".
+
+### 8.2 Mapeo key ↔ jugador
+- **Una virtual key por jugador humano** (los NPC siguen con la master key + `user="npc:*"`; no se les
+  cobra). Se crea **lazy** la primera vez que el jugador usa el asistente.
+- Nuevo modelo/columna: `Player.llm_key_id` (el id de la key en LiteLLM) + el token cifrado, o solo el
+  id si la app pide la key al vault de LiteLLM. **Nunca** loguear la key; tratarla como secreto (SDD 20).
+- La app llama al asistente con **la key del jugador** (header `Authorization: Bearer <vk>`) en vez de
+  la master key. Mantiene `user=player:<id>` igual (doble atribución: por key y por end_user).
+
+### 8.3 API LiteLLM (gestión de keys)
+- **Crear**: `POST /key/generate` `{ user_id, max_budget, budget_duration, models, rpm_limit }` →
+  devuelve `{ key, key_name }`. `budget_duration: "1d"` (o "30d") = budget que **se resetea** solo.
+- **Consultar**: `GET /key/info?key=` → `spend`, `max_budget`, `budget_reset_at` (para mostrar al
+  jugador "te queda X de tu cuota de hoy").
+- **Actualizar / borrar**: `POST /key/update`, `POST /key/delete` (al borrar cuenta, SDD 20).
+- Requiere la **master key** de LiteLLM (ya existe, en `install-litellm-proxy/defaults/secrets.yml`);
+  la app la usa solo para administrar keys, no para inferencia.
+
+### 8.4 Política (parámetros, data-driven en config del juego)
+- `llm_free_tokens_per_day` (p.ej. 50k) → `max_budget` traducido a costo equivalente, o usar
+  `max_budget` directo en USD nominal. **GPU local y modelos `*-free` cuestan ~0** → el budget en
+  USD casi no los toca; el budget muerde sobre todo en `paid-final`. Decisión: ¿el free tier limita
+  **tokens totales** (incluido GPU) o solo **gasto en pago**? → arrancar limitando **gasto en pago**
+  (lo que cuesta plata real) y dejar GPU/free generosos.
+- `budget_duration: "1d"` (reset diario) para un free tier renovable.
+- Al **superar**: LiteLLM devuelve error → la app lo traduce a un toast claro ("llegaste a tu cuota de
+  IA de hoy; vuelve mañana o subí de plan") y **cae a la respuesta del brain de reglas** (el asistente
+  ya tiene fallback determinista, SDD 1/9) → el juego no se rompe, solo pierde el "sabor" LLM.
+
+### 8.5 Tiers / monetización (gancho a futuro)
+- `free` (budget chico, modelos GPU/free), `premium` (budget mayor, habilita `paid-final`). El tier
+  vive en `Player` y mapea a un `max_budget` distinto vía `POST /key/update`. El cobro real (pasarela)
+  es otro SDD; acá solo el **enforcement** técnico.
+
+### 8.6 Validación (cuando se implemente)
+- Unit: la app crea la key lazy y persiste `llm_key_id`; usa la key del jugador en el request.
+- e2e (mock LiteLLM): con budget=0 el asistente cae al fallback de reglas y muestra el toast de cuota;
+  con budget disponible usa LLM. Borrar cuenta → `key/delete`.
+- Métrica: `litellm_spend_metric{api_key=...}` por key coincide con el jugador.
+
+### 8.7 Riesgos
+- **No prematuro**: sin usuarios pagando, esto agrega complejidad (gestión de secretos por jugador,
+  fallos de la API de keys) sin valor → por eso queda en diseño.
+- **Secreto por jugador**: más superficie; cifrar en DB, rotar al sospechar fuga, nunca exponer al front.
+- **Fallo de LiteLLM/key**: si la gestión de keys falla, **degradar a la master key + fallback de
+  reglas**, nunca dejar al jugador sin asistente por un problema de billing.
