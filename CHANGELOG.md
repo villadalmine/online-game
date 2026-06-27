@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.98.0] - 2026-06-27
+
 ### 2026-06-27 — SDD 47/46 v1.5: minería y alojamiento PRENDIDOS (balance suave) + NPC los usa
 > Cierre de SDD 47 (minería) y SDD 46 (alojamiento): pasan de "medido detrás de flags" a **activos**,
 > con balance que **no rompe a los nuevos**, y el **NPC** juega con las nuevas reglas.
