@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.94.0] - 2026-06-27
+
 ### 2026-06-27 — SDD 47 v1: minería con trabajadores (staffing) + almacenamiento (silos)
 > Detrás de flags `mining_staffing_enabled` / `storage_caps_enabled`, **default OFF** → comportamiento
 > idéntico al actual hasta balancear. Cierra el hueco "el trabajador no hacía nada".
