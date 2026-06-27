@@ -420,6 +420,7 @@ const API="";
 let token=localStorage.getItem("token")||"";
 let lang=localStorage.getItem("lang")||"es";
 let catalog=null, es=null, state=null, players=[], alliances=[], intel={}, colonizeOpts={};
+let gBuildMult=1;   // SDD 36: multiplicador de costo de construcción por evento activo (<1 = rebaja)
 let hubPrices={}, bmRate=0.7, hubMeta={strength:0.02,cap:0.5,cargo:500};
 function _milUnits(){ return [...(catalog&&catalog.personnel||[]),...(catalog&&catalog.heavy_units||[])].filter(u=>u.stats&&u.stats.attack>0&&u.key!=="cargo_ship"); }
 function escortObj(){ const u=($("hub_esc")||{}).value, n=Math.max(0,+($("hub_escn")||{}).value||0); return (u&&n>0)?{[u]:n}:{}; }
@@ -574,7 +575,8 @@ function reqLockBad(o,base){ if(!state) return false; const rb=o.requires;
     :(state.bases||[]).some(bs=>(bs.buildings||[]).some(x=>x.building_key===rb&&x.status==="active")); if(!has) return true; }
   return !!(o.requires_tech && !(state.technologies||[]).includes(o.requires_tech)); }
 function affOk(mc,e,planet){ if(!state) return true;
-  const stocks=(planet&&planet!==state.planet_key)?((state.stocks_by_planet||{})[planet]||{}):state.stocks;
+  // SDD 42: el material se valida EN EL PLANETA de la base (también el natal) — igual que el server.
+  const stocks=planet?((state.stocks_by_planet||{})[planet]||{}):state.stocks;
   for(const[m,a]of Object.entries(mc)) if((stocks[m]||0)<a) return false;
   return !(e&&state.energy<e); }
 function statusMark(locked,ok){ return locked?'🔒':(ok?'<span class="ok">✓</span>':'<span class="bad">❌</span>'); }
@@ -601,6 +603,7 @@ function renderActionGrids(){ const on=isPicto('acciones');
   const bsel=$("building");
   if(bsel&&$("buildgrid")) $("buildgrid").innerHTML=[...bsel.options].map(o=>{ const k=o.value; const b=spec.build[k]||{};
     let mc=resolveCost(b.cost); if(base&&base.base_type==='orbital'){ const m2={}; for(const x in mc)m2[x]=Math.round(mc[x]*1.5); mc=m2; }
+    if(gBuildMult!==1){ const m3={}; for(const x in mc)m3[x]=Math.round(mc[x]*gBuildMult); mc=m3; }   // SDD 36 rebaja
     return `<button class="picbtn${k===bsel.value?' on':''}" onclick="pickOpt('building','${k}')">${ico('build',k)}<sub>${statusMark(reqLockBad(b,base),affOk(mc,b.energy_cost,planet))}</sub></button>`;
   }).join("");
   const usel=$("unit"); const qty=Math.max(1,+($("qty")||{}).value||1);
@@ -621,8 +624,8 @@ function costStr(mc,panel){ const e=Object.entries(mc); if(!e.length) return isP
   return e.map(([m,a])=>`${m} ${Math.round(a)}`).join(", "); }
 function affordText(mc, energyCost, planet, panel){
   if(!state) return "";
-  // el material se chequea EN EL PLANETA de la base (SDD 42); la energía es global del jugador
-  const stocks=(planet&&planet!==state.planet_key)?((state.stocks_by_planet||{})[planet]||{}):state.stocks;
+  // el material se chequea EN EL PLANETA de la base (SDD 42, también el natal); la energía es global
+  const stocks=planet?((state.stocks_by_planet||{})[planet]||{}):state.stocks;
   if(isPicto(panel)){
     const out=[];
     for(const[m,a]of Object.entries(mc)){ const have=stocks[m]||0; if(have<a)
@@ -657,9 +660,11 @@ function renderCost(){ const b=spec.build[$("building").value]; if(!b) return; $
   const base=(state&&state.bases||[]).find(x=>String(x.id)===String(($("buildbase")||{}).value))||(state&&state.bases&&state.bases[0]);
   let mc=resolveCost(b.cost);
   if(base&&base.base_type==='orbital'){ const m2={}; for(const k in mc) m2[k]=Math.round(mc[k]*1.5); mc=m2; }  // SDD 37: orbital cuesta 1.5×
+  if(gBuildMult!==1){ const m3={}; for(const k in mc) m3[k]=Math.round(mc[k]*gBuildMult); mc=m3; }  // SDD 36: rebaja de evento
+  const ev=gBuildMult<1?` · <span class="ok">🏗−${Math.round((1-gBuildMult)*100)}% evento</span>`:"";
   const planet=base?base.planet_key:null;
   const where=(base&&planet!==state.planet_key)?` · 📍${esc(planetName(planet))}`:"";
-  $("buildcost").innerHTML=`costo ${costStr(mc,'acciones')} · ⚡${b.energy_cost} · ${b.build_seconds}s${where}${reqLock(b,base,'acciones')}${affordText(mc,b.energy_cost,planet,'acciones')}`;
+  $("buildcost").innerHTML=`costo ${costStr(mc,'acciones')} · ⚡${b.energy_cost} · ${b.build_seconds}s${ev}${where}${reqLock(b,base,'acciones')}${affordText(mc,b.energy_cost,planet,'acciones')}`;
   renderActionGrids(); }
 function renderTrainCost(){ const u=spec.unit[$("unit").value]; if(!u) return; const qty=Math.max(1,+$("qty").value||1);
   const mc=resolveCost(u.cost); for(const k in mc) mc[k]*=qty; const e=(u.energy_cost||0)*qty;
@@ -1079,6 +1084,7 @@ function renderCapacity(){
 function panelOpen(id){ const c=document.querySelector(`.card[data-panel="${id}"]`); return !!(c && !c.classList.contains('collapsed')); }
 function refreshPanels(){
   if(!state || document.hidden) return;            // pestaña en segundo plano: no pedir nada
+  loadActiveEvents();                              // multiplicador de costo de construir por evento
   loadIntel();                                     // alimenta el panel de jugadores (1 fetch, barato)
   loadColonize();                                  // alimenta el modal de planeta (1 fetch)
   if(panelOpen('chat')) loadAllyChat();
@@ -1110,7 +1116,12 @@ function renderResearch(){
     else right=actbtn('sm',`doResearch('${t.key}')`,'🔬','research','investigacion');
     const label=pic?`${ico('tech',t.key)} <span class="muted">×${t.magnitude}</span>`
                    :`${esc(t.name)} <span class="muted">(${esc(t.effect)} ×${t.magnitude})</span>`;
-    return `<div class="item"><div class="top"><span title="${esc(t.description||'')}">${label}</span>${right}</div>${order?bar(t.research_seconds,order.completes_at):""}</div>`;
+    // SDD 42: la investigación se paga con el material del planeta NATAL ("se investiga en casa").
+    const mc=resolveCost(t.cost||{});
+    const costLine=(!done.has(t.key)&&!order&&!lockedReq)
+      ? `<div class="muted" style="font-size:11px">${costStr(mc,'investigacion')} · ⚡${t.energy_cost||0}`
+        + `${affordText(mc,t.energy_cost,state.planet_key,'investigacion')}</div>` : "";
+    return `<div class="item"><div class="top"><span title="${esc(t.description||'')}">${label}</span>${right}</div>${costLine}${order?bar(t.research_seconds,order.completes_at):""}</div>`;
   };
   // SDD: agrupado por categoría de investigación
   const cats=(TECH_CAT[lang]||TECH_CAT.es);
@@ -1258,6 +1269,14 @@ async function loadWorld(){
   $("world").innerHTML=ev.map(e=>`<div class="item"><div class="top"><span>${esc(e.message)}</span>`+
     `<span class="muted">${new Date(e.created_at).toLocaleTimeString()}</span></div></div>`).join("")
     ||`<span class="muted">${esc(tr('noworld'))}</span>`;
+}
+
+// SDD 36: traigo los eventos activos para reflejar la REBAJA de construcción en el costo mostrado
+// (el server ya la aplica al construir; antes la UI mostraba el precio sin descuento → confundía).
+async function loadActiveEvents(){
+  let ev; try{ ev=await api("/api/v1/events"); }catch{ return; }
+  const m=(ev||[]).filter(e=>e.effect==="build_cost").reduce((a,e)=>a*(e.magnitude||1),1);
+  if(m!==gBuildMult){ gBuildMult=m; if(state){ renderCost(); } }   // re-pinta si cambió
 }
 
 // eventos dinámicos "happy hour" (SDD 36): activos con cuenta regresiva, desde la DB

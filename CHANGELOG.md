@@ -7,6 +7,22 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — Fix UX: el pre-cálculo de acciones ahora coincide con lo que cobra el server
+> Reportes del usuario: "compro silicio, imperio dice que tengo más pero en acciones figura menos y no
+> me deja", "el research parece global", "los eventos muestran rebaja de construcción pero no sé si se
+> aplica". Todo era lo mismo: **la UI mostraba algo distinto a lo que el server hace**.
+- **Stock por planeta (SDD 42):** el afford de construir/entrenar usaba el **agregado** (suma de todos
+  los planetas) para el planeta natal, mientras el server valida **por planeta**. Ahora la UI usa
+  siempre el stock **del planeta de la base** (incluido el natal) → lo que ves es lo que se cobra. El
+  material que comprás en el hub llega a tu planeta natal; para usarlo en una colonia hay que
+  transportarlo (el mensaje ya dice "tenés X ahí").
+- **Research:** se paga con el material del planeta **natal** ("se investiga en casa") — ya era por
+  planeta, pero la UI **no mostraba el costo**; ahora cada tech muestra costo + ⚡ + si alcanza (con el
+  stock natal). 
+- **Eventos (rebaja de construcción):** el server ya aplicaba el descuento (`build_cost_multiplier`),
+  pero la UI mostraba el precio **sin** rebaja. Ahora el costo de construir refleja el evento activo y
+  muestra "🏗−X% evento" (se trae de `GET /events`).
+
 ## [1.95.0] - 2026-06-27
 
 ### 2026-06-27 — UI de SDD 47/46: panel "📦 Economía / capacidad"
