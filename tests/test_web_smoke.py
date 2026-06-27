@@ -93,6 +93,15 @@ def _shown(pg, sel):
     return pg.eval_on_selector(sel, "el=>!el.classList.contains('hidden')")
 
 
+def _wait_shown(pg, sel, timeout=10000):
+    """Espera a que `sel` exista y NO tenga la clase 'hidden' (evita flakes por sleeps fijos:
+    bajo carga el boot puede tardar > el wait fijo y el panel todavía no se mostró)."""
+    pg.wait_for_function(
+        "s=>{const e=document.querySelector(s); return !!e && !e.classList.contains('hidden')}",
+        arg=sel, timeout=timeout,
+    )
+
+
 def _has_token(pg):
     return pg.evaluate("!!localStorage.getItem('token')")
 
@@ -140,8 +149,7 @@ def test_all_panels_render_without_js_errors(server):
         pg.goto(BASE + "/")
         pg.evaluate("(t)=>localStorage.setItem('token', t)", tok)
         pg.goto(BASE + "/")
-        pg.wait_for_timeout(1500)
-        assert _shown(pg, "#game"), "el juego no se mostró"
+        _wait_shown(pg, "#game")        # espera el boot (robusto, sin sleep fijo)
         panels = pg.eval_on_selector_all("[data-panel]", "els=>els.map(e=>e.dataset.panel)")
         assert len(panels) >= 10, f"se esperaban muchos paneles, hubo {panels}"
 
@@ -159,7 +167,7 @@ def test_all_panels_render_without_js_errors(server):
         pg.click("#pictotoggle")
         pg.wait_for_timeout(1200)
         expand_all()
-        assert _shown(pg, "#game"), "el juego desapareció en modo dibujos"
+        _wait_shown(pg, "#game")        # sigue visible tras el modo dibujos
         # íconos de mineral presentes en el imperio
         assert "ico" in pg.eval_on_selector("#minerals", "el=>el.innerHTML"), "sin íconos en picto"
         b.close()

@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — Test: smoke de Chrome robusto (sin flake por sleep fijo)
+- `test_all_panels_render_without_js_errors` flakeaba en CI ("el juego no se mostró"): esperaba `#game`
+  con un `wait_for_timeout(1500)` fijo y, bajo carga, el boot tardaba más → falso negativo (frenó el
+  promote de 1.97.0 pese a que el código estaba bien — verificado pasando local). Nuevo helper
+  `_wait_shown` que **espera el selector** con timeout (10s) en vez de dormir un tiempo fijo.
+
 ## [1.97.0] - 2026-06-27
 
 ### 2026-06-27 — 🌳 Árbol/tabla calculado: `GET /catalog/tree` + modal web + "Explicar con IA"
