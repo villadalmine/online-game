@@ -138,3 +138,14 @@ async def reports(
         )
         for log in res.scalars()
     ]
+
+
+@router.get("/battles")
+async def all_battles(
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Feed público de TODAS las batallas (no solo las tuyas): quién atacó a quién, de qué planeta
+    a cuál, y quién ganó. SDD 35: sin unidades/bajas (se consigue espiando, no mirando el feed)."""
+    from app.services.battles import battles_feed
+    return await battles_feed(session, limit=80)

@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — Panel de batallas: quién atacó a quién y quién ganó (general + admin)
+- **Panel general (todos los jugadores):** en *Reportes de combate* se agregó **🌐 Batallas de todos**
+  — el historial global de combates, **agrupado por atacante**, con **ruta origen→destino** (planeta
+  del atacante → base atacada) y el **ganador**. Antes solo veías *tus* batallas.
+- **Panel de admin:** nueva card **⚔ Batallas — quién ganó** con el mismo feed global (atacante vs
+  defensor, ruta, ganador, botín).
+- **Privacidad (SDD 35):** el feed **NO expone unidades ni bajas** — la composición/fuerza de un
+  ejército sigue siendo intel que se consigue **espiando**, no mirando el feed. El espionaje tampoco
+  aparece (usa otra tabla). Tus *propios* reportes (`/combat/reports`) sí mantienen el detalle.
+- API: `GET /combat/battles` (público) y `GET /admin/battles` (admin), ambos vía
+  `app/services/battles.py:battles_feed` (deriva de `CombatLog`, sin storage nuevo). e2e:
+  `test_battles_feed_global_and_admin_no_unit_info` (incluye que NO haya datos de unidades).
+
 ### 2026-06-27 — Diseño: SDD 46 (alojamiento de unidades) + SDD 47 (minería/trabajadores/silos)
 - **SDD 46 — Alojamiento y capacidad de unidades** (`docs/sdd-unit-housing-capacity.md`): grafo
   data-driven unidad→dominio→edificio (worker→base, soldado→cuartel, avión→hangar, barco→puerto…),

@@ -103,6 +103,19 @@ async def npc_stats(
     return out
 
 
+@router.get("/battles")
+async def battles(
+    limit: int = Query(default=50, ge=1, le=200),
+    admin: Player = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Historial global de batallas (todos los jugadores): quién atacó a quién, desde qué planeta a
+    cuál, y quién ganó. Solo combate (los espionajes NO van acá: usan otra tabla).
+    SDD 35: NO exponemos unidades/bajas (eso es intel que se consigue espiando)."""
+    from app.services.battles import battles_feed
+    return await battles_feed(session, limit)
+
+
 @router.get("/players")
 async def list_players(
     status_: str | None = Query(default=None, alias="status"),

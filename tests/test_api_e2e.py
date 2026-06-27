@@ -1627,6 +1627,38 @@ async def test_full_battle_resolves_on_arrival_and_fleet_returns(client):
     assert me["missions_outgoing"] == []            # mission completed
 
 
+async def test_battles_feed_global_and_admin_no_unit_info(client):
+    # Panel general + admin: feed de TODAS las batallas (quién ganó, origen→destino) SIN unidades.
+    ha = await _register(client.http, "raider")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "victim")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    target_base = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "raider", "victim")
+    await _grant_units(client.session_maker, "raider", {"tank": 5})
+    await client.http.post(
+        "/api/v1/combat/attack", headers=ha,
+        json={"target_base_id": target_base, "force": {"tank": 5}},
+    )
+    await _fast_forward_arrivals(client.session_maker)
+    await client.http.post("/api/v1/admin/tick", headers=ha)
+
+    # Público: lo ve OTRO jugador (la victima), no solo el atacante.
+    feed = (await client.http.get("/api/v1/combat/battles", headers=hd)).json()
+    assert len(feed) == 1
+    b = feed[0]
+    assert b["attacker"] == "raider" and b["defender"] == "victim"
+    assert b["outcome"] == "attacker"
+    assert b["from_planet"] == "mars" and b["to_planet"] == "venus"   # origen → destino
+    # SDD 35: NADA de unidades/bajas en el feed (eso es intel que se consigue espiando).
+    assert "attacker_losses" not in b and "defender_losses" not in b and "units" not in b
+
+    # Admin: mismo feed (sin gate de ADMIN_EMAIL en tests).
+    adm = (await client.http.get("/api/v1/admin/battles", headers=ha)).json()
+    assert len(adm) == 1 and adm[0]["winner_id"] is not None
+    assert "attacker_losses" not in adm[0]
+
+
 async def _add_active_building(maker, username, key, qty=1):
     async with maker() as s:
         p = (await s.execute(select(Player).where(Player.username == username))).scalar_one()
