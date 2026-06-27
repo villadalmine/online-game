@@ -1,6 +1,6 @@
 # SDD 35 — Espionaje e inteligencia (espías, contraespías, intel persistida)
 
-> **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
+> **Estado:** **completo** (en producción; tech tree + visión de alianza incluidos) · **Fecha:** 2026-06-24
 > **Relacionado:** SDD 34 (combate/calculadora), SDD 1/2 (grafo + asistente), SDD 28 (uso IA),
 > `app/services/{combat,effects,alliances}.py`, `app/models` (AttackMission/ExpeditionOrder como
 > patrón), `content/{units,buildings,technologies}.yaml`.
@@ -117,8 +117,14 @@ La intel se revela **graduada** — el contraespionaje del defensor baja tu `dep
   **Calculadora de combate** tiene un botón **🧮 "a la calculadora"** en el bloque de intel que
   precarga el lado defensor desde lo revelado (unidades exactas si depth≥0.8, torretas si ≥0.6). El
   asistente IA tiene la intel en contexto + grounding `mech_combat_planning` para usar las herramientas.
-- **Pendiente (follow-up):** técnicas `espionage`/`counter_espionage` (tech tree); visión de alianza
-  como intel base.
+- **Tech tree (HECHO):** tecnologías `espionage` (+40% poder de espía) y `counter_espionage` (+40%
+  defensa de espionaje) en `content/technologies.yaml` con `effect: espionage|counter_espionage`;
+  entran por el mismo `effects.multiplier` que usa `process_spy_missions` (espionage sube `spy_power`,
+  counter_espionage sube el `counter`). Test: `test_espionage_techs_apply_as_multiplier`.
+- **Visión de alianza como intel base (HECHO):** `player_intel` fusiona la intel de los aliados si la
+  alianza tiene `shared_vision` (la propia siempre pisa a la del aliado). Tests:
+  `test_shared_vision_pools_ally_intel`, `test_no_shared_vision_keeps_intel_private`, e2e
+  `test_shared_vision_shares_intel_e2e`. **SDD 35 completo.**
 
 ## 10. Riesgos / decisiones
 - **Balance:** `spy`/`counter_power`/half-life se afinan por YAML; arrancar conservador (que espiar
