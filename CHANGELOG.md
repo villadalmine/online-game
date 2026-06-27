@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.96.1] - 2026-06-27
+
 ### 2026-06-27 — Fix: loadActiveEvents pegaba a un path 404 (lo atajó el gate de Chrome)
 - El fetch de eventos activos usaba `GET /api/v1/events` (no existe → 404) en vez de
   `GET /api/v1/events/active`. Generaba 2 errores de consola → el gate `e2e-chrome`
