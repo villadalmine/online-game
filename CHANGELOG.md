@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.92.0] - 2026-06-27
+
 ### 2026-06-27 — Panel de batallas: quién atacó a quién y quién ganó (general + admin)
 - **Panel general (todos los jugadores):** en *Reportes de combate* se agregó **🌐 Batallas de todos**
   — el historial global de combates, **agrupado por atacante**, con **ruta origen→destino** (planeta
