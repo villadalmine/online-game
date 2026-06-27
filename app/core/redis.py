@@ -4,6 +4,7 @@ Redis is optional: if it's disabled (default) or unreachable, every helper degra
 to a safe no-op (cache misses, rate limit always allows). This keeps the game running
 identically on a laptop with just SQLite, and lets it use Redis when deployed.
 """
+import asyncio
 import contextlib
 import json
 import secrets
@@ -14,6 +15,9 @@ from redis.asyncio import Redis
 from app.core.config import get_settings
 
 _client: Redis | None = None
+# Lock por jugador in-process (SDD 48): respaldo cuando Redis no está (dev/SQLite) para serializar
+# acciones mutantes dentro del proceso y evitar el 500 "database is locked" al spamear.
+_local_locks: dict[int, asyncio.Lock] = {}
 
 
 async def get_redis() -> Redis | None:
@@ -54,7 +58,18 @@ async def player_lock(
     seguro); `yield False` = otro request lo tiene ahora (el caller debe devolver 409). Degrada a
     no-op si Redis está deshabilitado o falla, para no bloquear el juego."""
     if redis is None:
-        yield True
+        # Sin Redis (dev/SQLite): serializamos in-process. Mismo contrato que el lock distribuido:
+        # si otro request del mismo jugador lo tiene ⇒ yield False (el caller devuelve 409), nunca
+        # corremos dos en paralelo sobre SQLite (evita el 500 "database is locked").
+        lock = _local_locks.setdefault(player_id, asyncio.Lock())
+        if lock.locked():
+            yield False
+            return
+        await lock.acquire()
+        try:
+            yield True
+        finally:
+            lock.release()
         return
     key = f"lock:player:{player_id}"
     token = secrets.token_hex(16)

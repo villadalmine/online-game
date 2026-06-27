@@ -155,6 +155,6 @@ spec:
               -n online-game \
               --reuse-values \
               --set image.tag={{workflow.parameters.image_tag}} \
-              --wait --timeout 8m
-            kubectl rollout status deploy/galaxy-api -n online-game --timeout=300s
+              --wait --timeout 15m
+            kubectl rollout status deploy/galaxy-api -n online-game --timeout=600s
         volumeMounts: [{ name: workspace, mountPath: /workspace }]

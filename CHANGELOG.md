@@ -7,12 +7,37 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
-### 2026-06-27 — Diseño: SDD 48 (concurrencia de acciones / no saturar la API al spamear)
-- `docs/sdd-action-concurrency-queue.md`: diagnostica el 409 "ya tenés una acción en curso" (lock por
-  jugador, correcto) y el 500 al spamear sin Redis (dev/SQLite). Diseña: deshabilitar el botón
-  mientras hay request en vuelo, lock in-process de respaldo (saca el 500), 409 en vez de 500 ante
-  contención, y una **cola FIFO del lado del cliente** (valida cada acción al enviarla → si falta
-  material, esa falla con toast y las demás siguen; sin cola server-side diferida). Diseño, no implementado.
+### 2026-06-27 — SDD 48 v1: no saturar la API al spamear comprar/construir
+- **Bug:** clickear muchas veces "comprar/construir/entrenar" muy rápido daba **409 "ya tenés una
+  acción en curso"** o, en dev/SQLite (sin Redis), **500 internal error** (dos requests del mismo
+  jugador corriendo en paralelo → "database is locked").
+- **Frontend (cola FIFO del cliente):** `api()` ahora **serializa las llamadas mutantes** (no-GET) en
+  una cola → nunca hay dos en vuelo, así no se generan 409 al spamear. Cada acción se valida **al
+  enviarse** (no diferida): si una falla (p.ej. sin material) rechaza con su toast y la cola sigue con
+  las demás. Los GET (lecturas/refresh) quedan en paralelo.
+- **Backend (lock in-process de respaldo):** sin Redis, `player_lock` ahora **serializa in-process**
+  por jugador (antes era no-op) → el 2º request ve el lock tomado (409, no 500). Con Redis sigue siendo
+  el lock distribuido. Tests: `test_player_lock_without_redis_serializes_in_process`.
+- **CI:** subido el `--wait`/timeout del `helm upgrade` en el pipeline (8m→15m, rollout 300s→600s)
+  porque el arranque en arm (pull de imagen + migraciones) excedía el timeout y marcaba el deploy
+  "failed" aunque el rollout completaba. Diseño completo en `docs/sdd-action-concurrency-queue.md`.
+
+### 2026-06-27 — 📌 Pendientes / roadmap (para retomar)
+> Estado al cierre 2026-06-27. Lo de arriba (panel de batallas, SDD 48, SDD 35 cerrado, SDD 28
+> verificado) ya está. Lo que sigue, por prioridad:
+- **A implementar (diseño listo):** **SDD 47** minería (staffing de trabajadores + silos/almacén —
+  el `worker` hoy no hace nada), **SDD 46** alojamiento de unidades (topes por edificio), **SDD 48
+  resto** (idempotency-key opcional; deshabilitar botón con spinner por acción), **SDD 28 §8** virtual
+  keys LiteLLM con budget por jugador (a futuro/monetización).
+- **Diseño-only sin implementar:** SDD 30 (runbook resiliencia), SDD 31 (Postgres HA CNPG), SDD 33
+  (hardening: no-root/NetworkPolicy/RBAC), SDD 7/9 (load test real).
+- **Infra/CI:** revisar por qué el arranque en arm tarda (pull + migraciones) y deja el `helm`
+  "failed" pese a rollout OK — validar que el timeout 15m alcance; release helm quedó en estado
+  failed rev 134 (el próximo upgrade exitoso lo limpia).
+- **Bloqueadores para publicar:** secretos fuertes, email real, backup offsite cifrado + PITR, target
+  de hosting, **bot Telegram (SDD 5)**.
+- **Decisión del usuario (no autónoma):** borrar (o no) el PV viejo de Postgres `pvc-b23ba706-…`
+  (Released, pre-Longhorn, destructivo).
 
 ## [1.92.0] - 2026-06-27
 

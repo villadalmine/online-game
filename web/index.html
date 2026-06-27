@@ -427,11 +427,22 @@ function hubRisk(){ const out=$("hub_risk"); if(!out) return; const q=Math.max(1
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-async function api(path,method="GET",body){
+async function _doFetch(path,method,body){
   const h={ "Content-Type":"application/json" }; if(token) h["Authorization"]="Bearer "+token;
   const r=await fetch(API+path,{method,headers:h,body:body?JSON.stringify(body):undefined});
   const t=await r.text(); let d; try{ d=JSON.parse(t); }catch{ d=t; }
   if(!r.ok){ const e=new Error(fmtErr(d,t)); e.status=r.status; throw e; } return d;
+}
+// SDD 48: serializamos las llamadas MUTANTES (no-GET) en una cola FIFO del cliente → nunca hay dos en
+// vuelo, así clickear "comprar/construir" como loco no genera 409 "ya tenés una acción en curso" ni
+// 500. Cada acción se valida al ENVIARSE (no diferida): si una falla (p.ej. sin material) rechaza con
+// su error y la cola sigue con las demás. Los GET (lecturas/refresh) quedan en paralelo.
+let _mutChain=Promise.resolve();
+async function api(path,method="GET",body){
+  if(method==="GET") return _doFetch(path,method,body);
+  const run=_mutChain.then(()=>_doFetch(path,method,body),()=>_doFetch(path,method,body));
+  _mutChain=run.then(()=>{},()=>{});
+  return run;
 }
 function fmtErr(d,t){ if(d&&Array.isArray(d.detail)) return d.detail.map(e=>(e.loc?e.loc.slice(-1)+": ":"")+(e.msg||JSON.stringify(e))).join("; "); return (d&&d.detail)||t||"error de red"; }
 // Avisos centralizados (SDD 42 UX): toasts apilables y descartables. Éxitos se borran solos;

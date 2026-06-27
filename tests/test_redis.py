@@ -60,9 +60,17 @@ async def test_player_lock_is_mutually_exclusive():
         assert again is True
 
 
-async def test_player_lock_without_redis_is_noop():
-    async with player_lock(None, 1) as a, player_lock(None, 1) as b:
-        assert a is True and b is True  # sin Redis no bloquea (dev/tests)
+async def test_player_lock_without_redis_serializes_in_process():
+    # SDD 48: sin Redis (dev/SQLite) igual serializamos in-process → el 2º request del mismo jugador
+    # ve el lock tomado (yield False ⇒ 409), nunca corren dos en paralelo (evita el 500 al spamear).
+    async with player_lock(None, 1) as a:
+        assert a is True
+        async with player_lock(None, 1) as b:
+            assert b is False           # ocupado por el mismo jugador
+        async with player_lock(None, 2) as other:
+            assert other is True        # otro jugador, libre
+    async with player_lock(None, 1) as again:
+        assert again is True            # liberado ⇒ se puede tomar de nuevo
 
 
 async def test_player_lock_release_only_own_token():
