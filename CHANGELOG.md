@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-26 — Fix: el panel de mercado/hub se refresca al instante tras comprar
+- Bug: al comprar mineral/energía (mercado, hub, mercado negro, transporte) el **stock mostrado en el
+  panel no se actualizaba** hasta el ciclo de 20s (había que refrescar la página). Las funciones de
+  comercio llamaban `refresh()` (estado) pero no `refreshPanels()` (mercado/hub se cargan ahí). Ahora
+  hacen `await refresh(); refreshPanels()` → el panel refleja el stock nuevo enseguida.
+
 ## [1.90.0] - 2026-06-26
 
 ### 2026-06-26 — Intel → Calculadora de combate (SDD 35 + 34)

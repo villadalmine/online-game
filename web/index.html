@@ -1616,7 +1616,7 @@ async function blackMarket(){
   const body={pay_mineral:pay,pay_qty:q,get_mineral:get}; const e0=escortObj(); if(Object.keys(e0).length) body.escort=e0;
   try{ const r=await api("/api/v1/market/blackmarket","POST",body);
     const plundered=r.lost_to_pirates?` 🏴‍☠️−${r.lost_to_pirates}`:"";
-    msg(`🕶 −${r.paid} ${mineralName(pay)} → +${r.received} ${mineralName(get)}${plundered}`); refresh();
+    msg(`🕶 −${r.paid} ${mineralName(pay)} → +${r.received} ${mineralName(get)}${plundered}`); await refresh(); refreshPanels();
   }catch(e){ msg(e.message,false); }
 }
 async function hubTrade(side,m){
@@ -1624,7 +1624,7 @@ async function hubTrade(side,m){
   const body={mineral_key:m,qty:q}; if(side==="buy"){ const e=escortObj(); if(Object.keys(e).length) body.escort=e; }
   try{ const r=await api("/api/v1/market/hub/"+side,"POST",body);
     const plundered=r.lost_to_pirates?` 🏴‍☠️−${r.lost_to_pirates}`:"";
-    msg(`🛰 ${side==='buy'?'+'+r.bought:'−'+q} ${mineralName(m)} → ⚡${r.price}${plundered}`); refresh();
+    msg(`🛰 ${side==='buy'?'+'+r.bought:'−'+q} ${mineralName(m)} → ⚡${r.price}${plundered}`); await refresh(); refreshPanels();
   }catch(e){ msg(e.message,false); }
 }
 function trAvail(){
@@ -1643,14 +1643,14 @@ async function transportSend(){
   if(eu&&en>0) body.escort={[eu]:en};
   try{ const r=await api("/api/v1/market/transport","POST",body);
     const esc=Object.keys(r.escort||{}).length?` 🛡${Object.entries(r.escort).map(([k,v])=>v+"×"+k).join(",")}`:"";
-    msg(`🚚 ${q} ${m}: ${f}→${t} (${r.ships} nave/s${esc}, llega ${new Date(r.arrives_at).toLocaleTimeString()})`); refresh();
+    msg(`🚚 ${q} ${m}: ${f}→${t} (${r.ships} nave/s${esc}, llega ${new Date(r.arrives_at).toLocaleTimeString()})`); await refresh(); refreshPanels();
   }catch(e){ msg(e.message,false); }
 }
 async function marketTrade(side, m){
   const q=Math.max(1, +(($("marketqty")||{}).value)||1);
   try{ const r=await api("/api/v1/market/"+side,"POST",{planet_key:marketSel,mineral_key:m,qty:q});
     msg(side==="buy"?`🛒 +${r.bought} ${m} (−⚡${r.energy_spent})`:`💰 −${r.sold} ${m} (+⚡${r.energy_gained})`);
-    refresh();
+    await refresh(); refreshPanels();
   }catch(e){ msg(e.message,false); }
 }
 async function saveProfile(){
