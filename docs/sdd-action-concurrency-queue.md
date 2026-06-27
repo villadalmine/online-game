@@ -1,6 +1,9 @@
 # SDD 48 — Concurrencia de acciones: no saturar la API al spamear (cola del cliente)
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-27
+> **Estado:** **implementado** · **Fecha:** 2026-06-27
+> Hecho: cola FIFO de mutaciones en `api()` (cliente) + lock in-process en `player_lock` sin Redis
+> (no más 409/500 al spamear, v1.93.0); indicador "⏳ procesando…" in-flight (§4.1) en `web/index.html`.
+> **Pendiente (opcional):** `Idempotency-Key` server-side (§4.2) — solo si se agregan botones de pago.
 > **Relacionado:** SDD 1/2 (asistente), `app/api/deps.py` (`lock_current_player`),
 > `app/core/redis.py` (`player_lock`), `app/services/{economy,training,research,market}.py`,
 > `web/index.html` (acciones de UI).

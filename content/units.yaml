@@ -13,6 +13,9 @@ personnel:
     description: "Aumenta produccion y construccion."
     description_en: "Boosts production and construction."
     requires: headquarters
+    domain: personnel       # SDD 46: se aloja en base central / laboratorio
+    housing_size: 1
+    mining_power: 1         # SDD 47: cuánto rinde un obrero al operar minas (staffing)
     energy_cost: 2
     train_seconds: 30
     cost: { structural: 10, energetic: 5 }
@@ -27,6 +30,8 @@ personnel:
     description: "Unidad de combate basica. Barata e inmediata: para ataques rapidos desde el inicio."
     description_en: "Basic combat unit. Cheap and immediate: for quick early attacks."
     requires: headquarters
+    domain: infantry        # SDD 46: se aloja en el cuartel
+    housing_size: 1
     energy_cost: 3
     train_seconds: 45
     cost: { structural: 15, energetic: 10 }
@@ -41,6 +46,8 @@ personnel:
     description: "Acelera investigacion."
     description_en: "Speeds up research."
     requires: research_lab
+    domain: personnel       # SDD 46: personal civil (base central / laboratorio)
+    housing_size: 1
     energy_cost: 3
     train_seconds: 45
     cost: { structural: 10, energetic: 15, advanced: 10 }
@@ -57,6 +64,8 @@ personnel:
     sources: ["Wikipedia: Espionage"]
     requires: research_lab
     requires_tech: espionage
+    domain: personnel       # SDD 46: personal civil (base central / laboratorio)
+    housing_size: 1
     energy_cost: 4
     train_seconds: 40
     cost: { structural: 12, energetic: 8, advanced: 6 }
@@ -72,6 +81,8 @@ heavy:
     sources: ["Wikipedia: Tank"]
     requires: factory
     requires_tech: weapons
+    domain: ground          # SDD 46: pesada terrestre, se aloja en la fábrica
+    housing_size: 2
     energy_cost: 8
     train_seconds: 120
     cost: { structural: 80, energetic: 40, advanced: 20 }
@@ -88,6 +99,8 @@ heavy:
     # Rigor científico (SDD 13): un barco necesita un océano → solo en planetas con agua líquida.
     requires_liquid_water: true
     propulsion: naval
+    domain: naval           # SDD 46: se aloja en el puerto
+    housing_size: 2
     energy_cost: 9
     train_seconds: 140
     cost: { structural: 100, energetic: 50 }
@@ -104,6 +117,8 @@ heavy:
     # Rigor científico (SDD 13): un avión necesita atmósfera para volar → no en el vacío.
     requires_atmosphere: true
     propulsion: jet
+    domain: air             # SDD 46: se aloja en el hangar
+    housing_size: 2
     energy_cost: 10
     train_seconds: 150
     cost: { structural: 60, energetic: 60, advanced: 40 }
@@ -117,6 +132,8 @@ heavy:
     sources: ["NASA: Space Shuttle"]
     requires: factory
     requires_tech: antigravity
+    domain: space           # SDD 46: se aloja en el hangar
+    housing_size: 3
     energy_cost: 15
     train_seconds: 240
     cost: { structural: 120, energetic: 100, advanced: 80 }
@@ -129,6 +146,8 @@ heavy:
     real_en: "Space freighter: hauls minerals between planets."
     sources: ["Wikipedia: Cargo spacecraft"]
     requires: factory
+    domain: space           # SDD 46: se aloja en el hangar
+    housing_size: 3
     energy_cost: 18
     train_seconds: 200
     cost: { structural: 150, energetic: 90, advanced: 40 }

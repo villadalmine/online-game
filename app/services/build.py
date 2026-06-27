@@ -54,9 +54,11 @@ async def start_build(
         if rtech not in await researched_techs(session, player.id):
             raise BuildError(f"Requiere investigar: {rtech}")
 
-    if spec["category"] == "mine":
+    # mina (qué extrae) y silo (qué almacena, SDD 47) eligen un mineral al construirse.
+    needs_mineral = spec["category"] in ("mine", "storage")
+    if needs_mineral:
         if target_mineral is None:
-            raise BuildError("Una mina requiere 'target_mineral'.")
+            raise BuildError(f"{building_key} requiere 'target_mineral'.")
         if target_mineral not in content.minerals:
             raise BuildError(f"Mineral desconocido: {target_mineral}")
 
@@ -108,7 +110,7 @@ async def start_build(
         building_key=building_key,
         status="building",
         completes_at=now + timedelta(seconds=build_seconds),
-        production_mineral=target_mineral if spec["category"] == "mine" else None,
+        production_mineral=target_mineral if needs_mineral else None,
     )
     session.add(building)
     await session.flush()

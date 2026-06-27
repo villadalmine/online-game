@@ -234,7 +234,14 @@ def build_graph(race_key: str, planet_key: str) -> dict:
     # The mine produces any mineral the planet supports.
     for mineral in minerals_local:
         edges.append({"from": "mine", "to": mineral, "type": "produces"})
+    # SDD 47: los trabajadores operan las minas (staffing); el silo almacena un mineral.
+    if "worker" in content.units and "mine" in content.buildings:
+        edges.append({"from": "worker", "to": "mine", "type": "operates"})
+    if "silo" in content.buildings:
+        for mineral in (*minerals_local, *minerals_imported):
+            edges.append({"from": "silo", "to": mineral, "type": "stores"})
 
+    from app.services.housing import houses_for_domain, unit_domain
     for key, u in content.units.items():
         nodes.append({"id": key, "type": "unit", "name": u.get("name", key)})
         add_cost_edges(key, target_cost(race_key, key))
@@ -242,6 +249,10 @@ def build_graph(race_key: str, planet_key: str) -> dict:
         if req:
             edges.append({"from": key, "to": req, "type": "requires"})
             edges.append({"from": req, "to": key, "type": "unlocks"})
+        # SDD 46: alojamiento — la unidad se guarda en el/los edificio(s) de su dominio.
+        for hb in houses_for_domain(unit_domain(key)):
+            edges.append({"from": key, "to": hb, "type": "housed_in"})
+            edges.append({"from": hb, "to": key, "type": "houses"})
 
     for key, t in content.technologies.items():
         nodes.append(
@@ -477,6 +488,46 @@ def mechanics_documents() -> list[dict]:
             "keywords": ["energia", "energía", "ayuda", "ayudame", "ayúdame", "nivelar", "nivelado",
                          "regala", "regalar", "dame", "necesito", "ranking", "promedio", "rezagado",
                          "energy", "help", "level"],
+        },
+        {
+            "id": "mech_mining", "type": "mechanic",
+            "text": (
+                "MINERÍA (SDD 47): una mina produce por hora = "
+                f"{int(c.buildings.get('mine', {}).get('base_output_per_hour', 60))} × abundancia "
+                "del mineral en el planeta × tus multiplicadores (boons/tech/alianza) × STAFFING. "
+                "STAFFING = trabajadores·mining_power / Σ worker_slots de tus minas (cada mina "
+                f"pide {int(c.buildings.get('mine', {}).get('worker_slots', 5))} obreros para "
+                "rendir al 100%). Más minas con los mismos obreros ⇒ cada una rinde MENOS "
+                "(la mano de obra se reparte); entrená obreros para subir el staffing (techo 1.0, "
+                "sobre-contratar no ayuda). ALMACENAMIENTO: cada mineral tiene un tope por planeta "
+                f"(base {int(s.base_storage_per_mineral)} + la HQ + lo que aporta cada mina). Si "
+                "se llena, lo que sigue produciendo se DESPERDICIA: construí un SILO (guarda UN "
+                f"mineral, +{int(c.buildings.get('silo', {}).get('storage_capacity', 10000))}) o "
+                "gastá/vendé el stock."
+            ),
+            "keywords": ["mina", "minas", "mineria", "minería", "produccion", "producción",
+                         "produce", "por hora", "trabajador", "trabajadores", "obrero", "obreros",
+                         "worker", "staffing", "rinde", "rendimiento", "silo", "silos", "almacen",
+                         "almacén", "almacenamiento", "storage", "tope", "capacidad", "lleno",
+                         "rebalsa", "desperdicia", "overflow", "abundancia"],
+        },
+        {
+            "id": "mech_housing", "type": "mechanic",
+            "text": (
+                "ALOJAMIENTO DE UNIDADES (SDD 46): cada unidad ocupa una PLAZA de su dominio y "
+                "cada edificio provee plazas. Dominios y dónde se alojan: personnel (gente civil) "
+                "→ base central + laboratorio; infantry → cuartel; ground (pesadas de tierra) → "
+                "el taller; air y space → hangar; naval → puerto. Capacidad de un dominio = Σ "
+                "plazas de tus edificios activos; si no hay plazas libres NO podés entrenar esa "
+                "unidad → construí/ampliá el edificio que la aloja (más infantería ⇒ otro cuartel; "
+                "unidades navales ⇒ un puerto). Las unidades en cola ya reservan plaza; una unidad "
+                "pesada ocupa más de 1 plaza (housing_size)."
+            ),
+            "keywords": ["alojamiento", "plaza", "plazas", "capacidad", "dominio", "housing",
+                         "cuartel", "barracks", "hangar", "puerto", "port", "alojar", "alojo",
+                         "guardar", "guarda", "donde", "dónde", "entran", "caben", "limite",
+                         "límite", "cuantas unidades", "cuántas unidades", "lleno", "infanteria",
+                         "infantería", "naval"],
         },
         {
             "id": "mech_research", "type": "mechanic",

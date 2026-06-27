@@ -149,6 +149,20 @@ class Settings(BaseSettings):
     # = sin escalado por días (vuelve al comportamiento v1, top-up directo al P40).
     catchup_full_after_days: float = 7.0
 
+    # Minería: trabajadores (staffing) + almacenamiento (silos) (SDD 47). Flags default OFF →
+    # comportamiento IDÉNTICO al actual (staffing=1, capacidad=∞); se prenden por release tras
+    # balancear, sin romper partidas vivas (nunca borran stock por encima del tope, solo frenan
+    # producción NUEVA). Ver docs/sdd-mining-workers-storage.md.
+    mining_staffing_enabled: bool = False
+    storage_caps_enabled: bool = False
+    base_storage_per_mineral: float = 5000.0   # colchón por mineral por planeta aun sin silos
+
+    # Alojamiento de unidades (SDD 46): cada unidad ocupa una plaza de su dominio; cada edificio
+    # provee plazas. Con enforce OFF (default) solo se MIDE/expone (no bloquea entrenar) → no rompe
+    # partidas existentes. Se prende en release posterior. Ver docs/sdd-unit-housing-capacity.md.
+    housing_enforced: bool = False
+    base_housing_per_domain: int = 0           # plazas de gracia por dominio sin edificio que aloje
+
     # Espionaje / inteligencia (SDD 35).
     spy_energy_cost: float = 5.0
     intel_confidence_half_life_seconds: int = 28800   # 8h: la intel pierde confianza con el tiempo

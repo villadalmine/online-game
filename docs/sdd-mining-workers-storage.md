@@ -1,6 +1,13 @@
 # SDD 47 — Minería: producción, trabajadores y almacenamiento (silos)
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-27
+> **Estado:** **v1 implementado** (detrás de flags, default OFF) · **Fecha:** 2026-06-27
+> Hecho: fórmula documentada; `staffing_ratio`/`apply_overflow`/`storage_caps_by_planet`
+> (`production.py`/`economy.py`, puras + tests); integración en `collect_mines` tras
+> `mining_staffing_enabled`/`storage_caps_enabled`; bloques `mining`/`storage` en `/players/me`;
+> `worker_slots`/`storage` en mina+HQ, `silo` (con `storage_capacity`+mineral elegido al construir),
+> `mining_power` en worker (YAML → /catalog); aristas worker→mina/silo→mineral + grounding
+> `mech_mining` en el grafo; e2e en `tests/test_api_e2e.py`. **Pendiente:** UI (barras stock/cap +
+> staffing), NPC que equilibra obreros/silos, balance fino antes de prender los flags en prod.
 > **Relacionado:** SDD 46 (alojamiento/capacidad de unidades — los trabajadores son `personnel`),
 > SDD 1 (grafo + asistente), SDD 13 (rigor científico: abundancia real por planeta), SDD 42
 > (mercado/precios), `content/{buildings,units,minerals,planets}.yaml`,

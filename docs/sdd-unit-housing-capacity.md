@@ -1,6 +1,13 @@
 # SDD 46 — Alojamiento y capacidad de unidades (grafo unidad ↔ edificio)
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-27
+> **Estado:** **v1 implementado** (enforce detrás de flag `housing_enforced`, default OFF) ·
+> **Fecha:** 2026-06-27
+> Hecho: `domain`/`housing_size` en units, `houses` en edificios + `port` (naval) en YAML
+> (→ /catalog); `app/services/housing.py` (capacity/occupancy/can_train/`housing_matrix`, puras +
+> tests); enforce en `start_training` (mensaje accionable i18n); bloque `housing` en `/players/me`;
+> aristas unidad→edificio (`housed_in`/`houses`) + grounding `mech_housing` en el grafo; e2e en
+> `tests/test_api_e2e.py`. **Pendiente:** UI (barras de plazas + tooltips), NPC respeta capacidad
+> en su build order, balance antes de prender el enforce en prod, v2 por base/planeta.
 > **Relacionado:** SDD 1 (grafo de dependencias + asistente IA), SDD 13 (rigor científico:
 > `propulsion`/`requires_atmosphere`/`requires_liquid_water`), SDD 37 (colonización), SDD 42
 > (mercado: `hangar` aloja naves, stat `cargo`), `content/{units,buildings}.yaml`,

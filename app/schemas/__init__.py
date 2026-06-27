@@ -505,6 +505,12 @@ class PlayerStateOut(BaseModel):
     account_status: str = "active"                    # SDD 14: active | pending | suspended
     transports: list[TransportMissionOut] = []        # SDD 42: envíos de minerales en curso
     spy_missions: list[SpyMissionOut] = []            # SDD 35: espías en vuelo/volviendo
+    # SDD 47: estado de minería. mining = {staffing, available_workers, required_workers};
+    # storage = {planeta: {mineral: {cap, stock, free, overflowing}}}. Vacío si los flags están off.
+    mining: dict = {}
+    storage: dict = {}
+    # SDD 46: alojamiento. housing = {dominio: {capacity, occupancy, free}}.
+    housing: dict = {}
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

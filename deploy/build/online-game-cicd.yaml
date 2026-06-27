@@ -151,6 +151,11 @@ spec:
         args:
           - |
             set -e
+            # NOTA (2026-06-27): el `helm upgrade --wait` marcaba la release 'failed' por RBAC, NO por
+            # timeout — el chart administra un Certificate (ns gateway) y ClusterIssuers que helm GETea
+            # en el 3-way merge, y `og-deployer` no tenía permiso (ver deploy/build/cicd-rbac.yaml).
+            # El Deployment igual se aplicaba (el pod quedaba en la versión nueva). Fix: el RBAC de
+            # cert-manager en cicd-rbac.yaml. El timeout de 15m queda holgado por si el rollout arm tarda.
             helm upgrade galaxy /workspace/chart-src/deploy/helm \
               -n online-game \
               --reuse-values \

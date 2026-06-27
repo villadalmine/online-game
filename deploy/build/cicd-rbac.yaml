@@ -78,3 +78,59 @@ subjects:
   - kind: ServiceAccount
     name: og-deployer
     namespace: kaniko
+---
+# cert-manager (SDD 17/TLS público): el chart administra un `Certificate` en el ns `gateway`
+# (gateway.tls.enabled). `helm upgrade --wait` hace un GET de ese recurso para el 3-way merge; sin
+# este permiso el upgrade falla con "certificates.cert-manager.io ... is forbidden" AUNQUE el
+# Deployment ya se aplicó (por eso el pod queda en la versión nueva pero la release figura 'failed').
+# Las releases viejas que funcionaban se deployaban a mano (kubeconfig completo); el CD (og-deployer)
+# nunca tuvo este permiso. CRUD completo pero acotado al ns `gateway` (recurso namespaced, bajo riesgo).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: og-deployer-certs
+  namespace: gateway
+rules:
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: og-deployer-certs
+  namespace: gateway
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: og-deployer-certs
+subjects:
+  - kind: ServiceAccount
+    name: og-deployer
+    namespace: kaniko
+---
+# ClusterIssuers de Let's Encrypt (letsencrypt.enabled): cluster-scoped. helm también los GETea en el
+# upgrade. SOLO LECTURA a propósito (mínimo privilegio en un recurso cluster-wide y compartido): basta
+# para el diff cuando no cambian. Si alguna vez hay que crear/modificar un ClusterIssuer, se hace a
+# mano con un admin — NO se le da create/update cluster-wide a un SA de CD.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: og-deployer-clusterissuers-ro
+rules:
+  - apiGroups: ["cert-manager.io"]
+    resources: ["clusterissuers"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: og-deployer-clusterissuers-ro
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: og-deployer-clusterissuers-ro
+subjects:
+  - kind: ServiceAccount
+    name: og-deployer
+    namespace: kaniko

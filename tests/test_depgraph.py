@@ -122,3 +122,21 @@ def test_retrieve_finds_energy_assist_mechanic():
     # SDD 41: "ayudame con energía" debe encontrar la mecánica de nivelado (no delirar)
     res = retrieve("martian", "mars", "ayudame con energía", k=4)
     assert "mech_energy_assist" in [d["id"] for d in res]
+
+
+def test_graph_exposes_housing_and_mining_for_ai():
+    # SDD 46/47: el grafo (fuente de verdad de la IA) trae aristas de alojamiento (unidad→edificio)
+    # y de minería (worker→mina, silo→mineral), y el corpus las explica como mecánicas.
+    g = build_graph("terran", "earth")
+    etypes = {(e["from"], e["to"], e["type"]) for e in g["edges"]}
+    assert ("soldier", "barracks", "housed_in") in etypes      # el militar va al cuartel
+    assert ("ship", "port", "housed_in") in etypes             # el barco al puerto (edificio nuevo)
+    assert ("worker", "mine", "operates") in etypes            # los obreros operan las minas
+    assert ("silo", "iron", "stores") in etypes                # el silo guarda un mineral
+    ids = {d["id"] for d in graph_documents("terran", "earth")}
+    assert {"mech_housing", "mech_mining"} <= ids
+    # consultas en español encuentran las mecánicas nuevas
+    house_q = retrieve("terran", "earth", "dónde guardo mis unidades plazas", k=4)
+    mine_q = retrieve("terran", "earth", "cuántos trabajadores para las minas", k=4)
+    assert "mech_housing" in [d["id"] for d in house_q]
+    assert "mech_mining" in [d["id"] for d in mine_q]

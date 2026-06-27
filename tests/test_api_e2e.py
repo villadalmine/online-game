@@ -334,6 +334,111 @@ async def test_mutating_action_returns_409_when_player_locked(client):
     assert r.status_code == 409 and "en curso" in r.text.lower()
 
 
+async def test_mining_staffing_and_storage_e2e(client, monkeypatch):
+    """SDD 47: con staffing on, las minas sin obreros no rinden; con obreros suficientes rinden;
+    con storage caps on, al llenarse el tope el excedente se desperdicia (overflowing)."""
+    from app.core.config import get_settings
+    from app.models import ResourceStock
+    s_ = get_settings()
+    monkeypatch.setattr(s_, "mining_staffing_enabled", True)
+    monkeypatch.setattr(s_, "storage_caps_enabled", True)
+    monkeypatch.setattr(s_, "base_storage_per_mineral", 1000.0)
+
+    h = await _register(client.http, "miner")
+    state = await _onboard(client.http, h, planet="earth", race="terran")
+    base_id = state["bases"][0]["id"]
+    past = datetime.now(UTC) - timedelta(hours=2)
+
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "miner"))).scalar_one()
+        pid = p.id
+        p.energy = 1_000_000
+        for _ in range(2):   # dos minas de hierro activas que produjeron hace 2h
+            s.add(Building(base_id=base_id, building_key="mine", status="active",
+                           production_mineral="iron", completes_at=past, last_collected_at=past))
+        await s.commit()
+
+    # (1) sin obreros: staffing 0 → no producen (el hierro inicial no sube)
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["mining"]["required_workers"] == 10      # 2 minas × 5 plazas
+    assert me["mining"]["available_workers"] == 0
+    assert me["mining"]["staffing"] == 0.0
+    iron0 = me["stocks"].get("iron", 0)
+
+    # (2) con 10 obreros: staffing 1 → producen (hierro sube)
+    await _grant_units(client.session_maker, "miner", {"worker": 10})
+    async with client.session_maker() as s:   # reseteo el reloj de las minas a 2h atrás
+        for b in (await s.execute(select(Building).where(
+                Building.base_id == base_id, Building.building_key == "mine"))).scalars():
+            b.last_collected_at = past
+        await s.commit()
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["mining"]["staffing"] == 1.0
+    assert me["stocks"]["iron"] > iron0
+    cap = me["storage"]["earth"]["iron"]["cap"]
+    assert cap == 1000 + 5000 + 2000 + 2000            # base + HQ + 2 minas
+
+    # (3) overflow: lleno el almacén casi al tope → el resto se desperdicia, nunca supera el cap
+    async with client.session_maker() as s:
+        row = (await s.execute(select(ResourceStock).where(
+            ResourceStock.player_id == pid, ResourceStock.mineral_key == "iron",
+            ResourceStock.planet_key == "earth"))).scalar_one()
+        row.amount = cap - 5
+        for b in (await s.execute(select(Building).where(
+                Building.base_id == base_id, Building.building_key == "mine"))).scalars():
+            b.last_collected_at = past
+        await s.commit()
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    cell = me["storage"]["earth"]["iron"]
+    assert cell["overflowing"] is True
+    assert cell["stock"] <= cell["cap"]
+    assert me["stocks"]["iron"] <= cap + 0.5           # el excedente no se acreditó
+
+
+async def test_unit_housing_capacity_enforced_e2e(client, monkeypatch):
+    """SDD 46: con enforce on, sin cuartel no hay plazas de infantería → entrenar soldado falla;
+    al construir el cuartel sube la capacidad y se desbloquea; /players/me expone el alojamiento."""
+    from app.core.config import get_settings
+    from app.models import ResourceStock
+    monkeypatch.setattr(get_settings(), "housing_enforced", True)
+
+    h = await _register(client.http, "barracker")
+    state = await _onboard(client.http, h, planet="earth", race="terran")
+    base_id = state["bases"][0]["id"]
+    cat = (await client.http.get("/api/v1/catalog")).json()
+    minerals = [m["key"] for m in cat["minerals"]]
+    async with client.session_maker() as s:   # energía + minerales de sobra en la Tierra
+        p = (await s.execute(select(Player).where(Player.username == "barracker"))).scalar_one()
+        p.energy = 1_000_000
+        for m in minerals:
+            row = (await s.execute(select(ResourceStock).where(
+                ResourceStock.player_id == p.id, ResourceStock.mineral_key == m,
+                ResourceStock.planet_key == "earth"))).scalar_one_or_none()
+            if row:
+                row.amount = 1_000_000
+            else:
+                s.add(ResourceStock(player_id=p.id, mineral_key=m, amount=1_000_000,
+                                    planet_key="earth"))
+        await s.commit()
+
+    # sin cuartel: infantería sin plazas → 400 con mensaje accionable
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["housing"]["infantry"]["capacity"] == 0
+    r = await client.http.post(f"/api/v1/bases/{base_id}/train", headers=h,
+                               json={"unit_key": "soldier", "quantity": 1})
+    assert r.status_code == 400 and "plaza" in r.text.lower()
+
+    # construyo un cuartel activo → capacidad 30 → entrenar funciona y la ocupación sube
+    await _add_active_building(client.session_maker, "barracker", "barracks")
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["housing"]["infantry"]["capacity"] == 30
+    r = await client.http.post(f"/api/v1/bases/{base_id}/train", headers=h,
+                               json={"unit_key": "soldier", "quantity": 1})
+    assert r.status_code == 201, r.text
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["housing"]["infantry"]["occupancy"] == 1   # la unidad en cola ya reserva plaza
+
+
 async def test_physics_gravity_scales_build_time(client, monkeypatch):
     # SDD 13 §4: con physics on, construir en baja gravedad (Marte 0.38g) tarda menos que en la
     # Tierra (1g). Con physics off, ambos tardan igual (neutral). Encendemos el singleton settings.

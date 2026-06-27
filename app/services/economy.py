@@ -103,11 +103,70 @@ async def finalize_due_builds(
     return count
 
 
+def storage_caps_by_planet(
+    content, buildings: list[Building], base_info: dict[int, tuple],
+    base_storage: float, mineral_keys,
+) -> dict[str, dict[str, float]]:
+    """SDD 47: tope de almacenamiento por planeta y mineral (pura, sin DB).
+
+    cap[planeta][mineral] = base_storage + HQ.storage (colchón a todos) + Σ mina.storage (a su
+    mineral) + Σ silo.storage_capacity (a su mineral asignado). Solo edificios ACTIVOS."""
+    caps: dict[str, dict[str, float]] = {}
+
+    def planet_caps(planet: str) -> dict[str, float]:
+        return caps.setdefault(planet, {m: float(base_storage) for m in mineral_keys})
+
+    for b in buildings:
+        if b.status != "active":
+            continue
+        spec = content.buildings.get(b.building_key, {})
+        planet = base_info.get(b.base_id, (None, None))[0]
+        if planet is None:
+            continue
+        cat = spec.get("category")
+        if cat == "core" and spec.get("storage"):
+            pc = planet_caps(planet)
+            for m in pc:
+                pc[m] += spec["storage"]
+        elif cat == "mine" and b.production_mineral and spec.get("storage"):
+            pc = planet_caps(planet)
+            pc[b.production_mineral] = pc.get(b.production_mineral, float(base_storage)) \
+                + spec["storage"]
+        elif cat == "storage" and b.production_mineral and spec.get("storage_capacity"):
+            pc = planet_caps(planet)
+            pc[b.production_mineral] = pc.get(b.production_mineral, float(base_storage)) \
+                + spec["storage_capacity"]
+    return caps
+
+
+async def mining_staffing(
+    session: AsyncSession, player_id: int, buildings: list[Building], content
+) -> tuple[float, float, float]:
+    """SDD 47: (staffing, available_work, required_slots) del jugador. Pool global de obreros
+    repartido entre todas las minas activas."""
+    from app.services.production import staffing_ratio
+    from app.services.training import player_units
+    units = await player_units(session, player_id)
+    mining_power = content.units.get("worker", {}).get("mining_power", 1)
+    available = units.get("worker", 0) * mining_power
+    required = sum(
+        content.buildings[b.building_key].get("worker_slots", 0)
+        for b in buildings
+        if b.status == "active"
+        and content.buildings.get(b.building_key, {}).get("category") == "mine"
+    )
+    return staffing_ratio(available, required), float(available), float(required)
+
+
 async def collect_mines(
     session: AsyncSession, player: Player, now: datetime | None = None
 ) -> dict[str, float]:
-    """Credit minerals from all active mines to the player's stocks (lazy)."""
+    """Credit minerals from all active mines to the player's stocks (lazy).
+
+    SDD 47: la producción se modula por `staffing` (trabajadores ↔ minas) y se recorta al tope de
+    almacenamiento (silos); el excedente se desperdicia. Ambos detrás de flags (default off)."""
     from app.services.effects import multiplier
+    from app.services.production import apply_overflow
 
     now = now or _now()
     content = get_content()
@@ -117,15 +176,26 @@ async def collect_mines(
     from app.core.config import get_settings
     from app.services.colonization import compat
     from app.services.research import researched_techs
+    settings = get_settings()
     bres = await session.execute(select(Base_).where(Base_.player_id == player.id))
     base_info = {b.id: (b.planet_key, b.base_type) for b in bres.scalars()}
     home = player.planet_key
     has_colony = any(p != home or bt == "orbital" for p, bt in base_info.values())
     techs = await researched_techs(session, player.id) if has_colony else ()
-    orbital_yield = get_settings().orbital_yield
+    orbital_yield = settings.orbital_yield
+    buildings = await _player_buildings(session, player.id)
+    # SDD 47: staffing (trabajadores) y topes de almacenamiento (silos), detrás de flags.
+    staffing = 1.0
+    if settings.mining_staffing_enabled:
+        staffing, _avail, _req = await mining_staffing(session, player.id, buildings, content)
+    caps = (
+        storage_caps_by_planet(content, buildings, base_info,
+                               settings.base_storage_per_mineral, content.minerals.keys())
+        if settings.storage_caps_enabled else None
+    )
     colony_mult: dict[str, float] = {}
     gained: dict[str, float] = {}
-    for b in await _player_buildings(session, player.id):
+    for b in buildings:
         spec = content.buildings[b.building_key]
         if b.status != "active" or spec["category"] != "mine" or not b.production_mineral:
             continue
@@ -137,7 +207,7 @@ async def collect_mines(
         else:
             abundance = content.planet_abundance(planet, b.production_mineral)
         output = compute_mine_output(since, now, spec.get("base_output_per_hour", 0), abundance)
-        amount = output * prod_mult
+        amount = output * prod_mult * staffing
         if btype in ("orbital", "lunar"):   # robots: rinde fijo, sin habitabilidad
             amount *= orbital_yield
         elif planet != home:     # colonia de superficie: rinde según habitabilidad raza×planeta
@@ -150,9 +220,18 @@ async def collect_mines(
             continue
         # SDD 42: la mina acredita al stock DE SU PLANETA (no a un pool global).
         stock = await get_or_create_stock(session, player.id, b.production_mineral, planet)
-        stock.amount += amount
+        if caps is not None:   # SDD 47: recorte por tope de almacén (overflow desperdiciado)
+            cap = caps.get(planet, {}).get(b.production_mineral)
+            free = None if cap is None else cap - stock.amount
+            stored, _wasted = apply_overflow(amount, free)
+        else:
+            stored = amount
+        if stored <= 0:
+            b.last_collected_at = now   # consumimos el tiempo igual: el resto se perdió
+            continue
+        stock.amount += stored
         b.last_collected_at = now
-        gained[b.production_mineral] = gained.get(b.production_mineral, 0.0) + amount
+        gained[b.production_mineral] = gained.get(b.production_mineral, 0.0) + stored
     total = sum(gained.values())
     if total > 0:
         from app.services.stats import bump

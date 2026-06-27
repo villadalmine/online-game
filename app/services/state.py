@@ -83,8 +83,13 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
     base_ids = [b.id for b in bases]
 
     bases_out: list[BaseOut] = []
+    all_buildings: list[Building] = []   # modelos (SDD 46/47: alojamiento + almacenamiento)
+    base_info: dict[int, tuple] = {}
     for base in bases:
         bres = await session.execute(select(Building).where(Building.base_id == base.id))
+        models = list(bres.scalars())
+        all_buildings.extend(models)
+        base_info[base.id] = (base.planet_key, base.base_type)
         buildings = [
             BuildingOut(
                 id=b.id,
@@ -94,7 +99,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
                 production_mineral=b.production_mineral,
                 completes_at=b.completes_at,
             )
-            for b in bres.scalars()
+            for b in models
         ]
         bases_out.append(
             BaseOut(id=base.id, name=base.name, planet_key=base.planet_key,
@@ -118,6 +123,54 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
             )
             for o in tres.scalars()
         ]
+
+    # SDD 46/47: alojamiento (housing) + minería (staffing) + almacenamiento (silos), derivados
+    # del contenido data-driven para que el cliente y la IA vean el estado real.
+    from app.content.registry import get_content
+    from app.services.economy import storage_caps_by_planet
+    from app.services.housing import housing_report
+    from app.services.production import staffing_ratio
+    content = get_content()
+    active_keys = [b.building_key for b in all_buildings if b.status == "active"]
+    queued_units: dict[str, int] = {}
+    for o in training_out:
+        queued_units[o.unit_key] = queued_units.get(o.unit_key, 0) + o.quantity
+    housing_block = housing_report(active_keys, units, queued_units)
+
+    mining_power = content.units.get("worker", {}).get("mining_power", 1)
+    available_w = units.get("worker", 0) * mining_power
+    required_w = sum(
+        content.buildings.get(b.building_key, {}).get("worker_slots", 0)
+        for b in all_buildings
+        if b.status == "active"
+        and content.buildings.get(b.building_key, {}).get("category") == "mine"
+    )
+    mining_block = {
+        "staffing": round(staffing_ratio(available_w, required_w), 3),
+        "available_workers": available_w,
+        "required_workers": required_w,
+        "enforced": settings.mining_staffing_enabled,
+    }
+
+    storage_block: dict = {}
+    if settings.storage_caps_enabled:
+        caps = storage_caps_by_planet(
+            content, all_buildings, base_info,
+            settings.base_storage_per_mineral, content.minerals.keys(),
+        )
+        for planet, mineral_caps in caps.items():
+            cell: dict[str, dict] = {}
+            pstock = by_planet.get(planet, {})
+            for mineral, cap in mineral_caps.items():
+                st = float(pstock.get(mineral, 0.0))
+                if st <= 0:
+                    continue   # solo listamos minerales que realmente tenés (menos ruido)
+                cell[mineral] = {
+                    "cap": round(cap, 1), "stock": round(st, 1),
+                    "free": round(cap - st, 1), "overflowing": st >= cap,
+                }
+            if cell:
+                storage_block[planet] = cell
 
     eres = await session.execute(
         select(ExpeditionOrder).where(
@@ -253,6 +306,9 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         galaxy_instance=await _galaxy_instance_out(session, player),
         transports=transports_out,
         spy_missions=spy_out,
+        mining=mining_block,
+        storage=storage_block,
+        housing=housing_block,
     )
 
 

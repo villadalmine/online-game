@@ -14,6 +14,8 @@ buildings:
     description_en: "Command center. Each player's starting point."
     energy_cost: 0
     build_seconds: 0
+    storage: 5000          # SDD 47: colchón base de almacenamiento por mineral en el planeta
+    houses: { personnel: 20 }   # SDD 46: aloja trabajadores/científicos/espías
     cost:
       structural: 0
   - key: mine
@@ -29,6 +31,8 @@ buildings:
     energy_cost: 10
     build_seconds: 60
     base_output_per_hour: 60   # multiplied by planet abundance for the target mineral
+    worker_slots: 5            # SDD 47: trabajadores para operar esta mina al 100% (staffing)
+    storage: 2000              # SDD 47: buffer de almacén que aporta para el mineral que extrae
     cost:
       structural: 100
       energetic: 40
@@ -74,6 +78,7 @@ buildings:
     requires: factory
     description: "Estaciona naves de carga: cada hangar sube cuántas podés despachar por ventana (SDD 42)."
     description_en: "Parks cargo ships: each hangar raises how many you can dispatch per window (SDD 42)."
+    houses: { air: 8, space: 8 }   # SDD 46: aloja aviones y unidades espaciales
     energy_cost: 12
     build_seconds: 130
     cost:
@@ -90,6 +95,7 @@ buildings:
     category: military
     description: "Entrena unidades militares."
     description_en: "Trains military units."
+    houses: { infantry: 30 }   # SDD 46: aloja la infantería (militares)
     energy_cost: 20
     build_seconds: 180
     cost:
@@ -107,6 +113,7 @@ buildings:
     requires: research_lab
     description: "Produce unidades pesadas (tanques, barcos, aviones). Necesita Laboratorio."
     description_en: "Produces heavy units (tanks, ships, aircraft)."
+    houses: { ground: 10 }   # SDD 46: aloja unidades pesadas terrestres (tanques)
     energy_cost: 25
     build_seconds: 240
     cost:
@@ -123,6 +130,7 @@ buildings:
     category: science
     description: "Habilita investigacion y cientificos."
     description_en: "Enables research and scientists."
+    houses: { personnel: 10 }   # SDD 46: aloja personal civil (científicos, espías, obreros)
     energy_cost: 20
     build_seconds: 200
     cost:
@@ -166,3 +174,35 @@ buildings:
       structural: 120
       energetic: 60
       advanced: 40
+  - key: silo
+    icon: "🛢"
+    name: "Silo"
+    name_en: "Silo"
+    real: "Silo de almacenamiento: depósito a granel de un material."
+    real_en: "Storage silo: bulk depot for a single material."
+    sources: ["Wikipedia: Silo"]
+    category: storage
+    description: "Almacena UN solo mineral (se elige al construir). Sube el tope de ese material (SDD 47)."
+    description_en: "Stores a SINGLE mineral (chosen at build time). Raises that material's cap (SDD 47)."
+    energy_cost: 12
+    build_seconds: 120
+    storage_capacity: 10000   # SDD 47: capacidad que aporta al mineral asignado (production_mineral)
+    cost:
+      structural: 120
+      energetic: 40
+  - key: port
+    icon: "⚓"
+    name: "Puerto"
+    name_en: "Port"
+    real: "Puerto naval: amarre y mantenimiento de buques."
+    real_en: "Naval port: berthing and maintenance of vessels."
+    sources: ["Wikipedia: Port"]
+    category: heavy
+    description: "Aloja unidades navales (barcos). Sin puerto no podés guardar barcos (SDD 46)."
+    description_en: "Houses naval units (ships). Without a port you can't keep ships (SDD 46)."
+    houses: { naval: 8 }   # SDD 46: aloja barcos
+    energy_cost: 14
+    build_seconds: 150
+    cost:
+      structural: 110
+      energetic: 50

@@ -7,6 +7,46 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-27 — SDD 47 v1: minería con trabajadores (staffing) + almacenamiento (silos)
+> Detrás de flags `mining_staffing_enabled` / `storage_caps_enabled`, **default OFF** → comportamiento
+> idéntico al actual hasta balancear. Cierra el hueco "el trabajador no hacía nada".
+- **Staffing (trabajadores ↔ minas):** cada mina pide `worker_slots` (5) obreros para rendir al 100%;
+  `staffing = clamp(Σ worker·mining_power / Σ worker_slots, 0, 1)` multiplica la producción de TODAS las
+  minas. Más minas con los mismos obreros ⇒ cada una rinde menos; sobre-contratar no pasa de 1.0.
+- **Almacenamiento (silos):** cada mineral tiene un tope por planeta = base + HQ (`storage`) + cada mina
+  (`storage`) + silos. Edificio nuevo **`silo`** (category `storage`): guarda **un solo mineral**
+  (elegido al construir, como la mina). Al llenarse, lo producido de más **se desperdicia** (overflow);
+  nunca borra stock existente, solo frena producción nueva.
+- **Data-driven:** `worker_slots`/`storage` en mina+HQ, `silo` (+`storage_capacity`), `mining_power` en
+  worker, todo en YAML → expuesto en `/catalog`. Funciones puras `staffing_ratio`/`apply_overflow`/
+  `storage_caps_by_planet` (`production.py`/`economy.py`) con tests (`tests/test_mining.py`).
+- **Exposición:** `/players/me` agrega `mining {staffing, available_workers, required_workers}` y
+  `storage {planeta: {mineral: {cap, stock, free, overflowing}}}`.
+- **IA:** aristas worker→mina (`operates`) y silo→mineral (`stores`) + grounding `mech_mining` en el
+  grafo (`depgraph.py`) → el asistente/NPC saben equilibrar obreros y construir silos.
+- **e2e:** `test_mining_staffing_and_storage_e2e`. **Pendiente:** UI (barras stock/cap + staffing), NPC
+  que equilibra, balance antes de prender los flags. Diseño: `docs/sdd-mining-workers-storage.md`.
+
+### 2026-06-27 — SDD 46 v1: alojamiento/capacidad de unidades (grafo unidad ↔ edificio)
+> Enforce detrás de flag `housing_enforced`, **default OFF** → solo mide/expone hasta prenderlo.
+- **Concepto:** cada unidad pertenece a un **dominio** (`domain`) y ocupa `housing_size` plazas; cada
+  edificio provee plazas (`houses: {dominio: N}`). Capacidad = Σ plazas de edificios activos; sin plazas
+  libres no podés entrenar esa unidad. La matriz (personnel→HQ/lab, infantry→cuartel, ground→fábrica,
+  air/space→hangar, naval→**puerto**) es la fuente de verdad compartida humanos ↔ IA.
+- **Edificio nuevo `port`** (naval) para alojar barcos. Atributos `domain`/`housing_size`/`houses` en
+  YAML → `/catalog`.
+- **Servicio puro** `app/services/housing.py` (capacity/occupancy/`can_train`/`housing_matrix`) con
+  tests (`tests/test_housing.py`); enforce en `start_training` con mensaje accionable i18n; bloque
+  `housing {dominio: {capacity, occupancy, free}}` en `/players/me` (las unidades en cola reservan plaza).
+- **IA:** aristas unidad→edificio (`housed_in`/`houses`) + grounding `mech_housing` en el grafo.
+- **e2e:** `test_unit_housing_capacity_enforced_e2e`. **Pendiente:** UI (barras de plazas), NPC respeta
+  capacidad, v2 por base/planeta. Diseño: `docs/sdd-unit-housing-capacity.md`.
+
+### 2026-06-27 — SDD 48: indicador "⏳ procesando…" in-flight (cierra el front)
+- Mientras hay mutaciones en cola/vuelo (FIFO de `api()`, v1.93.0), la web muestra un indicador
+  **⏳** abajo a la derecha (con contador si hay >1) → feedback honesto al spamear, sin deshabilitar
+  todo. Completa el §4.1 del diseño. Idempotency-Key (§4.2) queda opcional para botones de pago.
+
 ## [1.93.0] - 2026-06-27
 
 ### 2026-06-27 — SDD 48 v1: no saturar la API al spamear comprar/construir

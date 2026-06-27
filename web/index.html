@@ -43,6 +43,8 @@
   .picbtn sub{ font-size:11px; position:absolute; right:2px; bottom:1px; }
   body.pictomode #building, body.pictomode #unit, body.pictomode #moon{ display:none; }
   #toasts{ position:fixed; top:12px; right:12px; z-index:9999; display:flex; flex-direction:column; gap:8px; max-width:min(92vw,360px); }
+  #busy{ position:fixed; bottom:12px; right:12px; z-index:9998; background:var(--card2); border:1px solid #33406e; border-radius:999px; padding:6px 12px; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.45); animation:pulse 1s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:.6 } 50%{ opacity:1 } }
   .toast{ background:var(--card2); border:1px solid #33406e; border-left-width:4px; border-radius:8px; padding:9px 30px 9px 11px; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.45); position:relative; cursor:pointer; animation:tin .18s ease-out; word-break:break-word; }
   .toast.ok{ border-left-color:#7ee787; color:#cdeacd; } .toast.bad{ border-left-color:#ff8a8a; color:#ffd2d2; }
   .toast .x{ position:absolute; top:5px; right:9px; color:var(--mut); font-size:15px; line-height:1; }
@@ -103,6 +105,7 @@
 </head>
 <body>
 <div id="toasts"></div>
+<div id="busy" hidden>⏳ <span id="busyn"></span></div>
 <header>
   <h1>🪐 Online Galaxy War</h1>
   <div class="row" id="hdr">
@@ -438,10 +441,15 @@ async function _doFetch(path,method,body){
 // 500. Cada acción se valida al ENVIARSE (no diferida): si una falla (p.ej. sin material) rechaza con
 // su error y la cola sigue con las demás. Los GET (lecturas/refresh) quedan en paralelo.
 let _mutChain=Promise.resolve();
+let _mutPending=0;
+function _busy(d){ _mutPending=Math.max(0,_mutPending+d); const b=$("busy"),n=$("busyn");
+  if(!b) return; b.hidden=_mutPending<=0; if(n) n.textContent=_mutPending>1?String(_mutPending):""; }
 async function api(path,method="GET",body){
   if(method==="GET") return _doFetch(path,method,body);
+  _busy(1);   // SDD 48: indicador "procesando…" mientras hay mutaciones en cola/vuelo
   const run=_mutChain.then(()=>_doFetch(path,method,body),()=>_doFetch(path,method,body));
   _mutChain=run.then(()=>{},()=>{});
+  run.then(()=>_busy(-1),()=>_busy(-1));
   return run;
 }
 function fmtErr(d,t){ if(d&&Array.isArray(d.detail)) return d.detail.map(e=>(e.loc?e.loc.slice(-1)+": ":"")+(e.msg||JSON.stringify(e))).join("; "); return (d&&d.detail)||t||"error de red"; }

@@ -124,6 +124,38 @@ async def start_training(
     await collect_mines(session, player, now)
     await finalize_due_training(session, player, now)
 
+    # SDD 46: chequeo de plazas de alojamiento ANTES de gastar (flag housing_enforced, default off).
+    if settings.housing_enforced:
+        from app.services.housing import (
+            can_train,
+            houses_for_domain,
+            housing_capacity,
+            housing_occupancy,
+            unit_domain,
+            unit_size,
+        )
+        abk = [
+            bk for (bk,) in (await session.execute(
+                select(Building.building_key)
+                .join(Base_, Building.base_id == Base_.id)
+                .where(Base_.player_id == player.id, Building.status == "active")
+            )).all()
+        ]
+        queued: dict[str, int] = {}
+        for o in await _player_training_orders(session, player.id):
+            if o.status == "training":
+                queued[o.unit_key] = queued.get(o.unit_key, 0) + o.quantity
+        cap = housing_capacity(abk)
+        occ = housing_occupancy(await player_units(session, player.id), queued)
+        domain = unit_domain(unit_key)
+        free = cap.get(domain, 0) - occ.get(domain, 0)
+        if not can_train(unit_key, quantity, free):
+            builders = houses_for_domain(domain) or ["(ninguno)"]
+            raise TrainingError(
+                f"No hay plazas de {domain} (libres {max(0, free)}, necesitás "
+                f"{quantity * unit_size(unit_key)}). Construí/ampliá: {', '.join(builders)}."
+            )
+
     energy_cost = spec.get("energy_cost", 0) * quantity
     regen = effective_energy_regen(player, settings)
     if not spend_energy(player, energy_cost, now, regen, effective_energy_max(player, settings)):
