@@ -274,6 +274,12 @@
       <div id="calc"></div>
     </div>
 
+    <div class="card collapsed hidden" id="arsenalcard" data-panel="arsenal">
+      <h2>🚀 <span data-i18n="arsenal_title">Arsenal intra-planeta</span></h2>
+      <p class="muted" data-i18n="arsenal_help">Misiles y drones golpean bases del MISMO planeta (no salen del planeta).</p>
+      <div id="arsenal"></div>
+    </div>
+
     <div class="card" data-panel="investigacion">
       <h2>🔬 Investigación</h2>
       <div id="research"></div>
@@ -508,7 +514,8 @@ function fill(id,pairs){ $(id).innerHTML=pairs.map(([v,t])=>`<option value="${v}
 async function loadCatalog(){
   catalog=await api("/api/v1/catalog?lang="+lang);
   catalog.buildings.forEach(b=>spec.build[b.key]=b);
-  [...catalog.personnel,...catalog.heavy_units].forEach(u=>spec.unit[u.key]=u);
+  [...catalog.personnel,...catalog.heavy_units,
+   ...(catalog.ordnance||[]),...(catalog.drones||[])].forEach(u=>spec.unit[u.key]=u);
   catalog.moons.forEach(m=>spec.moon[m.key]=m);
   (catalog.minerals||[]).forEach(m=>spec.mineral[m.key]=m);
   (catalog.technologies||[]).forEach(t=>spec.tech[t.key]=t);
@@ -782,6 +789,92 @@ async function attack(){
   try{ const d=await api("/api/v1/combat/attack","POST",{target_base_id:+$("tbase").value,force});
     msg(tr('fleetsent')+" "+new Date(d.arrives_at).toLocaleTimeString()); refresh();
   }catch(e){ msg(e.message,false);} }
+// ---- SDD 49/50: arsenal intra-planeta (misiles + drones), panel pictográfico ----
+function _baseWith(buildingKey){ if(!state) return null;
+  return (state.bases||[]).find(b=>(b.buildings||[]).some(x=>x.building_key===buildingKey&&x.status==='active'))||null; }
+function _arsForce(prefix){ const f={}; document.querySelectorAll(`[data-ars="${prefix}"]`).forEach(i=>{ const q=+i.value||0; if(q>0)f[i.dataset.u]=q; }); return f; }
+function _arsInput(prefix,u,have,pic){ const lbl=pic?ico('unit',u.key):esc(u.name);
+  return `<label style="display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0">${lbl} <input type="number" min="0" max="${have}" value="0" data-ars="${prefix}" data-u="${esc(u.key)}" oninput="${prefix==='m'?'strikeCalc':'droneCalc'}()" style="width:52px"> <span class="muted" style="font-size:11px">/${have}</span></label>`; }
+function renderArsenal(){
+  const el=$("arsenal"); if(!el||!catalog||!state) return;
+  const feat=catalog.features||{}; const card=$("arsenalcard");
+  if(card) card.classList.toggle('hidden', !(feat.strike||feat.drones));
+  if(!(feat.strike||feat.drones)) return;
+  const pic=isPicto('arsenal'); let html="";
+  if(feat.strike) html+=_missilePanel(pic);
+  if(feat.drones) html+=_dronePanel(pic);
+  el.innerHTML=html;
+}
+function _missilePanel(pic){
+  const base=_baseWith('launcher');
+  let h=`<div style="border-top:1px solid var(--line,#333);padding-top:6px;margin-top:6px"><h3 style="margin:0 0 4px">🗼 ${esc(tr('ars_missiles'))}</h3>`;
+  if(!base){ return h+`<p class="muted">${esc(tr('ars_no_launcher'))}</p></div>`; }
+  const have=(catalog.ordnance||[]).filter(u=>(state.units[u.key]||0)>0);
+  if(!have.length){ h+=`<p class="muted">${esc(tr('ars_no_missiles'))}</p>`; }
+  else {
+    h+=`<div class="row" style="margin:4px 0">${have.map(u=>_arsInput('m',u,state.units[u.key]||0,pic)).join("")}</div>`+
+      `<div class="row" style="gap:6px;align-items:center">`+
+      `<label><span data-i18n="targetbase">objetivo base</span> <input id="mtarget" type="number" placeholder="id" style="width:64px" oninput="strikeCalc()"></label>`+
+      `<label title="${esc(tr('ars_enemy_turrets'))}">🛡 <input id="mturret" type="number" min="0" value="0" style="width:48px" oninput="strikeCalc()"></label>`+
+      `<button class="danger sm" onclick="launchStrike()">🚀 ${esc(tr('ars_launch'))}</button></div>`+
+      `<div id="strikecalc" class="muted" style="margin-top:4px"></div>`;
+  }
+  if((state.strikes||[]).length) h+=`<div class="muted" style="margin-top:4px">⏳ ${state.strikes.map(s=>`#${s.target_base_id} `+Object.entries(s.force).map(([k,v])=>(pic?ico('unit',k):k)+v).join("")).join(" · ")}</div>`;
+  return h+`</div>`;
+}
+function _dronePanel(pic){
+  const base=_baseWith('drone_factory');
+  let h=`<div style="border-top:1px solid var(--line,#333);padding-top:6px;margin-top:6px"><h3 style="margin:0 0 4px">🛸 ${esc(tr('ars_drones'))}</h3>`;
+  if(!base){ return h+`<p class="muted">${esc(tr('ars_no_factory'))}</p></div>`; }
+  const have=(catalog.drones||[]).filter(u=>(state.units[u.key]||0)>0);
+  if(!have.length){ h+=`<p class="muted">${esc(tr('ars_no_drones'))}</p>`; }
+  else {
+    h+=`<div class="row" style="margin:4px 0">${have.map(u=>_arsInput('d',u,state.units[u.key]||0,pic)).join("")}</div>`+
+      `<div class="row" style="gap:6px;align-items:center">`+
+      `<label><span data-i18n="targetbase">objetivo base</span> <input id="dtarget" type="number" placeholder="id" style="width:64px"></label>`+
+      `<label title="${esc(tr('ars_enemy_turrets'))}">🛡 <input id="dturret" type="number" min="0" value="0" style="width:48px" oninput="droneCalc()"></label>`+
+      `<button class="danger sm" onclick="launchDrones()">🛸 ${esc(tr('ars_launch'))}</button></div>`+
+      `<div id="dronecalc" class="muted" style="margin-top:4px"></div>`;
+  }
+  // escuadrones orbitando (con ETA + retirar)
+  if((state.drones||[]).length) h+=`<div style="margin-top:6px">`+state.drones.map(s=>{
+    const f=Object.entries(s.force).map(([k,v])=>(pic?ico('unit',k):k)+v).join("");
+    const eE=s.eta_energy_ticks!=null?`🔋⏳${s.eta_energy_ticks}`:"🔋∞";
+    const eT=s.eta_turrets_ticks!=null?`🛡⏳${s.eta_turrets_ticks}`:"🛡∞";
+    const iq=s.intel_quality>0?` 👁${Math.round(s.intel_quality*100)}%`:"";
+    return `<div class="item"><span>#${s.target_base_id} ${f} <span class="muted">${eE} ${eT}${iq}</span></span> <button class="sm sec" onclick="recallDrones(${s.id})">⏹</button></div>`;
+  }).join("")+`</div>`;
+  return h+`</div>`;
+}
+let _strikeT=null;
+function strikeCalc(){ if(_strikeT)clearTimeout(_strikeT); _strikeT=setTimeout(async()=>{
+  const out=$("strikecalc"); if(!out)return; const force=_arsForce('m');
+  if(!Object.keys(force).length){ out.innerHTML=""; return; }
+  const ip=(catalog.costs||{}).turret_intercept_power||30; const cap=(+($("mturret")||{}).value||0)*ip;
+  try{ const r=await api("/api/v1/combat/strike/simulate","POST",{force,intercept_capacity:cap});
+    const pic=isPicto('arsenal'); const ch=o=>Object.entries(o||{}).map(([k,v])=>(pic?ico('unit',k):k)+v).join(" ")||"—";
+    out.innerHTML=`💥 ${esc(tr('ars_impact'))}: ${ch(r.impacted)} · 🛡 ${esc(tr('ars_intercepted'))}: ${ch(r.intercepted)} · ⚔${Math.round(r.damage)}${r.area?' ☢':''}`;
+  }catch(e){ out.innerHTML=`<span class="bad">${esc(e.message)}</span>`; } },300); }
+let _droneT=null;
+function droneCalc(){ if(_droneT)clearTimeout(_droneT); _droneT=setTimeout(async()=>{
+  const out=$("dronecalc"); if(!out)return; const force=_arsForce('d');
+  if(!Object.keys(force).length){ out.innerHTML=""; return; }
+  const c=catalog.costs||{}; const aa=(+($("dturret")||{}).value||0)*(c.turret_antiair_power||30);
+  const rpt=(c.energy_regen_per_hour||10)/3600*(c.drone_tick_seconds||600);
+  try{ const r=await api("/api/v1/drones/simulate","POST",{force,antiair:aa,energy:state.energy,regen_per_tick:rpt});
+    const eE=r.eta_energy_ticks!=null?`🔋⏳${r.eta_energy_ticks}`:"🔋∞"; const eT=r.eta_turrets_ticks!=null?`🛡⏳${r.eta_turrets_ticks}`:"🛡∞";
+    const iq=r.intel_quality>0?` · 👁${Math.round(r.intel_quality*100)}%`:""; const at=r.attack_per_tick>0?` · ⚔${r.attack_per_tick}/t`:"";
+    out.innerHTML=`⏳ ${r.survive_ticks} ticks · ${eE} ${eT}${iq}${at}`;
+  }catch(e){ out.innerHTML=`<span class="bad">${esc(e.message)}</span>`; } },300); }
+async function launchStrike(){ const base=_baseWith('launcher'); if(!base){ msg(tr('ars_no_launcher'),false); return; }
+  const force=_arsForce('m'); const target=+($("mtarget")||{}).value;
+  if(!Object.keys(force).length||!target){ msg(tr('pickunits'),false); return; }
+  try{ await api("/api/v1/combat/strike","POST",{launcher_base_id:base.id,target_base_id:target,force}); msg(tr('ars_launched')); refresh(); }catch(e){ msg(e.message,false);} }
+async function launchDrones(){ const base=_baseWith('drone_factory'); if(!base){ msg(tr('ars_no_factory'),false); return; }
+  const force=_arsForce('d'); const target=+($("dtarget")||{}).value;
+  if(!Object.keys(force).length||!target){ msg(tr('pickunits'),false); return; }
+  try{ await api("/api/v1/drones/launch","POST",{factory_base_id:base.id,target_base_id:target,force}); msg(tr('ars_launched')); refresh(); }catch(e){ msg(e.message,false);} }
+async function recallDrones(id){ try{ await api(`/api/v1/drones/${id}/recall`,"POST"); msg(tr('ars_recalled')); refresh(); }catch(e){ msg(e.message,false);} }
 async function expedition(){ try{ await api("/api/v1/expeditions","POST",{moon_key:$("moon").value}); msg("Expedición lanzada"); refresh(); }catch(e){ msg(e.message,false);} }
 async function recall(id){ try{ await api(`/api/v1/combat/missions/${id}/recall`,"POST"); msg("Flota retirándose"); refresh(); }catch(e){ msg(e.message,false);} }
 async function doTick(){ try{ const d=await api("/api/v1/admin/tick","POST"); msg("Tick: NPC jugaron"); refresh(); }catch(e){ msg(e.message,false);} }
@@ -885,7 +978,7 @@ document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-pan
 // i18n del chrome (ES/EN). El contenido del juego (nombres/descripciones) viene del catálogo ya
 // traducido; acá traducimos títulos de paneles y botones fijos. SDD docs/sdd-i18n.md
 const I18N={
-  es:{ panels:{acciones:"Acciones",perfil:"👤 Perfil",mercado:"💱 Mercado",hub:"🛰 Hub galáctico",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",combate:"⚔ Reportes de combate",eventos:"📣 Eventos",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",meta:"📈 Meta (aprendido de partidas)",asistente:"🧠 Asistente AI",anuncios:"📰 Novedades",universos:"🌌 Universos",admin:"🛡 Admin",capacidad:"📦 Economía / capacidad",guia:"📖 Guía — ¿qué es cada cosa?"},
+  es:{ panels:{acciones:"Acciones",perfil:"👤 Perfil",mercado:"💱 Mercado",hub:"🛰 Hub galáctico",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",combate:"⚔ Reportes de combate",eventos:"📣 Eventos",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",meta:"📈 Meta (aprendido de partidas)",asistente:"🧠 Asistente AI",anuncios:"📰 Novedades",universos:"🌌 Universos",admin:"🛡 Admin",capacidad:"📦 Economía / capacidad",arsenal:"🚀 Arsenal intra-planeta",guia:"📖 Guía — ¿qué es cada cosa?"},
     ui:{build:"🏗 Construir",pfsave:"guardar",lvlbtn:"⚡ Nivelar",pfhelp:"Cambiá tu nick o clave sin validar. ¿Olvidaste la clave? Entrá con código por email y cambiala acá.",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking",amode_gpu:"🖥️ GPU local",amode_cloud:"☁️ Nube (free→pago)",amode_byok:"🔑 Tu modelo",admin_title:"Admin — altas pendientes",acct_wait_title:"Cuenta en revisión",ac_title:"Consola de admin — cuentas",ac_help:"Administrá las cuentas (ABM): renombrar, email, estado, 🔑 reset, 🗑 borrar. Un admin no juega: solo administra.",ac_npc_title:"NPC — cómo juega la IA",ac_npc_help:"Por cada NPC: score, postura, mezcla de acciones y récord de combate. La GPU se usa en el tick (NPC pensando) y cuando consultás el asistente.",graf_open:"Ver en Grafana",graf_embed:"Embeber dashboard",graf_hint:"el embebido carga si tenés sesión de Grafana en este navegador",ac_battles_title:"Batallas — quién ganó",ac_battles_help:"Historial global de combates (todos los jugadores): atacante vs defensor, ruta (origen→destino), ganador y botín. Sin datos de unidades (eso se sabe espiando). El espionaje no aparece acá.",ac_battles_none:"Todavía no hubo batallas.",ac_b_atkwins:"gana atacante",ac_b_defwins:"gana defensor",allbattles_title:"Batallas de todos",allbattles_help:"Quién atacó a quién y quién ganó, agrupado por atacante. Sin datos de unidades (eso se sabe espiando).",
       logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo.",targetbase:"objetivo base",calc:"📊 Calcular"},
     ph:{advmsg:"¿qué construyo? me falta algo…",pfuser:"nuevo usuario",pfpass:"nueva contraseña (vacío = no cambiar)",regemail:"email invitado (para registrarte)",user:"usuario o email",pass:"contraseña (mín. 6)",otpemail:"tu@email.com",otpcode:"código de 6 dígitos",chatmsg:"mensaje…",byokkey_ph:"OpenRouter API key (no se guarda en el server)",byokmodel_ph:"modelo (ej google/gemma-3-27b-it:free)",admin_find_ph:"buscar usuario/email"},
@@ -900,10 +993,11 @@ const I18N={
       planBtn:"📊 planear",planLoading:"calculando…",planLoss:"pierde",planDef:"defensa est.",planMargin:"margen",planNeed:"poder de ataque",planUse:"usar",planTarget:"objetivo",needtarget:"poné el id de la base objetivo (o tocá una en el mapa)",
       calc_title:"Calculadora de combate",calc_help:"Probá fuerzas sin gastar nada: te dice si ganás y cuánto pierde cada lado (mismo cálculo que el combate real).",calc_attacker:"⚔ Atacante",calc_defender:"🛡 Defensor",calc_turrets:"🛡 torretas (defensa fija)",calc_win:"🟢 Ganás",calc_lose:"🔴 Perdés",calc_youlose:"perdés",calc_theylose:"el rival pierde",calc_none:"poné unidades en los dos lados",calc_fromintel:"a la calculadora",
       youhave:"tenés",nospies:"No tenés espías — entrenalos en el cuartel/laboratorio primero.",noattackunits:"no tenés unidades de ataque — entrená soldados/tanques primero",lowenergy:"poca energía",unitssel:"unidades",pickunits:"elegí cuántas unidades mandás",fleetsent:"🚀 Flota despachada, llega",trainfirst:"entrená {u} primero",
+      arsenal_title:"Arsenal intra-planeta",arsenal_help:"Misiles y drones golpean bases del MISMO planeta (no salen del planeta).",ars_missiles:"Misiles",ars_drones:"Drones",ars_no_launcher:"Construí una Lanzadera (requiere Cohetería) y fabricá misiles.",ars_no_missiles:"Fabricá misiles en la lanzadera (entrenalos).",ars_no_factory:"Construí una Fábrica de drones (requiere Dronística) y fabricá drones.",ars_no_drones:"Fabricá drones en la fábrica (entrenalos).",ars_enemy_turrets:"torretas del rival (de tu intel)",ars_launch:"Lanzar",ars_launched:"🚀 Lanzado",ars_recalled:"⏹ Drones volviendo",ars_impact:"impactan",ars_intercepted:"interceptados",
       cNone:"nada",cYouAtk:"vos →",cAtkYou:"te atacó",cWon:"✓ ganaste",cLost:"✗ perdiste",cYouLost:"perdiste",cTheyLost:"perdió",cLoot:"botín",cLooted:"te saquearon",cNoReports:"todavía no hubo batallas",
       perunit:"de ataque c/u",atkperunit:"Ataque por unidad (sumás esto × cantidad al mandar la flota)",
       bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
-  en:{ panels:{acciones:"Actions",perfil:"👤 Profile",mercado:"💱 Market",hub:"🛰 Galactic hub",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",eventos:"📣 Events",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",meta:"📈 Meta (learned)",asistente:"🧠 AI Assistant",anuncios:"📰 News",admin:"🛡 Admin",capacidad:"📦 Economy / capacity",guia:"📖 Guide — what is each thing?"},
+  en:{ panels:{acciones:"Actions",perfil:"👤 Profile",mercado:"💱 Market",hub:"🛰 Galactic hub",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",eventos:"📣 Events",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",meta:"📈 Meta (learned)",asistente:"🧠 AI Assistant",anuncios:"📰 News",admin:"🛡 Admin",capacidad:"📦 Economy / capacity",arsenal:"🚀 Intra-planet arsenal",guia:"📖 Guide — what is each thing?"},
     ui:{build:"🏗 Build",pfsave:"save",lvlbtn:"⚡ Level up",pfhelp:"Change your nick or password without validation. Forgot it? Log in with an email code and change it here.",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",amode_gpu:"🖥️ Local GPU",amode_cloud:"☁️ Cloud (free→paid)",amode_byok:"🔑 Your model",admin_title:"Admin — pending signups",acct_wait_title:"Account under review",ac_title:"Admin console — accounts",ac_help:"Manage accounts (CRUD): rename, email, status, 🔑 reset, 🗑 delete. Admins don't play: they administer.",ac_npc_title:"NPC — how the AI plays",ac_npc_help:"Per NPC: score, posture, action mix and combat record. The GPU is used in the tick (NPCs thinking) and when you query the assistant.",graf_open:"Open in Grafana",graf_embed:"Embed dashboard",graf_hint:"the embed loads if you have a Grafana session in this browser",ac_battles_title:"Battles — who won",ac_battles_help:"Global combat history (all players): attacker vs defender, route (origin→destination), winner and loot. No unit data (that's what spying is for). Espionage doesn't show here.",ac_battles_none:"No battles yet.",ac_b_atkwins:"attacker wins",ac_b_defwins:"defender wins",allbattles_title:"Everyone's battles",allbattles_help:"Who attacked whom and who won, grouped by attacker. No unit data (that's what spying is for).",
       logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it.",targetbase:"target base",calc:"📊 Calculate"},
     ph:{advmsg:"what should I build? I'm missing something…",pfuser:"new username",pfpass:"new password (empty = keep current)",regemail:"invited email (to register)",user:"username (min. 3)",pass:"password (min. 6)",otpemail:"you@email.com",otpcode:"6-digit code",chatmsg:"message…",byokkey_ph:"OpenRouter API key (not stored on the server)",byokmodel_ph:"model (e.g. google/gemma-3-27b-it:free)",admin_find_ph:"search user/email"},
@@ -918,6 +1012,7 @@ const I18N={
       planBtn:"📊 plan",planLoading:"calculating…",planLoss:"loses",planDef:"est. defense",planMargin:"margin",planNeed:"attack power",planUse:"use",planTarget:"target",needtarget:"enter the target base id (or click one on the map)",
       calc_title:"Combat calculator",calc_help:"Try forces without spending anything: tells you if you win and how much each side loses (same math as real combat).",calc_attacker:"⚔ Attacker",calc_defender:"🛡 Defender",calc_turrets:"🛡 turrets (fixed defense)",calc_win:"🟢 You win",calc_lose:"🔴 You lose",calc_youlose:"you lose",calc_theylose:"enemy loses",calc_none:"put units on both sides",calc_fromintel:"to calculator",
       youhave:"you have",nospies:"You have no spies — train them at the barracks/lab first.",noattackunits:"no attack units — train soldiers/tanks first",lowenergy:"low energy",unitssel:"units",pickunits:"pick how many units to send",fleetsent:"🚀 Fleet dispatched, arrives",trainfirst:"train {u} first",
+      arsenal_title:"Intra-planet arsenal",arsenal_help:"Missiles and drones hit bases on the SAME planet (they don't leave the planet).",ars_missiles:"Missiles",ars_drones:"Drones",ars_no_launcher:"Build a Launcher (needs Rocketry) and make missiles.",ars_no_missiles:"Make missiles at the launcher (train them).",ars_no_factory:"Build a Drone factory (needs Dronework) and make drones.",ars_no_drones:"Make drones at the factory (train them).",ars_enemy_turrets:"enemy turrets (from your intel)",ars_launch:"Launch",ars_launched:"🚀 Launched",ars_recalled:"⏹ Drones returning",ars_impact:"impact",ars_intercepted:"intercepted",
       cNone:"nothing",cYouAtk:"you →",cAtkYou:"attacked you",cWon:"✓ you won",cLost:"✗ you lost",cYouLost:"you lost",cTheyLost:"they lost",cLoot:"loot",cLooted:"looted from you",cNoReports:"no battles yet",
       perunit:"attack each",atkperunit:"Attack per unit (this × quantity is added when you send the fleet)",
       bMines:"Shared bonus: +production/attack/defense for all members",bUnit:"Unit tech: each race shares its edge with the whole alliance",bDef:"Mutual defense: your allies help defend your base",bVis:"Shared vision: you see attacks your allies receive",bTrade:"Trade: transfer minerals between allies"} },
@@ -1039,6 +1134,7 @@ async function refresh(){
   // SÓLO renders locales (sin red) en el ciclo rápido de 4s.
   renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); renderSeason();
   renderCost(); renderTrainCost(); renderExpInfo(); renderForcePicker(); renderCapacity();
+  renderArsenal();
 }
 
 // SDD 46/47: barras de capacidad (staffing de minería, almacén/silos y plazas de alojamiento).

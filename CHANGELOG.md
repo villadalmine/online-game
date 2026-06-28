@@ -7,6 +7,23 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — SDD 49/50 v1.5: PRENDIDOS + paneles web + NPC los usa
+> Cierre de SDD 49 (misiles) y 50 (drones): de "implementado detrás de flag" a **activos**, con
+> panel web pictográfico y el NPC jugándolos. Mismo patrón que cerró 47/46 v1.5.
+- **Flags ON por default** (`strike_enabled`, `drones_enabled`), apagables por env. Frenos naturales:
+  protección de novato (SDD 11), no se ataca a aliados, intra-planeta, tope de alojamiento
+  (`ordnance`/`drone`), y el drenaje de energía (drones no son enjambre eterno gratis).
+- **Panel web "🚀 Arsenal intra-planeta"** (`renderArsenal`, card colapsable; se oculta si ambos
+  flags están off vía `catalog.features`): subpanel **Misiles** (inputs por tipo que tenés, objetivo,
+  torretas rival → pre-cálculo `impactan/interceptados/⚔daño` con `/combat/strike/simulate`, botón
+  🚀 Lanzar) y subpanel **Drones** (inputs, calculadora de duración 🔋⏳/🛡⏳/👁 con `/drones/simulate`,
+  lanzar + escuadrones orbitando con ETA e intel y botón ⏹ retirar). Pictográfico (SDD 43), i18n es/en.
+- **`/catalog`** ahora expone `features` (flags) + `costs` extra (`turret_intercept_power`/
+  `turret_antiair_power`/`drone_tick_seconds`/`energy_regen_per_hour`) para las calculadoras del cliente.
+- **NPC (`npc.py`):** investiga `rocketry`/`dronework` (si el flag está on), construye `launcher`/
+  `drone_factory`, fabrica misiles/drones y **ablanda** una base enemiga del mismo planeta con una
+  salva o un escuadrón de drones antes de la flota. Test `test_rule_brain_softens_with_a_missile_strike`.
+
 ## [1.99.0] - 2026-06-28
 
 ### 2026-06-28 — SDD 49 (misiles) + SDD 50 (drones): guerra intra-planeta, data-driven

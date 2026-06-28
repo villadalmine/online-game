@@ -445,3 +445,38 @@ def test_push_metrics_noop_without_url(monkeypatch):
     monkeypatch.setattr(get_settings(), "pushgateway_url", "")
     _push_metrics()  # no debe lanzar
     assert get_settings().pushgateway_url == ""
+
+
+async def test_rule_brain_softens_with_a_missile_strike(session, monkeypatch):
+    # SDD 49: con strike_enabled, una lanzadera activa, misiles y un enemigo del MISMO planeta,
+    # el NPC lanza una salva para ablandar antes de la flota.
+    from app.core.config import get_settings
+    from app.models import PlayerTech, StrikeMission, UnitStock
+    from app.services.economy import get_or_create_stock
+    monkeypatch.setattr(get_settings(), "strike_enabled", True)
+
+    await ensure_npcs(session)
+    npc = await _npc(session)            # martian → mars
+    base = await _base_of(session, npc)
+    # un humano en MARTE (mismo planeta), sin protección
+    human = Player(username="prey_mars", password_hash=hash_password("secret123"))
+    session.add(human)
+    await session.flush()
+    await onboard_player(session, human, "milky_way", "mars", "martian")
+    human.protected_until = None
+
+    # NPC: lanzadera activa + tech + misiles + energía; stocks en 0 para saltar economía/ciencia
+    session.add(Building(base_id=base.id, building_key="launcher", status="active"))
+    session.add(PlayerTech(player_id=npc.id, tech_key="rocketry"))
+    session.add(UnitStock(player_id=npc.id, unit_key="sonic_missile", quantity=6))
+    from app.content.registry import get_content
+    for m in get_content().minerals:
+        (await get_or_create_stock(session, npc.id, m, npc.planet_key)).amount = 0
+    npc.energy = 100
+    await session.flush()
+
+    action = await run_npc_turn(session, npc)
+    await session.commit()
+    assert action and "strike" in action, action
+    q = await session.execute(select(StrikeMission).where(StrikeMission.attacker_id == npc.id))
+    assert q.first() is not None

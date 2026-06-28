@@ -22,6 +22,7 @@ from app.core.security import hash_password
 from app.models import AttackMission, Base_, Building, CombatLog, Player
 from app.services.build import start_build
 from app.services.combat import recall_mission, start_attack
+from app.services.drones import launch_drones
 from app.services.economy import player_stocks
 from app.services.energy import compute_energy
 from app.services.expedition import start_expedition
@@ -30,6 +31,7 @@ from app.services.onboarding import onboard_player
 from app.services.physics import effective_energy_max, effective_energy_regen
 from app.services.scoring import player_score
 from app.services.state import advance
+from app.services.strike import start_strike
 from app.services.training import player_units, start_training
 
 SOLDIER_BATCH = 3
@@ -331,8 +333,13 @@ class RuleBasedBrain:
             await start_build(session, player, base, "research_lab")
             return "build research_lab"
         if "research_lab" in active:   # investigar lo que habilita defensa/industria/expansión
-            for tk in ("weapons", "shields", "espionage", "counter_espionage",
-                       "antigravity", "mining_efficiency"):
+            _research_list = ["weapons", "shields", "espionage", "counter_espionage",
+                              "antigravity", "mining_efficiency"]
+            if _settings.strike_enabled:        # SDD 49: árbol de misiles
+                _research_list.append("rocketry")
+            if _settings.drones_enabled:        # SDD 50: árbol de drones
+                _research_list.append("dronework")
+            for tk in _research_list:
                 spec = content.technologies.get(tk, {})
                 rt = spec.get("requires_tech")
                 if tk in techs or (rt and rt not in techs):
@@ -352,6 +359,25 @@ class RuleBasedBrain:
             await start_build(session, player, base, "factory")
             return "build factory"
 
+        # 2.5) SDD 49/50: si están habilitados, levantá la lanzadera / fábrica de drones
+        # (afford_building ya exige lab + tech gate) y fabricá algo de munición/drones para usar.
+        if _settings.strike_enabled:
+            if "launcher" not in keys and afford_building("launcher"):
+                await start_build(session, player, base, "launcher")
+                return "build launcher"
+            if ("launcher" in active and units.get("sonic_missile", 0) < 8
+                    and afford_units("sonic_missile", 4)):
+                await start_training(session, player, base, "sonic_missile", 4)
+                return "build sonic_missile x4"
+        if _settings.drones_enabled:
+            if "drone_factory" not in keys and afford_building("drone_factory"):
+                await start_build(session, player, base, "drone_factory")
+                return "build drone_factory"
+            if ("drone_factory" in active and units.get("recon_drone", 0) < 3
+                    and afford_units("recon_drone", 2)):
+                await start_training(session, player, base, "recon_drone", 2)
+                return "build recon_drone x2"
+
         # 3) Baseline defense: keep at least one turret (gated por lab+weapons via afford_building).
         if turrets == 0 and afford_building("turret"):
             await start_build(session, player, base, "turret")
@@ -370,6 +396,27 @@ class RuleBasedBrain:
         if "barracks" in active and afford_units("soldier", SOLDIER_BATCH):
             await start_training(session, player, base, "soldier", SOLDIER_BATCH)
             return f"train soldier x{SOLDIER_BATCH}"
+
+        # 4.5) SDD 49/50: ablandá una base enemiga del MISMO planeta antes de la flota — lanzá
+        # misiles (destruyen defensas) y/o un escuadrón de drones espía/ataque. Intra-planeta: el
+        # objetivo debe estar en tu planeta. Best-effort: si falla, seguís con el turno normal.
+        same_planet = [b for b in await _enemy_bases(session, player)
+                       if b.planet_key == player.planet_key]
+        if _settings.strike_enabled and units.get("sonic_missile", 0) >= 4 and same_planet:
+            try:
+                n = min(units["sonic_missile"], 6)
+                await start_strike(session, player, base.id, same_planet[0].id,
+                                   {"sonic_missile": n})
+                return f"strike base {same_planet[0].id} (soften)"
+            except Exception:
+                pass
+        if _settings.drones_enabled and units.get("recon_drone", 0) >= 2 and same_planet:
+            try:
+                await launch_drones(session, player, base.id, same_planet[0].id,
+                                    {"recon_drone": min(units["recon_drone"], 3)}, max_ticks=6)
+                return f"drones recon base {same_planet[0].id}"
+            except Exception:
+                pass
 
         # 5) Attack: among the bases we clearly outgun, coordinate against the strongest
         #    HUMAN rival (NPCs gang up on the leading player); else hit the weakest base.

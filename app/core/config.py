@@ -165,17 +165,20 @@ class Settings(BaseSettings):
     housing_enforced: bool = True
     base_housing_per_domain: int = 10          # plazas de gracia por dominio aun sin edificio
 
-    # Lanzadera de misiles (SDD 49): vía de "golpe" intra-planeta, paralela a la flota. Default OFF:
-    # el contenido carga (catálogo/grafo) pero no se puede disparar hasta prender. El daño de una
-    # salva destruye edificios de la base objetivo (defensivos primero; el nuclear, además, daña los
-    # no defensivos). `building_strike_hp` = aguante por defecto de un edificio sin `hp` propio.
-    strike_enabled: bool = False
+    # Lanzadera de misiles (SDD 49): vía de "golpe" intra-planeta, paralela a la flota. PRENDIDO
+    # (v1.5): el contenido carga y se puede disparar. Frenos: protección de novato (SDD 11), no
+    # atacás aliados, intra-planeta, tope de `ordnance` (alojamiento). El daño de una salva destruye
+    # edificios de la base objetivo (defensivos primero; el nuclear, además, los no defensivos +
+    # fallout). `building_strike_hp` = aguante por defecto de un edificio sin `hp` propio.
+    # Apagable por env (STRIKE_ENABLED=false).
+    strike_enabled: bool = True
     building_strike_hp: float = 100.0
 
-    # Drones intra-planeta (SDD 50): default OFF. Un "tick" de órbita dura `drone_tick_seconds`; en
-    # cada tick las torretas hacen `antiair_power` de daño y cada dron drena `energy_per_tick` de TU
-    # energía. Lazy por timestamp (se calcula al leer, como minería). Apagable por env.
-    drones_enabled: bool = False
+    # Drones intra-planeta (SDD 50): PRENDIDO (v1.5). Un "tick" de órbita dura `drone_tick_seconds`;
+    # en cada tick las torretas hacen `antiair_power` de daño y cada dron drena `energy_per_tick` de
+    # TU energía (freno natural: no hay enjambre eterno gratis). Lazy por timestamp (se calcula al
+    # leer, como minería). Apagable por env (DRONES_ENABLED=false).
+    drones_enabled: bool = True
     drone_tick_seconds: int = 600   # 10 min por tick de órbita
 
     # Espionaje / inteligencia (SDD 35).

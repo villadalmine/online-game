@@ -34,7 +34,16 @@ def build_catalog() -> dict:
         "technologies": list(c.technologies.values()),
         "alliance_types": list(c.alliance_types.values()),
         # action energy costs so clients can show "cuesta ⚡X" sin hardcodear (SDD 34/35)
-        "costs": {"attack_energy": s.attack_energy_cost, "spy_energy": s.spy_energy_cost},
+        "costs": {
+            "attack_energy": s.attack_energy_cost, "spy_energy": s.spy_energy_cost,
+            # SDD 49/50: para las calculadoras del cliente (intercepción, duración de drones).
+            "turret_intercept_power": c.buildings.get("turret", {}).get("intercept_power", 30),
+            "turret_antiair_power": c.buildings.get("turret", {}).get("antiair_power", 30),
+            "drone_tick_seconds": s.drone_tick_seconds,
+            "energy_regen_per_hour": s.energy_regen_per_hour,
+        },
+        # Flags de features (SDD 49/50): el cliente muestra/oculta el arsenal según el flag.
+        "features": {"strike": s.strike_enabled, "drones": s.drones_enabled},
     }
 
 

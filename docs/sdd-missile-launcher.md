@@ -1,8 +1,9 @@
 # SDD 49 — Lanzadera de misiles (guerra intra-planeta)
 
-> **Estado:** **implementado (flag OFF)** · **Fecha:** 2026-06-27 (impl. 2026-06-28)
-> Mecánica + API + grafo + tests/e2e listos detrás de `strike_enabled` (default off). Pendiente v1.5:
-> prender el flag tras balance, panel web pictográfico y uso por el NPC. Ver CHANGELOG 2026-06-28.
+> **Estado:** **v1.5 — ACTIVO** · **Fecha:** 2026-06-27 (impl. 2026-06-28)
+> `strike_enabled` ON por default (apagable por env). Mecánica + API + grafo + **panel web** (🚀
+> Arsenal: lanzar + calculadora de intercepción) + **NPC** que ablanda con misiles + tests/e2e.
+> Ver CHANGELOG 2026-06-28. Pendiente fino: balance con datos reales.
 
 > **Estado original:** **diseño** (no implementado) · **Fecha:** 2026-06-27
 > **Relacionado:** SDD 1 (grafo + asistente), SDD 13 (combate/rigor), SDD 47 (energía), SDD 46
