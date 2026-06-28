@@ -23,8 +23,13 @@ spec:
       - name: image_tag
         value: "latest"
   ttlStrategy:
-    secondsAfterSuccess: 3600
-    secondsAfterFailure: 86400
+    secondsAfterSuccess: 1800     # 30 min: borra el Workflow (y sus pods por ownerRef) tras éxito
+    secondsAfterFailure: 14400    # 4 h: deja los fallidos un rato para debug, pero no 24 h (clutter)
+  # LIMPIEZA DE PODS (antes faltaba → se apilaban pods Completed/Error de cada corrida): borra los
+  # pods en cuanto el workflow termina. OnWorkflowSuccess = limpia el caso OK enseguida; si falla,
+  # deja los pods para leer logs (no hay artifact repo). El ttl de arriba limpia el resto.
+  podGC:
+    strategy: OnWorkflowSuccess
   nodeSelector:
     kubernetes.io/hostname: srv-rk1-nvme-01    # arm64, como el nodo del juego
   tolerations:
