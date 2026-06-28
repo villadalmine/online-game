@@ -133,6 +133,9 @@ spec:
     - name: test-api
       container:
         image: registry.registry:5000/online-game-test:{{workflow.parameters.image_tag}}
+        # SIEMPRE re-pull: si se re-deploya el MISMO tag, el nodo cachea la imagen vieja (IfNotPresent)
+        # y el gate correría tests STALE (incidente 2026-06-28: el gate corría un test ya arreglado).
+        imagePullPolicy: Always
         command: ["python", "-m", "pytest", "-m", "not chrome", "-q"]
         workingDir: /app
         resources:
@@ -146,6 +149,7 @@ spec:
     - name: test-chrome
       container:
         image: registry.registry:5000/online-game-test:{{workflow.parameters.image_tag}}
+        imagePullPolicy: Always   # ver test-api: evita correr una imagen de test cacheada/stale
         command: ["python", "-m", "pytest", "-m", "chrome", "tests/test_web_smoke.py", "-q"]
         workingDir: /app
         env:

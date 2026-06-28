@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — Fix CD: imagePullPolicy Always en los gates (no más imagen de test stale)
+> Incidente: 1.104.3 no promovía — el gate `e2e-api` corría un test que YA estaba arreglado
+> (`test_advisor_hack_grants_and_exhausts_daily_budget` con "mine") y fallaba, aunque local pasaba
+> 387. Causa: re-deployar el MISMO tag → el nodo cacheaba la PRIMERA imagen de test (`IfNotPresent`
+> por default) y reusaba la vieja. (No era arm ni flaky.)
+- `imagePullPolicy: Always` en los pods `test-api` y `test-chrome` → siempre corren la imagen recién
+  buildeada, aunque se re-use el tag. `podGC: OnWorkflowSuccess` (conserva pods fallidos para leer
+  logs; sin esto no se podía diagnosticar — no hay artifact repo).
+
 ## [1.104.3] - 2026-06-28
 
 ### 2026-06-28 — Asistente: botón "🔓 crear gratis (hack)" — crea sin cobrarte aunque tengas material
