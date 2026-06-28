@@ -667,7 +667,8 @@ function reqLock(o, base, panel){
   return pic? ` · <span class="bad">🔒 ${lacks.join(" ")}</span>`
            : ` · <span class="bad">🔒 ${lacks.map(esc).join(" + ")}</span>`;
 }
-function renderCost(){ const b=spec.build[$("building").value]; if(!b) return; $("mineral").classList.toggle("hidden",b.category!=="mine");
+function _needsMineral(b){ return b && (b.category==="mine"||b.category==="storage"); }  // mina o silo
+function renderCost(){ const b=spec.build[$("building").value]; if(!b) return; $("mineral").classList.toggle("hidden",!_needsMineral(b));
   const base=(state&&state.bases||[]).find(x=>String(x.id)===String(($("buildbase")||{}).value))||(state&&state.bases&&state.bases[0]);
   let mc=resolveCost(b.cost);
   if(base&&base.base_type==='orbital'){ const m2={}; for(const k in mc) m2[k]=Math.round(mc[k]*1.5); mc=m2; }  // SDD 37: orbital cuesta 1.5×
@@ -702,7 +703,7 @@ async function onboard(){ try{ await api("/api/v1/players/onboard","POST",{galax
 // encontrada"); las acciones avisan "esperá que cargue" en ese caso.
 const baseId=()=>{ const v=+(($("buildbase")||{}).value); if(v) return v; return (state&&state.bases&&state.bases[0])?state.bases[0].id:null; };
 function _needState(){ if(!state||!state.bases||!state.bases.length){ msg(tr('loadingwait'),false); return true; } return false; }
-async function build(){ if(_needState())return; try{ const k=$("building").value; const b={building_key:k}; if(k==="mine")b.target_mineral=$("mineral").value; await api(`/api/v1/bases/${baseId()}/build`,"POST",b); msg("Construyendo "+k); refresh(); }catch(e){ msg(e.message,false);} }
+async function build(){ if(_needState())return; try{ const k=$("building").value; const b={building_key:k}; if(_needsMineral(spec.build[k]))b.target_mineral=$("mineral").value; await api(`/api/v1/bases/${baseId()}/build`,"POST",b); msg("Construyendo "+k); refresh(); }catch(e){ msg(e.message,false);} }
 async function train(){ if(_needState())return; try{ await api(`/api/v1/bases/${baseId()}/train`,"POST",{unit_key:$("unit").value,quantity:+$("qty").value}); msg("Entrenando"); refresh(); }catch(e){ msg(e.message,false);} }
 // attack force picker: a qty input per attack-capable unit you OWN (no más escribir a mano)
 function attackUnits(){ return [...(catalog?catalog.personnel:[]),...(catalog?catalog.heavy_units:[])]
@@ -1200,8 +1201,8 @@ function refreshPanels(){
   if(panelOpen('hub')) loadHub();
   if(panelOpen('admin')) loadAdmin();
 }
-const TECH_CAT={es:{economy:"⛏ Economía",military:"⚔ Militar",espionage:"🕵 Espionaje",colonization:"🪐 Colonización",other:"Otras"},
-  en:{economy:"⛏ Economy",military:"⚔ Military",espionage:"🕵 Espionage",colonization:"🪐 Colonization",other:"Other"}};
+const TECH_CAT={es:{economy:"⛏ Economía",military:"⚔ Militar",strike:"🚀 Misiles",drones:"🛸 Drones",espionage:"🕵 Espionaje",colonization:"🪐 Colonización",other:"Otras"},
+  en:{economy:"⛏ Economy",military:"⚔ Military",strike:"🚀 Missiles",drones:"🛸 Drones",espionage:"🕵 Espionage",colonization:"🪐 Colonization",other:"Other"}};
 function renderResearch(){
   if(!catalog||!state) return; const done=new Set(state.technologies||[]);
   const pic=isPicto('investigacion');
@@ -1227,7 +1228,7 @@ function renderResearch(){
   const cats=(TECH_CAT[lang]||TECH_CAT.es);
   const byCat={};
   catalog.technologies.forEach(t=>{ (byCat[t.category||"other"]=byCat[t.category||"other"]||[]).push(t); });
-  const order=["economy","military","espionage","colonization","other"];
+  const order=["economy","military","strike","drones","espionage","colonization","other"];
   $("research").innerHTML=order.filter(c=>byCat[c]).map(c=>
     `<div class="muted" style="margin:6px 0 2px">${esc(cats[c]||c)}</div>`+byCat[c].map(techRow).join("")
   ).join("");

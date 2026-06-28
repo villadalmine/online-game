@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — Fix UX: silo sin selector de mineral + techs de misiles/drones no listadas
+> Dos bugs reportados al usar 49/50 en la web.
+- **Silo**: pedía `target_mineral` pero el panel Acciones ocultaba el selector de mineral (solo se
+  mostraba para `mine`). Ahora se muestra y se envía también para `storage` (silo) — helper
+  `_needsMineral` en `renderCost`/`build`.
+- **Techs de misiles/drones invisibles**: el panel Investigación ordenaba por una lista fija de
+  categorías que NO incluía `strike`/`drones` → `rocketry`/`dronework`/etc. nunca aparecían (y al
+  construir `launcher`/`drone_factory` decía "falta la tecnología" sin forma de investigarla). Agregadas
+  al orden + etiquetas en `TECH_CAT` (🚀 Misiles / 🛸 Drones), es/en.
+
 ## [1.101.0] - 2026-06-28
 
 ### 2026-06-28 — SDD 49/50: balance fino de intercepción + mini-simulador
