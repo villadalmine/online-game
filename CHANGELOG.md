@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.104.3] - 2026-06-28
+
 ### 2026-06-28 — Asistente: botón "🔓 crear gratis (hack)" — crea sin cobrarte aunque tengas material
 > Bug reportado: tocabas el botón del asistente y te CONSUMÍA materiales (era el botón "Construir"
 > normal). El de hack solo aparecía cuando ya NO tenías material → confuso.
