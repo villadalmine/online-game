@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — SDD 53 (diseño): balance de costos (defensa no gateada + asimetría por raza)
+- `docs/sdd-resource-balance.md`: análisis (el rol `energetic` está en 22/22 items → para terran
+  `energetic=silicon` gatea hasta la defensa: sin silicio no hay torreta ni soldados). Diseño:
+  defensa/infantería = solo rol `structural` (siempre defendible), diversificar el rol por rama
+  (ground=struct+advanced, air=energetic+advanced, …) y mantener la asimetría por raza
+  (cada una con su mineral). Para iterar. No implementado aún.
+
 ### 2026-06-28 — Fix CD: pool de nodos (no pinear) + ttl corto (no llenar disco)
 - El CD estaba pineado a UN nodo (`srv-rk1-nvme-01`); cuando ese entró en DiskPressure el workflow
   quedó `Pending` para siempre. Selector al **pool** `storage=rk1-longhorn` (rk1-nvme 01-04) → corre
