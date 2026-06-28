@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.99.0] - 2026-06-28
+
 ### 2026-06-28 — SDD 49 (misiles) + SDD 50 (drones): guerra intra-planeta, data-driven
 > Dos vías de combate **paralelas a la flota**, ambas **intra-planeta** (no salen del planeta),
 > **data-driven** y en el **grafo** (la IA arma la relación sola). Mecánicas deterministas +
