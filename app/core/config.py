@@ -165,6 +165,19 @@ class Settings(BaseSettings):
     housing_enforced: bool = True
     base_housing_per_domain: int = 10          # plazas de gracia por dominio aun sin edificio
 
+    # Lanzadera de misiles (SDD 49): vía de "golpe" intra-planeta, paralela a la flota. Default OFF:
+    # el contenido carga (catálogo/grafo) pero no se puede disparar hasta prender. El daño de una
+    # salva destruye edificios de la base objetivo (defensivos primero; el nuclear, además, daña los
+    # no defensivos). `building_strike_hp` = aguante por defecto de un edificio sin `hp` propio.
+    strike_enabled: bool = False
+    building_strike_hp: float = 100.0
+
+    # Drones intra-planeta (SDD 50): default OFF. Un "tick" de órbita dura `drone_tick_seconds`; en
+    # cada tick las torretas hacen `antiair_power` de daño y cada dron drena `energy_per_tick` de TU
+    # energía. Lazy por timestamp (se calcula al leer, como minería). Apagable por env.
+    drones_enabled: bool = False
+    drone_tick_seconds: int = 600   # 10 min por tick de órbita
+
     # Espionaje / inteligencia (SDD 35).
     spy_energy_cost: float = 5.0
     intel_confidence_half_life_seconds: int = 28800   # 8h: la intel pierde confianza con el tiempo

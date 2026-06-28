@@ -152,6 +152,9 @@ buildings:
     energy_cost: 18
     build_seconds: 150
     defense_power: 40   # se suma a la defensa de la base al resolver un ataque
+    hp: 120             # SDD 49: aguante ante misiles (cuánto daño absorbe antes de ser destruida)
+    intercept_power: 30 # SDD 49: capacidad antimisil (derriba misiles entrantes)
+    antiair_power: 30   # SDD 50: fuego antiaéreo por tick contra drones que orbitan
     cost:
       structural: 140
       energetic: 60
@@ -206,3 +209,43 @@ buildings:
     cost:
       structural: 110
       energetic: 50
+  - key: launcher
+    icon: "🗼"
+    name: "Lanzadera de misiles"
+    name_en: "Missile launcher"
+    real: "Silo de lanzamiento de misiles: estructura fija que almacena y dispara misiles."
+    real_en: "Missile launch silo: fixed structure that stores and fires missiles."
+    sources: ["Wikipedia: Missile launch facility"]
+    category: strike
+    requires: research_lab
+    requires_tech: rocketry
+    description: "Fabrica y dispara misiles a bases enemigas del MISMO planeta (SDD 49). Aloja misiles."
+    description_en: "Builds and fires missiles at enemy bases on the SAME planet (SDD 49). Houses missiles."
+    houses: { ordnance: 6 }   # SDD 46/49: aloja misiles (dominio ordnance)
+    launch_energy: 30         # SDD 49: energía por salva (además del costo del misil)
+    range: intra_planet       # SDD 49: el objetivo debe estar en el mismo planeta
+    energy_cost: 25
+    build_seconds: 220
+    cost:
+      structural: 220
+      energetic: 120
+      advanced: 80
+  - key: drone_factory
+    icon: "🛸"
+    name: "Fábrica de drones"
+    name_en: "Drone factory"
+    real: "Planta de ensamblaje de vehículos aéreos no tripulados (UAV)."
+    real_en: "Assembly plant for unmanned aerial vehicles (UAV)."
+    sources: ["Wikipedia: Unmanned aerial vehicle"]
+    category: drones
+    requires: research_lab
+    requires_tech: dronework
+    description: "Fabrica drones intra-planeta (espía en vivo y ataque). Aloja drones (SDD 50)."
+    description_en: "Builds intra-planet drones (live spy and attack). Houses drones (SDD 50)."
+    houses: { drone: 12 }   # SDD 46/50: aloja drones (dominio drone)
+    energy_cost: 22
+    build_seconds: 200
+    cost:
+      structural: 200
+      energetic: 140
+      advanced: 90

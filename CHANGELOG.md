@@ -7,6 +7,52 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — SDD 49 (misiles) + SDD 50 (drones): guerra intra-planeta, data-driven
+> Dos vías de combate **paralelas a la flota**, ambas **intra-planeta** (no salen del planeta),
+> **data-driven** y en el **grafo** (la IA arma la relación sola). Mecánicas deterministas +
+> calculadoras puras + tests/e2e. **Flags OFF por default** (apagables/encendibles por env), como
+> arrancaron SDD 47/46: el contenido carga (catálogo, grafo, árbol, asesor) pero la acción se
+> habilita al prender el flag, tras revisar balance.
+
+**SDD 49 — Lanzadera de misiles (`launcher`):**
+- **Árbol tech (gate):** `rocketry → ballistics → nuclear_fission` (categoría `strike`).
+- **Edificio `launcher`** (`requires_tech: rocketry`, `range: intra_planet`, aloja `ordnance`).
+- **Misiles** (dominio `ordnance`, se alojan en la lanzadera): `sonic_missile` (power 60,
+  intercept_cost 1 → enjambre satura), `cruise_missile` (160/3), `nuclear_missile` (600+ÁREA/8).
+- **Intercepción determinista:** `turret` gana `intercept_power`; la capacidad antimisil = Σ de las
+  torretas activas × defensa, se gasta sobre los misiles entrantes (los baratos primero); los que
+  sobran IMPACTAN y **destruyen edificios** de la base (defensas primero; el nuclear, de área,
+  también los no defensivos + deja **fallout** −producción). No saquea: **ablanda** una base.
+- **API:** `POST /combat/strike`, `POST /combat/strike/simulate` (calculadora). `simulate_strike()`
+  puro. Estado en `/players/me` (`strikes` en vuelo). Errores claros: sin tech, sin lanzadera,
+  objetivo de otro planeta, sin stock.
+
+**SDD 50 — Drones intra-planeta (`drone_factory`):**
+- **Árbol tech (gate):** `dronework → drone_endurance` / `attack_drones` (categoría `drones`).
+- **Edificio `drone_factory`** (`requires_tech: dronework`, aloja `drone`).
+- **Drones** (dominio `drone`): espía `recon_drone`/`mk2`/`mk3` (hp/consumo/intel crecientes) +
+  ataque `strike_drone`. Trade-off del pedido: **más durable ⇒ más consumo**.
+- **Matemática lazy por timestamp:** un escuadrón ORBITA; cada tick las torretas (`antiair_power`)
+  derriban drones (hp del escuadrón) y los vivos **drenan TU energía**; los espía dan **intel en
+  vivo** (mejor que el snapshot de SDD 35); los de ataque castigan la base por tick. Muere sin
+  energía o sin drones. `advance_drones()` se calcula al leer (como minería/energía), sin cron.
+- **API:** `POST /drones/launch`, `POST /drones/{id}/recall`, `POST /drones/simulate`.
+  `simulate_drones()` puro. Estado en `/players/me` (`drones` + `intel_live`).
+
+**Transversal:**
+- `content/{technologies,buildings,units}.yaml` extendidos; `registry` carga grupos `ordnance` y
+  `drone`; `/catalog` y `/catalog/tree` los exponen (el modal 🌳 ya los muestra).
+- **Grafo (SDD 1):** aristas `requires_tech`, `turret→intercepts→misil`, `turret→shoots_down→dron`;
+  grounding `mech_missiles` y `mech_drones` (con números) → el asesor y el NPC pueden razonar sobre
+  ellos. Mejora de recuperación: `retrieve` filtra **stopwords** de la query (textos largos ya no
+  ganan por palabras de relleno).
+- Modelos `StrikeMission` y `DroneSquadron` (migración `865940154e14`); la flota clásica
+  (`/combat/attack`) rechaza misiles/drones (tienen su vía propia).
+- **Tests:** `test_strike.py`, `test_drones.py` (puros) + e2e `test_missile_strike_e2e`,
+  `test_strike_blocked_without_tech_e2e`, `test_drone_squadron_e2e`, `test_drones_die_without_energy_e2e`.
+- **Pendiente (v1.5, como en 47/46):** prender flags tras balance, paneles web pictográficos
+  (lanzar/calcular salva y duración de drones) y que el **NPC** use misiles/drones para ablandar.
+
 ## [1.98.0] - 2026-06-27
 
 ### 2026-06-27 — SDD 47/46 v1.5: minería y alojamiento PRENDIDOS (balance suave) + NPC los usa

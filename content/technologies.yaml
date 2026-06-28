@@ -134,3 +134,79 @@ technologies:
     cost: { structural: 220, energetic: 160, advanced: 100 }
     effect: counter_espionage
     magnitude: 1.40
+
+  # --- Lanzadera de misiles (SDD 49): árbol GATE (no dan multiplicador). Habilitan el edificio
+  # `launcher` y, en cadena, cada tipo de misil (sónico → transatlántico → nuclear). ---
+  - key: rocketry
+    name: "Cohetería"
+    category: strike
+    name_en: "Rocketry"
+    description: "Habilita la lanzadera de misiles y el misil sónico (intra-planeta)."
+    description_en: "Unlocks the missile launcher and the sonic missile (intra-planet)."
+    requires: research_lab
+    energy_cost: 25
+    research_seconds: 480
+    cost: { structural: 220, energetic: 180, advanced: 60 }
+    magnitude: 1.0
+  - key: ballistics
+    name: "Balística"
+    category: strike
+    name_en: "Ballistics"
+    description: "Habilita el misil transatlántico (más daño, más difícil de interceptar)."
+    description_en: "Unlocks the cruise missile (more damage, harder to intercept)."
+    requires: research_lab
+    requires_tech: rocketry
+    energy_cost: 35
+    research_seconds: 720
+    cost: { structural: 340, energetic: 260, advanced: 140 }
+    magnitude: 1.0
+  - key: nuclear_fission
+    name: "Fisión nuclear"
+    category: strike
+    name_en: "Nuclear fission"
+    description: "Habilita el misil nuclear: daño masivo y de área, casi imposible de interceptar."
+    description_en: "Unlocks the nuclear missile: massive area damage, nearly impossible to intercept."
+    requires: research_lab
+    requires_tech: ballistics
+    energy_cost: 60
+    research_seconds: 1500
+    cost: { structural: 600, energetic: 450, advanced: 400 }
+    magnitude: 1.0
+
+  # --- Drones intra-planeta (SDD 50): árbol GATE. Habilitan la fábrica de drones, drones espía
+  # más durables y los drones de ataque. ---
+  - key: dronework
+    name: "Dronística"
+    category: drones
+    name_en: "Dronework"
+    description: "Habilita la fábrica de drones y el dron de reconocimiento liviano."
+    description_en: "Unlocks the drone factory and the light recon drone."
+    requires: research_lab
+    energy_cost: 25
+    research_seconds: 480
+    cost: { structural: 200, energetic: 180, advanced: 80 }
+    magnitude: 1.0
+  - key: drone_endurance
+    name: "Autonomía de drones"
+    category: drones
+    name_en: "Drone endurance"
+    description: "Habilita drones espía medio y pesado (más durables, más intel)."
+    description_en: "Unlocks mid and heavy recon drones (more durable, more intel)."
+    requires: research_lab
+    requires_tech: dronework
+    energy_cost: 35
+    research_seconds: 720
+    cost: { structural: 320, energetic: 280, advanced: 160 }
+    magnitude: 1.0
+  - key: attack_drones
+    name: "Drones de ataque"
+    category: drones
+    name_en: "Attack drones"
+    description: "Habilita el dron de ataque masivo (oleada sostenida sobre una base del planeta)."
+    description_en: "Unlocks the mass attack drone (sustained wave on a base of the planet)."
+    requires: research_lab
+    requires_tech: dronework
+    energy_cost: 40
+    research_seconds: 900
+    cost: { structural: 360, energetic: 300, advanced: 200 }
+    magnitude: 1.0

@@ -2394,3 +2394,186 @@ async def test_human_can_attack_an_npc(client):
     )
     assert r.status_code == 201, r.text
     assert r.json()["status"] == "outbound"  # fleet en route to the NPC
+
+
+# ---- SDD 49: misiles -------------------------------------------------------
+async def _grant_tech(maker, username, *techs):
+    from app.models import PlayerTech
+    async with maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == username))).scalar_one()
+        for t in techs:
+            s.add(PlayerTech(player_id=p.id, tech_key=t))
+        await s.commit()
+
+
+async def _set_energy(maker, username, amount):
+    async with maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == username))).scalar_one()
+        p.energy = amount
+        await s.commit()
+
+
+async def _fast_forward_strikes(maker):
+    from app.models import StrikeMission
+    async with maker() as s:
+        for m in (await s.execute(select(StrikeMission))).scalars():
+            m.arrives_at = datetime.now(UTC) - timedelta(seconds=1)
+        await s.commit()
+
+
+async def test_missile_strike_e2e(client, monkeypatch):
+    """SDD 49: con strike_enabled, una salva de sónicos satura las torretas y los que pasan
+    destruyen edificios de la base objetivo del MISMO planeta. Caso error: objetivo de otro."""
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "strike_enabled", True)
+
+    # calculadora pura: 50 sónicos vs capacidad 30 → 20 impactan, daño 1200
+    ha = await _register(client.http, "shooter")
+    await _onboard(client.http, ha, planet="earth", race="terran")
+    sim = await client.http.post("/api/v1/combat/strike/simulate", headers=ha,
+                                 json={"force": {"sonic_missile": 50}, "intercept_capacity": 30})
+    assert sim.status_code == 200
+    assert sim.json()["impacted"] == {"sonic_missile": 20}
+    assert sim.json()["damage"] == 1200
+
+    hd = await _register(client.http, "bunker")
+    dstate = await _onboard(client.http, hd, planet="earth", race="terran")
+    target_base = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "shooter", "bunker")
+
+    state = (await client.http.get("/api/v1/players/me", headers=ha)).json()
+    launcher_base = state["bases"][0]["id"]
+    await _grant_tech(client.session_maker, "shooter", "rocketry")
+    await _add_active_building(client.session_maker, "shooter", "launcher")
+    await _grant_units(client.session_maker, "shooter", {"sonic_missile": 50})
+    await _set_energy(client.session_maker, "shooter", 1_000_000)
+    await _add_active_building(client.session_maker, "bunker", "turret")  # intercepta + se destruye
+
+    # error: misil a una base de OTRO planeta (montamos un defensor en Marte)
+    hm = await _register(client.http, "martian_target")
+    mstate = await _onboard(client.http, hm, planet="mars", race="martian")
+    bad = await client.http.post("/api/v1/combat/strike", headers=ha, json={
+        "launcher_base_id": launcher_base, "target_base_id": mstate["bases"][0]["id"],
+        "force": {"sonic_missile": 1}})
+    assert bad.status_code == 400 and "planeta" in bad.text.lower()
+
+    # happy path: lanzar la salva intra-planeta
+    r = await client.http.post("/api/v1/combat/strike", headers=ha, json={
+        "launcher_base_id": launcher_base, "target_base_id": target_base,
+        "force": {"sonic_missile": 50}})
+    assert r.status_code == 201, r.text
+    assert r.json()["status"] == "outbound"
+
+    # en vuelo aparece en /players/me
+    me = (await client.http.get("/api/v1/players/me", headers=ha)).json()
+    assert len(me["strikes"]) == 1
+
+    # resolver la llegada y ver el reporte: destruyó la torreta del rival
+    await _fast_forward_strikes(client.session_maker)
+    await client.http.post("/api/v1/admin/tick", headers=ha)
+    reports = (await client.http.get("/api/v1/combat/reports", headers=ha)).json()
+    assert reports[0]["outcome"] == "strike"
+    assert "turret" in reports[0]["details"]["destroyed"]
+
+
+async def test_strike_blocked_without_tech_e2e(client, monkeypatch):
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "strike_enabled", True)
+    ha = await _register(client.http, "wannabe")
+    state = await _onboard(client.http, ha, planet="earth", race="terran")
+    hd = await _register(client.http, "victim2")
+    dstate = await _onboard(client.http, hd, planet="earth", race="terran")
+    await _clear_protection(client.session_maker, "wannabe", "victim2")
+    await _add_active_building(client.session_maker, "wannabe", "launcher")
+    await _grant_units(client.session_maker, "wannabe", {"sonic_missile": 1})
+    await _set_energy(client.session_maker, "wannabe", 1_000_000)
+    r = await client.http.post("/api/v1/combat/strike", headers=ha, json={
+        "launcher_base_id": state["bases"][0]["id"],
+        "target_base_id": dstate["bases"][0]["id"], "force": {"sonic_missile": 1}})
+    assert r.status_code == 400 and "investigar" in r.text.lower()
+
+
+# ---- SDD 50: drones --------------------------------------------------------
+async def test_drone_squadron_e2e(client, monkeypatch):
+    """SDD 50: con drones_enabled, lanzar un escuadrón espía intra-planeta da intel en vivo;
+    retirarlo devuelve los sobrevivientes. Caso error: objetivo de otro planeta."""
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "drones_enabled", True)
+
+    ho = await _register(client.http, "pilot")
+    ostate = await _onboard(client.http, ho, planet="earth", race="terran")
+    factory_base = ostate["bases"][0]["id"]
+    ht = await _register(client.http, "watched")
+    tstate = await _onboard(client.http, ht, planet="earth", race="terran")
+    target_base = tstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "pilot", "watched")
+
+    await _grant_tech(client.session_maker, "pilot", "dronework")
+    await _add_active_building(client.session_maker, "pilot", "drone_factory")
+    await _grant_units(client.session_maker, "pilot", {"recon_drone": 3})
+    await _set_energy(client.session_maker, "pilot", 1_000_000)
+
+    # calculadora pura
+    sim = await client.http.post("/api/v1/drones/simulate", headers=ho, json={
+        "force": {"recon_drone": 3}, "antiair": 20, "energy": 1000, "regen_per_tick": 1000})
+    assert sim.status_code == 200 and sim.json()["intel_quality"] == 0.6
+
+    # error: dron a otro planeta
+    hm = await _register(client.http, "mars_guy")
+    mstate = await _onboard(client.http, hm, planet="mars", race="martian")
+    bad = await client.http.post("/api/v1/drones/launch", headers=ho, json={
+        "factory_base_id": factory_base, "target_base_id": mstate["bases"][0]["id"],
+        "force": {"recon_drone": 1}})
+    assert bad.status_code == 400 and "planeta" in bad.text.lower()
+
+    # lanzar escuadrón intra-planeta → intel en vivo en /players/me
+    r = await client.http.post("/api/v1/drones/launch", headers=ho, json={
+        "factory_base_id": factory_base, "target_base_id": target_base,
+        "force": {"recon_drone": 3}})
+    assert r.status_code == 201, r.text
+    squad_id = r.json()["id"]
+    me = (await client.http.get("/api/v1/players/me", headers=ho)).json()
+    assert len(me["drones"]) == 1 and me["drones"][0]["intel_quality"] == 0.6
+    assert str(target_base) in me["intel_live"]
+
+    # retirar: los 3 drones vuelven al stock
+    rc = await client.http.post(f"/api/v1/drones/{squad_id}/recall", headers=ho)
+    assert rc.status_code == 200 and rc.json()["status"] == "recalled"
+    me = (await client.http.get("/api/v1/players/me", headers=ho)).json()
+    assert me["units"].get("recon_drone", 0) == 3
+    assert me["drones"] == []
+
+
+async def test_drones_die_without_energy_e2e(client, monkeypatch):
+    """SDD 50: si el drenaje supera tu energía, el escuadrón muere al avanzar (lazy timestamp)."""
+    from app.core.config import get_settings
+    from app.models import DroneSquadron
+    monkeypatch.setattr(get_settings(), "drones_enabled", True)
+
+    ho = await _register(client.http, "lowfuel")
+    ostate = await _onboard(client.http, ho, planet="earth", race="terran")
+    ht = await _register(client.http, "watched2")
+    tstate = await _onboard(client.http, ht, planet="earth", race="terran")
+    await _clear_protection(client.session_maker, "lowfuel", "watched2")
+    await _grant_tech(client.session_maker, "lowfuel", "dronework", "drone_endurance")
+    await _add_active_building(client.session_maker, "lowfuel", "drone_factory")
+    await _grant_units(client.session_maker, "lowfuel", {"recon_drone_mk3": 5})
+    await _set_energy(client.session_maker, "lowfuel", 1_000_000)
+
+    r = await client.http.post("/api/v1/drones/launch", headers=ho, json={
+        "factory_base_id": ostate["bases"][0]["id"],
+        "target_base_id": tstate["bases"][0]["id"], "force": {"recon_drone_mk3": 5}})
+    assert r.status_code == 201, r.text
+
+    # poca energía + el reloj del escuadrón 2 ticks atrás → drenaje (5×4=20/tick) la agota → muere
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "lowfuel"))).scalar_one()
+        p.energy = 8
+        tick_s = get_settings().drone_tick_seconds
+        sq = (await s.execute(select(DroneSquadron).where(
+            DroneSquadron.owner_id == p.id))).scalar_one()
+        sq.last_tick_at = datetime.now(UTC) - timedelta(seconds=tick_s * 2 + 5)
+        await s.commit()
+
+    me = (await client.http.get("/api/v1/players/me", headers=ho)).json()
+    assert me["drones"] == []      # el escuadrón murió por falta de energía

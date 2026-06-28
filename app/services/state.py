@@ -51,6 +51,10 @@ async def advance(session: AsyncSession, player: Player) -> None:
     await finalize_due_research(session, player, now)
     # resolve fleet arrivals/returns involving this player
     await process_missions(session, now, player_id=player.id)
+    from app.services.strike import process_strikes  # SDD 49: salvas de misiles
+    await process_strikes(session, now, player_id=player.id)
+    from app.services.drones import advance_drones  # SDD 50: drones orbitando (drenan energía)
+    await advance_drones(session, player, now)
     from app.services.espionage import process_spy_missions  # SDD 35
     await process_spy_missions(session, now, observer_id=player.id)
     from app.services.market import process_transport_missions  # SDD 42 Fase 2
@@ -213,6 +217,26 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         for m in ires.scalars()
     ]
 
+    # SDD 49: salvas de misiles propias en vuelo.
+    from app.models import StrikeMission
+    from app.schemas import StrikeMissionOut
+    strikes_out = [
+        StrikeMissionOut(
+            id=m.id, launcher_base_id=m.launcher_base_id, target_base_id=m.target_base_id,
+            force=json.loads(m.force), status=m.status, arrives_at=m.arrives_at,
+        )
+        for m in (await session.execute(
+            select(StrikeMission).where(
+                StrikeMission.attacker_id == player.id, StrikeMission.status == "outbound"
+            )
+        )).scalars()
+    ]
+    # SDD 50: escuadrones de drones orbitando + intel en vivo.
+    from app.schemas import DroneSquadronOut
+    from app.services.drones import squadrons_state
+    drones_raw, intel_live = await squadrons_state(session, player)
+    drones_out = [DroneSquadronOut(**d) for d in drones_raw]
+
     # Alliance: type + shared-vision alerts (attacks inbound on allies).
     alliance = await session.get(Alliance, player.alliance_id) if player.alliance_id else None
     ally_incoming: list[IncomingAttackOut] = []
@@ -303,6 +327,9 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         mining=mining_block,
         storage=storage_block,
         housing=housing_block,
+        strikes=strikes_out,
+        drones=drones_out,
+        intel_live=intel_live,
     )
 
 

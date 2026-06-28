@@ -259,6 +259,75 @@ class CombatSimOut(BaseModel):
     defender_losses: dict[str, int] = {}
 
 
+# ---- SDD 49: lanzadera de misiles ------------------------------------------
+class StrikeRequest(BaseModel):
+    launcher_base_id: int
+    target_base_id: int
+    force: dict[str, int]
+
+
+class StrikeMissionOut(BaseModel):
+    id: int
+    launcher_base_id: int
+    target_base_id: int
+    force: dict[str, int]
+    status: str
+    arrives_at: datetime
+
+
+class StrikeSimRequest(BaseModel):
+    force: dict[str, int]
+    intercept_capacity: float = 0.0   # = Σ intercept_power de las torretas activas del rival
+    atk_mult: float = 1.0
+
+
+class StrikeSimOut(BaseModel):
+    impacted: dict[str, int] = {}
+    intercepted: dict[str, int] = {}
+    damage: float = 0.0
+    area: bool = False
+
+
+# ---- SDD 50: drones intra-planeta ------------------------------------------
+class DroneLaunchRequest(BaseModel):
+    factory_base_id: int
+    target_base_id: int
+    force: dict[str, int]
+    max_ticks: int | None = None
+
+
+class DroneSquadronOut(BaseModel):
+    id: int
+    target_base_id: int
+    planet_key: str
+    force: dict[str, int]              # drones vivos
+    status: str
+    drain_per_tick: float = 0.0        # Σ energy_per_tick de los drones vivos
+    intel_quality: float = 0.0         # mejor intel viva (0 si no hay espías)
+    eta_energy_ticks: float | None = None   # ticks hasta morir por energía (None = se sostiene)
+    eta_turrets_ticks: float | None = None  # ticks hasta caer todos por torretas (None = sin AA)
+    ticks_done: int = 0
+
+
+class DroneSimRequest(BaseModel):
+    force: dict[str, int]
+    antiair: float = 0.0
+    energy: float = 0.0
+    regen_per_tick: float = 0.0
+    max_ticks: int | None = None
+
+
+class DroneSimOut(BaseModel):
+    survive_ticks: int                 # cuántos ticks vive el escuadrón (cota efectiva)
+    eta_energy_ticks: float | None = None
+    eta_turrets_ticks: float | None = None
+    drain_per_tick: float = 0.0
+    intel_quality: float = 0.0
+    attack_per_tick: float = 0.0
+    losses: dict[str, int] = {}        # drones derribados en `survive_ticks`
+    survivors: dict[str, int] = {}
+
+
 class CombatPlanRequest(BaseModel):
     target_base_id: int
     margin: float = 2.0
@@ -511,6 +580,11 @@ class PlayerStateOut(BaseModel):
     storage: dict = {}
     # SDD 46: alojamiento. housing = {dominio: {capacity, occupancy, free}}.
     housing: dict = {}
+    # SDD 49: salvas de misiles en vuelo (propias). SDD 50: escuadrones de drones orbitando + intel
+    # en vivo por base objetivo. Vacíos si los flags strike_enabled/drones_enabled están off.
+    strikes: list[StrikeMissionOut] = []
+    drones: list[DroneSquadronOut] = []
+    intel_live: dict = {}
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

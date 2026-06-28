@@ -1,6 +1,10 @@
 # SDD 49 — Lanzadera de misiles (guerra intra-planeta)
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-27
+> **Estado:** **implementado (flag OFF)** · **Fecha:** 2026-06-27 (impl. 2026-06-28)
+> Mecánica + API + grafo + tests/e2e listos detrás de `strike_enabled` (default off). Pendiente v1.5:
+> prender el flag tras balance, panel web pictográfico y uso por el NPC. Ver CHANGELOG 2026-06-28.
+
+> **Estado original:** **diseño** (no implementado) · **Fecha:** 2026-06-27
 > **Relacionado:** SDD 1 (grafo + asistente), SDD 13 (combate/rigor), SDD 47 (energía), SDD 46
 > (alojamiento), SDD 43 (UI pictográfica), SDD 50 (drones — hermano), `content/{buildings,units,
 > technologies}.yaml`, `app/services/{combat,build,training,effects}.py`.

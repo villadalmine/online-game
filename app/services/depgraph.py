@@ -249,6 +249,16 @@ def build_graph(race_key: str, planet_key: str) -> dict:
         if req:
             edges.append({"from": key, "to": req, "type": "requires"})
             edges.append({"from": req, "to": key, "type": "unlocks"})
+        # SDD 1/49/50: la unidad puede pedir una tecnología (requires_tech).
+        rtech = u.get("requires_tech")
+        if rtech:
+            edges.append({"from": key, "to": rtech, "type": "requires_tech"})
+            edges.append({"from": rtech, "to": key, "type": "unlocks"})
+        # SDD 49: las torretas interceptan misiles; SDD 50: derriban drones.
+        if u.get("domain") == "ordnance" and "turret" in content.buildings:
+            edges.append({"from": "turret", "to": key, "type": "intercepts"})
+        if u.get("domain") == "drone" and "turret" in content.buildings:
+            edges.append({"from": "turret", "to": key, "type": "shoots_down"})
         # SDD 46: alojamiento — la unidad se guarda en el/los edificio(s) de su dominio.
         for hb in houses_for_domain(unit_domain(key)):
             edges.append({"from": key, "to": hb, "type": "housed_in"})
@@ -264,6 +274,10 @@ def build_graph(race_key: str, planet_key: str) -> dict:
         if req:
             edges.append({"from": key, "to": req, "type": "requires"})
             edges.append({"from": req, "to": key, "type": "unlocks"})
+        rtech = t.get("requires_tech")   # cadena de investigación (SDD 1)
+        if rtech:
+            edges.append({"from": key, "to": rtech, "type": "requires_tech"})
+            edges.append({"from": rtech, "to": key, "type": "unlocks"})
         if t.get("effect"):
             edges.append({"from": key, "to": f"effect:{t['effect']}", "type": "boosts"})
 
@@ -589,6 +603,50 @@ def mechanics_documents() -> list[dict]:
                          "infantería", "naval"],
         },
         {
+            "id": "mech_missiles", "type": "mechanic",
+            "text": (
+                "MISILES / LANZADERA (SDD 49): construí una `launcher` (requiere Cohetería) y "
+                "fabricá misiles; lanzás una salva a una base enemiga del MISMO planeta con "
+                "POST /combat/strike (NO salen del planeta; para otro usá una flota). Tipos: "
+                "sónico (power 60, fácil de interceptar=intercept_cost 1, barato → enjambre), "
+                "transatlántico (power 160, intercept_cost 3), nuclear (power 600 + ÁREA, "
+                "intercept_cost 8, casi imposible de frenar). Intercepción: el rival tiene "
+                f"capacidad antimisil = Σ intercept_power de sus torretas activas "
+                f"(×{c.buildings.get('turret', {}).get('intercept_power', 30)} c/u) × su defensa; "
+                "se gasta sobre los entrantes (los baratos primero). Los que sobran IMPACTAN y "
+                "DESTRUYEN edificios de la base (defensas primero; el nuclear también los no "
+                "defensivos + deja fallout −producción). No saquea: sirve para ABLANDAR antes "
+                "de un ataque de flota o drones. Calculá con POST /combat/strike/simulate."
+            ),
+            "keywords": ["misil", "misiles", "missile", "lanzadera", "launcher", "salva", "strike",
+                         "sonico", "sónico", "transatlantico", "crucero", "cruise",
+                         "nuclear", "cohete", "cohetería", "balistica", "balística", "interceptar",
+                         "intercepcion", "intercepción", "antimisil", "torreta", "ablandar",
+                         "destruir edificios", "bombardear", "bombardeo", "golpe"],
+        },
+        {
+            "id": "mech_drones", "type": "mechanic",
+            "text": (
+                "DRONES (SDD 50): construí una `drone_factory` (requiere Dronística) y fabricá "
+                "drones; lanzás un escuadrón a una base del MISMO planeta con POST /drones/launch "
+                "(no salen del planeta). Dos familias: ESPÍA (recon liviano/medio/pesado) que da "
+                "intel EN VIVO mientras orbita (mejor que el espía clásico, que es un snapshot), y "
+                "ATAQUE (strike_drone) que castiga la base por tick. Mientras orbitan DRENAN TU "
+                "energía (energy_per_tick por dron) y las torretas del rival los derriban "
+                f"(antiair_power {c.buildings.get('turret', {}).get('antiair_power', 30)} por "
+                "torreta por tick vs el hp del escuadrón). Más drones ⇒ aguantan más ticks; más "
+                "durables (hp↑) ⇒ menos derribos, pero drenan más. Sin torretas no muere ninguno "
+                "por fuego (solo por energía). Si tu energía llega a 0 mueren; podés retirarlos "
+                "(recall) antes. "
+                "Calculá duración con POST /drones/simulate."
+            ),
+            "keywords": ["dron", "drones", "drone", "espia", "espía", "reconocimiento", "recon",
+                         "orbitar", "orbita", "órbita", "intel", "vivo", "tiempo real", "ataque",
+                         "enjambre", "torreta", "antiaereo", "antiaéreo", "antiair", "derribar",
+                         "duracion", "duración", "energia", "energía", "drenaje", "retirar",
+                         "recall", "fabrica de drones", "fábrica de drones"],
+        },
+        {
             "id": "mech_research", "type": "mechanic",
             "text": (
                 "INVESTIGACIÓN: requiere un laboratorio activo. Cada tecnología da un "
@@ -600,6 +658,16 @@ def mechanics_documents() -> list[dict]:
                          "laboratorio", "multiplicador", "permanente"],
         },
     ]
+
+
+# Palabras vacías (ES/EN): no aportan señal y, en textos largos (mecánicas), inflan el score por
+# coincidencias de relleno ("una", "para", "the"…). Se filtran SOLO de la query al puntuar.
+STOPWORDS: frozenset[str] = frozenset({
+    "el", "la", "los", "las", "lo", "un", "una", "unos", "unas", "de", "del", "al", "a", "e", "o",
+    "u", "y", "en", "con", "sin", "por", "para", "que", "se", "su", "sus", "mi", "mis", "tu", "tus",
+    "me", "te", "es", "son", "como", "necesito", "quiero", "dame", "tengo", "hay", "puedo",
+    "the", "an", "of", "for", "to", "my", "i", "need", "want", "with", "is", "are", "how",
+})
 
 
 def _tokens(text: str) -> list[str]:
@@ -636,7 +704,7 @@ def retrieve(race_key: str, planet_key: str, query: str, k: int = 6) -> list[dic
     Score = keyword hits (×3) + body hits (×1), with a strong boost when the doc id appears.
     Lee del índice cacheado (`_graph_index`). Dependency-free; un backend de embeddings puede
     reemplazarlo detrás de la misma firma, cayendo acá ante cualquier fallo."""
-    q = set(_tokens(query))
+    q = set(_tokens(query)) - STOPWORDS
     if not q:
         return []
     scored: list[tuple[float, dict]] = []

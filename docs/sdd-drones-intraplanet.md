@@ -1,6 +1,11 @@
 # SDD 50 — Drones intra-planeta: espías orbitales (tiempo real) + ataque
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-27
+> **Estado:** **implementado (flag OFF)** · **Fecha:** 2026-06-27 (impl. 2026-06-28)
+> Mecánica lazy + API + grafo + tests/e2e listos detrás de `drones_enabled` (default off). Pendiente
+> v1.5: prender el flag tras balance, panel web pictográfico (calculadora de duración) y uso por el
+> NPC. Ver CHANGELOG 2026-06-28.
+
+> **Estado original:** **diseño** (no implementado) · **Fecha:** 2026-06-27
 > **Relacionado:** SDD 35 (espionaje — los drones son su evolución "en vivo"), SDD 49 (misiles —
 > hermano), SDD 47 (energía/upkeep), SDD 46 (alojamiento), SDD 1 (grafo), SDD 43 (UI pictográfica),
 > SDD 13 (combate), `content/{buildings,units,technologies}.yaml`, `app/services/*`.

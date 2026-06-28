@@ -228,6 +228,53 @@ class AttackMission(Base):
     returns_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class StrikeMission(Base):
+    """Una salva de misiles en vuelo intra-planeta (SDD 49). Los misiles se consumen al lanzarse
+    (se descuentan del stock); resuelve al llegar (intercepción + daño) y NO vuelve."""
+
+    __tablename__ = "strike_missions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    attacker_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    defender_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    launcher_base_id: Mapped[int] = mapped_column(Integer)
+    target_base_id: Mapped[int] = mapped_column(Integer)
+    force: Mapped[str] = mapped_column(Text, default="{}")  # JSON missile_key -> qty
+    status: Mapped[str] = mapped_column(String(20), default="outbound")  # outbound | done
+    details: Mapped[str] = mapped_column(Text, default="{}")  # JSON: impacted/intercepted/damage
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    arrives_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class DroneSquadron(Base):
+    """Un escuadrón de drones orbitando una base enemiga del mismo planeta (SDD 50). Lazy por
+    timestamp: al leer, `advance_drones` aplica los ticks transcurridos (derribos por torretas,
+    drenaje de TU energía, daño de ataque) y mata el escuadrón sin energía o sin drones."""
+
+    __tablename__ = "drone_squadrons"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    target_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    factory_base_id: Mapped[int] = mapped_column(Integer)
+    target_base_id: Mapped[int] = mapped_column(Integer)
+    planet_key: Mapped[str] = mapped_column(String(50), default="")
+    force: Mapped[str] = mapped_column(Text, default="{}")  # JSON drone_key -> qty alive
+    status: Mapped[str] = mapped_column(String(20), default="orbiting")  # orbiting|dead|recalled
+    max_ticks: Mapped[int | None] = mapped_column(Integer, nullable=True)  # tope opcional del panel
+    ticks_done: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    last_tick_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class SpyMission(Base):
     """Espías en tránsito hacia un objetivo (SDD 35). Resuelven al llegar (generan intel) y vuelven;
     si los detectan, algunos caen y el defensor es notificado."""

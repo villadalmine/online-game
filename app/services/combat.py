@@ -162,6 +162,11 @@ async def start_attack(
     for unit_key in force:
         if unit_key not in content.units:
             raise CombatError(f"Unidad desconocida: {unit_key}")
+        # SDD 49/50: los misiles y drones no van en una flota (tienen su propia vía: /combat/strike,
+        # /drones/launch).
+        domain = content.units[unit_key].get("domain")
+        if domain in ("ordnance", "drone"):
+            raise CombatError(f"{unit_key} no se envía en una flota; usá su lanzadera/fábrica.")
 
     await _advance_economy(session, attacker, now)
 

@@ -56,6 +56,10 @@ async def run_tick(session: AsyncSession) -> dict:
     from app.services.combat import process_missions
 
     missions = await process_missions(session)
+    # SDD 49: resolver salvas de misiles que llegaron (todo el mundo).
+    from app.services.strike import process_strikes
+    strikes = await process_strikes(session)
+    await session.commit()
 
     # Advance everyone's queues (humans included) for offline progress.
     res = await session.execute(select(Player).where(Player.race_key.is_not(None)))
@@ -64,12 +68,14 @@ async def run_tick(session: AsyncSession) -> dict:
     from app.services.research import finalize_due_research
 
     researched = 0
+    from app.services.drones import advance_drones  # SDD 50
     for player in players:
         finalized += await finalize_due_builds(session, player)
         expeditions += await finalize_due_expeditions(session, player)
         await collect_mines(session, player)
         trained += await finalize_due_training(session, player)
         researched += await finalize_due_research(session, player)
+        await advance_drones(session, player)
     await session.commit()
 
     # Eventos dinámicos "happy hour" (SDD 36): quizás arrancar uno en horas aleatorias.
@@ -104,6 +110,7 @@ async def run_tick(session: AsyncSession) -> dict:
         "research_done": researched,
         "seasons_closed": seasons_closed,
         **missions,
+        **strikes,
     }
 
 

@@ -153,3 +153,140 @@ heavy:
     cost: { structural: 150, energetic: 90, advanced: 40 }
     # cargo = capacidad de minerales por nave (SDD 42 Fase 2)
     stats: { attack: 5, defense: 10, hp: 90, cargo: 500 }
+
+# Misiles (SDD 49): munición intra-planeta. domain `ordnance` (se aloja en la lanzadera). Se
+# fabrican como una unidad más y se DISPARAN con POST /combat/strike (no van en una flota).
+# `power` = daño al impactar; `intercept_cost` = cuánta capacidad antimisil cuesta derribarlo.
+ordnance:
+  - key: sonic_missile
+    icon: "🚀"
+    name: "Misil sónico"
+    name_en: "Sonic missile"
+    real: "Misil de corto alcance: golpe directo, barato, fácil de interceptar (en enjambre satura)."
+    real_en: "Short-range missile: direct hit, cheap, easy to intercept (swarms saturate)."
+    sources: ["Wikipedia: Missile"]
+    requires: launcher
+    requires_tech: rocketry
+    domain: ordnance
+    housing_size: 1
+    range: intra_planet
+    power: 60
+    intercept_cost: 1
+    propulsion: rocket
+    energy_cost: 6
+    train_seconds: 30
+    cost: { structural: 40, energetic: 30 }
+  - key: cruise_missile
+    icon: "🛩"
+    name: "Misil transatlántico"
+    name_en: "Cruise missile"
+    real: "Misil de crucero: mayor alcance y daño, más difícil de interceptar."
+    real_en: "Cruise missile: longer range and damage, harder to intercept."
+    sources: ["Wikipedia: Cruise missile"]
+    requires: launcher
+    requires_tech: ballistics
+    domain: ordnance
+    housing_size: 2
+    range: intra_planet
+    power: 160
+    intercept_cost: 3
+    propulsion: rocket
+    energy_cost: 12
+    train_seconds: 60
+    cost: { structural: 120, energetic: 80, advanced: 40 }
+  - key: nuclear_missile
+    icon: "☢"
+    name: "Misil nuclear"
+    name_en: "Nuclear missile"
+    real: "Misil balístico nuclear: daño masivo y de área; casi imposible de interceptar."
+    real_en: "Nuclear ballistic missile: massive area damage; nearly impossible to intercept."
+    sources: ["Wikipedia: Nuclear weapon"]
+    requires: launcher
+    requires_tech: nuclear_fission
+    domain: ordnance
+    housing_size: 4
+    range: intra_planet
+    power: 600
+    intercept_cost: 8
+    area: true            # SDD 49: además de la defensa, daña edificios no defensivos + fallout
+    propulsion: rocket
+    energy_cost: 30
+    train_seconds: 180
+    cost: { structural: 400, energetic: 250, advanced: 300 }
+
+# Drones (SDD 50): intra-planeta. domain `drone` (se alojan en la fábrica de drones). Orbitan un
+# objetivo: drenan TU energía (energy_per_tick) y caen ante las torretas (hp vs antiair). Los espía
+# dan intel en vivo (intel_quality); los de ataque castigan la base (attack) por tick.
+drone:
+  - key: recon_drone
+    icon: "🛸"
+    name: "Dron de reconocimiento"
+    name_en: "Recon drone"
+    real: "UAV de reconocimiento liviano: barato, poca autonomía, intel básica en vivo."
+    real_en: "Light recon UAV: cheap, low endurance, basic live intel."
+    sources: ["Wikipedia: Unmanned aerial vehicle"]
+    requires: drone_factory
+    requires_tech: dronework
+    domain: drone
+    housing_size: 1
+    range: intra_planet
+    hp: 20
+    energy_per_tick: 1.0
+    intel_quality: 0.6
+    train_seconds: 40
+    energy_cost: 4
+    cost: { structural: 30, energetic: 30, advanced: 10 }
+  - key: recon_drone_mk2
+    icon: "🛰"
+    name: "Dron de reconocimiento MK2"
+    name_en: "Recon drone MK2"
+    real: "UAV de reconocimiento medio: más durable y mejor intel, más consumo."
+    real_en: "Mid recon UAV: more durable and better intel, higher drain."
+    sources: ["Wikipedia: Unmanned aerial vehicle"]
+    requires: drone_factory
+    requires_tech: drone_endurance
+    domain: drone
+    housing_size: 2
+    range: intra_planet
+    hp: 45
+    energy_per_tick: 2.0
+    intel_quality: 0.8
+    train_seconds: 70
+    energy_cost: 7
+    cost: { structural: 50, energetic: 50, advanced: 25 }
+  - key: recon_drone_mk3
+    icon: "📡"
+    name: "Dron de reconocimiento MK3"
+    name_en: "Recon drone MK3"
+    real: "UAV de reconocimiento pesado: muy durable e intel casi total, alto consumo."
+    real_en: "Heavy recon UAV: very durable and near-total intel, high drain."
+    sources: ["Wikipedia: Unmanned aerial vehicle"]
+    requires: drone_factory
+    requires_tech: drone_endurance
+    domain: drone
+    housing_size: 3
+    range: intra_planet
+    hp: 90
+    energy_per_tick: 4.0
+    intel_quality: 0.95
+    train_seconds: 110
+    energy_cost: 12
+    cost: { structural: 90, energetic: 80, advanced: 50 }
+  - key: strike_drone
+    icon: "🤖"
+    name: "Dron de ataque"
+    name_en: "Strike drone"
+    real: "UAV de ataque: oleada que castiga una base mientras orbita (drena energía, cae ante torretas)."
+    real_en: "Attack UAV: a wave that pounds a base while it orbits (drains energy, falls to turrets)."
+    sources: ["Wikipedia: Unmanned combat aerial vehicle"]
+    requires: drone_factory
+    requires_tech: attack_drones
+    domain: drone
+    housing_size: 2
+    range: intra_planet
+    hp: 35
+    energy_per_tick: 3.0
+    attack: 25
+    train_seconds: 90
+    energy_cost: 9
+    cost: { structural: 70, energetic: 60, advanced: 40 }

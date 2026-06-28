@@ -37,8 +37,14 @@ class GameContent:
         units = _load("units.yaml")
         self.personnel: dict[str, dict] = {u["key"]: u for u in units.get("personnel", [])}
         self.heavy: dict[str, dict] = {u["key"]: u for u in units.get("heavy", [])}
-        # Combined lookup for any trainable unit (personnel or heavy).
-        self.units: dict[str, dict] = {**self.personnel, **self.heavy}
+        # Munición y drones (SDD 49/50): se fabrican como unidades pero se usan por vías propias
+        # (POST /combat/strike, POST /drones/launch), no en una flota de ataque clásica.
+        self.ordnance: dict[str, dict] = {u["key"]: u for u in units.get("ordnance", [])}
+        self.drones: dict[str, dict] = {u["key"]: u for u in units.get("drone", [])}
+        # Combined lookup for any trainable unit (personnel, heavy, ordnance, drones).
+        self.units: dict[str, dict] = {
+            **self.personnel, **self.heavy, **self.ordnance, **self.drones
+        }
 
         self.moons: dict[str, dict] = {m["key"]: m for m in _load("gods.yaml")["moons"]}
         self.technologies: dict[str, dict] = {

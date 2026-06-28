@@ -18,9 +18,14 @@ from app.schemas import (
     CombatPlanRequest,
     CombatSimOut,
     CombatSimRequest,
+    StrikeMissionOut,
+    StrikeRequest,
+    StrikeSimOut,
+    StrikeSimRequest,
 )
 from app.services.combat import CombatError, recall_mission, resolve_combat, start_attack
 from app.services.combat_calc import PlanError, plan_attack
+from app.services.strike import StrikeError, simulate_strike, start_strike
 
 router = APIRouter()
 
@@ -112,6 +117,42 @@ async def recall(
         status=mission.status,
         arrives_at=mission.arrives_at,
         returns_at=mission.returns_at,
+    )
+
+
+@router.post("/strike/simulate", response_model=StrikeSimOut)
+async def strike_simulate(
+    body: StrikeSimRequest,
+    player: Player = Depends(get_current_player),
+):
+    """Calculadora determinista (SDD 49): mismo `simulate_strike` que la salva real. Pasá la
+    capacidad antimisil del rival (Σ intercept_power de torretas) y ves qué impacta/intercepta."""
+    r = simulate_strike(body.force, body.intercept_capacity, body.atk_mult)
+    return StrikeSimOut(
+        impacted=r.impacted, intercepted=r.intercepted, damage=r.damage, area=r.area
+    )
+
+
+@router.post("/strike", response_model=StrikeMissionOut, status_code=status.HTTP_201_CREATED)
+async def do_strike(
+    body: StrikeRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Lanza una salva de misiles a una base enemiga del MISMO planeta (SDD 49)."""
+    if player.race_key is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Primero completa el onboarding.")
+    try:
+        mission = await start_strike(
+            session, player, body.launcher_base_id, body.target_base_id, body.force
+        )
+    except StrikeError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return StrikeMissionOut(
+        id=mission.id, launcher_base_id=mission.launcher_base_id,
+        target_base_id=mission.target_base_id, force=json.loads(mission.force),
+        status=mission.status, arrives_at=mission.arrives_at,
     )
 
 
