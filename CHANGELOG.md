@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.104.0] - 2026-06-28
+
 ### 2026-06-28 — API HA + más capacidad de queries (pipeline-native) + asistente que construye la cadena
 - **API HA**: overlay versionado `deploy/helm/values-prod.yaml` (replicas=3 + PodDisruptionBudget +
   topologySpread entre nodos) aplicado por el **CD** con `helm upgrade --reset-then-reuse-values -f`
