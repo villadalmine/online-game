@@ -365,6 +365,26 @@ class PlayerStats(Base):
     resources_lost: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
 
 
+class PlayerSample(Base):
+    """SDD 51 — muestra periódica del ESTADO de un jugador (energía/stock/unidades/score) para
+    graficar 'cómo me fue en el tiempo'. Append-only, throttleada en state.advance (lazy, sin cron).
+    Los EVENTOS (ataques/builds/…) ya salen del journal (SDD 38); esto cubre el estado, que no es
+    un evento. Index (player_id, at) para consultas por rango baratas."""
+
+    __tablename__ = "player_samples"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    energy: Mapped[float] = mapped_column(Float, default=0.0)
+    energy_max: Mapped[float] = mapped_column(Float, default=0.0)
+    stock_total: Mapped[float] = mapped_column(Float, default=0.0)
+    units_total: Mapped[int] = mapped_column(Integer, default=0)
+    score: Mapped[int] = mapped_column(Integer, default=0)
+    stocks_json: Mapped[str] = mapped_column(Text, default="{}")
+    units_json: Mapped[str] = mapped_column(Text, default="{}")
+
+
 class GalaxyInstance(Base):
     """Instancia jugable de una galaxia (shard, SDD 8): acota cuántos humanos comparten mundo.
     `template_key` = la galaxia data-driven (milky_way…); al llenarse, los nuevos van a otra."""

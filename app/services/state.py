@@ -66,6 +66,9 @@ async def advance(session: AsyncSession, player: Player) -> None:
     )
     apply_regen(player, now, regen, effective_energy_max(player, settings))
     await grant_due_free_units(session, player, now)
+    # SDD 51: muestra del estado para los gráficos in-app (throttleada, lazy, sin cron).
+    from app.services.analytics import sample_player
+    await sample_player(session, player, now)
     await session.commit()
 
 

@@ -310,3 +310,29 @@ async def test_hack_also_builds_the_target(session):
     built = (await session.execute(select(Building).where(
         Building.building_key == "barracks"))).first()
     assert built is not None                                # y lo construyó (queda en cola/activo)
+
+
+async def test_ask_command_uses_hack_to_build(session):
+    # SDD 2 v2: si das la ORDEN "construime barracks", te falta material y tenés hack → lo usa solo.
+    from app.models import Building
+    p = await _player(session, name="commander")
+    await _strip_minerals(session, p.id)
+    p.energy = 9999
+    await session.commit()
+
+    r = await adv.ask(session, p, "construime barracks")
+    assert r.hacks_left == 2                                   # gastó un hack
+    assert "barracks" in r.reply.lower()
+    built = (await session.execute(select(Building).where(
+        Building.building_key == "barracks"))).first()
+    assert built is not None                                   # y lo construyó
+
+
+async def test_ask_question_does_not_spend_hack(session):
+    # una PREGUNTA ("¿qué me conviene construir?") NO gasta hack (no es orden de un objetivo único).
+    p = await _player(session, name="asker")
+    await _strip_minerals(session, p.id)
+    p.energy = 9999
+    await session.commit()
+    r = await adv.ask(session, p, "¿qué me conviene construir?")
+    assert r.hacks_left == 3                                   # intacto

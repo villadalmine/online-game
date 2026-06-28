@@ -2579,3 +2579,44 @@ async def test_drones_die_without_energy_e2e(client, monkeypatch):
 
     me = (await client.http.get("/api/v1/players/me", headers=ho)).json()
     assert me["drones"] == []      # el escuadrón murió por falta de energía
+
+
+async def test_player_history_analytics_e2e(client, monkeypatch):
+    """SDD 51: el estado se muestrea en advance; /players/me/history devuelve serie + eventos."""
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "analytics_sample_seconds", 0)  # muestrear en cada lectura
+    h = await _register(client.http, "historian")
+    await _onboard(client.http, h, planet="earth", race="terran")
+    await client.http.get("/api/v1/players/me", headers=h)   # genera muestras del estado
+    await client.http.get("/api/v1/players/me", headers=h)
+
+    r = await client.http.get("/api/v1/players/me/history?hours=24", headers=h)
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert len(data["samples"]) >= 1
+    assert "energy" in data["samples"][0] and "score" in data["samples"][0]
+    assert isinstance(data["events"], dict)
+
+
+async def test_attack_rate_limit_per_window_e2e(client):
+    """Límite de ataques por ventana: tras N ataques en la ventana, el siguiente da 400."""
+    ha = await _register(client.http, "raider_lim")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "victim_lim")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    target = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "raider_lim", "victim_lim")
+    await _grant_units(client.session_maker, "raider_lim", {"soldier": 10})
+    await _set_energy(client.session_maker, "raider_lim", 1_000_000)
+
+    ok = 0
+    for _ in range(3):
+        r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                                   json={"target_base_id": target, "force": {"soldier": 1}})
+        if r.status_code == 201:
+            ok += 1
+    assert ok == 3
+    # el 4º en la ventana → rechazado por límite
+    r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                               json={"target_base_id": target, "force": {"soldier": 1}})
+    assert r.status_code == 400 and "límite" in r.text.lower()

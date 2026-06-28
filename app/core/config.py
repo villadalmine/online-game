@@ -80,6 +80,10 @@ class Settings(BaseSettings):
 
     # Combat balance
     attack_energy_cost: float = 25.0
+    # Límite de ataques por ventana (gameplay, aplica a humanos Y NPCs): da tiempo al rival a
+    # reagruparse y evita que la IA "se zarpe". Default: 3 ataques cada 4 h. 0 = sin límite.
+    attacks_per_window: int = 3
+    attack_window_seconds: int = 14400   # 4 h
     loot_fraction: float = 0.2  # share of each defender mineral looted on a win
     # Fleet travel time (seconds): one-way. Same planet is quick; cross-planet is slow.
     travel_seconds_same_planet: int = 60
@@ -183,6 +187,10 @@ class Settings(BaseSettings):
     # leer, como minería). Apagable por env (DRONES_ENABLED=false).
     drones_enabled: bool = True
     drone_tick_seconds: int = 600   # 10 min por tick de órbita
+
+    # Analítica por jugador + gráficos in-app (SDD 51): muestreo throttleado del estado en advance.
+    analytics_enabled: bool = True
+    analytics_sample_seconds: int = 300   # ≤ 1 muestra cada N s por jugador (barato, lazy)
 
     # Espionaje / inteligencia (SDD 35).
     spy_energy_cost: float = 5.0

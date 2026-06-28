@@ -1,6 +1,12 @@
 # SDD 51 — Analítica por jugador + gráficos in-app ("¿cómo me fue en el tiempo?")
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-28
+> **Estado:** **Fase 1-2 implementado** · **Fecha:** 2026-06-28
+> `PlayerSample` + muestreo en `state.advance` + `app/services/analytics.py` + `GET
+> /players/me/history` + modal web "📈 Tu historia" (sparklines SVG + barras de acciones). Flag
+> `analytics_enabled`. Pendiente: Fase 3 (retención/downsample en el tick, admin, Grafana SQL) +
+> `EndpointHit`. Ver CHANGELOG 2026-06-28.
+
+> **Estado original:** **diseño** (no implementado) · **Fecha:** 2026-06-28
 > **Relacionado:** SDD 38 (journal append-only = fuente de verdad), SDD 12 (stats de por vida),
 > SDD 19/21 (métricas Prometheus + presencia), SDD 41 (meta/insights), SDD 43 (UI pictográfica),
 > SDD 2 (asistente). Archivos: `app/services/journal.py`, `app/models`, `app/api/v1/`, `web/index.html`.

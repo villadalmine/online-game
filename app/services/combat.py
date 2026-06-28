@@ -168,6 +168,23 @@ async def start_attack(
         if domain in ("ordnance", "drone"):
             raise CombatError(f"{unit_key} no se envía en una flota; usá su lanzadera/fábrica.")
 
+    # Límite de ataques por ventana (gameplay, humanos Y NPCs): da tiempo al rival a reagruparse.
+    if settings.attacks_per_window > 0:
+        from sqlalchemy import func
+        window_start = now - timedelta(seconds=settings.attack_window_seconds)
+        recent = (await session.execute(
+            select(func.count(AttackMission.id)).where(
+                AttackMission.attacker_id == attacker.id,
+                AttackMission.created_at >= window_start,
+            )
+        )).scalar_one()
+        if recent >= settings.attacks_per_window:
+            hrs = settings.attack_window_seconds / 3600
+            raise CombatError(
+                f"Llegaste al límite de ataques ({settings.attacks_per_window} cada {hrs:g}h). "
+                "Esperá para volver a atacar."
+            )
+
     await _advance_economy(session, attacker, now)
 
     units = await player_units(session, attacker.id)

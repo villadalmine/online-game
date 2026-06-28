@@ -7,6 +7,29 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — SDD 51: analítica por jugador + gráficos in-app "📈 Tu historia"
+- **Implementado (Fase 1-2):** modelo `PlayerSample` (muestreo throttleado del estado en
+  `state.advance`, lazy, sin cron; migración `4e2f998dc2ef`), servicio `analytics.py`
+  (`sample_player`/`history`/`event_counts`), endpoint `GET /players/me/history?hours=` (serie de
+  energía/stock/unidades/score + conteo de acciones del journal), y **modal web "📈 Tu historia"**
+  (botón en card Imperio) con **sparklines SVG** (sin librerías) + barras de acciones. i18n es/en.
+  Flag `analytics_enabled` (default ON), `analytics_sample_seconds=300`. e2e
+  `test_player_history_analytics_e2e`. Pendiente Fase 3: retención/downsample + admin + Grafana SQL.
+
+### 2026-06-28 — Asistente: usa el hack al DARLE LA ORDEN + versión visible en la UI
+- **Auto-hack por comando (SDD 2):** si le decís "construime X" (imperativo) sobre un objetivo único,
+  te queda hack diario y solo te falta material/energía → el asistente **usa el hack y lo construye
+  solo** (antes solo decía "te falta material" y dejaba un botón). Preguntas ("¿qué construyo?") NO
+  gastan hack. Tests `test_ask_command_uses_hack_to_build` / `test_ask_question_does_not_spend_hack`.
+- Texto del botón de hack actualizado ("🔓 hackear y construir X").
+- **Versión visible:** `/health` ahora devuelve `version`; la UI muestra un pill `v<versión>` en el
+  header → sabés exactamente qué está live sin adivinar.
+
+### 2026-06-28 — Combate: límite de ataques por ventana (humanos y NPCs)
+- Nuevo límite de gameplay: **3 ataques cada 4 h** por jugador (`attacks_per_window`/
+  `attack_window_seconds`, 0 = sin límite). Aplica a humanos Y NPCs → la IA no "se zarpa" y el rival
+  tiene tiempo de reagruparse. e2e `test_attack_rate_limit_per_window_e2e`.
+
 ## [1.102.0] - 2026-06-28
 
 ### 2026-06-28 — SDD 29 v2: la IA juega por PERFILES (y adapta sin LLM) + ataca NPCs + métricas

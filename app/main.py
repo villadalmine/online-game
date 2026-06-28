@@ -151,7 +151,8 @@ async def metrics_endpoint(request: Request):
 
 @app.get("/health", tags=["meta"])
 async def health():
-    return {"status": "ok", "app": settings.app_name, "db": settings.db_backend}
+    return {"status": "ok", "app": settings.app_name, "version": settings.app_version,
+            "db": settings.db_backend}
 
 
 # El HTML se sirve con `no-store`: el navegador NO lo guarda → tras un deploy SIEMPRE ves la versión

@@ -38,6 +38,16 @@ _MECH_WORDS = {
 }
 
 
+# Palabras de ORDEN (imperativos) → si pedís explícito "construime X" y te alcanza un hack, el
+# asistente lo usa solo (grant + build). NO incluye "qué/conviene" (preguntas).
+_BUILD_CMD_WORDS = {
+    "construime", "construí", "construilo", "constrúyelo", "constrúyeme",
+    "hazme", "haceme", "házmelo", "armame", "armá", "fabricame", "fabricá", "fabrícame",
+    "levantame", "ponme", "dame", "consegui", "conseguí", "conseguime", "necesito", "quiero",
+    "build", "make", "give",
+}
+
+
 class AdvisorError(Exception):
     def __init__(self, message: str, status: int = 400) -> None:
         super().__init__(message)
@@ -242,6 +252,28 @@ async def ask(
     else:
         targets = [t for t in _all_targets() if t not in snap.active_buildings][:6]  # "¿qué hago?"
     reports = [depgraph.analyze(snap, t) for t in targets]
+
+    # SDD 2 v2: si DAS LA ORDEN explícita ("construime X") sobre UN objetivo, te queda hack diario y
+    # solo te falta MATERIAL/energía (no un edificio) → el asistente USA el hack solo (lo
+    # materializa y lo construye). Antes solo decía "te falta material" → ahora lo hace.
+    qwords = set(message.lower().replace(",", " ").replace(".", " ").split())
+    if len(matched) == 1 and (qwords & _BUILD_CMD_WORDS) and hacks_left(player) > 0:
+        rep = next((r for r in reports if r.target == matched[0]), None)
+        if (rep and not rep.buildable
+                and not any(b.kind == "building" for b in rep.blockers)
+                and any(b.kind in ("mineral", "not_producible", "energy") for b in rep.blockers)):
+            try:
+                res = await grant_hack(session, player, matched[0])   # materializa + construye
+            except AdvisorError:
+                await session.rollback()
+                res = None
+            if res:
+                await _save(session, player, "user", message)
+                from app.services.journal import record
+                await record(session, "advisor_ask", player.id)
+                await session.commit()
+                return AdvisorReply(reply=res["message"], blockers=[], suggestions=[],
+                                    hack_available=False, hacks_left=res["hacks_left"])
 
     from app.services.espionage import player_intel  # local: evita ciclo de imports
     intel = await player_intel(session, player)

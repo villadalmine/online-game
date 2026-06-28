@@ -24,6 +24,22 @@ from app.services.state import advance, snapshot
 router = APIRouter()
 
 
+@router.get("/me/history")
+async def my_history(
+    hours: float = 24.0,
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 51: tu historia (estado en el tiempo + acciones por tipo) para los gráficos in-app."""
+    from app.services.analytics import event_counts, history
+    hours = min(max(hours, 1.0), 24 * 60)   # 1h … 60 días
+    return {
+        "hours": hours,
+        "samples": await history(session, player.id, hours),
+        "events": await event_counts(session, player.id, hours),
+    }
+
+
 @router.get("/ranking", response_model=list[RankingEntryOut])
 async def ranking(
     _: Player = Depends(get_current_player), session: AsyncSession = Depends(get_session)
