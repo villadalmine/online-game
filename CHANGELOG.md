@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — Fix CD: pool de nodos (no pinear) + ttl corto (no llenar disco)
+- El CD estaba pineado a UN nodo (`srv-rk1-nvme-01`); cuando ese entró en DiskPressure el workflow
+  quedó `Pending` para siempre. Selector al **pool** `storage=rk1-longhorn` (rk1-nvme 01-04) → corre
+  en un nodo sano. ttl: success 30m→10m, failure 2h→30m → los Workflows + sus PVCs (20Gi Longhorn)
+  se limpian rápido y no llenan el disco. (Limpié los 4 fallidos acumulados ~80Gi.)
+
 ## [1.104.4] - 2026-06-28
 
 ### 2026-06-28 — Fix CD: imagePullPolicy Always en los gates (no más imagen de test stale)

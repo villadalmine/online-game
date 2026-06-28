@@ -23,8 +23,8 @@ spec:
       - name: image_tag
         value: "latest"
   ttlStrategy:
-    secondsAfterSuccess: 1800     # 30 min: borra el Workflow (y sus pods por ownerRef) tras éxito
-    secondsAfterFailure: 7200     # 2 h: el OBJETO Workflow (con el status: qué paso falló) queda para debug; los PODS se van ya (podGC)
+    secondsAfterSuccess: 600      # 10 min: borra el Workflow + su PVC (20Gi Longhorn) rápido
+    secondsAfterFailure: 1800     # 30 min: deja el fallido para leer logs, pero no horas (llenaba disco)
   # LIMPIEZA DE PODS — `OnWorkflowSuccess`: borra los pods cuando el workflow SALE BIEN (caso común →
   # ns compartido limpio), pero CONSERVA los pods FALLIDOS para poder leer su log (`kubectl logs`);
   # sin esto no hay forma de saber qué test falló (no hay artifact repo). No re-satura el controller:
@@ -32,8 +32,11 @@ spec:
   # 2026-06-28: ni 24h sin GC, ni borrar los fallidos al instante.)
   podGC:
     strategy: OnWorkflowSuccess
+  # NO pinear a UN nodo: si ese entra en DiskPressure, el CD queda Pending para siempre (incidente
+  # 2026-06-28). Selector al POOL rk1-nvme (01-04 comparten `storage=rk1-longhorn`, arm64 + acceso a
+  # longhorn-nvme) → el scheduler elige uno sano. Si uno está con disk-pressure (taint), usa otro.
   nodeSelector:
-    kubernetes.io/hostname: srv-rk1-nvme-01    # arm64, como el nodo del juego
+    storage: rk1-longhorn
   tolerations:
     - key: "node.kubernetes.io/unreachable"
       operator: Exists
