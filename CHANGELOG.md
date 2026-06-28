@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — Fix CD: el overlay de prod va en examples/ (values-*.yaml está gitignored)
+- `values-prod.yaml` quedaba ignorado por `.gitignore` (`deploy/helm/values-*.yaml`) → el promote
+  fallaba con "no such file" (prod intacto, falla antes del upgrade). Movido a
+  `deploy/helm/examples/values-prod.yaml` (commiteable, sin secretos) y corregido el `-f` del promote.
+
 ## [1.104.0] - 2026-06-28
 
 ### 2026-06-28 — API HA + más capacidad de queries (pipeline-native) + asistente que construye la cadena

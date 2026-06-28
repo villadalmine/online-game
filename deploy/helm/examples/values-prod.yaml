@@ -1,0 +1,31 @@
+# Overlay de PRODUCCIÓN — SIN secretos. Lo aplica el pipeline de CD (paso promote) con
+# `--reset-then-reuse-values -f`: los secretos/dominio siguen viniendo de values-local (reused),
+# y acá vive la config de HA/capacidad VERSIONADA (SDD 7). Para cambiarla: editás esto y deployás
+# por Argo (`make deploy`) — nada manual a prod. Ver docs/sdd-capacity-autoscaling.md.
+
+api:
+  replicas: 3                  # HA: 3 réplicas → sin downtime en deploy/restart/caída de un nodo
+
+# No tirar todas las réplicas juntas en drains/upgrades.
+podDisruptionBudget:
+  enabled: true
+  minAvailable: ""             # vacío → usa maxUnavailable (sirve con cualquier nº de réplicas)
+  maxUnavailable: 1
+
+# Repartir las réplicas entre nodos (soft: no bloquea el scheduling si no se puede repartir).
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app: galaxy-api
+
+# Capacidad (SDD 7): pool por réplica acotado para que entren varias réplicas sin agotar Postgres.
+scaling:
+  dbPoolSize: "8"              # (8+12)=20 conexiones × 3 réplicas = 60, holgado bajo maxConnections=200
+  dbMaxOverflow: "12"
+
+postgres:
+  maxConnections: 200         # más conexiones para soportar más réplicas/queries (default era 100)
+  sharedBuffers: "256MB"

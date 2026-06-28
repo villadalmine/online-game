@@ -182,7 +182,7 @@ spec:
             helm upgrade galaxy /workspace/chart-src/deploy/helm \
               -n online-game \
               --reset-then-reuse-values \
-              -f /workspace/chart-src/deploy/helm/values-prod.yaml \
+              -f /workspace/chart-src/deploy/helm/examples/values-prod.yaml \
               --set image.tag={{workflow.parameters.image_tag}} \
               --wait --timeout 15m
             kubectl rollout status deploy/galaxy-api -n online-game --timeout=600s
