@@ -21,8 +21,15 @@ metadata:
 spec:
   entrypoint: build-image
   ttlStrategy:
-    secondsAfterSuccess: 3600      # limpia el workspace 1h después de éxito
-    secondsAfterFailure: 86400     # retiene 24h para debug si falla
+    secondsAfterSuccess: 3600      # borra el OBJETO Workflow 1h después de éxito
+    secondsAfterFailure: 7200      # 2h: el status (qué paso falló) queda para debug; los pods/PVC se van ya (GC abajo)
+  # LIMPIEZA (faltaba → quedaban pods Completed de DÍAS + PVCs colgados en el ns compartido `kaniko`, saturando el
+  # controlador de Argo y rompiendo deploys de otros pipelines — incidente 2026-06-28). Borra pods Y el PVC `workspace`
+  # apenas el workflow termina (éxito O fallo). Nada efímero queda en disco/API.
+  podGC:
+    strategy: OnWorkflowCompletion
+  volumeClaimGC:
+    strategy: OnWorkflowCompletion
   nodeSelector:
     kubernetes.io/hostname: srv-rk1-nvme-01    # arm64, como el nodo del juego
   tolerations:
