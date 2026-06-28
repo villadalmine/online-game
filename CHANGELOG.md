@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.104.2] - 2026-06-28
+
 ### 2026-06-28 — Hardening: JWT_SECRET y password de Postgres → Secret + secretKeyRef
 - Antes `JWT_SECRET` y `DATABASE_URL` (que lleva la password de Postgres inline) se renderizaban como
   `value:` en TEXTO PLANO en el Deployment (visibles con `kubectl get deploy -o yaml`). Ahora van en el
