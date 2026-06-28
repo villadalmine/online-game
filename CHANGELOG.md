@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.102.0] - 2026-06-28
+
 ### 2026-06-28 — SDD 29 v2: la IA juega por PERFILES (y adapta sin LLM) + ataca NPCs + métricas
 > Feedback: la NPC "no ataca / no tiene táctica / no se ve qué hace / siempre ataca humanos".
 - **Perfiles que guían el cerebro POR REGLAS** (`PROFILES` en `npc.py`): economy/expand/research/
