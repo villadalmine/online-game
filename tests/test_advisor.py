@@ -292,3 +292,21 @@ async def test_assist_energy_proportional_to_deficit_and_daily_cap(session):
         raise AssertionError("debía agotar el cupo diario")
     except adv.AdvisorError as e:
         assert e.status == 429
+
+
+async def test_hack_also_builds_the_target(session):
+    # SDD 2 (mejora): el hack no solo materializa lo que falta — además CONSTRUYE el target en un
+    # click (gratis). Pedimos un edificio sin elección de mineral (barracks) sin recursos.
+    from app.models import Building
+    from app.services.training import get_or_create_unit_stock  # noqa: F401 (asegura módulo)
+    p = await _player(session, name="oneclick")
+    await _strip_minerals(session, p.id)
+    p.energy = 9999
+    await session.commit()
+
+    res = await adv.grant_hack(session, p, "barracks")
+    assert res["granted"]                                   # materializó lo que faltaba
+    assert "construí" in res["message"]
+    built = (await session.execute(select(Building).where(
+        Building.building_key == "barracks"))).first()
+    assert built is not None                                # y lo construyó (queda en cola/activo)

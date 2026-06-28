@@ -480,3 +480,46 @@ async def test_rule_brain_softens_with_a_missile_strike(session, monkeypatch):
     assert action and "strike" in action, action
     q = await session.execute(select(StrikeMission).where(StrikeMission.attacker_id == npc.id))
     assert q.first() is not None
+
+
+# ---- SDD 29 v2: perfiles deterministas + NPC-vs-NPC ----
+async def test_npcs_are_independent_and_can_target_each_other(session):
+    # Por default (npc_shared_alliance=False) las NPC NO comparten alianza → se ven como enemigas.
+    from app.services.npc import _enemy_bases
+    await ensure_npcs(session)
+    npcs = list((await session.execute(select(Player).where(Player.is_npc.is_(True)))).scalars())
+    assert all(n.alliance_id is None for n in npcs)            # independientes
+    martian = await _npc(session)
+    enemy_ids = {b.player_id for b in await _enemy_bases(session, martian)}
+    assert any(n.id in enemy_ids for n in npcs if n.id != martian.id)   # ve a otras NPC
+
+
+async def test_pick_posture_turtle_when_under_attack(session):
+    from app.services.npc import pick_posture_rules
+    await ensure_npcs(session)
+    npc = await _npc(session)
+    attacker = await _npc(session, race="npc_terran")
+    await _make_mission(session, attacker, npc)               # ataque entrante a la NPC
+    await session.flush()
+    assert await pick_posture_rules(session, npc) == "turtle"
+
+
+async def test_pick_posture_economy_when_early(session):
+    from app.services.npc import pick_posture_rules
+    await ensure_npcs(session)
+    npc = await _npc(session)                                  # recién creada: poca infraestructura
+    assert await pick_posture_rules(session, npc) == "economy"
+
+
+async def test_pick_posture_rush_when_army_beats_a_target(session):
+    # con economía montada + ejército fuerte + un enemigo débil → perfil de ataque (rush/raid).
+    from app.models import Building, UnitStock
+    from app.services.npc import pick_posture_rules
+    await ensure_npcs(session)
+    npc = await _npc(session)
+    base = await _base_of(session, npc)
+    for k in ("mine", "research_lab", "barracks", "factory"):   # ≥4 edificios activos
+        session.add(Building(base_id=base.id, building_key=k, status="active"))
+    session.add(UnitStock(player_id=npc.id, unit_key="tank", quantity=50))  # ejército fuerte
+    await session.flush()
+    assert await pick_posture_rules(session, npc) in ("rush", "raid")

@@ -44,6 +44,12 @@ async def run_tick(session: AsyncSession) -> dict:
                 await session.commit()
             except Exception:
                 await session.rollback()
+        # SDD 29 v2: distribución de perfiles/posturas de las NPC → gauge para Grafana.
+        metrics.NPC_POSTURE.clear()
+        for (posture,) in (await session.execute(
+            select(Player.npc_posture).where(Player.is_npc.is_(True))
+        )).all():
+            metrics.NPC_POSTURE.inc(posture=posture or "opportunist")
 
     # Seasons (SDD 11): asegurá una temporada activa y cerrá las vencidas (abre la siguiente).
     from app.services.seasons import close_due_seasons, ensure_active_season

@@ -430,14 +430,52 @@ async def grant_hack(session: AsyncSession, player: Player, target: str) -> dict
             "materiales/energía.", 400
         )
 
+    # SDD 2: el "hack" no solo materializa lo que falta — además EJECUTA la acción (construye/
+    # entrena/investiga) para que en UN click quede hecho/gratis. Si necesita una elección (mineral
+    # de mina/silo) o falla, deja los materiales y avisa para que lo termines a mano.
+    built = await _auto_execute(session, player, target)
+
     _consume_hack(player, now)
     left = hacks_left(player, now)
     detail = ", ".join(f"{v:g} {k}" for k, v in granted.items())
-    msg = f"💀 Acceso root concedido… materialicé {detail} para desbloquear {target}."
-    await notify(session, player.id, "advisor_hack", msg, {"target": target, "granted": granted})
+    if built:
+        msg = f"💀 Acceso root… materialicé {detail} y {built} {target}. (gratis)"
+    else:
+        msg = f"💀 Acceso root… materialicé {detail} para {target}. Construilo cuando quieras."
+    await notify(session, player.id, "advisor_hack", msg,
+                 {"target": target, "granted": granted, "executed": bool(built)})
     await _save(session, player, "assistant", msg)
     await session.commit()
     return {"granted": granted, "message": msg, "hacks_left": left}
+
+
+async def _auto_execute(session: AsyncSession, player: Player, target: str) -> str | None:
+    """Tras el hack, ejecuta la acción del `target` en la base natal (best-effort). Devuelve el
+    verbo en pasado si la hizo, o None si requiere elección (mina/silo piden mineral) o falló."""
+    content = get_content()
+    kind = depgraph.target_kind(content, target)
+    try:
+        if kind == "tech":
+            from app.services.research import start_research
+            await start_research(session, player, target)
+            return "investigué"
+        base = (await session.execute(
+            select(Base_).where(Base_.player_id == player.id).order_by(Base_.id).limit(1)
+        )).scalar_one_or_none()
+        if base is None:
+            return None
+        if kind == "unit":
+            from app.services.training import start_training
+            await start_training(session, player, base, target, 1)
+            return "entrené"
+        # building: las que piden mineral (mina/silo) las deja para que el jugador elija.
+        if content.buildings.get(target, {}).get("category") in ("mine", "storage"):
+            return None
+        from app.services.build import start_build
+        await start_build(session, player, base, target)
+        return "construí"
+    except Exception:
+        return None
 
 
 # --------------------------------------------------------------------------- #

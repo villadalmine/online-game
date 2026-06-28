@@ -1,6 +1,16 @@
 # SDD 29 — Inteligencia estratégica de NPCs (cerebro de 2 capas + conciencia del scoreboard)
 
 > **Estado:** **implementado** (en producción) · **Fecha:** 2026-06-24
+> **v2 (2026-06-28):** las posturas pasan a ser **PERFILES que SESGAN el cerebro POR REGLAS** (no
+> solo el LLM): `PROFILES` en `npc.py` (economy/expand/research/rush/raid/turtle/aggressive/
+> defensive/opportunist) con `margin` de ataque + flags (army_first, defense_first, expedite,
+> colonize, arsenal). Selector **determinista** `pick_posture_rules` elige el perfil según amenazas/
+> economía/ejército/rivales → la IA **adapta sin LLM** (antes, sin LLM, la postura nunca cambiaba). El
+> cerebro ahora **ataca de verdad** (margin por perfil), hace **expediciones/colonización** (expand) y
+> usa **arsenal de misiles/drones** (raid, SDD 49/50). **NPCs independientes** por default
+> (`npc_shared_alliance=False`) → **también se atacan entre sí**. Métricas nuevas: `game_npc_posture`
+> (gauge por perfil) y `game_npc_attack_targets_total{target=human|npc}`. La postura se expone en
+> `/players/me`-scoreboard y se ve en el mapa web (chip por NPC). Ver CHANGELOG 2026-06-28.
 > **Relacionado:** `app/services/npc.py`, [SDD 12 métricas/score](sdd-player-metrics-public.md),
 > [SDD 8 galaxias](sdd-galaxy-limits.md), [SDD 9 LLM en GPU](sdd-local-gpu-llm.md),
 > [SDD 28 métricas LLM por usuario](sdd-llm-usage-metrics.md), `app/services/scoring.py`,

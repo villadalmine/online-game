@@ -463,6 +463,7 @@ class PlayerSummaryOut(BaseModel):
     is_npc: bool
     home_base_id: int | None
     alliance_id: int | None = None
+    posture: str | None = None   # SDD 29 v2: perfil/postura vigente de la NPC (qué está jugando)
 
 
 # ---- SDD 8: galaxy instances ------------------------------------------------

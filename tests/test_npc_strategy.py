@@ -85,14 +85,16 @@ async def test_invalid_posture_is_ignored(session, monkeypatch):
     assert posture == "opportunist"  # mantiene el default
 
 
-async def test_no_llm_keeps_previous_posture(session, monkeypatch):
-    # sin llm_key, la estrategia LLM no corre → mantiene la postura previa (no rompe el tick)
+async def test_no_llm_uses_deterministic_picker(session, monkeypatch):
+    # SDD 29 v2: sin llm_key, decide_strategy usa el SELECTOR DETERMINISTA (la IA adapta sin LLM).
+    from app.services.npc import POSTURES
     monkeypatch.setattr(npc_mod, "get_settings", lambda: _settings(llm_api_key=""))
     npc = await _player(session, "npc_martian", is_npc=True)
     posture = await decide_strategy(session, npc)  # strategize por defecto = _llm_strategy
-    assert posture == "opportunist"
+    assert posture in POSTURES
     fresh = await session.get(Player, npc.id)
-    assert fresh.npc_strategy_updated_at is None  # no recalculó
+    assert fresh.npc_posture == posture
+    assert fresh.npc_strategy_updated_at is not None  # recalculó por reglas
 
 
 async def test_cadence_skips_when_not_due(session, monkeypatch):

@@ -61,6 +61,7 @@ async def list_players(
                 is_npc=p.is_npc,
                 home_base_id=bres.scalar_one_or_none(),
                 alliance_id=p.alliance_id,
+                posture=p.npc_posture if p.is_npc else None,
             )
         )
     return out

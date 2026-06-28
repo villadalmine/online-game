@@ -7,6 +7,40 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — SDD 29 v2: la IA juega por PERFILES (y adapta sin LLM) + ataca NPCs + métricas
+> Feedback: la NPC "no ataca / no tiene táctica / no se ve qué hace / siempre ataca humanos".
+- **Perfiles que guían el cerebro POR REGLAS** (`PROFILES` en `npc.py`): economy/expand/research/
+  rush/raid/turtle/aggressive/defensive/opportunist, cada uno con `margin` de ataque + flags
+  (army_first, defense_first, expedite, colonize, arsenal). Antes la postura solo afectaba al LLM.
+- **Selector DETERMINISTA** `pick_posture_rules`: elige el perfil según amenazas/economía/ejército/
+  rivales → la IA **adapta su estrategia sin LLM** (antes, sin LLM, la postura nunca cambiaba → no
+  adaptaba ni atacaba). Ahora **ataca de verdad** (margin por perfil; rush 1.05).
+- **Expediciones + colonización** (perfil expand): construye transbordador, manda expediciones y
+  funda colonias. **Arsenal** (perfil raid): usa misiles/drones para ablandar (SDD 49/50).
+- **NPCs independientes** por default (`npc_shared_alliance=False`) → **también se atacan entre sí**
+  (antes compartían alianza y solo pegaban a humanos). El target ahora es el rival más fuerte batible
+  (humano o NPC; empate → humano).
+- **Métricas (Grafana)**: `game_npc_posture{posture}` (gauge, recalculado en el tick) y
+  `game_npc_attack_targets_total{target=human|npc}`. (Recordá: cada acción ya emite
+  `game_journal_events_total{kind}` — ataques/misiles/drones/builds ya eran métrica.)
+- **Visibilidad**: la postura se expone en `/players` (scoreboard) y se ve como **chip por NPC en el
+  mapa** (💰 económico / ⚡ rush / 🛡 tortuga / 🚀 raider / 🔬 research / 🌍 expand…), i18n es/en.
+- Tests: picker (turtle bajo ataque, economy temprano, rush con ejército+objetivo) + NPCs
+  independientes se ven como enemigas.
+
+### 2026-06-28 — SDD 2: el "hack" del asistente ahora CONSTRUYE el objetivo (un click, gratis)
+- Antes `grant_hack` solo materializaba los minerales/energía que faltaban → el jugador igual tenía
+  que construir a mano (y si faltaba un edificio requerido, fallaba). Ahora, tras materializar,
+  **ejecuta la acción** (construye/entrena/investiga el target) en la base natal → en un click queda
+  hecho. Mina/silo (piden elegir mineral) quedan materializados para que elijas. Test
+  `test_hack_also_builds_the_target`.
+
+### 2026-06-28 — SDD 51 (diseño): analítica por jugador + gráficos in-app
+- Nuevo `docs/sdd-player-analytics-charts.md`: medir TODO por jugador (desde el journal SDD 38 +
+  muestreo de estado `PlayerSample`) y mostrarlo como **gráficos en un popup** ("📈 Tu historia":
+  energía/recursos/unidades/ataques en el tiempo). Series por-usuario en DB (no en Prometheus, por
+  cardinalidad); Grafana por SQL datasource para operación. Diseñado, pendiente de implementar.
+
 ### 2026-06-28 — Fix UX: silo sin selector de mineral + techs de misiles/drones no listadas
 > Dos bugs reportados al usar 49/50 en la web.
 - **Silo**: pedía `target_mineral` pero el panel Acciones ocultaba el selector de mineral (solo se

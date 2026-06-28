@@ -184,3 +184,9 @@ NPC_DECISIONS = Counter("game_npc_decisions_total",
 NPC_FALLBACK_REASON = Counter("game_npc_fallback_reason_total",
                               "Por qué la jugada del LLM no se aplicó (energy/infeasible/parse)",
                               ("reason",))
+# SDD 29 v2: PERFIL/postura vigente de cada NPC → gauge por postura (cuántas NPC juegan así AHORA).
+# Recalculado en cada tick (clear + recount) → en Grafana ves cómo la IA cambia de estrategia.
+NPC_POSTURE = Gauge("game_npc_posture", "NPCs por perfil/postura vigente", ("posture",))
+# A quién ataca la NPC: human|npc. Responde "¿también se pelean entre NPCs?" en un gráfico.
+NPC_ATTACK_TARGETS = Counter("game_npc_attack_targets_total",
+                             "Ataques lanzados por NPC, por tipo de objetivo", ("target",))

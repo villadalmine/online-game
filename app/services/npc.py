@@ -46,8 +46,9 @@ NPC_ALLIANCE_TAG = "AI"
 
 
 async def ensure_npcs(session: AsyncSession) -> int:
-    """Create one NPC per race (onboarded to its home planet) if missing, and keep all
-    NPCs in a shared alliance (they cooperate and don't fight each other)."""
+    """Create one NPC per race (onboarded to its home planet) if missing. Con
+    `npc_shared_alliance` las mantiene en una alianza común (cooperan); si no (default), quedan
+    INDEPENDIENTES → también se atacan entre ellas."""
     content = get_content()
     created = 0
     for race_key, race in content.races.items():
@@ -65,9 +66,21 @@ async def ensure_npcs(session: AsyncSession) -> int:
         galaxy = content.planet_galaxy[race["home_planet"]]
         await onboard_player(session, npc, galaxy, race["home_planet"], race_key)
         created += 1
-    await _ensure_npc_alliance(session)
+    if get_settings().npc_shared_alliance:
+        await _ensure_npc_alliance(session)
+    else:
+        await _disband_npc_alliance(session)   # independientes → se atacan entre sí
     await session.commit()
     return created
+
+
+async def _disband_npc_alliance(session: AsyncSession) -> None:
+    """Saca a las NPC de cualquier alianza (modo independiente): así `_enemy_bases` las incluye y se
+    atacan entre ellas. Idempotente."""
+    npcs = list((await session.execute(select(Player).where(Player.is_npc.is_(True)))).scalars())
+    for npc in npcs:
+        if npc.alliance_id is not None:
+            npc.alliance_id = None
 
 
 async def _ensure_npc_alliance(session: AsyncSession) -> None:
@@ -297,6 +310,11 @@ class RuleBasedBrain:
                 await start_build(session, player, base, "turret")
                 return "build turret (under attack)"
 
+        # SDD 29 v2: el PERFIL vigente sesga las prioridades de este turno (margin de ataque,
+        # defensa primero, arsenal, expediciones/colonización). Lo fija pick_posture_rules/LLM.
+        prof = _profile(player)
+        margin = prof["margin"]
+
         # 1) Economy: mines for the race's core minerals.
         for mineral in (structural, energetic):
             if mineral not in mines and afford_building("mine"):
@@ -359,9 +377,9 @@ class RuleBasedBrain:
             await start_build(session, player, base, "factory")
             return "build factory"
 
-        # 2.5) SDD 49/50: si están habilitados, levantá la lanzadera / fábrica de drones
-        # (afford_building ya exige lab + tech gate) y fabricá algo de munición/drones para usar.
-        if _settings.strike_enabled:
+        # 2.5) SDD 49/50: SOLO el perfil 'raid' invierte en arsenal (los demás no se distraen del
+        # ejército/economía → así llegan a entrenar flota y atacar). afford_building exige lab+tech.
+        if prof.get("arsenal") and _settings.strike_enabled:
             if "launcher" not in keys and afford_building("launcher"):
                 await start_build(session, player, base, "launcher")
                 return "build launcher"
@@ -369,7 +387,7 @@ class RuleBasedBrain:
                     and afford_units("sonic_missile", 4)):
                 await start_training(session, player, base, "sonic_missile", 4)
                 return "build sonic_missile x4"
-        if _settings.drones_enabled:
+        if prof.get("arsenal") and _settings.drones_enabled:
             if "drone_factory" not in keys and afford_building("drone_factory"):
                 await start_build(session, player, base, "drone_factory")
                 return "build drone_factory"
@@ -378,8 +396,9 @@ class RuleBasedBrain:
                 await start_training(session, player, base, "recon_drone", 2)
                 return "build recon_drone x2"
 
-        # 3) Baseline defense: keep at least one turret (gated por lab+weapons via afford_building).
-        if turrets == 0 and afford_building("turret"):
+        # 3) Defensa: mantené al menos `min_defense` torretas (turtle pide más). Gated por
+        #    lab+weapons via afford_building.
+        if turrets < prof.get("min_defense", 1) and afford_building("turret"):
             await start_build(session, player, base, "turret")
             return "build turret"
 
@@ -418,40 +437,55 @@ class RuleBasedBrain:
             except Exception:
                 pass
 
-        # 5) Attack: among the bases we clearly outgun, coordinate against the strongest
-        #    HUMAN rival (NPCs gang up on the leading player); else hit the weakest base.
-        army = {k: units[k] for k in ("soldier", "tank") if units.get(k)}
+        # 5) Attack: entre las bases que claramente superamos (poder > defensa × margin del PERFIL),
+        #    pegale al objetivo estratégico; si no, al RIVAL más fuerte que batas —humano O NPC
+        #    (los NPC ya no se cubren entre sí salvo que compartan alianza); si no, a la más débil.
+        army = {k: units[k] for k in ("soldier", "tank", "aircraft") if units.get(k)}
         my_power = _force_attack_power(army)
         if my_power > 0 and energy >= get_settings().attack_energy_cost:
             beatable = []
             for b in await _enemy_bases(session, player):
                 defense = await _base_defense_estimate(session, b)
-                if my_power > defense * ATTACK_POWER_MARGIN:  # don't trade evenly
+                if my_power > defense * margin:  # don't trade evenly (margin del perfil)
                     owner = await session.get(Player, b.player_id)
                     beatable.append((defense, owner, b))
             if beatable:
                 targeted = [b for (_d, o, b) in beatable if o.id == player.npc_target_id]
-                humans = [t for t in beatable if not t[1].is_npc]
                 if targeted:  # SDD 29: respeta el objetivo de la postura estratégica
                     target = targeted[0]
-                elif humans:
-                    scored = [(await player_score(session, o), b) for (_d, o, b) in humans]
-                    scored.sort(key=lambda x: x[0], reverse=True)  # strongest rival first
-                    target = scored[0][1]
                 else:
-                    beatable.sort(key=lambda x: x[0])  # weakest reachable base
-                    target = beatable[0][2]
+                    # rival más fuerte que puedo batir (humano o NPC); empate → preferí humano.
+                    scored = [(await player_score(session, o), (0 if o.is_npc else 1), b)
+                              for (_d, o, b) in beatable]
+                    scored.sort(key=lambda x: (x[0], x[1]), reverse=True)
+                    target = scored[0][2]
                 await start_attack(session, player, target.id, army)
                 return f"attack base {target.id}"
 
-        # 6) Economy/boon: send a shuttle expedition if possible.
-        if units.get("shuttle", 0) >= 1:
-            for moon_key, moon in content.moons.items():
-                if content.moon_galaxy(moon_key) != player.galaxy_key:
-                    continue
-                if energy >= moon.get("expedition", {}).get("energy_cost", 0):
-                    await start_expedition(session, player, moon_key)
-                    return f"expedition to {moon_key}"
+        # 6) Expansión/exploración (perfiles expand/opportunist): construí un transbordador, mandá
+        #    expediciones a lunas y fundá colonias. Gated por el perfil para no distraer al resto.
+        if prof.get("expedite"):
+            if (units.get("shuttle", 0) < 1 and "factory" in active
+                    and afford_units("shuttle", 1)):
+                await start_training(session, player, base, "shuttle", 1)
+                return "train shuttle (expand)"
+            if units.get("shuttle", 0) >= 1:
+                for moon_key, moon in content.moons.items():
+                    if content.moon_galaxy(moon_key) != player.galaxy_key:
+                        continue
+                    if energy >= moon.get("expedition", {}).get("energy_cost", 0):
+                        await start_expedition(session, player, moon_key)
+                        return f"expedition to {moon_key}"
+        if prof.get("colonize") and units.get("shuttle", 0) >= 1:
+            try:                       # best-effort: si el mundo no es colonizable/falta tech, paso
+                from app.services.colonization import found_colony
+                for pk in content.planets:
+                    if any(b.planet_key == pk for b in buildings):
+                        continue       # ya tengo base ahí
+                    await found_colony(session, player, pk, "surface")
+                    return f"colonize {pk}"
+            except Exception:
+                pass
 
         # 7) Otherwise grow energy capacity.
         if "power_plant" not in keys and afford_building("power_plant"):
@@ -660,7 +694,33 @@ async def _recent_battles(session: AsyncSession, player: Player) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # Strategic layer (SDD 29): periodic, scoreboard-aware posture
 # --------------------------------------------------------------------------- #
-POSTURES = {"aggressive", "defensive", "expand", "raid", "opportunist"}
+# SDD 29 v2 — PERFILES de juego. Cada postura es un perfil que SESGA el cerebro por reglas (no solo
+# el LLM): `margin` = cuánto poder de más exige para atacar (menor ⇒ ataca más fácil); flags activan
+# tácticas (ejército primero, defensa primero, investigar primero, expediciones, colonizar, arsenal
+# de misiles/drones). El selector determinista (`pick_posture_rules`) cambia de perfil según estado
+# la IA "adapta" aunque no haya LLM. El LLM, si está, refina la elección.
+PROFILES: dict[str, dict] = {
+    # económico/expansivo: crecer; ataca solo con ventaja clara.
+    "economy":     {"margin": 2.2, "min_defense": 1},
+    "expand":      {"margin": 2.0, "min_defense": 1, "expedite": True, "colonize": True},
+    # investigación: laboratorio + tech antes que lo militar.
+    "research":    {"margin": 2.2, "min_defense": 1, "research_first": True},
+    # ataque rápido: ejército primero y golpea apenas tiene ventaja mínima.
+    "rush":        {"margin": 1.05, "min_defense": 1, "army_first": True},
+    "aggressive":  {"margin": 1.1, "min_defense": 1, "army_first": True},
+    # raider: ejército + arsenal de misiles/drones para ablandar y presionar.
+    "raid":        {"margin": 1.2, "min_defense": 1, "army_first": True, "arsenal": True},
+    # conservador/tortuga: muchas defensas, casi no ataca.
+    "turtle":      {"margin": 3.0, "min_defense": 3, "defense_first": True},
+    "defensive":   {"margin": 3.0, "min_defense": 3, "defense_first": True},
+    # mixto (default): equilibrado.
+    "opportunist": {"margin": 1.2, "min_defense": 1, "expedite": True},
+}
+POSTURES = set(PROFILES)
+
+
+def _profile(player: Player) -> dict:
+    return PROFILES.get(player.npc_posture, PROFILES["opportunist"])
 
 
 def _load_strategy(player: Player) -> dict:
@@ -736,6 +796,63 @@ async def _llm_strategy(state: dict) -> dict:
     return _extract_json(content)
 
 
+async def _beatable_targets(session: AsyncSession, player: Player, margin: float) -> list:
+    """Bases enemigas alcanzables que la NPC claramente supera (poder propio > defensa × margin)."""
+    units = await player_units(session, player.id)
+    army = {k: units.get(k, 0) for k in ("soldier", "tank", "aircraft") if units.get(k)}
+    my_power = _force_attack_power(army)
+    if my_power <= 0:
+        return []
+    out = []
+    for b in await _enemy_bases(session, player):
+        if my_power > await _base_defense_estimate(session, b) * margin:
+            out.append(b)
+    return out
+
+
+async def pick_posture_rules(session: AsyncSession, player: Player) -> str:
+    """Selector de PERFIL DETERMINISTA (sin LLM): mira amenazas, economía, ejército y rivales y
+    elige el perfil que mejor encaja AHORA. Es lo que hace que la IA 'adapte' su forma de jugar a
+    lo largo de la partida aunque no haya modelo. El LLM, si está, puede refinarlo después."""
+    content = get_content()
+    # 1) bajo ataque o me reventaron defendiendo → conservador.
+    if await _incoming_attacks(session, player):
+        return "turtle"
+    recent = await _recent_battles(session, player)
+    if any(r["role"] == "defender" and not r["won"] for r in recent):
+        return "turtle"
+
+    from app.services.research import researched_techs
+    buildings = await _buildings(session, player)
+    active = {b.building_key for b in buildings if b.status == "active"}
+    units = await player_units(session, player.id)
+    techs = await researched_techs(session, player.id)
+
+    # 2) juego temprano (poca infraestructura) → crecer economía.
+    if len(active) < 4:
+        return "economy"
+
+    # 3) si tengo ejército y un objetivo que claramente supero → atacar (raid si tengo arsenal).
+    army_power = _force_attack_power({k: units.get(k, 0) for k in ("soldier", "tank", "aircraft")})
+    if army_power > 0 and await _beatable_targets(session, player, 1.2):
+        has_arsenal = bool(units.get("sonic_missile") or units.get("recon_drone")
+                           or "launcher" in active or "drone_factory" in active)
+        return "raid" if has_arsenal else "rush"
+
+    # 4) laboratorio pero pocas tech → investigar.
+    if "research_lab" in active and len(techs) < max(1, len(content.technologies) // 2):
+        return "research"
+
+    # 5) si puedo expandirme (transbordador para expediciones/colonias) → expandir/explorar.
+    if "factory" in active and (units.get("shuttle", 0) >= 1 or "antigravity" in techs):
+        return "expand"
+
+    # 6) tengo músculo pero nadie fácil a quién pegarle → seguí creciendo el ejército (rush latent)
+    if "factory" in active or "barracks" in active:
+        return "rush"
+    return "opportunist"
+
+
 async def decide_strategy(
     session: AsyncSession, player: Player, *, now: datetime | None = None, strategize=None
 ) -> str:
@@ -748,8 +865,24 @@ async def decide_strategy(
     if not _strategy_due(player, now, settings.npc_strategy_interval_seconds):
         return player.npc_posture
     strategize = strategize or _llm_strategy
+    # Base DETERMINISTA: elegí el perfil según el estado (funciona SIN LLM → la IA adapta igual).
     if strategize is _llm_strategy and not settings.llm_key:
-        return player.npc_posture  # sin LLM, no estrategia LLM (mantiene postura/reglas)
+        try:
+            posture = await pick_posture_rules(session, player)
+            board = await npc_scoreboard(session, player)
+            humans = [b for b in board if b["is_human"]]
+            target = (humans or board or [None])[0]
+            player.npc_posture = posture
+            player.npc_target_id = target["id"] if target else None
+            player.npc_strategy_updated_at = now
+            player.npc_strategy = json.dumps(
+                {"why": "rules", "scores": {b["name"]: b["score"] for b in board}}
+            )
+            await session.commit()
+            return posture
+        except Exception:
+            await session.rollback()
+            return (await session.get(Player, player.id)).npc_posture
 
     pid = player.id
     try:

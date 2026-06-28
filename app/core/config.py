@@ -93,6 +93,9 @@ class Settings(BaseSettings):
     # NPC (AI-controlled races)
     npc_enabled: bool = True
     npc_brain: str = "rules"  # "rules" (default) | "llm" (any OpenAI-compatible server)
+    # Si está ON, las NPC comparten una alianza y no se atacan entre sí (cooperan vs humanos). OFF
+    # (default) = NPCs INDEPENDIENTES → también se atacan entre ellas (más vida en la galaxia).
+    npc_shared_alliance: bool = False
 
     # Personal AI assistant (SDD 2): emergency "hack" budget per player per day.
     assistant_hacks_per_day: int = 3

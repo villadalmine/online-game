@@ -2203,22 +2203,24 @@ async def test_shared_vision_shows_ally_incoming(client):
     assert len(me1["alliance_incoming"]) >= 1
 
 
-async def test_npcs_share_an_alliance(client):
+async def test_npcs_are_independent_by_default(client, monkeypatch):
+    # SDD 29 v2: por default las NPC son INDEPENDIENTES (alliance_id=None) → también se atacan entre
+    # sí. Con `npc_shared_alliance` ON vuelven a compartir alianza (cooperan).
+    from app.core.config import get_settings
     h = await _register(client.http, "observer")
     await _onboard(client.http, h)
-    await client.http.post("/api/v1/admin/tick", headers=h)  # spawns + allies NPCs
-
-    alliances = (await client.http.get("/api/v1/alliances", headers=h)).json()
-    npc_alliance = next((a for a in alliances if a["tag"] == "AI"), None)
-    assert npc_alliance is not None and npc_alliance["member_count"] == 3
-    # all NPC players carry that alliance_id
+    await client.http.post("/api/v1/admin/tick", headers=h)  # spawnea NPCs (independientes)
     players = (await client.http.get("/api/v1/players", headers=h)).json()
-    npc_ids = {p["alliance_id"] for p in players if p["is_npc"]}
-    assert npc_ids == {npc_alliance["id"]}
+    assert {p["alliance_id"] for p in players if p["is_npc"]} == {None}
+    # cada NPC trae su postura (visible en el scoreboard)
+    assert all(p.get("posture") for p in players if p["is_npc"])
 
-    # a human cannot infiltrate the NPC alliance (would grant immunity + benefits)
-    rj = await client.http.post(f"/api/v1/alliances/{npc_alliance['id']}/join", headers=h)
-    assert rj.status_code == 400
+    # opt-in: si comparten alianza, todas caen en una misma
+    monkeypatch.setattr(get_settings(), "npc_shared_alliance", True)
+    await client.http.post("/api/v1/admin/tick", headers=h)
+    players = (await client.http.get("/api/v1/players", headers=h)).json()
+    shared = {p["alliance_id"] for p in players if p["is_npc"]}
+    assert None not in shared and len(shared) == 1
 
 
 async def test_attack_self_rejected(client):

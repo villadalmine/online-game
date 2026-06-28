@@ -213,6 +213,9 @@ async def start_attack(
     await _npc_taunt(session, attacker, defender, "attack")
     from app.services.stats import bump as _bump
     await _bump(session, attacker.id, attacks_launched=1)
+    if attacker.is_npc:   # SDD 29 v2: ¿a quién le pega la IA? (humano vs otro NPC) → métrica
+        from app.core import metrics
+        metrics.NPC_ATTACK_TARGETS.inc(target="npc" if defender.is_npc else "human")
     from app.services.journal import record
     await record(session, "attack_launched", attacker.id,
                  defender_id=defender.id, target_base_id=target_base_id, force=force)
