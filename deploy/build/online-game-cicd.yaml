@@ -25,13 +25,13 @@ spec:
   ttlStrategy:
     secondsAfterSuccess: 1800     # 30 min: borra el Workflow (y sus pods por ownerRef) tras éxito
     secondsAfterFailure: 7200     # 2 h: el OBJETO Workflow (con el status: qué paso falló) queda para debug; los PODS se van ya (podGC)
-  # LIMPIEZA DE PODS — `OnWorkflowCompletion` borra los pods APENAS termina el workflow, EXITOSO O FALLIDO.
-  # Antes era `OnWorkflowSuccess` (para conservar logs de fallos), pero los pods fallidos se apilaban hasta 4 h y, con
-  # el ns `kaniko` COMPARTIDO, saturaban el controlador de Argo → atrasaba el `Succeeded` de OTROS pipelines y rompía sus
-  # deploys (incidente 2026-06-28). Para debug alcanza el `status` del Workflow (que el ttl deja 2 h); si hace falta el
-  # log de un fallo, re-correr. El churn de pods NO puede tirar abajo el controlador del ns compartido.
+  # LIMPIEZA DE PODS — `OnWorkflowSuccess`: borra los pods cuando el workflow SALE BIEN (caso común →
+  # ns compartido limpio), pero CONSERVA los pods FALLIDOS para poder leer su log (`kubectl logs`);
+  # sin esto no hay forma de saber qué test falló (no hay artifact repo). No re-satura el controller:
+  # el ttl `secondsAfterFailure: 2h` borra el workflow fallido + sus pods. (Balance del incidente del
+  # 2026-06-28: ni 24h sin GC, ni borrar los fallidos al instante.)
   podGC:
-    strategy: OnWorkflowCompletion
+    strategy: OnWorkflowSuccess
   nodeSelector:
     kubernetes.io/hostname: srv-rk1-nvme-01    # arm64, como el nodo del juego
   tolerations:
