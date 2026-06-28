@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.101.0] - 2026-06-28
+
 ### 2026-06-28 — SDD 49/50: balance fino de intercepción + mini-simulador
 > Reescalado de la intercepción de misiles para que respete la intención de diseño y herramienta
 > determinista para afinar números por YAML sin adivinar.
