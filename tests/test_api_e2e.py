@@ -1000,8 +1000,9 @@ async def test_advisor_hack_grants_and_exhausts_daily_budget(client):
     h = await _register(client.http, "hacker2")
     state = await _onboard(client.http, h)
 
-    # spend the 3 daily hacks on three different blocked targets
-    for target in ("mine", "barracks", "research_lab"):
+    # SDD 2: el hack CREA GRATIS. Gastamos los 3 del día en edificios que no piden elegir mineral
+    # (mina/silo sí lo piden → 400). Con materiales o sin ellos, crea igual.
+    for target in ("power_plant", "barracks", "research_lab"):
         await _broke(client, state["id"])
         r = await client.http.post(
             "/api/v1/players/me/advisor/hack", headers=h, json={"target": target}
