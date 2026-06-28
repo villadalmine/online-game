@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.103.0] - 2026-06-28
+
 ### 2026-06-28 — SDD 51: analítica por jugador + gráficos in-app "📈 Tu historia"
 - **Implementado (Fase 1-2):** modelo `PlayerSample` (muestreo throttleado del estado en
   `state.advance`, lazy, sin cron; migración `4e2f998dc2ef`), servicio `analytics.py`
