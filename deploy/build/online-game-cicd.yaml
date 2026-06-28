@@ -175,9 +175,14 @@ spec:
             # en el 3-way merge, y `og-deployer` no tenía permiso (ver deploy/build/cicd-rbac.yaml).
             # El Deployment igual se aplicaba (el pod quedaba en la versión nueva). Fix: el RBAC de
             # cert-manager en cicd-rbac.yaml. El timeout de 15m queda holgado por si el rollout arm tarda.
+            # Config VERSIONADA de HA/capacidad por `-f values-prod.yaml` (SDD 7); los secretos/
+            # dominio siguen viniendo de la release previa por `--reset-then-reuse-values` (Helm 3.14+;
+            # reusa los valores del último release y aplica -f/--set encima — a diferencia de
+            # `--reuse-values`, que IGNORA -f). Así toda la config no-secreta vive en git y va por CD.
             helm upgrade galaxy /workspace/chart-src/deploy/helm \
               -n online-game \
-              --reuse-values \
+              --reset-then-reuse-values \
+              -f /workspace/chart-src/deploy/helm/values-prod.yaml \
               --set image.tag={{workflow.parameters.image_tag}} \
               --wait --timeout 15m
             kubectl rollout status deploy/galaxy-api -n online-game --timeout=600s

@@ -41,8 +41,9 @@ _MECH_WORDS = {
 # Palabras de ORDEN (imperativos) → si pedís explícito "construime X" y te alcanza un hack, el
 # asistente lo usa solo (grant + build). NO incluye "qué/conviene" (preguntas).
 _BUILD_CMD_WORDS = {
-    "construime", "construí", "construilo", "constrúyelo", "constrúyeme",
-    "hazme", "haceme", "házmelo", "armame", "armá", "fabricame", "fabricá", "fabrícame",
+    "construime", "construí", "construir", "construilo", "construirme", "construis", "construís",
+    "constrúyelo", "constrúyeme", "constrúime", "podés", "podes", "puedes", "podrías", "podrias",
+    "hazme", "haceme", "házmelo", "armame", "armá", "fabricame", "fabricá", "fabrícame", "fabricar",
     "levantame", "ponme", "dame", "consegui", "conseguí", "conseguime", "necesito", "quiero",
     "build", "make", "give",
 }
@@ -438,56 +439,90 @@ async def grant_hack(session: AsyncSession, player: Player, target: str) -> dict
         raise AdvisorError(f"Sin hacks hoy ({per_day}/{per_day}). Vuelven mañana.", 429)
 
     snap = await build_snapshot(session, player)
-    rep = depgraph.analyze(snap, target)
-    if rep.buildable:
+    if depgraph.analyze(snap, target).buildable:
         raise AdvisorError(f"No te falta nada para {target}.", 400)
 
+    # SDD 2 v2: el hack arma TODA LA CADENA en un click — edificios previos que faltan + tecnologías
+    # requeridas que falten (los materializa y los deja LISTOS al instante, porque el hack es un
+    # cheat), y al final el target. Antes, si faltaba el laboratorio o una tech (p.ej. la lanzadera
+    # necesita Cohetería), decía "te falta" y no construía nada. Un solo hack cubre toda la cadena.
+    from app.services.research import researched_techs
+    have_techs = await researched_techs(session, player.id)
+    chain = [b for b in depgraph.prerequisites(target) if b not in snap.active_buildings]
+    chain += [t for t in _tech_chain(target) if t not in have_techs]
+    chain.append(target)
     granted: dict[str, float] = {}
-    for b in rep.blockers:
-        if b.kind in ("mineral", "not_producible"):
-            shortfall = b.need - b.have
-            if shortfall > 0:
-                st = await get_or_create_stock(session, player.id, b.key, player.planet_key)
-                st.amount += shortfall
-                granted[b.key] = granted.get(b.key, 0.0) + shortfall
-        elif b.kind == "energy":
-            player.energy = max(player.energy, b.need)
-            player.energy_updated_at = now
-            granted["energy"] = b.need - b.have
+    built_items: list[str] = []
+    for item in chain:
+        rep = depgraph.analyze(await build_snapshot(session, player), item)
+        for b in rep.blockers:
+            if b.kind in ("mineral", "not_producible"):
+                shortfall = b.need - b.have
+                if shortfall > 0:
+                    st = await get_or_create_stock(session, player.id, b.key, player.planet_key)
+                    st.amount += shortfall
+                    granted[b.key] = granted.get(b.key, 0.0) + shortfall
+            elif b.kind == "energy":
+                player.energy = max(player.energy, b.need)
+                player.energy_updated_at = now
+                granted["energy"] = granted.get("energy", 0.0) + (b.need - b.have)
+        verb = await _auto_execute(session, player, item, activate=(item != target))
+        if verb:
+            built_items.append(f"{verb} {item}")
 
-    if not granted:
-        # only a missing prerequisite building blocks it — a hack of materials won't help
+    if not granted and not built_items:
         raise AdvisorError(
-            f"Para {target} primero necesitás el edificio requerido; el hack solo consigue "
-            "materiales/energía.", 400
+            f"No pude hackear {target} (quizás necesita una tecnología o elegir un mineral).", 400
         )
-
-    # SDD 2: el "hack" no solo materializa lo que falta — además EJECUTA la acción (construye/
-    # entrena/investiga) para que en UN click quede hecho/gratis. Si necesita una elección (mineral
-    # de mina/silo) o falla, deja los materiales y avisa para que lo termines a mano.
-    built = await _auto_execute(session, player, target)
 
     _consume_hack(player, now)
     left = hacks_left(player, now)
-    detail = ", ".join(f"{v:g} {k}" for k, v in granted.items())
-    if built:
-        msg = f"💀 Acceso root… materialicé {detail} y {built} {target}. (gratis)"
+    detail = ", ".join(f"{v:g} {k}" for k, v in granted.items()) or "lo que faltaba"
+    done = "; ".join(built_items)
+    if done:
+        msg = f"💀 Acceso root… materialicé {detail} y {done}. (gratis)"
     else:
         msg = f"💀 Acceso root… materialicé {detail} para {target}. Construilo cuando quieras."
     await notify(session, player.id, "advisor_hack", msg,
-                 {"target": target, "granted": granted, "executed": bool(built)})
+                 {"target": target, "granted": granted, "built": built_items})
     await _save(session, player, "assistant", msg)
     await session.commit()
     return {"granted": granted, "message": msg, "hacks_left": left}
 
 
-async def _auto_execute(session: AsyncSession, player: Player, target: str) -> str | None:
-    """Tras el hack, ejecuta la acción del `target` en la base natal (best-effort). Devuelve el
-    verbo en pasado si la hizo, o None si requiere elección (mina/silo piden mineral) o falló."""
+def _tech_chain(target: str) -> list[str]:
+    """Cadena de tecnologías requeridas por `target` (requires_tech, transitiva), en orden de
+    investigación (la raíz primero). Vacía si el target no pide tech."""
+    content = get_content()
+    spec = (content.units.get(target) or content.buildings.get(target)
+            or content.technologies.get(target) or {})
+    rt = spec.get("requires_tech")
+    out: list[str] = []
+    seen: set[str] = set()
+    while rt and rt not in seen:
+        seen.add(rt)
+        out.insert(0, rt)
+        rt = content.technologies.get(rt, {}).get("requires_tech")
+    return out
+
+
+async def _auto_execute(
+    session: AsyncSession, player: Player, target: str, *, activate: bool = False
+) -> str | None:
+    """Tras el hack, ejecuta la acción del `target` en la base natal (best-effort). `activate`=True
+    (para los edificios PREVIOS de la cadena) lo deja ACTIVO al instante, así el siguiente paso ve
+    su requisito cumplido. Devuelve el verbo en pasado, o None si pide elección/falló."""
     content = get_content()
     kind = depgraph.target_kind(content, target)
     try:
         if kind == "tech":
+            if activate:   # tech previa de la cadena → concedela ya (el hack saltea timer/lab)
+                from app.models import PlayerTech
+                from app.services.research import researched_techs
+                if target not in await researched_techs(session, player.id):
+                    session.add(PlayerTech(player_id=player.id, tech_key=target))
+                    await session.flush()
+                return "investigué"
             from app.services.research import start_research
             await start_research(session, player, target)
             return "investigué"
@@ -504,7 +539,11 @@ async def _auto_execute(session: AsyncSession, player: Player, target: str) -> s
         if content.buildings.get(target, {}).get("category") in ("mine", "storage"):
             return None
         from app.services.build import start_build
-        await start_build(session, player, base, target)
+        building = await start_build(session, player, base, target)
+        if activate:   # edificio previo de la cadena → activarlo ya (el hack saltea el timer)
+            building.status = "active"
+            building.completes_at = datetime.now(UTC)
+            await session.flush()
         return "construí"
     except Exception:
         return None

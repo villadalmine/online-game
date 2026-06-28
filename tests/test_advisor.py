@@ -336,3 +336,26 @@ async def test_ask_question_does_not_spend_hack(session):
     await session.commit()
     r = await adv.ask(session, p, "¿qué me conviene construir?")
     assert r.hacks_left == 3                                   # intacto
+
+
+async def test_hack_builds_full_chain_lab_tech_and_target(session):
+    # SDD 2 v2: hackear un edificio tech-gated sin lab ni tech → arma TODA la cadena en un hack:
+    # construye el laboratorio (activo), concede la tech requerida y construye el target.
+    from app.models import Building, PlayerTech
+    p = await _player(session, name="chainer", planet="earth", race="terran")
+    await _strip_minerals(session, p.id)
+    p.energy = 9_000_000
+    await session.commit()
+
+    # 'launcher' (SDD 49) requiere research_lab activo + tech rocketry: el jugador no tiene ninguno.
+    res = await adv.grant_hack(session, p, "launcher")
+    assert "launcher" in res["message"]
+    actives = {b.building_key for b in (await session.execute(
+        select(Building).where(Building.status == "active"))).scalars()}
+    assert "research_lab" in actives                       # construyó+activó el lab previo
+    techs = {t for (t,) in (await session.execute(
+        select(PlayerTech.tech_key).where(PlayerTech.player_id == p.id))).all()}
+    assert "rocketry" in techs                             # concedió la tech requerida
+    built = (await session.execute(select(Building).where(
+        Building.building_key == "launcher"))).first()
+    assert built is not None                               # y construyó la lanzadera

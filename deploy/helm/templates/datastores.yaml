@@ -28,6 +28,17 @@ spec:
       containers:
         - name: postgres
           image: {{ .Values.postgres.image }}
+          {{- if .Values.postgres.maxConnections }}
+          # SDD 7: techo real de conexiones = pool_size × réplicas. Subimos max_connections para
+          # soportar más réplicas/queries (default de postgres = 100). Cambiarlo reinicia Postgres.
+          args:
+            - "-c"
+            - "max_connections={{ .Values.postgres.maxConnections }}"
+            {{- if .Values.postgres.sharedBuffers }}
+            - "-c"
+            - "shared_buffers={{ .Values.postgres.sharedBuffers }}"
+            {{- end }}
+          {{- end }}
           env:
             - name: POSTGRES_USER
               value: {{ .Values.postgres.user | quote }}

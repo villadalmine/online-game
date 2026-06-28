@@ -7,6 +7,25 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — API HA + más capacidad de queries (pipeline-native) + asistente que construye la cadena
+- **API HA**: overlay versionado `deploy/helm/values-prod.yaml` (replicas=3 + PodDisruptionBudget +
+  topologySpread entre nodos) aplicado por el **CD** con `helm upgrade --reset-then-reuse-values -f`
+  (los secretos siguen viniendo de la release previa; toda la config no-secreta vive en git y va por
+  Argo, nada manual). El `player_lock` ya era distribuido por Redis (REDIS_ENABLED=true) → multi-réplica
+  es seguro sin tocar código.
+- **Más queries**: `postgres.maxConnections` configurable (100→**200**) + `sharedBuffers` + pool por
+  réplica acotado (`dbPoolSize=8`/`dbMaxOverflow=12` → ~8 réplicas entran bajo el techo). OJO: subir
+  max_connections reinicia Postgres (blip en el deploy; los datos persisten).
+- **Asistente (SDD 2): el hack arma TODA la cadena en un click** — materializa y deja LISTOS al
+  instante los edificios previos que falten **y las tecnologías requeridas** (p.ej. lanzadera → lab +
+  Cohetería + lanzadera), no solo el material del target. Además dispara solo al darle la orden
+  ("construime X"/"¿podés construirme X?"). Tests `test_hack_builds_full_chain_lab_tech_and_target`,
+  `test_ask_command_uses_hack_to_build`.
+- **Dashboard Grafana `npc-ai`**: 2 paneles nuevos — "Perfil/postura de los NPC en el tiempo"
+  (`game_npc_posture`) y "Ataques NPC: humano vs NPC" (`game_npc_attack_targets_total`).
+- **CD**: `podGC: OnWorkflowCompletion` + ttl de fallo más corto (incidente 2026-06-28: pods apilados
+  en el ns compartido saturaron el controller de Argo y trabaron los deploys).
+
 ## [1.103.0] - 2026-06-28
 
 ### 2026-06-28 — SDD 51: analítica por jugador + gráficos in-app "📈 Tu historia"

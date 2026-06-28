@@ -103,8 +103,10 @@ topologySpreadConstraints: []
 # carga DB del SSE; dbPoolSize × maxReplicas ≤ max_connections de Postgres (techo real).
 scaling:
   streamInterval: ""   # ej "5" (s). Vacío = default de la app (2 s)
-  dbPoolSize: ""       # ej "5" por réplica
-  dbMaxOverflow: ""    # ej "10"
+  # Pool por réplica acotado para que entre con varias réplicas/HPA: (8+12)=20 conexiones × réplica;
+  # con postgres.maxConnections=200 entran ~8 réplicas (HPA maxReplicas) + tick + admin con headroom.
+  dbPoolSize: "8"      # conexiones persistentes por réplica
+  dbMaxOverflow: "12"  # extra bajo ráfaga por réplica
 
 worker:
   # CronJob schedule for the periodic tick (build queues, mines, future combat/AI).
@@ -203,6 +205,11 @@ postgres:
   password: game
   db: game
   image: postgres:16-alpine
+  # SDD 7: techo de conexiones = (dbPoolSize+dbMaxOverflow) × réplicas de la API + tick + admin.
+  # El default de Postgres es 100 → con varias réplicas se agota. Subido a 200 para soportar más
+  # queries/réplicas. OJO: cambiarlo REINICIA Postgres (blip de DB; los datos persisten). "" = default.
+  maxConnections: 200
+  sharedBuffers: "256MB"        # ~25% de la RAM del pod; subir si le das más memoria a Postgres
   # Usar un Postgres EXTERNO (managed / operador con PITR). Si lo seteás, poné enabled=false:
   #   --set postgres.enabled=false --set postgres.externalUrl=postgresql+asyncpg://user:pass@host:5432/db
   externalUrl: ""

@@ -111,6 +111,28 @@
         { "refId": "A", "legendFormat": "{{reason}}",
           "expr": "sum by(reason) (increase(game_npc_fallback_reason_total[1h]))" }
       ]
+    },
+    {
+      "id": 9, "type": "timeseries",
+      "title": "Perfil/postura de los NPC en el tiempo (SDD 29 v2)",
+      "description": "game_npc_posture{posture}: cuántos NPC juegan cada perfil AHORA (economy/expand/research/rush/raid/turtle/...). Se ve cómo la IA cambia de estrategia. Requiere Pushgateway (la postura se setea en el tick).",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 43 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{posture}}",
+          "expr": "sum by(posture) (game_npc_posture)" }
+      ]
+    },
+    {
+      "id": 10, "type": "timeseries",
+      "title": "Ataques de NPC por objetivo: humano vs NPC (SDD 29 v2)",
+      "description": "game_npc_attack_targets_total{target}: a quién le pega la IA. 'npc' > 0 confirma que las NPC también se atacan entre sí (ya no solo a humanos).",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 43 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{target}}",
+          "expr": "sum by(target) (increase(game_npc_attack_targets_total[1h]))" }
+      ]
     }
   ]
 }
