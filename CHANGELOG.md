@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — Hardening: JWT_SECRET y password de Postgres → Secret + secretKeyRef
+- Antes `JWT_SECRET` y `DATABASE_URL` (que lleva la password de Postgres inline) se renderizaban como
+  `value:` en TEXTO PLANO en el Deployment (visibles con `kubectl get deploy -o yaml`). Ahora van en el
+  Secret `galaxy-secrets` y se consumen por **`secretKeyRef`** (como ya hacían OTP/API keys/metrics).
+- El flujo cierra por el pipeline: los VALORES siguen viniendo del release (values-local, que Helm
+  guarda en su Secret de release) y el `promote` los reusa con `--reset-then-reuse-values` → **Argo
+  nunca maneja secretos crudos**; el chart los materializa en el Secret. SDD 33 / bloqueador de
+  publicación (secretos fuertes fuera del manifiesto).
+
 ## [1.104.1] - 2026-06-28
 
 ### 2026-06-28 — Fix CD: el overlay de prod va en examples/ (values-*.yaml está gitignored)

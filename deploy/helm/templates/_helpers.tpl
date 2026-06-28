@@ -22,8 +22,17 @@ imagePullSecrets:
 {{- define "online-game.commonEnv" -}}
 - name: APP_VERSION
   value: {{ .Values.image.tag | quote }}
+# DATABASE_URL (lleva la password de Postgres) y JWT_SECRET → desde el Secret, NO en texto plano.
 - name: DATABASE_URL
-  value: {{ include "online-game.dbUrl" . | quote }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Release.Name }}-secrets
+      key: DATABASE_URL
+- name: JWT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Release.Name }}-secrets
+      key: JWT_SECRET
 - name: REDIS_URL
   value: {{ include "online-game.redisUrl" . | quote }}
 - name: NPC_BRAIN
@@ -122,7 +131,9 @@ imagePullSecrets:
       key: OPENROUTER_API_KEY
 {{- end }}
 {{- range $k, $v := .Values.env }}
+{{- if ne $k "JWT_SECRET" }}   {{/* JWT_SECRET va por secretKeyRef arriba, no en texto plano */}}
 - name: {{ $k }}
   value: {{ $v | quote }}
+{{- end }}
 {{- end }}
 {{- end -}}
