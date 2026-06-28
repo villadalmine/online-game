@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.104.1] - 2026-06-28
+
 ### 2026-06-28 — Fix CD: el overlay de prod va en examples/ (values-*.yaml está gitignored)
 - `values-prod.yaml` quedaba ignorado por `.gitignore` (`deploy/helm/values-*.yaml`) → el promote
   fallaba con "no such file" (prod intacto, falla antes del upgrade). Movido a
