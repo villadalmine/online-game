@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.100.0] - 2026-06-28
+
 ### 2026-06-28 — SDD 49/50 v1.5: PRENDIDOS + paneles web + NPC los usa
 > Cierre de SDD 49 (misiles) y 50 (drones): de "implementado detrás de flag" a **activos**, con
 > panel web pictográfico y el NPC jugándolos. Mismo patrón que cerró 47/46 v1.5.
