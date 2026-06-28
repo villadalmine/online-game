@@ -12,6 +12,10 @@ Registro de todo lo que vamos logrando. Formato basado en
   quedó `Pending` para siempre. Selector al **pool** `storage=rk1-longhorn` (rk1-nvme 01-04) → corre
   en un nodo sano. ttl: success 30m→10m, failure 2h→30m → los Workflows + sus PVCs (20Gi Longhorn)
   se limpian rápido y no llenan el disco. (Limpié los 4 fallidos acumulados ~80Gi.)
+- **SDD 52** (`docs/sdd-cicd-storage-resilience.md`): por qué una PVC no evita el disco del nodo
+  (imágenes en imagefs + réplicas Longhorn en `/var/lib/longhorn`) y qué iterar: StorageClass efímera
+  de **1 réplica** para el workspace (3× menos disco), image-GC, artifact repo de Argo, alertas de
+  DiskPressure. (Diseño, para iterar más tarde.)
 
 ## [1.104.4] - 2026-06-28
 
