@@ -78,21 +78,25 @@ async def test_ask_falls_back_without_llm(session, monkeypatch):
     assert reply.suggestions
 
 
-async def test_hack_grants_minimal_shortfall(session):
+async def test_hack_creates_free_even_with_materials(session):
+    # SDD 2: el hack CREA GRATIS aunque tengas materiales (no espera a que falten). Sin minerales,
+    # crea un cuartel sin cobrar (materializa el costo completo y construye).
+    from app.models import Building
     p = await _player(session, name="hacker")
     await _strip_minerals(session, p.id)
     p.energy = 9999
     await session.commit()
 
-    res = await adv.grant_hack(session, p, "mine")  # martian mine = iron 100, sulfur 40
-    assert res["granted"]["iron"] == 100 and res["granted"]["sulfur"] == 40
-    assert res["hacks_left"] == 2
+    res = await adv.grant_hack(session, p, "barracks")
+    assert res["hacks_left"] == 2 and "barracks" in res["message"].lower()
+    assert (await session.execute(select(Building).where(
+        Building.building_key == "barracks"))).first() is not None
 
-    # now it's buildable -> hacking again is rejected (nothing missing)
+    # mina/silo piden elegir mineral → el hack no aplica (400 claro)
     p = await session.get(Player, p.id)
     try:
         await adv.grant_hack(session, p, "mine")
-        raise AssertionError("debería rechazar: ya no falta nada")
+        raise AssertionError("mina debería pedir mineral")
     except adv.AdvisorError as e:
         assert e.status == 400
 
@@ -108,8 +112,8 @@ async def test_hack_daily_budget_exhausts_and_resets(session):
         await adv.grant_hack(session, p, target)
         p = await session.get(Player, p.id)
 
-    await drain_one("mine")       # 1
-    await drain_one("barracks")   # 2
+    await drain_one("power_plant")   # 1
+    await drain_one("barracks")      # 2
     await drain_one("research_lab")  # 3
     assert adv.hacks_left(p) == 0
 
@@ -305,8 +309,7 @@ async def test_hack_also_builds_the_target(session):
     await session.commit()
 
     res = await adv.grant_hack(session, p, "barracks")
-    assert res["granted"]                                   # materializó lo que faltaba
-    assert "construí" in res["message"]
+    assert "creé" in res["message"].lower() and "barracks" in res["message"].lower()
     built = (await session.execute(select(Building).where(
         Building.building_key == "barracks"))).first()
     assert built is not None                                # y lo construyó (queda en cola/activo)

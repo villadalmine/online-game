@@ -944,10 +944,9 @@ async function askAdvisor(){
       html+=`<div class="muted" style="margin-top:6px">Acciones (gastan tus recursos):</div><div class="row">`+
         r.suggestions.map(s=>`<button class="sm" onclick='doSuggestion(${esc(JSON.stringify(s))})'>${esc(s.label||s.action)}</button>`).join(" ")+`</div>`;
     }
-    if(r.hack_available){
-      const targets=[...new Set((r.blockers||[]).map(b=>b.target))];
-      html+=`<div class="muted" style="margin-top:8px">🔓 Hack (${r.hacks_left}/3 hoy) — materializa lo que falta y lo <b>construye en un click</b> (mina/silo: te deja el material para que elijas):</div><div class="row">`+
-        targets.map(t=>`<button class="sec sm" onclick="hackFor('${esc(t)}')">🔓 hackear y construir ${esc(gameName(t))}</button>`).join(" ")+`</div>`;
+    if(r.hack_available && (r.hack_targets||[]).length){
+      html+=`<div class="muted" style="margin-top:8px">🔓 <b>Crear GRATIS</b> con tu hack diario (${r.hacks_left}/3 hoy) — NO te cobra materiales y arma lo que falte (lab, tech…). Mina/silo: elegí el mineral aparte:</div><div class="row">`+
+        r.hack_targets.map(t=>`<button class="sec sm" onclick="hackFor('${esc(t)}')">🔓 crear gratis: ${esc(gameName(t))}</button>`).join(" ")+`</div>`;
     }
     $("advsugs").innerHTML=html;
   }catch(e){ msg(e.message,false); }

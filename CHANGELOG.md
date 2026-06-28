@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — Asistente: botón "🔓 crear gratis (hack)" — crea sin cobrarte aunque tengas material
+> Bug reportado: tocabas el botón del asistente y te CONSUMÍA materiales (era el botón "Construir"
+> normal). El de hack solo aparecía cuando ya NO tenías material → confuso.
+- El hack ahora **CREA GRATIS** el objetivo (cubre el costo completo y construye → neto 0 en tu stock),
+  **tengas o no materiales**, y arma toda la cadena (lab → tech → target). Gasta 1 hack diario y lo
+  dice claro ("creé gratis X… te quedan N").
+- La respuesta del asesor trae `hack_targets` → el front muestra un botón **"🔓 crear gratis: X"**
+  separado del "Construir" (que sí cobra). Disponible mientras te queden hacks, aunque tengas material.
+- Si das la orden ("construime X"), lo crea gratis solo. Mina/silo siguen pidiendo elegir mineral.
+- Tests: `test_hack_creates_free_even_with_materials`, advisor suite verde.
+
 ## [1.104.2] - 2026-06-28
 
 ### 2026-06-28 — Hardening: JWT_SECRET y password de Postgres → Secret + secretKeyRef

@@ -254,27 +254,25 @@ async def ask(
         targets = [t for t in _all_targets() if t not in snap.active_buildings][:6]  # "¿qué hago?"
     reports = [depgraph.analyze(snap, t) for t in targets]
 
-    # SDD 2 v2: si DAS LA ORDEN explícita ("construime X") sobre UN objetivo, te queda hack diario y
-    # solo te falta MATERIAL/energía (no un edificio) → el asistente USA el hack solo (lo
-    # materializa y lo construye). Antes solo decía "te falta material" → ahora lo hace.
+    # SDD 2: si DAS LA ORDEN explícita ("construime X") sobre UN objetivo y te queda hack diario, el
+    # asistente lo CREA GRATIS solo (tengas o no materiales). Si el hack no aplica (mina/silo piden
+    # mineral), sigue con la respuesta normal.
     qwords = set(message.lower().replace(",", " ").replace(".", " ").split())
     if len(matched) == 1 and (qwords & _BUILD_CMD_WORDS) and hacks_left(player) > 0:
-        rep = next((r for r in reports if r.target == matched[0]), None)
-        if (rep and not rep.buildable
-                and not any(b.kind == "building" for b in rep.blockers)
-                and any(b.kind in ("mineral", "not_producible", "energy") for b in rep.blockers)):
-            try:
-                res = await grant_hack(session, player, matched[0])   # materializa + construye
-            except AdvisorError:
-                await session.rollback()
-                res = None
-            if res:
-                await _save(session, player, "user", message)
-                from app.services.journal import record
-                await record(session, "advisor_ask", player.id)
-                await session.commit()
-                return AdvisorReply(reply=res["message"], blockers=[], suggestions=[],
-                                    hack_available=False, hacks_left=res["hacks_left"])
+        _pid = player.id   # capturar ANTES (un rollback expira el objeto → .id haría IO lazy)
+        try:
+            res = await grant_hack(session, player, matched[0])   # crea gratis (cadena completa)
+        except AdvisorError:
+            await session.rollback()                  # deshace grants parciales…
+            player = await session.get(Player, _pid)  # …y refresca el player (evita expirado)
+            res = None
+        if res:
+            await _save(session, player, "user", message)
+            from app.services.journal import record
+            await record(session, "advisor_ask", player.id)
+            await session.commit()
+            return AdvisorReply(reply=res["message"], blockers=[], suggestions=[],
+                                hack_available=False, hacks_left=res["hacks_left"])
 
     from app.services.espionage import player_intel  # local: evita ciclo de imports
     intel = await player_intel(session, player)
@@ -285,11 +283,14 @@ async def ask(
     )
     suggestions = _suggestions(reports, snap, message)
     left = hacks_left(player)
-    hackable = ("mineral", "not_producible", "energy")
-    can_hack = left > 0 and any(
-        not r.buildable and any(b.kind in hackable for b in r.blockers)
-        for r in reports
-    )
+    # SDD 2: con hacks disponibles, el jugador puede CREAR GRATIS cualquier cosa que preguntó
+    # (tenga o no materiales). Si nombró objetos, esos; si no, los de las sugerencias.
+    hack_targets = list(matched) or [
+        s.params.get("building") or s.params.get("unit") or s.params.get("tech")
+        for s in suggestions
+    ]
+    hack_targets = [t for t in dict.fromkeys(hack_targets) if t][:6]
+    can_hack = left > 0 and bool(hack_targets)
 
     await _save(session, player, "user", message)
     await _save(session, player, "assistant", reply_text)
@@ -303,6 +304,7 @@ async def ask(
         suggestions=suggestions,
         hack_available=can_hack,
         hacks_left=left,
+        hack_targets=hack_targets,
     )
 
 
@@ -439,13 +441,11 @@ async def grant_hack(session: AsyncSession, player: Player, target: str) -> dict
         raise AdvisorError(f"Sin hacks hoy ({per_day}/{per_day}). Vuelven mañana.", 429)
 
     snap = await build_snapshot(session, player)
-    if depgraph.analyze(snap, target).buildable:
-        raise AdvisorError(f"No te falta nada para {target}.", 400)
 
-    # SDD 2 v2: el hack arma TODA LA CADENA en un click — edificios previos que faltan + tecnologías
-    # requeridas que falten (los materializa y los deja LISTOS al instante, porque el hack es un
-    # cheat), y al final el target. Antes, si faltaba el laboratorio o una tech (p.ej. la lanzadera
-    # necesita Cohetería), decía "te falta" y no construía nada. Un solo hack cubre toda la cadena.
+    # SDD 2: el hack CREA GRATIS — arma toda la cadena (edificios previos que faltan + tecnologías
+    # requeridas que falten, materializados y dejados LISTOS al instante) y al final el target,
+    # cubriendo el COSTO COMPLETO de cada paso (no solo "lo que falta"). Tengas o no materiales,
+    # la creación sale gratis (el build cobra y el hack ya lo regaló → neto 0). Gasta 1 hack diario.
     from app.services.research import researched_techs
     have_techs = await researched_techs(session, player.id)
     chain = [b for b in depgraph.prerequisites(target) if b not in snap.active_buildings]
@@ -454,35 +454,29 @@ async def grant_hack(session: AsyncSession, player: Player, target: str) -> dict
     granted: dict[str, float] = {}
     built_items: list[str] = []
     for item in chain:
-        rep = depgraph.analyze(await build_snapshot(session, player), item)
-        for b in rep.blockers:
-            if b.kind in ("mineral", "not_producible"):
-                shortfall = b.need - b.have
-                if shortfall > 0:
-                    st = await get_or_create_stock(session, player.id, b.key, player.planet_key)
-                    st.amount += shortfall
-                    granted[b.key] = granted.get(b.key, 0.0) + shortfall
-            elif b.kind == "energy":
-                player.energy = max(player.energy, b.need)
-                player.energy_updated_at = now
-                granted["energy"] = granted.get("energy", 0.0) + (b.need - b.have)
+        cost = depgraph.target_cost(player.race_key, item)   # costo COMPLETO → creación gratis
+        for mineral, amt in cost.minerals.items():
+            st = await get_or_create_stock(session, player.id, mineral, player.planet_key)
+            st.amount += amt
+            granted[mineral] = granted.get(mineral, 0.0) + amt
+        if cost.energy:
+            player.energy += cost.energy
+            player.energy_updated_at = now
+            granted["energy"] = granted.get("energy", 0.0) + cost.energy
         verb = await _auto_execute(session, player, item, activate=(item != target))
         if verb:
             built_items.append(f"{verb} {item}")
 
-    if not granted and not built_items:
+    if not built_items:
         raise AdvisorError(
-            f"No pude hackear {target} (quizás necesita una tecnología o elegir un mineral).", 400
+            f"No pude crear {target} (quizás necesita elegir un mineral, como una mina/silo).", 400
         )
 
     _consume_hack(player, now)
     left = hacks_left(player, now)
-    detail = ", ".join(f"{v:g} {k}" for k, v in granted.items()) or "lo que faltaba"
     done = "; ".join(built_items)
-    if done:
-        msg = f"💀 Acceso root… materialicé {detail} y {done}. (gratis)"
-    else:
-        msg = f"💀 Acceso root… materialicé {detail} para {target}. Construilo cuando quieras."
+    msg = (f"💀 Hack: creé gratis {done} (sin cobrarte materiales). "
+           f"Usé 1 hack diario — te quedan {left}.")
     await notify(session, player.id, "advisor_hack", msg,
                  {"target": target, "granted": granted, "built": built_items})
     await _save(session, player, "assistant", msg)

@@ -644,6 +644,9 @@ class AdvisorReply(BaseModel):
     suggestions: list[Suggestion] = []
     hack_available: bool = False
     hacks_left: int = 0
+    # SDD 2: objetivos que el jugador puede CREAR GRATIS con el hack (aun teniendo materiales).
+    # El front les pone un botón "🔓 crear gratis" distinto del "Construir" (que sí cobra).
+    hack_targets: list[str] = []
 
 
 class AdvisorHackRequest(BaseModel):
