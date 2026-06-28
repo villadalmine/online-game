@@ -150,6 +150,8 @@ ogame-cli me
 ogame-cli build 1 mine iron      # construir una mina de hierro en la base 1
 ogame-cli train 1 worker 5       # entrenar 5 trabajadores en la base 1
 ogame-cli attack 7 soldier:10,tank:2   # atacar la base 7 con esa fuerza
+ogame-cli strike 1 7 sonic_missile:6   # SDD 49: salva de misiles desde la lanzadera (base 1) a la base 7 (mismo planeta)
+ogame-cli drones 1 7 recon_drone:3     # SDD 50: escuadrón de drones desde la fábrica (base 1) a la base 7
 ogame-cli reports                # historial de combates
 ogame-cli moons                  # lunas alcanzables (dioses)
 ogame-cli expedition luna        # enviar expedición a la Luna (requiere transbordador)

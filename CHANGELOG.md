@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — Docs + CLI al día con SDD 49/50
+- `docs/game-design.md`: nueva sección de **guerra intra-planeta** (misiles + drones) en Combate.
+- **CLI** (`clients/cli`): comandos `strike <launcher> <target> <force>`, `drones <factory> <target>
+  <force>` y `drones-recall <id>` → la feature queda alcanzable también desde el CLI (API-first).
+  README actualizado con ejemplos.
+
 ## [1.100.0] - 2026-06-28
 
 ### 2026-06-28 — SDD 49/50 v1.5: PRENDIDOS + paneles web + NPC los usa

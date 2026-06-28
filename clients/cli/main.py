@@ -11,6 +11,9 @@ Usage:
     ogame-cli attack <target_base_id> <force>   # force = "soldier:10,tank:2"
     ogame-cli reports
     ogame-cli recall <mission_id>               # retirar una flota en vuelo
+    ogame-cli strike <launcher_base> <target_base> <force>   # SDD 49: salva de misiles
+    ogame-cli drones <factory_base> <target_base> <force>    # SDD 50: escuadrón de drones
+    ogame-cli drones-recall <squadron_id>       # retirar un escuadrón de drones
     ogame-cli moons                             # lunas alcanzables
     ogame-cli expedition <moon_key>
     ogame-cli players                           # scoreboard (incl. NPCs) y sus bases
@@ -110,6 +113,21 @@ def main() -> None:
                     json={"target_base_id": int(rest[0]), "force": force},
                 )
             )
+        elif cmd in ("strike", "drones"):
+            force = {}
+            for part in rest[2].split(","):
+                unit, qty = part.split(":")
+                force[unit] = int(qty)
+            if cmd == "strike":
+                _show(client.post("/api/v1/combat/strike", headers=_headers(), json={
+                    "launcher_base_id": int(rest[0]), "target_base_id": int(rest[1]),
+                    "force": force}))
+            else:
+                _show(client.post("/api/v1/drones/launch", headers=_headers(), json={
+                    "factory_base_id": int(rest[0]), "target_base_id": int(rest[1]),
+                    "force": force}))
+        elif cmd == "drones-recall":
+            _show(client.post(f"/api/v1/drones/{rest[0]}/recall", headers=_headers()))
         elif cmd == "reports":
             _show(client.get("/api/v1/combat/reports", headers=_headers()))
         elif cmd == "recall":

@@ -62,6 +62,16 @@ roles + costo de energía + tiempo de construcción (`content/buildings.yaml`).
   el defensor ve el ataque entrante y tiene **ventana para reaccionar**. Al llegar se
   resuelve con `stats` + bonus de raza + boons; hay bajas y **botín**. Los sobrevivientes y
   el botín **regresan** a la base. Historial en `/combat/reports`.
+- **Guerra intra-planeta (SDD 49/50, implementado):** dos vías de "golpe" que **no salen del
+  planeta**, paralelas a la flota, para **ablandar** una base rival antes de atacarla:
+  - **Misiles** (lanzadera `launcher` + sónico→transatlántico→nuclear, tech-gated): una salva
+    vuela a una base del mismo planeta; las **torretas** la interceptan con una fórmula
+    determinista (enjambre satura, nuclear casi imparable + área/fallout). El daño **destruye
+    edificios** (no saquea).
+  - **Drones** (fábrica `drone_factory` + espía/ataque): un escuadrón **orbita** una base del
+    planeta dando **intel en vivo**; drena tu energía y cae ante torretas (todo *lazy* por
+    timestamp). Los de ataque castigan la base por tick; podés **retirarlos** antes de que mueran.
+  - Frenos: protección de novato, no se ataca a aliados, tope de alojamiento y drenaje de energía.
 
 ## Lunas y dioses
 
