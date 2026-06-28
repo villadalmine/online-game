@@ -2433,8 +2433,8 @@ async def test_missile_strike_e2e(client, monkeypatch):
     sim = await client.http.post("/api/v1/combat/strike/simulate", headers=ha,
                                  json={"force": {"sonic_missile": 50}, "intercept_capacity": 30})
     assert sim.status_code == 200
-    assert sim.json()["impacted"] == {"sonic_missile": 20}
-    assert sim.json()["damage"] == 1200
+    assert sim.json()["impacted"] == {"sonic_missile": 35}   # 30/2=15 interceptados, 35 impactan
+    assert sim.json()["damage"] == 2100
 
     hd = await _register(client.http, "bunker")
     dstate = await _onboard(client.http, hd, planet="earth", race="terran")

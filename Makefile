@@ -20,7 +20,7 @@ DB_URL    ?= sqlite+aiosqlite:///./game.db
 JWT       ?= dev-secret-key-at-least-32-bytes-long!!
 
 .DEFAULT_GOAL := help
-.PHONY: help venv install update run run-lan run-llm tunnel demo demo-llm stop health cli \
+.PHONY: help venv install update run run-lan run-llm tunnel demo demo-llm balance stop health cli \
         test test-ui test-file lint fmt check publish \
         migrate migration downgrade db-current db-history db-reset \
         up down logs ps build-image helm-template helm-install helm-uninstall \
@@ -71,6 +71,9 @@ demo: ## Server efímero + flujo completo por CLI (register→tick→players)
 
 demo-llm: ## Demo con NPCs por OpenRouter
 	PORT=$(PORT) NPC_BRAIN=llm bash scripts/demo.sh
+
+balance: ## Reporte de balance de misiles/drones (SDD 49/50), derivado del YAML
+	$(PY) scripts/balance.py
 
 stop: ## Mata cualquier uvicorn de este proyecto
 	-@pkill -f "[u]vicorn app.main:app" 2>/dev/null && echo "server detenido" || echo "no había server"

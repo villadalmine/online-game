@@ -153,7 +153,10 @@ buildings:
     build_seconds: 150
     defense_power: 40   # se suma a la defensa de la base al resolver un ataque
     hp: 120             # SDD 49: aguante ante misiles (cuánto daño absorbe antes de ser destruida)
-    intercept_power: 30 # SDD 49: capacidad antimisil (derriba misiles entrantes)
+    # SDD 49 (balance v1.1): capacidad antimisil por torreta. Ratio vs intercept_cost de cada misil =
+    # cuántos frena 1 torreta → sónico 5, transatlántico ~1.6, nuclear 0.33 (hacen falta 3 torretas
+    # para 1 nuclear → "casi imposible salvo mucha defensa"). Ver scripts/balance.py.
+    intercept_power: 10 # SDD 49: capacidad antimisil (derriba misiles entrantes)
     antiair_power: 30   # SDD 50: fuego antiaéreo por tick contra drones que orbitan
     cost:
       structural: 140

@@ -7,6 +7,21 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-28 — SDD 49/50: balance fino de intercepción + mini-simulador
+> Reescalado de la intercepción de misiles para que respete la intención de diseño y herramienta
+> determinista para afinar números por YAML sin adivinar.
+- **Intercepción reescalada** (antes 1 torreta frenaba ~3 nucleares — roto): `turret.intercept_power`
+  30→**10**; `intercept_cost` sónico 1→**2**, transatlántico 3→**6**, nuclear 8→**30**. Ahora 1 torreta
+  frena 5 sónicos / ~1.6 transatlánticos / 0.33 nucleares → **hacen falta 3 torretas para 1 nuclear**
+  ("casi imposible salvo mucha defensa"); el enjambre de sónicos satura; el transatlántico queda en el
+  medio. Trade-offs verificados: sónico = mejor daño/mineral (spam), nuclear = mejor daño/plaza y
+  daño/⚡ pero premium/endgame.
+- **`scripts/balance.py`** (`make balance`): mini-simulador determinista que imprime tablas de
+  costo-eficiencia, intercepción y supervivencia de drones derivadas del YAML + funciones puras.
+- **`tests/test_balance.py`**: invariantes de diseño (progresión de tiers, trade-offs, escala de
+  intercepción/supervivencia) → un rebalanceo que rompa la intención falla el test. Tests de
+  intercepción y e2e actualizados a los nuevos números.
+
 ### 2026-06-28 — Docs + CLI al día con SDD 49/50
 - `docs/game-design.md`: nueva sección de **guerra intra-planeta** (misiles + drones) en Combate.
 - **CLI** (`clients/cli`): comandos `strike <launcher> <target> <force>`, `drones <factory> <target>

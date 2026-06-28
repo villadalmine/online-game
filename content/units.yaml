@@ -171,7 +171,7 @@ ordnance:
     housing_size: 1
     range: intra_planet
     power: 60
-    intercept_cost: 1
+    intercept_cost: 2     # SDD 49 balance: 1 torreta (10) frena 5 sónicos
     propulsion: rocket
     energy_cost: 6
     train_seconds: 30
@@ -189,7 +189,7 @@ ordnance:
     housing_size: 2
     range: intra_planet
     power: 160
-    intercept_cost: 3
+    intercept_cost: 6     # SDD 49 balance: 1 torreta frena ~1.6 transatlánticos
     propulsion: rocket
     energy_cost: 12
     train_seconds: 60
@@ -207,7 +207,7 @@ ordnance:
     housing_size: 4
     range: intra_planet
     power: 600
-    intercept_cost: 8
+    intercept_cost: 30    # SDD 49 balance: hacen falta 3 torretas para 1 nuclear
     area: true            # SDD 49: además de la defensa, daña edificios no defensivos + fallout
     propulsion: rocket
     energy_cost: 30
