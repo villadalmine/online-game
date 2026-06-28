@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.104.4] - 2026-06-28
+
 ### 2026-06-28 — Fix CD: imagePullPolicy Always en los gates (no más imagen de test stale)
 > Incidente: 1.104.3 no promovía — el gate `e2e-api` corría un test que YA estaba arreglado
 > (`test_advisor_hack_grants_and_exhausts_daily_budget` con "mine") y fallaba, aunque local pasaba
