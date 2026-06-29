@@ -246,6 +246,35 @@ async def test_defense_never_locked_by_single_mineral_e2e(client):
     assert blocked.status_code >= 400 and blocked.status_code < 500, blocked.text
 
 
+async def test_training_capacity_headroom_e2e(client):
+    """SDD 56: /players/me expone plazas libres por dominio y entrenar MÁS de lo que entra se
+    bloquea por plazas (no por material) → el front muestra el headroom y topea la cantidad."""
+    from app.models import ResourceStock
+    h = await _register(client.http, "capper")
+    state = await _onboard(client.http, h, planet="earth", race="terran")
+    base_id = state["bases"][0]["id"]
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert "housing" in me and "infantry" in me["housing"]
+    inf_free = me["housing"]["infantry"]["free"]
+    assert inf_free >= 0
+    # energía + iron de sobra → el único límite son las plazas (soldier = structural=iron, SDD 53)
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "capper"))).scalar_one()
+        p.energy = 1_000_000
+        row = (await s.execute(select(ResourceStock).where(
+            ResourceStock.player_id == p.id, ResourceStock.mineral_key == "iron",
+            ResourceStock.planet_key == "earth"))).scalar_one_or_none()
+        if row:
+            row.amount = 1_000_000
+        else:
+            s.add(ResourceStock(player_id=p.id, mineral_key="iron", amount=1_000_000,
+                                planet_key="earth"))
+        await s.commit()
+    r = await client.http.post(f"/api/v1/bases/{base_id}/train", headers=h,
+                               json={"unit_key": "soldier", "quantity": inf_free + 5})
+    assert r.status_code >= 400 and "plaza" in r.text.lower(), r.text
+
+
 async def test_catalog_tree_computed(client):
     """/catalog/tree: skill tree + tablas con costos resueltos por raza y dependencias
     (lo consume el modal web y la IA)."""
@@ -2772,3 +2801,41 @@ async def test_turret_counts_as_defense_e2e(client):
     det = reports[0].get("details", reports[0])
     # 3 soldados (ataque 24) NO superan la defensa fija de la torreta → la torreta defendió.
     assert reports[0]["outcome"] == "defender", det
+
+
+async def test_dreadnought_razes_surplus_buildings_e2e(client):
+    """SDD 57: el acorazado (siege_power) al ganar demuele edificios EXCEDENTES de la base — nunca
+    el HQ ni el último de su tipo (anti-lockout)."""
+    from sqlalchemy import select
+
+    from app.models import Base_, Building
+    ha = await _register(client.http, "razer")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "razed_def")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    target = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "razer", "razed_def")
+    await _grant_units(client.session_maker, "razer", {"dreadnought": 1})
+    await _set_energy(client.session_maker, "razer", 1_000_000)
+    # defensor: 2 cuarteles activos (excedente) sin defensa → el acorazado gana y bombardea
+    async with client.session_maker() as s:
+        for _ in range(2):
+            s.add(Building(base_id=target, building_key="barracks", status="active"))
+        await s.commit()
+
+    r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                               json={"target_base_id": target, "force": {"dreadnought": 1}})
+    assert r.status_code == 201, r.text
+    await _fast_forward_arrivals(client.session_maker)
+    await client.http.post("/api/v1/admin/tick", headers=ha)
+    reports = (await client.http.get("/api/v1/combat/reports", headers=ha)).json()
+    assert reports and reports[0]["outcome"] == "attacker", reports
+    assert reports[0]["details"].get("razed"), reports[0]["details"]
+    # quedó 1 cuartel (solo se voló el excedente) y el HQ intacto
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "razed_def"))).scalar_one()
+        keys = [b.building_key for b in (await s.execute(
+            select(Building).join(Base_, Building.base_id == Base_.id)
+            .where(Base_.player_id == p.id))).scalars()]
+    assert keys.count("barracks") == 1            # de 2 → 1 (solo el excedente)
+    assert "headquarters" in keys                 # el HQ nunca se destruye

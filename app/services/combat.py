@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import get_content
 from app.core.config import get_settings
-from app.models import AttackMission, Base_, Building, CombatLog, Player
+from app.models import AttackMission, Base_, Building, CombatLog, Player, ResearchOrder
 from app.services.economy import (
     collect_mines,
     finalize_due_builds,
@@ -124,6 +124,57 @@ def _aware(dt: datetime) -> datetime:
 def travel_seconds(planet_a: str | None, planet_b: str | None) -> int:
     s = get_settings()
     return s.travel_seconds_same_planet if planet_a == planet_b else s.travel_seconds_cross_planet
+
+
+# --------------------------------------------------------------------------- #
+# SDD 57: bombardeo "rompe-bases" — naves con `siege_power` demuelen edificios al ganar.
+# --------------------------------------------------------------------------- #
+async def _bombard_buildings(
+    session: AsyncSession,
+    survivors: dict[str, int],
+    defender: Player,
+    target_base_id: int,
+    content,
+    settings,
+) -> list[str]:
+    """Demuele edificios EXCEDENTES de la base atacada según el `siege_power` sobreviviente.
+
+    Invariantes anti-lockout (SDD 57): nunca destruye HQ ni minas (categorías core/mine), ni el
+    ÚLTIMO edificio de cada tipo (solo excedentes → "solo si tenés de más"). Destruir un laboratorio
+    excedente cancela la investigación EN CURSO (perdés ese progreso; las techs completas quedan).
+    """
+    total = sum(int(q) * content.units.get(k, {}).get("siege_power", 0)
+                for k, q in survivors.items())
+    per = max(1, settings.siege_per_building)
+    n_destroy = int(total // per)
+    if n_destroy <= 0:
+        return []
+    from collections import Counter
+    blds = list((await session.execute(
+        select(Building).where(Building.base_id == target_base_id)
+    )).scalars())
+    counts = Counter(b.building_key for b in blds)
+    razed: list[str] = []
+    # newest first; nunca HQ/mina; nunca el último de su tipo (solo excedentes)
+    for b in sorted(blds, key=lambda x: x.id, reverse=True):
+        if n_destroy <= 0:
+            break
+        cat = content.buildings.get(b.building_key, {}).get("category")
+        if cat in ("core", "mine"):
+            continue
+        if counts[b.building_key] <= 1:
+            continue
+        counts[b.building_key] -= 1
+        await session.delete(b)
+        razed.append(b.building_key)
+        n_destroy -= 1
+    # SDD 57: si voló un laboratorio, se cancela la investigación en curso (perdió la base).
+    if "research_lab" in razed:
+        for o in (await session.execute(select(ResearchOrder).where(
+            ResearchOrder.player_id == defender.id, ResearchOrder.status == "researching"
+        ))).scalars():
+            o.status = "cancelled"
+    return razed
 
 
 # --------------------------------------------------------------------------- #
@@ -332,6 +383,14 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
             (await get_or_create_stock(session, defender.id, mineral, loot_planet)).amount -= taken
             loot[mineral] = taken
 
+    # SDD 57: bombardeo "rompe-bases" — si la flota ganó y trae naves con `siege_power` (acorazado),
+    # demuele EDIFICIOS EXCEDENTES del defensor (nunca HQ ni minas, nunca el último de su tipo).
+    razed: list[str] = []
+    if result.outcome == "attacker" and settings.siege_enabled:
+        razed = await _bombard_buildings(
+            session, survivors, defender, mission.target_base_id, content, settings
+        )
+
     # Lifetime stats (SDD 12).
     from app.services.stats import bump as _bump
 
@@ -355,6 +414,7 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
                     "attacker_losses": result.attacker_losses,
                     "defender_losses": result.defender_losses,
                     "loot": loot,
+                    "razed": razed,
                 }
             ),
         )
@@ -371,8 +431,10 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
         session,
         defender.id,
         "attacked",
-        f"Te atacaron (base {mission.target_base_id}): {result.outcome}",
-        {"outcome": result.outcome, "your_losses": result.defender_losses, "looted": loot},
+        f"Te atacaron (base {mission.target_base_id}): {result.outcome}"
+        + (f" — bombardearon {len(razed)} edificio(s): {', '.join(razed)}" if razed else ""),
+        {"outcome": result.outcome, "your_losses": result.defender_losses,
+         "looted": loot, "razed": razed},
     )
     # NPC follow-up taunt to the human, by result.
     await _npc_taunt(

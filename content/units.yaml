@@ -160,6 +160,25 @@ heavy:
     cost: { structural: 150, energetic: 90, advanced: 40 }
     # cargo = capacidad de minerales por nave (SDD 42 Fase 2)
     stats: { attack: 5, defense: 10, hp: 90, cargo: 500 }
+  - key: dreadnought
+    icon: "🛰"
+    name: "Acorazado estelar"
+    name_en: "Star dreadnought"
+    real: "Nave capital de guerra: el buque insignia más poderoso de una flota."
+    real_en: "Capital warship: the most powerful flagship of a fleet."
+    sources: ["Wikipedia: Capital ship"]
+    requires: factory
+    requires_tech: hyperspace_travel
+    domain: space           # SDD 46: se aloja en el hangar
+    housing_size: 6         # ocupa muchísimas plazas: es una unidad única de fin de juego
+    energy_cost: 60
+    train_seconds: 600
+    # SDD 57: poder de asedio — al GANAR un ataque demuele edificios EXCEDENTES de la base (nunca
+    # HQ/minas ni el último de su tipo). `siege_per_building` (config) = asedio para volar 1 edificio.
+    siege_power: 900
+    # SDD 53: espacio = energetic + advanced (alto). Carísimo: arma de fin de juego.
+    cost: { energetic: 1200, advanced: 900 }
+    stats: { attack: 120, defense: 90, hp: 400 }
 
 # Misiles (SDD 49): munición intra-planeta. domain `ordnance` (se aloja en la lanzadera). Se
 # fabrican como una unidad más y se DISPARAN con POST /combat/strike (no van en una flota).

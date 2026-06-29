@@ -210,3 +210,31 @@ technologies:
     research_seconds: 900
     cost: { structural: 360, energetic: 300, advanced: 200 }
     magnitude: 1.0
+
+  # --- Viajes por el hiperespacio (SDD 57): árbol GATE de fin de juego. Velocidad de la luz →
+  # hiperespacio → habilita el ACORAZADO (nave capital "rompe-bases"). Costos energetic+advanced
+  # dominantes (SDD 53: fin de juego/progreso, no defensa). ---
+  - key: relativistic_drive
+    name: "Propulsión relativista"
+    category: hyperspace
+    name_en: "Relativistic drive"
+    description: "Velocidad de la luz: motores relativistas, la base para viajar por el hiperespacio."
+    description_en: "Light speed: relativistic engines, the basis for hyperspace travel."
+    requires: research_lab
+    requires_tech: antigravity
+    energy_cost: 60
+    research_seconds: 1500
+    cost: { structural: 300, energetic: 600, advanced: 500 }
+    magnitude: 1.0
+  - key: hyperspace_travel
+    name: "Viajes por el hiperespacio"
+    category: hyperspace
+    name_en: "Hyperspace travel"
+    description: "Saltos por el hiperespacio: habilita el acorazado, una nave de guerra que arrasa bases."
+    description_en: "Hyperspace jumps: unlocks the dreadnought, a warship that razes bases."
+    requires: research_lab
+    requires_tech: relativistic_drive
+    energy_cost: 90
+    research_seconds: 2400
+    cost: { structural: 500, energetic: 900, advanced: 800 }
+    magnitude: 1.0

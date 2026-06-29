@@ -7,6 +7,23 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-29 — SDD 57: viajes por hiperespacio + acorazado "rompe-bases" (anti-lockout)
+- **Árbol de research nuevo** (`technologies.yaml`, categoría 🌌 `hyperspace`): `relativistic_drive`
+  (velocidad de la luz, req `antigravity`) → `hyperspace_travel`. **Unidad nueva** `dreadnought`
+  (Acorazado estelar, dominio espacial, req `factory`+`hyperspace_travel`, carísima, `housing_size=6`).
+- **Bombardeo "rompe-bases"** (`combat.py`): una flota con `siege_power` que GANA demuele edificios
+  **EXCEDENTES** de la base atacada (según `siege_power`/`siege_per_building=300`). Anti-lockout:
+  **nunca** destruye HQ ni minas, **nunca** el último de su tipo (solo excedentes); si vuela un
+  laboratorio, cancela la investigación EN CURSO. `razed` va al reporte + notificación. Flag
+  `siege_enabled` (ON; gateado por el árbol carísimo → fin de juego). e2e
+  `test_dreadnought_razes_surplus_buildings_e2e`. Web: categoría `hyperspace` en Investigación.
+
+### 2026-06-29 — SDD 56: capacidad visible al entrenar (headroom de tropas)
+- El backend ya frenaba por plazas (SDD 46, `housing_enforced`); se sumó el feedback EN el form de
+  entrenar (`web/index.html`, `renderTrainCost`): **🏠 plazas libres: X {dominio}** junto al costo,
+  **topea la cantidad** a lo que entra y avisa **"sin plazas — construí …"** en 0. i18n es/en. e2e
+  `test_training_capacity_headroom_e2e` (`/players/me` expone `housing.free`; entrenar de más → 4xx).
+
 ## [1.106.0] - 2026-06-29
 
 ### 2026-06-29 — SDD 55: anti-farmeo de la IA (topes de ataque por día) + SDD 54: no quedar trabado

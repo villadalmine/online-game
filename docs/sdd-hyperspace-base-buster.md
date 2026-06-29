@@ -1,6 +1,7 @@
 # SDD 57 — Viajes por el hiperespacio: research de velocidad + nave capital "rompe-bases"
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-29
+> **Estado:** **IMPLEMENTADO (v1)** 2026-06-29 — árbol + acorazado + bombardeo con anti-lockout.
+> Pendiente v2: reducir tiempo de viaje por hiperespacio (ver §4). · **Diseño:** 2026-06-29
 > **Relacionado:** `content/technologies.yaml` (árbol de research), `content/units.yaml` (unidades
 > espaciales), `app/services/combat.py` (resolución de ataque + destrucción de edificios),
 > `app/services/strike.py` (precedente: misiles que destruyen edificios, SDD 49),
@@ -81,7 +82,24 @@ edificios** del defensor según `siege_power`, respetando invariantes anti-locko
 
 ## 5. Rollout / riesgos
 - Mayormente data-driven (techs + unidad) + lógica acotada de bombardeo en `combat.py`; aditivo,
-  flag `siege_enabled` (default OFF hasta balancear). Va por el pipeline de Argo. e2e + tests
-  (regla del proyecto).
+  flag `siege_enabled` (default ON, gateado por el árbol carísimo → naturalmente fin de juego).
+  Va por el pipeline de Argo. e2e + tests (regla del proyecto).
+
+## 6. Implementación (2026-06-29, v1)
+- **Techs** (`content/technologies.yaml`, categoría `hyperspace`): `relativistic_drive` (req
+  `antigravity`) → `hyperspace_travel` (req `relativistic_drive`). Costos energetic+advanced altos.
+- **Unidad** (`content/units.yaml`): `dreadnought` ("Acorazado estelar"), dominio `space`, req
+  `factory` + `hyperspace_travel`, `housing_size=6`, `siege_power=900`, carísima (energetic 1200 +
+  advanced 900, SDD 53). Va en flota normal (no es ordnance/drone).
+- **Bombardeo** (`app/services/combat.py:_bombard_buildings`, llamado al resolver una victoria si
+  `siege_enabled`): demuele edificios EXCEDENTES de la base atacada según el `siege_power`
+  sobreviviente / `siege_per_building` (config, 300). **Nunca** HQ ni minas (cat core/mine), **nunca**
+  el último de cada tipo (solo excedentes). Si vuela un `research_lab`, cancela la investigación EN
+  CURSO (`ResearchOrder.status="cancelled"`). `razed` va al CombatLog y a la notificación del defensor.
+- **Front** (`web/index.html`): categoría `hyperspace` agregada al panel de Investigación (sino las
+  techs nuevas no se listaban) + label 🌌.
+- **Tests**: e2e `test_dreadnought_razes_surplus_buildings_e2e` (gana → vuela 1 cuartel excedente,
+  deja el otro + el HQ).
+- Config: `siege_enabled=True`, `siege_per_building=300`.
 - Riesgo: arma de fin de juego muy fuerte → snowball. Mitigan: invariantes anti-lockout, costo altísimo,
   defensa (shields/torretas) que absorbe `siege_power`, y los topes de ataque (SDD 55).

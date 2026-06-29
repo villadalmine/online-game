@@ -92,6 +92,10 @@ class Settings(BaseSettings):
     # SDD 54: el combate nunca deja al defensor con menos de N trabajadores → siempre puede seguir
     # juntando material y reconstruir (no quedás trabado sin salida). 0 = sin piso.
     min_surviving_workers: int = 2
+    # SDD 57: bombardeo "rompe-bases" — naves con `siege_power` que ganan demuelen edificios
+    # EXCEDENTES (nunca HQ/minas ni el último de su tipo). siege_per_building = siege para volar 1.
+    siege_enabled: bool = True
+    siege_per_building: int = 300
     loot_fraction: float = 0.2  # share of each defender mineral looted on a win
     # Fleet travel time (seconds): one-way. Same planet is quick; cross-planet is slow.
     travel_seconds_same_planet: int = 60

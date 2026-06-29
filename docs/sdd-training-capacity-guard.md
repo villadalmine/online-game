@@ -1,6 +1,7 @@
 # SDD 56 — Capacidad visible al entrenar: headroom de tropas (no encolar miles sin plazas)
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-29
+> **Estado:** **IMPLEMENTADO** 2026-06-29 — backend de plazas ya existía (SDD 46); se sumó el headroom
+> en el form de entrenar (web) + e2e. · **Diseño:** 2026-06-29
 > **Relacionado:** [SDD 46 alojamiento de unidades](sdd-unit-housing-capacity.md) (ya implementado:
 > `app/services/housing.py` `housing_report` = {dominio: {capacity, occupancy, free}}; panel web
 > "📦 Economía / capacidad" `renderCapacity()`), [SDD 47 minería/silos](sdd-mining-workers-storage.md),
@@ -47,3 +48,12 @@ poner miles de unidades sin nada." Hoy:
 ## 4. Rollout / riesgos
 - Mayormente front + textos; el backend ya calcula `free`. Aditivo. Va por el pipeline de Argo.
 - Riesgo bajo: solo cambia UX y mensajes; no toca balance ni el modelo.
+
+## 5. Implementación (2026-06-29)
+- Backend: ya estaba (`housing_enforced=True`, error claro con plazas libres + edificios; `/players/me`
+  expone `housing[dominio].free`).
+- Front (`web/index.html`, `renderTrainCost`): muestra **🏠 plazas libres: X {dominio}** junto al costo,
+  **topea el input de cantidad** a lo que entra (`max=floor(free/housing_size)`, clamp) y avisa en rojo
+  **"sin plazas — construí …"** cuando no hay lugar. i18n `free_slots`/`no_slots` (es/en).
+- e2e `test_training_capacity_headroom_e2e`: `/players/me` trae `housing.infantry.free` y entrenar más
+  soldados que plazas (con material/energía de sobra) → 4xx con "plaza".
