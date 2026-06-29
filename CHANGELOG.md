@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.108.0] - 2026-06-29
+
 ### 2026-06-29 — SDD 59: panel de materiales por planeta (compraste pero "te falta")
 > Reporte: "compro y tengo material pero me dice que me falta / el panel no coincide". Causa: el panel
 > "Minerales" mostraba el AGREGADO de todos los planetas, pero construir/comprar es POR planeta (SDD 42)
