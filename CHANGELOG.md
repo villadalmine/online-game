@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.107.0] - 2026-06-29
+
 ### 2026-06-29 — SDD 57: viajes por hiperespacio + acorazado "rompe-bases" (anti-lockout)
 - **Árbol de research nuevo** (`technologies.yaml`, categoría 🌌 `hyperspace`): `relativistic_drive`
   (velocidad de la luz, req `antigravity`) → `hyperspace_travel`. **Unidad nueva** `dreadnought`
