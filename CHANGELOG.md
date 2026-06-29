@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-29 — SDD 57 (diseño): viajes por hiperespacio + nave capital "rompe-bases"
+- `docs/sdd-hyperspace-base-buster.md`: árbol de research de fin de juego (velocidad de la luz /
+  propulsión relativista → viajes por hiperespacio → acorazado) que habilita una nave capital con
+  `siege_power` que destruye EDIFICIOS (no solo tropas) al ganar un ataque, con invariantes
+  anti-lockout: nunca destruye HQ ni minas, solo excedentes, jamás deja al rival sin con qué minar /
+  hacer obreros / militares / espías; destruir un lab cancela research en curso. Defensa (shields/
+  torretas) absorbe `siege_power`. Flag `siege_enabled` (default OFF). No implementado aún.
+
+### 2026-06-29 — SDD 56 (diseño): capacidad visible al entrenar (headroom de tropas)
+- `docs/sdd-training-capacity-guard.md`: el cálculo y el panel "📦 Economía / capacidad" YA existen
+  (`housing_report` da `free` por dominio); falta el feedback en el FORMULARIO de entrenar — mostrar
+  "plazas libres X/Y" junto al botón, topear el input de cantidad a `free` y deshabilitar en 0 (con
+  tip del edificio que aloja ese dominio) para no encolar miles sin lugar. No implementado aún.
+
 ## [1.105.0] - 2026-06-29
 
 ### 2026-06-29 — SDD 55 (diseño): tope de ataques por objetivo/día (anti-farmeo) + agresividad IA
