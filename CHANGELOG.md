@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.105.0] - 2026-06-29
+
 ### 2026-06-29 — SDD 55 (diseño): tope de ataques por objetivo/día (anti-farmeo) + agresividad IA
 - `docs/sdd-npc-aggression-limits.md`: el único freno hoy es `attacks_per_window` (3/4h por atacante,
   sobre TODOS sus ataques) → una NPC puede pegarle al MISMO jugador ~18×/día y varias NPC apilarse.
