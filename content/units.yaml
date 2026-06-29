@@ -34,7 +34,9 @@ personnel:
     housing_size: 1
     energy_cost: 3
     train_seconds: 45
-    cost: { structural: 15, energetic: 10 }
+    # SDD 53: infantería = SOLO rol structural → siempre podés defenderte con tu mineral base,
+    # aunque te quedes sin el energético/avanzado. Soldier solo requiere headquarters (sin tech).
+    cost: { structural: 22 }
     stats: { attack: 8, defense: 5, hp: 12 }
   - key: scientist
     icon: "🔬"
@@ -50,7 +52,9 @@ personnel:
     housing_size: 1
     energy_cost: 3
     train_seconds: 45
-    cost: { structural: 10, energetic: 15, advanced: 10 }
+    # SDD 53: ciencia = rol energetic + advanced (el "cuello" del energético vive en el progreso,
+    # NO en la defensa). Sin energético/avanzado igual defendés con infantería (structural).
+    cost: { energetic: 22, advanced: 13 }
     stats: { attack: 0, defense: 2, hp: 6 }
 
   - key: spy
@@ -85,7 +89,8 @@ heavy:
     housing_size: 2
     energy_cost: 8
     train_seconds: 120
-    cost: { structural: 80, energetic: 40, advanced: 20 }
+    # SDD 53: ground (blindado pesado) = structural + advanced (sin energetic).
+    cost: { structural: 90, advanced: 50 }
     stats: { attack: 30, defense: 25, hp: 60 }
   - key: ship
     icon: "🚢"
@@ -121,7 +126,8 @@ heavy:
     housing_size: 2
     energy_cost: 10
     train_seconds: 150
-    cost: { structural: 60, energetic: 60, advanced: 40 }
+    # SDD 53: air = energetic + advanced (sin structural) → el avión SÍ necesita el energético.
+    cost: { energetic: 90, advanced: 70 }
     stats: { attack: 40, defense: 15, hp: 40 }
   - key: shuttle
     icon: "🚀"
@@ -136,7 +142,8 @@ heavy:
     housing_size: 3
     energy_cost: 15
     train_seconds: 240
-    cost: { structural: 120, energetic: 100, advanced: 80 }
+    # SDD 53: space = energetic + advanced (alto) → unidad espacial de fin de juego.
+    cost: { energetic: 180, advanced: 120 }
     stats: { attack: 20, defense: 20, hp: 100 }
   - key: cargo_ship
     icon: "🛰"

@@ -79,9 +79,38 @@ def drones_report() -> None:
               f"(muere por energía: {s.died_of_energy})")
 
 
+def roles_report() -> None:
+    """SDD 53: cómo se reparte el costo por rol y a qué mineral cae en cada raza. Sirve para ver de
+    un vistazo que ningún rol gatea todo y que la defensa (turret/soldier) cae SOLO en
+    structural."""
+    c = get_content()
+    races = ["terran", "martian", "venusian"]
+    print("\n=== ROLES POR ITEM (SDD 53) — reparto structural/energetic/advanced ===")
+    print("mapeo rol→mineral por raza:")
+    for r in races:
+        rr = c.races[r]["resource_roles"]
+        print(f"  {r:9} struct={rr['structural']:9} energetic={rr['energetic']:9} "
+              f"advanced={rr['advanced']}")
+    items = ([(k, c.buildings[k].get("cost", {}), "edif") for k in c.buildings]
+             + [(k, c.units[k].get("cost", {}), "unid") for k in c.units])
+    print(f"\n{'item':18} {'tipo':5} {'struct':>6} {'energ':>6} {'adv':>5}  reparto")
+    for key, cost, kind in items:
+        st, en, ad = cost.get("structural", 0), cost.get("energetic", 0), cost.get("advanced", 0)
+        tot = st + en + ad or 1
+        bar = f"S{int(100*st/tot):>3}% E{int(100*en/tot):>3}% A{int(100*ad/tot):>3}%"
+        print(f"{key:18} {kind:5} {st:>6} {en:>6} {ad:>5}  {bar}")
+    # invariante visible: defensa básica = SOLO structural
+    print("\n  anti-lockout (defensa con SOLO el mineral structural por raza):")
+    for r in races:
+        t = c.building_cost_in_minerals(r, "turret")
+        s = c.unit_cost_in_minerals(r, "soldier")
+        print(f"    {r:9} turret={t} soldier={s}")
+
+
 def main() -> int:
     missiles_report()
     drones_report()
+    roles_report()
     print()
     return 0
 

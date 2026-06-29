@@ -85,3 +85,48 @@ def test_durable_drone_survives_more_turret_ticks_but_drains_faster():
 def test_no_turrets_means_only_energy_kills_drones():
     sim = simulate_drones({"recon_drone": 5}, 0, 1e9, 1e9)
     assert sim.losses == {} and sim.eta_turrets_ticks is None
+
+
+# --- SDD 53: balance de costos por rol/mineral -----------------------------------------------
+RACES = ["terran", "martian", "venusian"]
+
+
+def test_defense_and_infantry_cost_only_structural_role():
+    # Meta 1: la defensa NO depende de un solo mineral 'energetic'. turret + soldier se pagan SOLO
+    # con el rol structural → con tu mineral base SIEMPRE podés defenderte (nunca indefenso).
+    c = get_content()
+    assert set(c.buildings["turret"]["cost"]) == {"structural"}
+    assert set(c.units["soldier"]["cost"]) == {"structural"}
+
+
+def test_anti_lockout_resolved_per_race():
+    # Resuelto a minerales concretos: para CADA raza, turret/soldier caen 100% en su mineral
+    # estructural (0 en el resto) → asimetría por raza preservada, pero siempre defendible.
+    c = get_content()
+    for race in RACES:
+        struct = c.resolve_role(race, "structural")
+        for key, table in (("turret", c.building_cost_in_minerals),
+                           ("soldier", c.unit_cost_in_minerals)):
+            cost = table(race, key)
+            assert set(cost) == {struct}, (race, key, cost)
+
+
+def test_role_diversified_per_branch():
+    # Meta 2 (parte): ningún rol gatea todo. Cada rama pesa en un rol distinto.
+    c = get_content()
+    # ground (tank) sin energetic; air (aircraft) sin structural.
+    assert "energetic" not in c.units["tank"]["cost"]
+    assert "structural" not in c.units["aircraft"]["cost"]
+    # ciencia/energía = energetic dominante (ahí vive el cuello del energético, no en la defensa).
+    for b in ("research_lab", "power_plant"):
+        cost = c.buildings[b]["cost"]
+        assert cost["energetic"] == max(cost.values())
+
+
+def test_per_race_mineral_asymmetry_preserved():
+    # Meta 2: cada raza depende de un mineral distinto (la "gracia" estratégica). El energetic y el
+    # advanced difieren entre razas; el structural también (iron vs basalt).
+    c = get_content()
+    for role in ("structural", "energetic", "advanced"):
+        minerals = {c.resolve_role(r, role) for r in RACES}
+        assert len(minerals) >= 2, (role, minerals)

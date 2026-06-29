@@ -1,6 +1,6 @@
 # SDD 53 — Balance de costos: defensa no gateada por 1 mineral + asimetría por raza
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-28
+> **Estado:** **IMPLEMENTADO** (2026-06-29, 100% YAML + tests) · **Diseño:** 2026-06-28
 > **Relacionado:** SDD (data-driven `content/*.yaml`), plan de game-design (roles de recurso por raza),
 > SDD 49/50 (balance de combate), `content/{buildings,units,races}.yaml`, `registry.resolve_cost`,
 > `tests/test_balance.py`.
@@ -62,3 +62,20 @@ advanced → hacés torretas/soldados/minas; etc. Ningún faltante te deja sin j
 - Riesgo: rebalancear puede abaratar/encarecer ramas → ajustar números con el reporte `make balance`
   (extender `scripts/balance.py` a un breakdown por mineral/raza).
 - No rompe partidas en curso (los costos nuevos aplican a construcciones nuevas).
+
+## 6. Implementación (2026-06-29)
+- **YAML** (`content/units.yaml`, `content/buildings.yaml`): `turret` 140s/60e → **180s**; `soldier`
+  15s/10e → **22s** (solo requiere headquarters, sin tech → defensa SIEMPRE disponible con structural);
+  `tank` → struct+advanced (sin energetic); `aircraft`/`shuttle` → energetic+advanced (sin structural);
+  `power_plant`/`research_lab`/`scientist` → energetic dominante; `barracks`/`factory` reequilibrados;
+  `counter_intel` → struct+advanced. **Economía** (mine/silo/port/market/hangar) ya era
+  structural-dominante → sin cambios. **Ofensa** (misiles/drones/launcher/drone_factory) sin tocar
+  (que dependan del energético es intencional; el SDD protege la DEFENSA, no la ofensa).
+- **Asimetría por raza intacta**: el mapeo `resource_roles` no se tocó → terran=silicon,
+  martian/venusian=sulfur, advanced aluminum/magnesium/titanium, structural iron vs basalt.
+- **Tests** (`tests/test_balance.py`): `test_defense_and_infantry_cost_only_structural_role`,
+  `test_anti_lockout_resolved_per_race`, `test_role_diversified_per_branch`,
+  `test_per_race_mineral_asymmetry_preserved`. **e2e** (`tests/test_api_e2e.py`):
+  `test_defense_never_locked_by_single_mineral_e2e` (con SOLO iron, un terran entrena soldier=OK pero
+  worker=bloqueado). **Reporte**: `scripts/balance.py` (`make balance`) suma `roles_report()` con el
+  reparto S/E/A por item + la verificación anti-lockout por raza.

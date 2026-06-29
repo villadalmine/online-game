@@ -48,9 +48,10 @@ buildings:
     description_en: "Raises the energy cap/regen."
     energy_cost: 15
     build_seconds: 120
+    # SDD 53: energía = rol energetic dominante (acá SÍ pesa el energético; es progreso, no defensa).
     cost:
-      structural: 120
-      energetic: 80
+      structural: 60
+      energetic: 140
   - key: market
     icon: "🏪"
     name: "Mercado"
@@ -98,10 +99,11 @@ buildings:
     houses: { infantry: 30 }   # SDD 46: aloja la infantería (militares)
     energy_cost: 20
     build_seconds: 180
+    # SDD 53: infraestructura de infantería = structural-dominante (defensa no gateada por 1 mineral).
     cost:
-      structural: 150
-      energetic: 60
-      advanced: 30
+      structural: 180
+      energetic: 40
+      advanced: 20
   - key: factory
     icon: "🏭"
     name: "Taller / Fabrica"
@@ -116,10 +118,11 @@ buildings:
     houses: { ground: 10 }   # SDD 46: aloja unidades pesadas terrestres (tanques)
     energy_cost: 25
     build_seconds: 240
+    # SDD 53: industria pesada = structural + advanced dominante.
     cost:
-      structural: 200
-      energetic: 100
-      advanced: 60
+      structural: 210
+      energetic: 70
+      advanced: 80
   - key: research_lab
     icon: "🔭"
     name: "Laboratorio"
@@ -133,9 +136,10 @@ buildings:
     houses: { personnel: 10 }   # SDD 46: aloja personal civil (científicos, espías, obreros)
     energy_cost: 20
     build_seconds: 200
+    # SDD 53: ciencia = rol energetic dominante (el "cuello" del energético es el progreso, no la defensa).
     cost:
-      structural: 120
-      energetic: 120
+      structural: 80
+      energetic: 160
       advanced: 80
   - key: turret
     icon: "🛡"
@@ -158,9 +162,9 @@ buildings:
     # para 1 nuclear → "casi imposible salvo mucha defensa"). Ver scripts/balance.py.
     intercept_power: 10 # SDD 49: capacidad antimisil (derriba misiles entrantes)
     antiair_power: 30   # SDD 50: fuego antiaéreo por tick contra drones que orbitan
+    # SDD 53: defensa = SOLO rol structural → siempre podés levantar torreta con tu mineral base.
     cost:
-      structural: 140
-      energetic: 60
+      structural: 180
   - key: counter_intel
     icon: "🛰"
     name: "Contrainteligencia"
@@ -176,10 +180,10 @@ buildings:
     energy_cost: 12
     build_seconds: 90
     counter_power: 60   # se suma a la defensa de espionaje de la base
+    # SDD 53: defensa (anti-espionaje) = structural + advanced (sin energetic) → siempre defendible.
     cost:
-      structural: 120
-      energetic: 60
-      advanced: 40
+      structural: 140
+      advanced: 80
   - key: silo
     icon: "🛢"
     name: "Silo"

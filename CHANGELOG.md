@@ -7,12 +7,40 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
-### 2026-06-28 — SDD 53 (diseño): balance de costos (defensa no gateada + asimetría por raza)
-- `docs/sdd-resource-balance.md`: análisis (el rol `energetic` está en 22/22 items → para terran
-  `energetic=silicon` gatea hasta la defensa: sin silicio no hay torreta ni soldados). Diseño:
-  defensa/infantería = solo rol `structural` (siempre defendible), diversificar el rol por rama
-  (ground=struct+advanced, air=energetic+advanced, …) y mantener la asimetría por raza
-  (cada una con su mineral). Para iterar. No implementado aún.
+### 2026-06-29 — SDD 55 (diseño): tope de ataques por objetivo/día (anti-farmeo) + agresividad IA
+- `docs/sdd-npc-aggression-limits.md`: el único freno hoy es `attacks_per_window` (3/4h por atacante,
+  sobre TODOS sus ataques) → una NPC puede pegarle al MISMO jugador ~18×/día y varias NPC apilarse.
+  Diseño: tope **por par (atacante, defensor) en 24h** (`attacks_per_target_per_day`, default 2) +
+  tope de **ataques entrantes por defensor/día** (`max_incoming_attacks_per_day`, default 6) + sesgar
+  el cerebro NPC a NO patear al débil (anti-snowball) + cooldown/rotación de objetivo + más visibilidad
+  de ataques recibidos. La IA SÍ aprende/recuerda (memoria corta + postura + `reflect_on_battle`).
+  No implementado aún.
+
+### 2026-06-29 — SDD 54 (diseño): bugs economía/defensa (staffing, torreta, piso de trabajadores)
+- `docs/sdd-economy-defense-bugs.md`: (1) las minas juntan material sin obreros (piso
+  `mining_staffing_floor=0.34` muy alto → bajar a ~0.10); (2) la torreta a veces no cuenta como
+  defensa al ser atacado (solo suma si está `active` y en la base exacta atacada → reproducir y
+  confirmar causa); (3) tras varios ataques te quedás sin trabajadores y quedás trabado → **piso de
+  trabajadores que sobrevive al combate** (`min_surviving_workers`, default 2) para siempre poder
+  seguir juntando material. No implementado aún.
+
+### 2026-06-29 — SDD 53: balance de costos por mineral (defensa no gateada + asimetría por raza)
+> Pedido: "todo depende de silicio; sin silicio me quedo sin defender". El rol `energetic` estaba en
+> 22/22 items → para terran (`energetic=silicon`) hasta la torreta y el soldado se gateaban por silicio.
+- **Defensa/infantería = SOLO rol `structural`** (`content/{buildings,units}.yaml`): `turret`
+  140s/60e → **180s**; `soldier` 15s/10e → **22s**. Como `soldier` solo requiere `headquarters`
+  (sin tech), **siempre podés defenderte con tu mineral base** aunque te quedes sin el energético.
+- **Rol diversificado por rama** (ningún mineral gatea todo): `tank` = struct+advanced (sin energetic);
+  `aircraft`/`shuttle` = energetic+advanced (sin structural); `power_plant`/`research_lab`/`scientist`
+  = energetic dominante (el cuello del energético vive en el PROGRESO, no en la defensa);
+  `counter_intel` = struct+advanced; `barracks`/`factory` reequilibrados. La economía
+  (mine/silo/port/market) ya era structural-dominante. La ofensa (misiles/drones) no se tocó.
+- **Asimetría por raza intacta**: `resource_roles` sin cambios → terran↔silicio, martian/venusian↔
+  azufre, advanced aluminio/magnesio/titanio, structural iron vs basalt. Cada raza sigue dependiendo
+  de su mineral.
+- Tests: `tests/test_balance.py` (4 invariantes SDD 53) + e2e
+  `test_defense_never_locked_by_single_mineral_e2e` (con SOLO iron: soldier OK, worker bloqueado).
+  `scripts/balance.py` (`make balance`) suma el reparto S/E/A por item + verificación anti-lockout.
 
 ### 2026-06-28 — Fix CD: pool de nodos (no pinear) + ttl corto (no llenar disco)
 - El CD estaba pineado a UN nodo (`srv-rk1-nvme-01`); cuando ese entró en DiskPressure el workflow

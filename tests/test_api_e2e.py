@@ -215,6 +215,37 @@ async def test_all_keys_no_server_error(client):
     assert not fails, "errores 500 por key:\n" + "\n".join(fails)
 
 
+async def test_defense_never_locked_by_single_mineral_e2e(client):
+    """SDD 53: con SOLO el mineral estructural (iron, sin el energético) un terran igual entrena
+    infantería (defensa) pero NO algo que pida el energético → la defensa nunca queda gateada."""
+    from app.models import ResourceStock
+    h = await _register(client.http, "lockout")
+    state = await _onboard(client.http, h, planet="earth", race="terran")
+    base_id = state["bases"][0]["id"]
+    # terran: structural=iron, energetic=silicon, advanced=aluminum. Dejamos SOLO iron.
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "lockout"))).scalar_one()
+        p.energy = 10_000
+        for m, amt in (("iron", 10_000), ("silicon", 0), ("aluminum", 0)):
+            row = (await s.execute(select(ResourceStock).where(
+                ResourceStock.player_id == p.id, ResourceStock.mineral_key == m,
+                ResourceStock.planet_key == "earth"))).scalar_one_or_none()
+            if row:
+                row.amount = amt
+            else:
+                s.add(ResourceStock(player_id=p.id, mineral_key=m, amount=amt,
+                                    planet_key="earth"))
+        await s.commit()
+    # Defensa (soldier, solo requiere headquarters): se entrena con SOLO iron → OK.
+    ok = await client.http.post(f"/api/v1/bases/{base_id}/train", headers=h,
+                                json={"unit_key": "soldier", "quantity": 1})
+    assert ok.status_code in (200, 201), ok.text
+    # En cambio el worker pide el energético (silicon=0) → bloquea (no es defensa, es economía).
+    blocked = await client.http.post(f"/api/v1/bases/{base_id}/train", headers=h,
+                                     json={"unit_key": "worker", "quantity": 1})
+    assert blocked.status_code >= 400 and blocked.status_code < 500, blocked.text
+
+
 async def test_catalog_tree_computed(client):
     """/catalog/tree: skill tree + tablas con costos resueltos por raza y dependencias
     (lo consume el modal web y la IA)."""
