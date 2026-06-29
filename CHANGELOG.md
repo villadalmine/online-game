@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.106.0] - 2026-06-29
+
 ### 2026-06-29 — SDD 55: anti-farmeo de la IA (topes de ataque por día) + SDD 54: no quedar trabado
 - **SDD 55 (anti-farmeo, aplica a humanos Y NPCs):** además del límite por ventana (3/4h), dos topes
   por día en `combat.py`: **por par (atacante, defensor)** `attacks_per_target_per_day=2` (no podés
