@@ -1,6 +1,7 @@
 # SDD 55 — Inteligencia de la IA: tope de ataques por objetivo/día (anti-farmeo) + agresividad
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-29
+> **Estado:** **IMPLEMENTADO (parcial)** 2026-06-29 — topes duros (por objetivo/día + entrante/día)
+> HECHOS (aplican a humanos Y NPCs); el sesgo del cerebro NPC (§3.2) queda pendiente. · **Diseño:** 2026-06-29
 > **Relacionado:** [SDD 29 inteligencia estratégica de NPCs](sdd-npc-strategic-intelligence.md)
 > (perfiles + memoria + reflexión), [SDD 25 catch-up de novatos](sdd-newcomer-catchup.md),
 > [SDD 53 balance](sdd-resource-balance.md), [SDD 54 bugs economía/defensa](sdd-economy-defense-bugs.md),
@@ -54,6 +55,16 @@ abusos." → Una NPC (o varias) puede **farmear** a un mismo jugador hasta estra
 - `test_npc.py`: con una víctima muy débil, `pick_posture_rules` NO elige raid contra ella; el NPC
   rota de objetivo si ya atacó al mismo recientemente.
 - Invariante: estos topes aplican **igual** a humanos y NPCs (no asimetría explotable).
+
+## 4.bis Implementación (2026-06-29)
+- ✅ **Tope por objetivo/día** (`attacks_per_target_per_day=2`) y **entrante por defensor/día**
+  (`max_incoming_attacks_per_day=6`) en `app/core/config.py` + `combat.py:start_attack` (cuenta
+  `AttackMission` por (atacante,defensor) y por defensor en las últimas 24 h; 0 = sin límite). Aplican
+  a humanos Y NPCs. e2e `test_attack_per_target_daily_cap_e2e`, `test_attack_incoming_daily_cap_e2e`;
+  el e2e de ventana ya existente se aisló (apaga estos topes por monkeypatch).
+- ⏳ **Pendiente (§3.2)**: sesgar `pick_posture_rules`/cerebro NPC a no patear al débil + cooldown/
+  rotación de objetivo + más visibilidad de ataques recibidos. Los topes duros ya cortan el farmeo;
+  el sesgo es refinamiento.
 
 ## 5. Rollout / riesgos
 - Config + lógica acotada en `combat.py` (conteo por par/por defensor) y `npc.py` (sesgo + cooldown);

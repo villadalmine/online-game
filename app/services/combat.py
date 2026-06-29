@@ -185,6 +185,35 @@ async def start_attack(
                 "Esperá para volver a atacar."
             )
 
+    # SDD 55 (anti-farmeo): topes por DÍA (humanos Y NPCs) para que nadie acose a un mismo jugador.
+    if settings.attacks_per_target_per_day > 0 or settings.max_incoming_attacks_per_day > 0:
+        from sqlalchemy import func
+        day_start = now - timedelta(seconds=86400)
+        if settings.attacks_per_target_per_day > 0:
+            same_target = (await session.execute(
+                select(func.count(AttackMission.id)).where(
+                    AttackMission.attacker_id == attacker.id,
+                    AttackMission.defender_id == defender.id,
+                    AttackMission.created_at >= day_start,
+                )
+            )).scalar_one()
+            if same_target >= settings.attacks_per_target_per_day:
+                raise CombatError(
+                    f"Ya atacaste a ese jugador {settings.attacks_per_target_per_day} veces hoy "
+                    "(anti-abuso). Probá con otro objetivo."
+                )
+        if settings.max_incoming_attacks_per_day > 0:
+            incoming = (await session.execute(
+                select(func.count(AttackMission.id)).where(
+                    AttackMission.defender_id == defender.id,
+                    AttackMission.created_at >= day_start,
+                )
+            )).scalar_one()
+            if incoming >= settings.max_incoming_attacks_per_day:
+                raise CombatError(
+                    "Ese rival ya fue muy golpeado hoy; dejá que se recupere (anti-abuso)."
+                )
+
     await _advance_economy(session, attacker, now)
 
     units = await player_units(session, attacker.id)
@@ -278,7 +307,13 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
     # Defender unit losses.
     for unit_key, lost in result.defender_losses.items():
         stock = await get_or_create_unit_stock(session, defender.id, unit_key)
-        stock.quantity = max(0, stock.quantity - lost)
+        before = stock.quantity
+        new_q = max(0, before - lost)
+        # SDD 54: nunca dejar al defensor sin trabajadores → siempre puede seguir juntando material
+        # y reconstruir. Protege los últimos `min_surviving_workers` (si los tenía).
+        if unit_key == "worker" and settings.min_surviving_workers > 0:
+            new_q = max(new_q, min(before, settings.min_surviving_workers))
+        stock.quantity = new_q
 
     # Surviving attackers (the rest is destroyed in transit-home? no: lost in battle).
     survivors = {k: max(0, force.get(k, 0) - result.attacker_losses.get(k, 0)) for k in force}

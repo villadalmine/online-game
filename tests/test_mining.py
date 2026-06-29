@@ -12,6 +12,14 @@ def test_staffing_ratio_clamps_and_scales():
     assert staffing_ratio(5, 10) == 0.5     # 2 minas, mismos obreros → cada una rinde menos
 
 
+def test_mining_floor_is_low_so_workers_matter():
+    # SDD 54: sin obreros la mina casi no rinde (los trabajadores SÍ importan), pero no zerea del
+    # todo a un novato. Bajamos de 0.34 a un piso simbólico (≤0.15).
+    from app.core.config import get_settings
+    floor = get_settings().mining_staffing_floor
+    assert 0.0 < floor <= 0.15
+
+
 def test_apply_overflow_caps_and_wastes():
     assert apply_overflow(100, None) == (100, 0.0)   # sin tope: almacena todo
     assert apply_overflow(100, 30) == (30, 70)       # rebalsa: 30 entra, 70 se pierde

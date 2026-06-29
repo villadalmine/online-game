@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-29 — SDD 55: anti-farmeo de la IA (topes de ataque por día) + SDD 54: no quedar trabado
+- **SDD 55 (anti-farmeo, aplica a humanos Y NPCs):** además del límite por ventana (3/4h), dos topes
+  por día en `combat.py`: **por par (atacante, defensor)** `attacks_per_target_per_day=2` (no podés
+  pegarle al MISMO rival más de 2×/día) y **entrante por defensor** `max_incoming_attacks_per_day=6`
+  (un jugador no recibe infinitos ataques por día → puede reconstruir). Configurables (0 = off). e2e
+  `test_attack_per_target_daily_cap_e2e`, `test_attack_incoming_daily_cap_e2e`. Pendiente (diseño):
+  sesgar el cerebro NPC a no patear al débil + rotación de objetivo.
+- **SDD 54 (no quedar trabado):** (1) el combate nunca deja al defensor con menos de
+  `min_surviving_workers=2` trabajadores → siempre podés seguir juntando material y reconstruir (e2e
+  `test_worker_floor_survives_combat_e2e`); (2) `mining_staffing_floor` **0.34 → 0.10** (sin obreros la
+  mina casi no rinde: los trabajadores importan, sin zerear a un novato); (3) **torreta reproducida**:
+  e2e `test_turret_counts_as_defense_e2e` confirma que una torreta `active` en la base atacada SÍ
+  defiende — el reporte del usuario era torreta en otra base/no-activa (la defensa es POR base).
+
 ## [1.105.1] - 2026-06-29
 
 ### 2026-06-29 — Fix CD: pinear build y runtime a arm64 (cluster mixto) — `exec format error`

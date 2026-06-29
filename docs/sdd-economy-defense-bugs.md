@@ -1,6 +1,7 @@
 # SDD 54 — Bugs de economía/defensa: staffing de minas, torreta que no defiende, piso de trabajadores
 
-> **Estado:** **diseño** (no implementado) · **Fecha:** 2026-06-29
+> **Estado:** **IMPLEMENTADO (parcial)** 2026-06-29 — staffing floor + piso de trabajadores HECHOS;
+> torreta REPRODUCIDA (no es bug en una base; ver §6). · **Diseño:** 2026-06-29
 > **Relacionado:** [SDD 47 minería/trabajadores/silos](sdd-mining-workers-storage.md),
 > [SDD 46 alojamiento](sdd-unit-housing-capacity.md), `app/services/combat.py` (resolución de ataque),
 > `app/services/production.py` / `app/services/state.py` (producción lazy + staffing),
@@ -68,3 +69,17 @@ Tres bugs/inconsistencias que dejan al jugador **trabado y vulnerable**:
 - Riesgo: bajar el floor encarece el early-game → balancear con `make balance` y datos.
 - Riesgo: el piso de workers puede ser explotado (esconder economía detrás de 2 workers intocables);
   mitiga que el saqueo de **minerales** sí siga (solo se protege la **capacidad de seguir jugando**).
+
+## 6. Implementación (2026-06-29)
+- ✅ **Bug 1 (staffing)**: `mining_staffing_floor` **0.34 → 0.10** (`app/core/config.py`). Sin obreros
+  la mina rinde 10% (los trabajadores importan), sin zerear a un novato. Guard
+  `test_mining.py::test_mining_floor_is_low_so_workers_matter`.
+- ✅ **Bug 3 (piso de trabajadores)**: `min_surviving_workers=2` (`app/core/config.py`); en
+  `combat.py` las pérdidas del defensor nunca bajan los `worker` por debajo del piso (si los tenía) →
+  siempre podés seguir juntando material. e2e `test_worker_floor_survives_combat_e2e`.
+- 🔎 **Bug 2 (torreta) — REPRODUCIDO, NO es bug de código**: e2e
+  `test_turret_counts_as_defense_e2e` confirma que una torreta **`active` en la base atacada** SÍ
+  suma `defense_power` (3 soldados no la superan → gana el defensor). La defensa es **POR BASE**: si la
+  torreta está en OTRA base/planeta del jugador, o aún está `building` (no `active`), no defiende la
+  base golpeada. **Pendiente (UX, no bug)**: que la UI avise "esta base no tiene defensas" y el
+  asistente sugiera torretas por base (queda como follow-up, no se tocó código de combate).

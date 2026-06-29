@@ -2630,8 +2630,13 @@ async def test_player_history_analytics_e2e(client, monkeypatch):
     assert isinstance(data["events"], dict)
 
 
-async def test_attack_rate_limit_per_window_e2e(client):
+async def test_attack_rate_limit_per_window_e2e(client, monkeypatch):
     """Límite de ataques por ventana: tras N ataques en la ventana, el siguiente da 400."""
+    from app.core.config import get_settings
+    # Aislar el límite POR VENTANA: apagamos los topes por-objetivo/entrante (SDD 55, probados
+    # aparte); sino el 3º ataque al mismo rival lo bloquearían ellos antes que la ventana.
+    monkeypatch.setattr(get_settings(), "attacks_per_target_per_day", 0)
+    monkeypatch.setattr(get_settings(), "max_incoming_attacks_per_day", 0)
     ha = await _register(client.http, "raider_lim")
     await _onboard(client.http, ha, planet="mars", race="martian")
     hd = await _register(client.http, "victim_lim")
@@ -2652,3 +2657,118 @@ async def test_attack_rate_limit_per_window_e2e(client):
     r = await client.http.post("/api/v1/combat/attack", headers=ha,
                                json={"target_base_id": target, "force": {"soldier": 1}})
     assert r.status_code == 400 and "límite" in r.text.lower()
+
+
+async def test_attack_per_target_daily_cap_e2e(client, monkeypatch):
+    """SDD 55: no podés farmear al MISMO rival — tope por par (atacante, defensor) por día."""
+    from app.core.config import get_settings
+    # Aislamos el tope por-objetivo: ventana y entrante holgados.
+    monkeypatch.setattr(get_settings(), "attacks_per_window", 0)
+    monkeypatch.setattr(get_settings(), "max_incoming_attacks_per_day", 0)
+    monkeypatch.setattr(get_settings(), "attacks_per_target_per_day", 2)
+    ha = await _register(client.http, "farmer")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "farmed")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    target = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "farmer", "farmed")
+    await _grant_units(client.session_maker, "farmer", {"soldier": 10})
+    await _set_energy(client.session_maker, "farmer", 1_000_000)
+
+    codes = []
+    for _ in range(3):
+        r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                                   json={"target_base_id": target, "force": {"soldier": 1}})
+        codes.append(r.status_code)
+    assert codes[:2] == [201, 201]                      # 2 ataques al mismo rival OK
+    assert codes[2] == 400                              # el 3º al MISMO rival → bloqueado
+    r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                               json={"target_base_id": target, "force": {"soldier": 1}})
+    assert "objetivo" in r.text.lower() or "abuso" in r.text.lower()
+
+
+async def test_attack_incoming_daily_cap_e2e(client, monkeypatch):
+    """SDD 55: un defensor no recibe infinitos ataques por día (puede reconstruir)."""
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "attacks_per_window", 0)
+    monkeypatch.setattr(get_settings(), "attacks_per_target_per_day", 0)
+    monkeypatch.setattr(get_settings(), "max_incoming_attacks_per_day", 3)
+    ha = await _register(client.http, "sieger")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "besieged")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    target = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "sieger", "besieged")
+    await _grant_units(client.session_maker, "sieger", {"soldier": 10})
+    await _set_energy(client.session_maker, "sieger", 1_000_000)
+
+    ok = 0
+    for _ in range(3):
+        r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                                   json={"target_base_id": target, "force": {"soldier": 1}})
+        if r.status_code == 201:
+            ok += 1
+    assert ok == 3
+    # el 4º entrante al mismo defensor → bloqueado (ya fue muy golpeado hoy)
+    r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                               json={"target_base_id": target, "force": {"soldier": 1}})
+    assert r.status_code == 400 and ("golpeado" in r.text.lower() or "abuso" in r.text.lower())
+
+
+async def test_worker_floor_survives_combat_e2e(client):
+    """SDD 54: tras un ataque arrasador, al defensor SIEMPRE le quedan ≥ min_surviving_workers
+    trabajadores → puede seguir juntando material (no queda trabado)."""
+    ha = await _register(client.http, "crusher")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "stuck")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    target = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "crusher", "stuck")
+    await _grant_units(client.session_maker, "crusher", {"tank": 20})   # fuerza aplastante
+    await _grant_units(client.session_maker, "stuck", {"worker": 5})    # solo obreros, sin defensa
+    await _set_energy(client.session_maker, "crusher", 1_000_000)
+
+    r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                               json={"target_base_id": target, "force": {"tank": 20}})
+    assert r.status_code == 201, r.text
+    await _fast_forward_arrivals(client.session_maker)
+    await client.http.post("/api/v1/admin/tick", headers=ha)
+    reports = (await client.http.get("/api/v1/combat/reports", headers=ha)).json()
+    assert reports and reports[0]["outcome"] == "attacker"
+    # el defensor perdió la batalla pero conserva el piso de obreros
+    dme = (await client.http.get("/api/v1/players/me", headers=hd)).json()
+    assert dme["units"].get("worker", 0) >= 2
+
+
+async def test_turret_counts_as_defense_e2e(client):
+    """SDD 54: una torreta ACTIVA en la base atacada cuenta como defensa (reproduce el reporte)."""
+    from sqlalchemy import select
+
+    from app.models import Building
+    ha = await _register(client.http, "atk_turret")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "def_turret")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    target = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "atk_turret", "def_turret")
+    await _grant_units(client.session_maker, "atk_turret", {"soldier": 3})
+    await _set_energy(client.session_maker, "atk_turret", 1_000_000)
+    # Plantamos una torreta ACTIVA en la base atacada (defense_power fijo).
+    async with client.session_maker() as s:
+        s.add(Building(base_id=target, building_key="turret", status="active"))
+        await s.commit()
+        cnt = (await s.execute(select(Building).where(
+            Building.base_id == target, Building.building_key == "turret",
+            Building.status == "active"))).scalars().all()
+        assert len(cnt) == 1
+
+    r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                               json={"target_base_id": target, "force": {"soldier": 3}})
+    assert r.status_code == 201, r.text
+    await _fast_forward_arrivals(client.session_maker)
+    await client.http.post("/api/v1/admin/tick", headers=ha)
+    reports = (await client.http.get("/api/v1/combat/reports", headers=ha)).json()
+    assert reports, "debería haber un reporte de combate"
+    det = reports[0].get("details", reports[0])
+    # 3 soldados (ataque 24) NO superan la defensa fija de la torreta → la torreta defendió.
+    assert reports[0]["outcome"] == "defender", det

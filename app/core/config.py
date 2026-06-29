@@ -84,6 +84,14 @@ class Settings(BaseSettings):
     # reagruparse y evita que la IA "se zarpe". Default: 3 ataques cada 4 h. 0 = sin límite.
     attacks_per_window: int = 3
     attack_window_seconds: int = 14400   # 4 h
+    # SDD 55 (anti-farmeo): topes por DÍA para que la IA (o un humano) no acose al mismo jugador.
+    # Por par (atacante, defensor): cuántas veces le pegás al MISMO rival en 24 h. 0 = sin tope.
+    attacks_per_target_per_day: int = 2
+    # Por defensor: cuántos ataques ENTRANTES tolera un jugador en 24 h (para reconstruir). 0 = off.
+    max_incoming_attacks_per_day: int = 6
+    # SDD 54: el combate nunca deja al defensor con menos de N trabajadores → siempre puede seguir
+    # juntando material y reconstruir (no quedás trabado sin salida). 0 = sin piso.
+    min_surviving_workers: int = 2
     loot_fraction: float = 0.2  # share of each defender mineral looted on a win
     # Fleet travel time (seconds): one-way. Same planet is quick; cross-planet is slow.
     travel_seconds_same_planet: int = 60
@@ -163,7 +171,9 @@ class Settings(BaseSettings):
     mining_staffing_enabled: bool = True
     storage_caps_enabled: bool = True
     base_storage_per_mineral: float = 5000.0   # colchón por mineral por planeta aun sin silos
-    mining_staffing_floor: float = 0.34        # producción mínima sin obreros (≈ 1 mina sin staff)
+    # SDD 54: piso BAJO sin obreros (10%) → sin gente la mina casi no rinde (los trabajadores SÍ
+    # importan), pero no zerea del todo a un novato. Antes 0.34 (demasiado alto).
+    mining_staffing_floor: float = 0.10        # producción mínima sin obreros (simbólica)
 
     # Alojamiento de unidades (SDD 46): cada unidad ocupa una plaza de su dominio; cada edificio da
     # plazas. ENFORCE con GRACIA (`base_housing_per_domain`): cada dominio arranca con N plazas aun
