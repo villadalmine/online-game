@@ -443,11 +443,22 @@ class RuleBasedBrain:
         army = {k: units[k] for k in ("soldier", "tank", "aircraft") if units.get(k)}
         my_power = _force_attack_power(army)
         if my_power > 0 and energy >= get_settings().attack_energy_cost:
+            # SDD 55 §3.2: no patear al débil (dejar crecer al humano muy por debajo, anti-snowball)
+            # + repartir la presión (no apilar varias flotas sobre el MISMO rival → rotar objetivo).
+            my_score = await player_score(session, player)
+            ratio = get_settings().npc_weak_protect_ratio
+            already = {m.defender_id for m in await _my_outbound(session, player)}
             beatable = []
             for b in await _enemy_bases(session, player):
+                if b.player_id in already:           # ya tengo flota yendo a ese rival → roto
+                    continue
                 defense = await _base_defense_estimate(session, b)
                 if my_power > defense * margin:  # don't trade evenly (margin del perfil)
                     owner = await session.get(Player, b.player_id)
+                    # no patear al débil: a un HUMANO muy por debajo mío lo dejo crecer.
+                    if not owner.is_npc and ratio > 0 \
+                            and await player_score(session, owner) < my_score * ratio:
+                        continue
                     beatable.append((defense, owner, b))
             if beatable:
                 targeted = [b for (_d, o, b) in beatable if o.id == player.npc_target_id]

@@ -409,6 +409,41 @@ async def test_rule_brain_ganks_the_leading_human(session):
     assert action == f"attack base {leader_base.id}"
 
 
+async def test_rule_brain_spares_a_much_weaker_human(session):
+    # SDD 55 §3.2: la NPC NO patea al débil — a un humano muy por debajo de su score lo deja crecer
+    # (anti-snowball), aunque sea el único objetivo batible.
+    from app.models import AttackMission, ResourceStock
+    from app.services.training import get_or_create_unit_stock
+
+    npc = Player(username="lone_raider", password_hash="x", is_npc=True)
+    session.add(npc)
+    await session.flush()
+    await onboard_player(session, npc, "milky_way", "mars", "martian")
+    # humano débil (recién onboardeado) en el MISMO planeta, sin protección
+    weak = Player(username="newbie", password_hash=hash_password("secret123"))
+    session.add(weak)
+    await session.flush()
+    await onboard_player(session, weak, "milky_way", "mars", "martian")
+    weak.protected_until = None
+    # NPC con ejército aplastante + energía; sin minerales → llega al paso de ataque
+    npc.energy = 999
+    for st in (await session.execute(
+        select(ResourceStock).where(ResourceStock.player_id == npc.id)
+    )).scalars():
+        st.amount = 0
+    (await get_or_create_unit_stock(session, npc.id, "tank")).quantity = 50
+    await session.commit()
+
+    npc = (await session.execute(
+        select(Player).where(Player.username == "lone_raider"))).scalar_one()
+    action = await RuleBasedBrain().act(session, npc)
+    weak_base = (await session.execute(
+        select(Base_).where(Base_.player_id == weak.id))).scalar_one()
+    missions = (await session.execute(
+        select(AttackMission).where(AttackMission.target_base_id == weak_base.id))).scalars().all()
+    assert not missions, f"no debería atacar al débil; action={action}"
+
+
 async def test_best_meta_unit_picks_high_winrate(session):
     # SDD 41: la NPC elige la unidad con mejor win-rate (con muestra suficiente).
     import json

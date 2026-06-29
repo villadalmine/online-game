@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-29 — SDD 59: panel de materiales por planeta (compraste pero "te falta")
+> Reporte: "compro y tengo material pero me dice que me falta / el panel no coincide". Causa: el panel
+> "Minerales" mostraba el AGREGADO de todos los planetas, pero construir/comprar es POR planeta (SDD 42)
+> — comprabas en un planeta (con mercado) y construías en otro sin ese mineral.
+- Web (`index.html`): con >1 planeta, el panel "Minerales" **desglosa por planeta** (⭐ natal / 🪐
+  colonia), usando `stocks_by_planet` (lo mismo que valida la afford). e2e
+  `test_stocks_exposed_per_planet_e2e`. `docs/sdd-materials-panel-per-planet.md`.
+
+### 2026-06-29 — SDD 55 §3.2: la IA no patea al débil + reparte la presión
+- En el cerebro NPC (`npc.py`, paso de ataque): (a) **no ataca a un humano mucho más débil** (score <
+  `npc_weak_protect_ratio`=0.5 del suyo) → lo deja crecer (anti-snowball); (b) **no apila flotas** sobre
+  un rival al que ya le mandó una (rota de objetivo). e2e `test_rule_brain_spares_a_much_weaker_human`
+  (+ control: sigue gankeando al líder fuerte). Completa SDD 55 (los topes duros ya estaban en 1.106.0).
+
 ## [1.107.0] - 2026-06-29
 
 ### 2026-06-29 — SDD 57: viajes por hiperespacio + acorazado "rompe-bases" (anti-lockout)

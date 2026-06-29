@@ -1,7 +1,7 @@
 # SDD 55 — Inteligencia de la IA: tope de ataques por objetivo/día (anti-farmeo) + agresividad
 
-> **Estado:** **IMPLEMENTADO (parcial)** 2026-06-29 — topes duros (por objetivo/día + entrante/día)
-> HECHOS (aplican a humanos Y NPCs); el sesgo del cerebro NPC (§3.2) queda pendiente. · **Diseño:** 2026-06-29
+> **Estado:** **IMPLEMENTADO** 2026-06-29 — topes duros (por objetivo/día + entrante/día) + sesgo del
+> cerebro NPC §3.2 (no patear al débil + no apilar flotas). · **Diseño:** 2026-06-29
 > **Relacionado:** [SDD 29 inteligencia estratégica de NPCs](sdd-npc-strategic-intelligence.md)
 > (perfiles + memoria + reflexión), [SDD 25 catch-up de novatos](sdd-newcomer-catchup.md),
 > [SDD 53 balance](sdd-resource-balance.md), [SDD 54 bugs economía/defensa](sdd-economy-defense-bugs.md),
@@ -62,9 +62,12 @@ abusos." → Una NPC (o varias) puede **farmear** a un mismo jugador hasta estra
   `AttackMission` por (atacante,defensor) y por defensor en las últimas 24 h; 0 = sin límite). Aplican
   a humanos Y NPCs. e2e `test_attack_per_target_daily_cap_e2e`, `test_attack_incoming_daily_cap_e2e`;
   el e2e de ventana ya existente se aisló (apaga estos topes por monkeypatch).
-- ⏳ **Pendiente (§3.2)**: sesgar `pick_posture_rules`/cerebro NPC a no patear al débil + cooldown/
-  rotación de objetivo + más visibilidad de ataques recibidos. Los topes duros ya cortan el farmeo;
-  el sesgo es refinamiento.
+- ✅ **§3.2 (sesgo del cerebro NPC, 2026-06-29)**: en `npc.py` paso de ataque — (a) **no patea al
+  débil**: salta a un HUMANO con score < `npc_weak_protect_ratio` (0.5) del suyo → lo deja crecer
+  (anti-snowball); (b) **reparte la presión**: salta rivales a los que ya tiene una flota outbound
+  (no apila). e2e `test_rule_brain_spares_a_much_weaker_human` (+ control
+  `test_rule_brain_ganks_the_leading_human` sigue verde). Pendiente menor: visibilidad de "ataques
+  recibidos hoy" en el panel (UX).
 
 ## 5. Rollout / riesgos
 - Config + lógica acotada en `combat.py` (conteo por par/por defensor) y `npc.py` (sesgo + cooldown);

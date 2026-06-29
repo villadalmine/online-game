@@ -92,6 +92,9 @@ class Settings(BaseSettings):
     # SDD 54: el combate nunca deja al defensor con menos de N trabajadores → siempre puede seguir
     # juntando material y reconstruir (no quedás trabado sin salida). 0 = sin piso.
     min_surviving_workers: int = 2
+    # SDD 55 §3.2: la IA NO patea al débil — no ataca a un HUMANO cuyo score esté por debajo de esta
+    # fracción del suyo (anti-snowball; lo deja crecer). 0 = sin protección (ataca a cualquiera).
+    npc_weak_protect_ratio: float = 0.5
     # SDD 57: bombardeo "rompe-bases" — naves con `siege_power` que ganan demuelen edificios
     # EXCEDENTES (nunca HQ/minas ni el último de su tipo). siege_per_building = siege para volar 1.
     siege_enabled: bool = True

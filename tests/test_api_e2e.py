@@ -275,6 +275,18 @@ async def test_training_capacity_headroom_e2e(client):
     assert r.status_code >= 400 and "plaza" in r.text.lower(), r.text
 
 
+async def test_stocks_exposed_per_planet_e2e(client):
+    """SDD 59: el stock es POR planeta (SDD 42); `/players/me` expone `stocks_by_planet` → la UI
+    muestra el material de cada colonia (comprar en un planeta y construir en otro daba 'falta')."""
+    h = await _register(client.http, "perplanet")
+    await _onboard(client.http, h, planet="earth", race="terran")
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert "stocks_by_planet" in me and "earth" in me["stocks_by_planet"]
+    agg, byp = me["stocks"], me["stocks_by_planet"]["earth"]
+    for m, v in byp.items():
+        assert agg.get(m, 0) >= v          # el agregado contiene lo de cada planeta
+
+
 async def test_catalog_tree_computed(client):
     """/catalog/tree: skill tree + tablas con costos resueltos por raza y dependencias
     (lo consume el modal web y la IA)."""

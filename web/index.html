@@ -1128,7 +1128,19 @@ async function refresh(){
   $("unread").textContent="🔔 "+state.unread_notifications;
   $("ebar").style.width=Math.min(100,100*state.energy/state.energy_max)+"%"; $("etxt").textContent=state.energy+"/"+state.energy_max;
   const picE=isPicto('imperio');
-  $("minerals").innerHTML=Object.entries(state.stocks).map(([k,v])=>picE?`<span class="chip">${mchip(k,v)}</span>`:`<span class="chip">${esc(k)}: ${Math.round(v)}</span>`).join("")||'<span class="muted">—</span>';
+  // SDD 59: el stock es POR PLANETA (SDD 42). Mostrar el agregado confundía ("tengo silicon" pero
+  // construís en una colonia sin silicon → "te falta"). Con colonias, desglosamos por planeta.
+  {const chip=(k,v)=>picE?`<span class="chip">${mchip(k,v)}</span>`:`<span class="chip">${esc(k)}: ${Math.round(v)}</span>`;
+   const sbp=state.stocks_by_planet||{}; const pls=Object.keys(sbp);
+   if(pls.length>1){
+     $("minerals").innerHTML=pls.map(pk=>{
+       const st=sbp[pk]||{}; const tag=(pk===state.planet_key)?'⭐':'🪐';
+       const chips=Object.entries(st).map(([k,v])=>chip(k,v)).join("")||'<span class="muted">—</span>';
+       return `<div style="margin:3px 0"><span class="muted" style="font-size:11px">${tag} ${esc(planetName(pk))}</span><div class="row">${chips}</div></div>`;
+     }).join("");
+   } else {
+     $("minerals").innerHTML=Object.entries(state.stocks).map(([k,v])=>chip(k,v)).join("")||'<span class="muted">—</span>';
+   }}
   $("units").innerHTML=Object.entries(state.units).filter(([,v])=>v>0).map(([k,v])=>picE?`<span class="chip">${ico('unit',k)} ${v}</span>`:`<span class="chip">${esc(k)}: ${v}</span>`).join("")||`<span class="muted">${esc(tr('nounits'))}</span>`;
   $("boons").innerHTML=(state.boons||[]).map(b=>`<span class="chip ok">boon ${esc(b.effect)} ×${b.magnitude}</span>`).join(" ");
   const baseTag=b=>b.base_type==='lunar'?'🌙':(b.base_type==='orbital'?'🛰':(b.planet_key!==state.planet_key?'🪐':'⭐'));
