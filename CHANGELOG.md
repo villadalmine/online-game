@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-29 — Fix CD: pinear build y runtime a arm64 (cluster mixto) — `exec format error`
+> Incidente: 1.105.0 no promovía. Un nodo amd64 (`srv-t7910`) entró al pool del CD
+> (`storage=rk1-longhorn`) → Kaniko buildeó la imagen en amd64 → en prod (arm64) el init crasheaba con
+> `exec /usr/local/bin/python: exec format error`. Prod siguió sano en 1.104.4 (rollout trabado, sin caída).
+- `deploy/build/online-game-cicd.yaml`: nodeSelector suma `kubernetes.io/arch: arm64` → Kaniko buildea
+  SIEMPRE en arm (coincide con prod). `deploy/helm/examples/values-prod.yaml`: `nodeSelector.kubernetes
+  .io/arch=arm64` → la imagen arm nunca se agenda en el nodo amd64.
+- `docs/sdd-multiarch-ci-builds.md` (**SDD 58**): el fix real (builds multi-arch / manifest list) para
+  aprovechar el nodo amd64, a iterar. Por ahora, workaround = pin a arm64.
+
 ### 2026-06-29 — SDD 57 (diseño): viajes por hiperespacio + nave capital "rompe-bases"
 - `docs/sdd-hyperspace-base-buster.md`: árbol de research de fin de juego (velocidad de la luz /
   propulsión relativista → viajes por hiperespacio → acorazado) que habilita una nave capital con

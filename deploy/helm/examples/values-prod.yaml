@@ -6,6 +6,13 @@
 api:
   replicas: 3                  # HA: 3 réplicas → sin downtime en deploy/restart/caída de un nodo
 
+# Cluster MIXTO de arquitecturas: prod corre en nodos arm64 y Kaniko produce imágenes de UNA arch
+# (la del nodo donde buildea). Pineamos el runtime a arm64 para que NUNCA se agende la imagen arm en
+# el nodo amd64 (srv-t7910) → evita `exec format error`. (El CD también buildea en arm64; ver
+# deploy/build/online-game-cicd.yaml.) Incidente 2026-06-29.
+nodeSelector:
+  kubernetes.io/arch: arm64
+
 # No tirar todas las réplicas juntas en drains/upgrades.
 podDisruptionBudget:
   enabled: true

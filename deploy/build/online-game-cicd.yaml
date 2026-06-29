@@ -33,10 +33,14 @@ spec:
   podGC:
     strategy: OnWorkflowSuccess
   # NO pinear a UN nodo: si ese entra en DiskPressure, el CD queda Pending para siempre (incidente
-  # 2026-06-28). Selector al POOL rk1-nvme (01-04 comparten `storage=rk1-longhorn`, arm64 + acceso a
+  # 2026-06-28). Selector al POOL rk1-nvme (01-04 comparten `storage=rk1-longhorn` + acceso a
   # longhorn-nvme) → el scheduler elige uno sano. Si uno está con disk-pressure (taint), usa otro.
+  # OJO arch (incidente 2026-06-29): un nodo amd64 (srv-t7910) entró al pool con esa label → Kaniko
+  # buildeó amd64 y prod (arm64) no la pudo ejecutar (`exec format error`). Pineamos arch=arm64 para
+  # que la imagen SIEMPRE coincida con prod. (Multi-arch real = SDD futuro.)
   nodeSelector:
     storage: rk1-longhorn
+    kubernetes.io/arch: arm64
   tolerations:
     - key: "node.kubernetes.io/unreachable"
       operator: Exists
