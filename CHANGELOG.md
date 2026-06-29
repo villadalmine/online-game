@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.105.1] - 2026-06-29
+
 ### 2026-06-29 — Fix CD: pinear build y runtime a arm64 (cluster mixto) — `exec format error`
 > Incidente: 1.105.0 no promovía. Un nodo amd64 (`srv-t7910`) entró al pool del CD
 > (`storage=rk1-longhorn`) → Kaniko buildeó la imagen en amd64 → en prod (arm64) el init crasheaba con
