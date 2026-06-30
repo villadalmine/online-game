@@ -175,19 +175,33 @@ async def start_training(
             unit_domain,
             unit_size,
         )
-        abk = [
-            bk for (bk,) in (await session.execute(
-                select(Building.building_key)
-                .join(Base_, Building.base_id == Base_.id)
-                .where(Base_.player_id == player.id, Building.status == "active")
-            )).all()
-        ]
+        # SDD 62: con guarnición ON el alojamiento es POR BASE (edificios + unidades + cola de ESA
+        # base); con OFF, global (histórico).
+        if settings.garrison_enabled:
+            abk = [
+                bk for (bk,) in (await session.execute(
+                    select(Building.building_key).where(
+                        Building.base_id == base.id, Building.status == "active")
+                )).all()
+            ]
+            occ_units = await units_at_base(session, player.id, base.id)
+            only_base = base.id
+        else:
+            abk = [
+                bk for (bk,) in (await session.execute(
+                    select(Building.building_key)
+                    .join(Base_, Building.base_id == Base_.id)
+                    .where(Base_.player_id == player.id, Building.status == "active")
+                )).all()
+            ]
+            occ_units = await player_units(session, player.id)
+            only_base = None
         queued: dict[str, int] = {}
         for o in await _player_training_orders(session, player.id):
-            if o.status == "training":
+            if o.status == "training" and (only_base is None or o.base_id == only_base):
                 queued[o.unit_key] = queued.get(o.unit_key, 0) + o.quantity
         cap = housing_capacity(abk)
-        occ = housing_occupancy(await player_units(session, player.id), queued)
+        occ = housing_occupancy(occ_units, queued)
         domain = unit_domain(unit_key)
         free = cap.get(domain, 0) - occ.get(domain, 0)
         if not can_train(unit_key, quantity, free):

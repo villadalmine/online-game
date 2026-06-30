@@ -4,9 +4,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import lock_current_player
 from app.core.db import get_session
 from app.models import Base_, Player
-from app.schemas import BuildingOut, BuildRequest, TrainingOrderOut, TrainRequest
+from app.schemas import (
+    BuildingOut,
+    BuildRequest,
+    MoveTroopsRequest,
+    TrainingOrderOut,
+    TrainRequest,
+    TroopMoveOut,
+)
 from app.services.build import BuildError, start_build
 from app.services.training import TrainingError, start_training
+from app.services.troops import TroopError, start_move
 
 router = APIRouter()
 
@@ -66,4 +74,27 @@ async def train(
         unit_key=order.unit_key,
         quantity=order.quantity,
         completes_at=order.completes_at,
+    )
+
+
+@router.post(
+    "/{base_id}/move-troops", response_model=TroopMoveOut, status_code=status.HTTP_201_CREATED
+)
+async def move_troops(
+    base_id: int,
+    body: MoveTroopsRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 62: mover tropas de esta base a otra base propia (guarnición)."""
+    await _load_owned_base(base_id, player, session)
+    try:
+        move = await start_move(session, player, base_id, body.to_base_id, body.units)
+    except TroopError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    import json as _json
+    return TroopMoveOut(
+        id=move.id, from_base_id=move.from_base_id, to_base_id=move.to_base_id,
+        units=_json.loads(move.units), status=move.status, arrives_at=move.arrives_at,
     )

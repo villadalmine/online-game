@@ -266,6 +266,9 @@
         <label><span data-i18n="targetbase">objetivo base</span> <input id="tbase" type="number" placeholder="id" style="width:64px" /></label>
         <span id="tbasename" class="muted"></span>
       </div>
+      <div class="row" id="atksrcrow" style="display:none">
+        <label><span data-i18n="attack_from">salir desde</span> <select id="atksrc" onchange="renderForcePicker()"></select></label>
+      </div>
       <div id="forcepicker" class="muted" style="margin:6px 0"></div>
       <div class="row">
         <button class="danger" onclick="attack()" data-i18n="attack">Lanzar flota</button>
@@ -329,7 +332,8 @@
       <div style="margin:9px 0"><span class="muted" data-i18n="units">Unidades</span><div id="units" class="row"></div></div>
       <div id="boons" class="row"></div>
     </div>
-    <div class="card" data-panel="bases"><h2>Bases y edificios</h2><div id="bases"></div></div>
+    <div class="card" data-panel="bases"><h2>Bases y edificios</h2><div id="bases"></div>
+      <div id="movetroops" style="margin-top:8px"></div></div>
     <div class="card" data-panel="capacidad"><h2>📦 Economía / capacidad</h2><div id="capacity"></div></div>
     <div class="card" data-panel="colas"><h2>Colas y flotas</h2><div id="queues"></div></div>
     <div class="card" data-panel="combate"><h2>⚔ Reportes de combate</h2><div id="reports"></div>
@@ -611,6 +615,9 @@ function mname(mkey,panel){ if(!isPicto(panel)) return esc(mineralName(mkey));
   const sy=(spec.mineral[mkey]||{}).symbol; return `${ico('mineral',mkey)}${sy?'<span class="msym">'+esc(sy)+'</span>':''}`; }
 // emoji crudo del planeta/luna (para texto de <option>, que no admite HTML)
 function planetIcon(pkey){ return (spec.planet[pkey]||{}).icon||"🪐"; }
+// SDD 62: etiqueta de una base para selects (origen de ataque / mover tropas).
+function popBaseLabel(b){ const tag=b.base_type==='lunar'?'🌙':(b.base_type==='orbital'?'🛰':(state&&b.planet_key!==state.planet_key?'🪐':'⭐'));
+  return `${tag} ${planetName(b.planet_key)} #${b.id}`; }
 function moonIcon(mkey){ return (spec.moon[mkey]||{}).icon||"🌙"; }
 // etiqueta de planeta sensible al panel: ícono (del catálogo) en pictomode, nombre en modo normal
 function plabel(pkey,panel){ if(!isPicto(panel)) return esc(planetName(pkey));
@@ -741,19 +748,33 @@ const baseId=()=>{ const v=+(($("buildbase")||{}).value); if(v) return v; return
 function _needState(){ if(!state||!state.bases||!state.bases.length){ msg(tr('loadingwait'),false); return true; } return false; }
 async function build(){ if(_needState())return; try{ const k=$("building").value; const b={building_key:k}; if(_needsMineral(spec.build[k]))b.target_mineral=$("mineral").value; await api(`/api/v1/bases/${baseId()}/build`,"POST",b); msg("Construyendo "+k); refresh(); }catch(e){ msg(e.message,false);} }
 async function train(){ if(_needState())return; try{ await api(`/api/v1/bases/${baseId()}/train`,"POST",{unit_key:$("unit").value,quantity:+$("qty").value}); msg("Entrenando"); refresh(); }catch(e){ msg(e.message,false);} }
+// SDD 62: con guarnición las tropas salen de UNA base. _srcUnits = unidades disponibles para el ataque
+// (de la base de origen si garrison; el global histórico si no).
+function _garrisonOn(){ return !!(state&&state.units_by_base&&Object.keys(state.units_by_base).length); }
+function _attackSrcBase(){ const v=+(($("atksrc")||{}).value); return v||null; }
+function _srcUnits(){ if(_garrisonOn()){ const b=_attackSrcBase(); return (state.units_by_base||{})[String(b)]||{}; } return (state&&state.units)||{}; }
 // attack force picker: a qty input per attack-capable unit you OWN (no más escribir a mano)
-function attackUnits(){ return [...(catalog?catalog.personnel:[]),...(catalog?catalog.heavy_units:[])]
-  .filter(u=>(u.stats&&u.stats.attack>0)&&((state&&state.units[u.key])||0)>0); }
+function attackUnits(){ const su=_srcUnits(); return [...(catalog?catalog.personnel:[]),...(catalog?catalog.heavy_units:[])]
+  .filter(u=>(u.stats&&u.stats.attack>0)&&((su[u.key])||0)>0); }
 function renderForcePicker(){
   if(!state||!catalog) return;
+  // SDD 62: con guarnición, selector de base de origen (la flota sale de ahí).
+  const srcRow=$("atksrcrow"), sel=$("atksrc");
+  if(_garrisonOn() && srcRow && sel){
+    srcRow.style.display="";
+    const prevv=sel.value;
+    sel.innerHTML=(state.bases||[]).map(b=>`<option value="${b.id}">${esc(popBaseLabel(b))}</option>`).join("");
+    if((state.bases||[]).some(b=>String(b.id)===prevv)) sel.value=prevv;
+  } else if(srcRow){ srcRow.style.display="none"; }
   const us=attackUnits();
-  const keys=us.map(u=>u.key).join(",");
+  const su=_srcUnits();
+  const keys=us.map(u=>u.key).join(",")+"|"+(_attackSrcBase()||"");   // re-render si cambia la base
   // no pisar lo que el usuario tipeó: si el set de unidades no cambió, solo refrescá el costo
   if($("forcepicker").dataset.keys===keys){ renderAttackCost(); return; }
   const prev=pickedForce(); const pic=isPicto('atacar');
   $("forcepicker").dataset.keys=keys;
   $("forcepicker").innerHTML = us.length
-    ? us.map(u=>{ const have=state.units[u.key]||0; const v=Math.min(prev[u.key]||0, have);
+    ? us.map(u=>{ const have=su[u.key]||0; const v=Math.min(prev[u.key]||0, have);
         const lbl=pic? `${ico('unit',u.key)} <span class="muted">⚔${u.stats.attack} · ${have}</span>`
                      : `${esc(u.name)} <span class="muted">⚔ ${u.stats.attack} ${esc(tr('perunit'))} · ${esc(tr('youhave'))} ${have}</span>`;
         return `<label style="display:inline-flex;align-items:center;gap:4px;margin:2px 8px 2px 0">`+
@@ -823,7 +844,9 @@ function usePlan(baseId, unit, qty){
 async function attack(){
   const force=pickedForce();
   if(!Object.keys(force).length){ msg(tr('pickunits'),false); return; }
-  try{ const d=await api("/api/v1/combat/attack","POST",{target_base_id:+$("tbase").value,force});
+  const body={target_base_id:+$("tbase").value,force};
+  if(_garrisonOn()) body.source_base_id=_attackSrcBase();   // SDD 62: la flota sale de esa base
+  try{ const d=await api("/api/v1/combat/attack","POST",body);
     msg(tr('fleetsent')+" "+new Date(d.arrives_at).toLocaleTimeString()); refresh();
   }catch(e){ msg(e.message,false);} }
 // ---- SDD 49/50: arsenal intra-planeta (misiles + drones), panel pictográfico ----
@@ -1022,7 +1045,7 @@ const I18N={
     s:{nofeed:"sin notificaciones sin leer",nomarket:"construí un Mercado en un planeta para comerciar",mktbuy:"comprar",mktsell:"vender",mktcols:"mineral (tenés) · ⚡compra/venta",transport:"Transportar (necesita nave de carga)",noescort:"sin escolta",escorttip:"escolta opcional: defiende el convoy de piratas",nohub:"sin precios de hub aún",hubdyn:"precios por oferta/demanda",hubof:"hub de",othergx:"otras galaxias",acct_pending:"Tu cuenta espera la aprobación del admin. Te avisamos cuando esté lista.",acct_inactive:"Tu cuenta no está activa. Contactá al admin.",admin_none:"No hay altas pendientes.",admin_approve:"Aprobar",admin_reject:"Rechazar",admin_resetpass:"reset clave",admin_reset_confirm:"¿Resetear la contraseña de",admin_reset_done:"Contraseña temporal de",ac_del_confirm:"¿BORRAR definitivamente la cuenta y su imperio de",ahint_gpu:"Corre en nuestra GPU local: gratis, sin tope diario, rápido para preguntas concretas.",ahint_cloud:"Intenta un modelo free de la nube; si está bloqueado por día, usa uno pago barato. Con límite diario para no abusar.",ahint_byok:"Usás tu propia API key de OpenRouter y el modelo que elijas. Lo pagás vos; la key no se guarda en el server.",byok_missing:"Poné tu API key y el modelo de OpenRouter.",blackmkt:"Mercado negro (trueque, sin energía)",bmtrade:"Trocar",bmtip:"Pagás con un mineral y recibís otro al cambio del hub, con premium ilegal. Requiere nave de carga.",bmsame:"elegí minerales distintos",cargoships:"naves de carga",needcargo:"necesitás una nave de carga (se entrena en la Fábrica)",piraterisk:"riesgo pirata",bmhave:"tenés",bmnostock:"no te alcanza: solo tenés",travail:"disponible en origen:",trmissing:"faltan",trsame:"origen y destino iguales",nometa:"aún sin datos de meta (jugá batallas)",metawin:"los ataques ganan",pfok:"✓ perfil actualizado:",lvlok:"⚡ Energía de nivelado:",lvlbottom:"⚡ Estás último: energía a tope",lvlleft:"quedan hoy:",pfnothing:"poné un usuario o una contraseña nueva",loadingwait:"esperá: todavía está cargando tu imperio",noevents:"sin eventos activos ahora",evActive:"🟢 Activos ahora",evRecent:"🕓 Pasaron (2 días)",evPossible:"🔮 Pueden aparecer",evEnded:"terminó",colonize:"🪐 Colonización (tu raza)",cyourhome:"tu mundo natal",verdict_great:"Ideal para colonizar",verdict_ok:"Colonizable",verdict_poor:"Hostil (rinde poco)",verdict_impossible:"Imposible de colonizar",colonizebtn:"🪐 Colonizar",lunarbtn:"🌙 Base lunar",colonized:"✓ colonizado",ccost:"costo",ctransb:"transbordador",orbitalbtn:"🛰 Base orbital",orbitaltip:"Estación con robots: extrae recursos sin habitar el mundo (rinde menos, cuesta más).",needorbital:"hostil — investigá Robótica orbital para una base orbital",authhelp:"¿Primera vez? Poné tu <b>email invitado</b>, elegí usuario y contraseña y tocá <b>Registrar</b>. Si ya tenés cuenta, usuario + contraseña y <b>Entrar</b> (sin email).<br>Tus datos quedan en tu cuenta en el servidor: salí y volvé, o entrá desde otro dispositivo, y está todo igual.",
       otphelp:"Te mandamos un <b>código</b> al email. Si es tu primera vez, te crea la cuenta. Una vez dentro, quedás logueado en este dispositivo (no te pide código cada vez).",
       advdefault:"Preguntá y te aconsejo según el grafo del juego.",noseason:"Sin temporada activa.",closesin:"cierra en",closing:"cerrando…",newbie:"🛡 Protección de novato",newbieend:"termina en {x}; atacar a un jugador la cancela",att_today:"⚔ ataques recibidos hoy",att_capped:"tope alcanzado: hoy no podés recibir más (anti-abuso)",
-      colplayer:"jugador",colrace:"raza",colscore:"score",nounits:"sin unidades",nobases:"sin colonias",noqueue:"nada en cola",cap_mining:"Minería (trabajadores)",cap_workers:"obreros",cap_minesat:"minas al",cap_storage:"Almacenamiento (silos)",cap_housing:"Alojamiento (plazas)",free_slots:"plazas libres",no_slots:"sin plazas — construí",no_slots_dom:"sin plazas {d} — construí",nodef:"⚠ sin defensas — construí una 🔫 torreta",dom_personnel:"👷 Personal",dom_infantry:"🪖 Infantería",dom_ground:"🛡 Terrestres",dom_air:"✈ Aéreas",dom_space:"🚀 Espaciales",dom_naval:"🚢 Navales",tree_btn:"🌳 Árbol y tabla",tree_explain:"Explicar con IA",tree_techs:"Tecnologías (árbol)",tree_units:"Unidades",noflights:"sin flotas en vuelo",nomsgs:"sin mensajes — escribí el primero",noworld:"todavía no pasó nada en la galaxia",noally:"no hay alianzas aún",nocols:"sin colonias todavía",nomoons:"sin lunas",ranklist:"ranking de temporada",
+      colplayer:"jugador",colrace:"raza",colscore:"score",nounits:"sin unidades",nobases:"sin colonias",noqueue:"nada en cola",cap_mining:"Minería (trabajadores)",cap_workers:"obreros",cap_minesat:"minas al",cap_storage:"Almacenamiento (silos)",cap_housing:"Alojamiento (plazas)",free_slots:"plazas libres",no_slots:"sin plazas — construí",no_slots_dom:"sin plazas {d} — construí",nodef:"⚠ sin defensas — construí una 🔫 torreta",attack_from:"salir desde",move_troops:"Mover tropas",move_send:"mover",move_sent:"tropas en camino",move_nounits:"no hay unidades en la base de origen",dom_personnel:"👷 Personal",dom_infantry:"🪖 Infantería",dom_ground:"🛡 Terrestres",dom_air:"✈ Aéreas",dom_space:"🚀 Espaciales",dom_naval:"🚢 Navales",tree_btn:"🌳 Árbol y tabla",tree_explain:"Explicar con IA",tree_techs:"Tecnologías (árbol)",tree_units:"Unidades",noflights:"sin flotas en vuelo",nomsgs:"sin mensajes — escribí el primero",noworld:"todavía no pasó nada en la galaxia",noally:"no hay alianzas aún",nocols:"sin colonias todavía",nomoons:"sin lunas",ranklist:"ranking de temporada",
       live:"● en vivo",reconnect:"○ reconectando…",ready:"✓ lista",active:"✓ activo",research:"investigar",leave:"salir",create:"crear",join:"unirse",npcnojoin:"🤖 NPC (no unible)",benefits:"Beneficios:",members:"Miembros",notrade:"Este tipo no permite comercio.",trade:"Comercio",tradeto:"a",tradesend:"enviar",allyform:"Creá una alianza: elegí un tipo (define qué beneficios da) o unite a una de abajo.",existing:"Alianzas existentes",noagg:"Solo no-agresión (no se atacan entre sí).",allyattack:"⚠ aliados bajo ataque:",abundance:"Abundancia mineral",abundancesub:"(multiplicador de minas)",moons:"Lunas",colonies:"Colonias",attackbtn:"⚔ atacar",youtag:" (vos)",here:" · estás acá",guideminerals:"Minerales (in-game ↔ real):",guidebuildings:"Edificios (in-game ↔ real):",guideunits:"Unidades (in-game ↔ real):",guidereal:"real",incoming:"⚠ ataque entrante → base",recall:"↩ recall",returns:"vuelve",posture:"postura",hist_btn:"📈 Tu historia",hist_title:"Tu historia",hist_help:"Cómo evolucionó tu imperio en las últimas 24 h (estado y acciones).",hist_none:"Todavía no hay datos — jugá un rato y volvé.",hist_actions:"Acciones (últimas 24 h)",
       spyBtn:"🕵 espiar",nointel:"sin intel — espialo para ver qué tiene",spyPrompt:"¿Cuántos espías mandás a",spySent:"🕵 Espías en camino:",spyintel:"el intel aparece en 🔔 al aterrizar",
       iScore:"score",iAtk:"⚔ ataque",iDef:"🛡 defensa",iMin:"⛏ minerales",iTurrets:"🔫 torretas",iBuildings:"🏗 edificios",iUnits:"👥 unidades",
@@ -1042,7 +1065,7 @@ const I18N={
     s:{nofeed:"no unread notifications",nomarket:"build a Market on a planet to trade",mktbuy:"buy",mktsell:"sell",mktcols:"mineral (have) · ⚡buy/sell",transport:"Transport (needs cargo ship)",noescort:"no escort",escorttip:"optional escort: defends the convoy from pirates",nohub:"no hub prices yet",hubdyn:"supply/demand prices",hubof:"hub of",othergx:"other galaxies",acct_pending:"Your account is awaiting admin approval. We'll let you know when it's ready.",acct_inactive:"Your account is not active. Contact the admin.",admin_none:"No pending signups.",admin_approve:"Approve",admin_reject:"Reject",admin_resetpass:"reset pwd",admin_reset_confirm:"Reset the password of",admin_reset_done:"Temp password for",ac_del_confirm:"PERMANENTLY delete the account and empire of",ahint_gpu:"Runs on our local GPU: free, no daily cap, fast for concrete questions.",ahint_cloud:"Tries a free cloud model; if it's daily-blocked, uses a cheap paid one. Daily limit to avoid abuse.",ahint_byok:"Use your own OpenRouter API key and chosen model. You pay; the key isn't stored on the server.",byok_missing:"Enter your OpenRouter API key and model.",blackmkt:"Black market (barter, no energy)",bmtrade:"Barter",bmtip:"Pay with one mineral and get another at the hub rate, with an illegal premium. Needs a cargo ship.",bmsame:"pick different minerals",cargoships:"cargo ships",needcargo:"you need a cargo ship (trained at the Factory)",piraterisk:"pirate risk",bmhave:"you have",bmnostock:"not enough: you only have",travail:"available at origin:",trmissing:"missing",trsame:"same origin and destination",nometa:"no meta data yet (play battles)",metawin:"attacks win",pfok:"✓ profile updated:",lvlok:"⚡ Level-up energy:",lvlbottom:"⚡ You're last: energy filled",lvlleft:"left today:",pfnothing:"enter a new username or password",loadingwait:"hold on: your empire is still loading",noevents:"no active events right now",evActive:"🟢 Active now",evRecent:"🕓 Past (2 days)",evPossible:"🔮 Can appear",evEnded:"ended",colonize:"🪐 Colonization (your race)",cyourhome:"your homeworld",verdict_great:"Ideal to colonize",verdict_ok:"Colonizable",verdict_poor:"Hostile (low yield)",verdict_impossible:"Cannot colonize",colonizebtn:"🪐 Colonize",lunarbtn:"🌙 Lunar base",colonized:"✓ colonized",ccost:"cost",ctransb:"shuttle",orbitalbtn:"🛰 Orbital base",orbitaltip:"Robot station: extracts resources without living on the world (lower yield, higher cost).",needorbital:"hostile — research Orbital robotics for an orbital base",authhelp:"First time? Enter your <b>invited email</b>, choose a username and password and click <b>Register</b>. If you already have an account, username + password and <b>Log in</b> (no email).<br>Your data lives in your account on the server: log out and back in, or from another device, and it's all there.",
       otphelp:"We send a <b>code</b> to your email. First time, it creates your account. Once in, you stay logged in on this device (no code each time).",
       advdefault:"Ask and I'll advise you based on the game's dependency graph.",noseason:"No active season.",closesin:"closes in",closing:"closing…",newbie:"🛡 Newbie protection",newbieend:"ends in {x}; attacking a player cancels it",att_today:"⚔ attacks received today",att_capped:"daily cap reached: you can't be attacked more today (anti-abuse)",
-      colplayer:"player",colrace:"race",colscore:"score",nounits:"no units",nobases:"no colonies",noqueue:"nothing queued",cap_mining:"Mining (workers)",cap_workers:"workers",cap_minesat:"mines at",cap_storage:"Storage (silos)",cap_housing:"Housing (slots)",free_slots:"free slots",no_slots:"no slots — build",no_slots_dom:"no {d} slots — build",nodef:"⚠ no defenses — build a 🔫 turret",dom_personnel:"👷 Personnel",dom_infantry:"🪖 Infantry",dom_ground:"🛡 Ground",dom_air:"✈ Air",dom_space:"🚀 Space",dom_naval:"🚢 Naval",tree_btn:"🌳 Tree & table",tree_explain:"Explain with AI",tree_techs:"Technologies (tree)",tree_units:"Units",noflights:"no fleets in flight",nomsgs:"no messages — write the first",noworld:"nothing has happened in the galaxy yet",noally:"no alliances yet",nocols:"no colonies yet",nomoons:"no moons",ranklist:"season ranking",
+      colplayer:"player",colrace:"race",colscore:"score",nounits:"no units",nobases:"no colonies",noqueue:"nothing queued",cap_mining:"Mining (workers)",cap_workers:"workers",cap_minesat:"mines at",cap_storage:"Storage (silos)",cap_housing:"Housing (slots)",free_slots:"free slots",no_slots:"no slots — build",no_slots_dom:"no {d} slots — build",nodef:"⚠ no defenses — build a 🔫 turret",attack_from:"launch from",move_troops:"Move troops",move_send:"move",move_sent:"troops en route",move_nounits:"no units at the source base",dom_personnel:"👷 Personnel",dom_infantry:"🪖 Infantry",dom_ground:"🛡 Ground",dom_air:"✈ Air",dom_space:"🚀 Space",dom_naval:"🚢 Naval",tree_btn:"🌳 Tree & table",tree_explain:"Explain with AI",tree_techs:"Technologies (tree)",tree_units:"Units",noflights:"no fleets in flight",nomsgs:"no messages — write the first",noworld:"nothing has happened in the galaxy yet",noally:"no alliances yet",nocols:"no colonies yet",nomoons:"no moons",ranklist:"season ranking",
       live:"● live",reconnect:"○ reconnecting…",ready:"✓ done",active:"✓ active",research:"research",leave:"leave",create:"create",join:"join",npcnojoin:"🤖 NPC (can't join)",benefits:"Benefits:",members:"Members",notrade:"This type doesn't allow trade.",trade:"Trade",tradeto:"to",tradesend:"send",allyform:"Create an alliance: pick a type (defines its benefits) or join one below.",existing:"Existing alliances",noagg:"Non-aggression only (members don't attack each other).",allyattack:"⚠ allies under attack:",abundance:"Mineral abundance",abundancesub:"(mine multiplier)",moons:"Moons",colonies:"Colonies",attackbtn:"⚔ attack",youtag:" (you)",here:" · you're here",guideminerals:"Minerals (in-game ↔ real):",guidebuildings:"Buildings (in-game ↔ real):",guideunits:"Units (in-game ↔ real):",guidereal:"real",incoming:"⚠ incoming attack → base",recall:"↩ recall",returns:"returns",posture:"posture",hist_btn:"📈 Your history",hist_title:"Your history",hist_help:"How your empire evolved over the last 24 h (state and actions).",hist_none:"No data yet — play a bit and come back.",hist_actions:"Actions (last 24 h)",
       spyBtn:"🕵 spy",nointel:"no intel — spy them to see what they have",spyPrompt:"How many spies do you send to",spySent:"🕵 Spies en route:",spyintel:"intel shows up in 🔔 on arrival",
       iScore:"score",iAtk:"⚔ attack",iDef:"🛡 defense",iMin:"⛏ minerals",iTurrets:"🔫 turrets",iBuildings:"🏗 buildings",iUnits:"👥 units",
@@ -1179,7 +1202,21 @@ async function refresh(){
    } else {
      $("minerals").innerHTML=Object.entries(state.stocks).map(([k,v])=>chip(k,v)).join("")||'<span class="muted">—</span>';
    }}
-  $("units").innerHTML=Object.entries(state.units).filter(([,v])=>v>0).map(([k,v])=>picE?`<span class="chip">${ico('unit',k)} ${v}</span>`:`<span class="chip">${esc(k)}: ${v}</span>`).join("")||`<span class="muted">${esc(tr('nounits'))}</span>`;
+  {const uchip=(k,v)=>picE?`<span class="chip">${ico('unit',k)} ${v}</span>`:`<span class="chip">${esc(k)}: ${v}</span>`;
+   const ubb=state.units_by_base||{};
+   if(Object.keys(ubb).length){          // SDD 62: guarnición → unidades por planeta, colapsable
+     const b2p={}; state.bases.forEach(b=>b2p[b.id]=b.planet_key);
+     const pp={};
+     for(const [bid,u] of Object.entries(ubb)){ const pk=b2p[bid]||'?'; const d=pp[pk]=pp[pk]||{};
+       for(const [k,v] of Object.entries(u)) d[k]=(d[k]||0)+v; }
+     $("units").innerHTML=Object.keys(pp).map(pk=>{
+       const tag=(pk===state.planet_key)?'⭐':'🪐';
+       const chips=Object.entries(pp[pk]).filter(([,v])=>v>0).map(([k,v])=>uchip(k,v)).join("")||'<span class="muted">—</span>';
+       return _collapse('un:'+pk, `<span class="muted" style="font-size:11px">${tag} ${esc(planetName(pk))}</span>`, `<div class="row">${chips}</div>`);
+     }).join("");
+   } else {
+     $("units").innerHTML=Object.entries(state.units).filter(([,v])=>v>0).map(([k,v])=>uchip(k,v)).join("")||`<span class="muted">${esc(tr('nounits'))}</span>`;
+   }}
   $("boons").innerHTML=(state.boons||[]).map(b=>`<span class="chip ok">boon ${esc(b.effect)} ×${b.magnitude}</span>`).join(" ");
   const baseTag=b=>b.base_type==='lunar'?'🌙':(b.base_type==='orbital'?'🛰':(b.planet_key!==state.planet_key?'🪐':'⭐'));
   // selector de base para construir (incluye colonias/orbitales); preserva la elección
@@ -1214,7 +1251,7 @@ async function refresh(){
   // SÓLO renders locales (sin red) en el ciclo rápido de 4s.
   renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); renderSeason();
   renderCost(); renderTrainCost(); renderExpInfo(); renderForcePicker(); renderCapacity();
-  renderArsenal();
+  renderArsenal(); renderMoveTroops();
 }
 
 // SDD 46/47: barras de capacidad (staffing de minería, almacén/silos y plazas de alojamiento).
@@ -1227,8 +1264,58 @@ function _capBar(label,a,b,danger){
     `<div class="bar" style="flex:1"><div style="width:${p}%${danger?';background:#c0392b':''}"></div></div>`+
     `<span class="muted" style="font-size:11px;min-width:78px;text-align:right">${a}/${b}</span></div>`;
 }
+// SDD 62: panel de mover tropas entre bases propias (solo con guarnición y ≥2 bases).
+function renderMoveTroops(){
+  const el=$("movetroops"); if(!el||!state) return;
+  if(!_garrisonOn() || (state.bases||[]).length<2){ el.innerHTML=""; return; }
+  const opts=(state.bases||[]).map(b=>`<option value="${b.id}">${esc(popBaseLabel(b))}</option>`).join("");
+  const moves=(state.troop_moves||[]).map(m=>`<div class="muted" style="font-size:11px">🚚 #${m.from_base_id}→#${m.to_base_id} `+
+    Object.entries(m.units).map(([k,v])=>(isPicto('bases')?ico('unit',k):k)+v).join(" ")+` · ${cd(m.arrives_at)}</div>`).join("");
+  el.innerHTML=`<div class="item"><div class="top"><span><b>🚚 ${esc(tr('move_troops'))}</b></span></div>`+
+    `<div class="row" style="margin-top:4px;gap:4px;align-items:center">`+
+    `<select id="mt_from">${opts}</select> → <select id="mt_to">${opts}</select>`+
+    `<input id="mt_qty" type="number" min="1" value="1" style="width:54px">`+
+    `<select id="mt_unit"></select>`+
+    `<button class="sm" onclick="moveTroops()">${esc(tr('move_send'))}</button></div>${moves}</div>`;
+  // poblar las unidades disponibles en la base de origen
+  _mtFillUnits();
+  const fromSel=$("mt_from"); if(fromSel) fromSel.onchange=_mtFillUnits;
+}
+function _mtFillUnits(){
+  const from=+(($("mt_from")||{}).value), sel=$("mt_unit"); if(!sel) return;
+  const u=(state.units_by_base||{})[String(from)]||{};
+  sel.innerHTML=Object.entries(u).filter(([,v])=>v>0).map(([k,v])=>`<option value="${k}">${esc(isPicto('bases')?k:k)} (${v})</option>`).join("")||`<option value="">—</option>`;
+}
+async function moveTroops(){
+  const from=+($("mt_from").value), to=+($("mt_to").value), unit=$("mt_unit").value, qty=+$("mt_qty").value||1;
+  if(!unit){ msg(tr('move_nounits'),false); return; }
+  try{ await api(`/api/v1/bases/${from}/move-troops`,"POST",{to_base_id:to,units:{[unit]:qty}});
+    msg(tr('move_sent'),true); refresh();
+  }catch(e){ msg(e.message,false);} }
 function renderCapacity(){
   const el=$("capacity"); if(!el||!state) return;
+  // SDD 62: con guarnición, capacidad POR PLANETA (minería + alojamiento + almacén), colapsable.
+  const mbp=state.mining_by_planet||{}, hbp=state.housing_by_planet||{};
+  if(Object.keys(mbp).length || Object.keys(hbp).length){
+    const stp=state.storage||{};
+    const planets=new Set([...Object.keys(mbp),...Object.keys(hbp),...Object.keys(stp)]);
+    el.innerHTML=[...planets].map(pk=>{
+      const tag=(pk===state.planet_key)?'⭐':'🪐'; let body='';
+      const m=mbp[pk];
+      if(m && ((m.required_workers||0)>0 || (m.available_workers||0)>0)){
+        body+=`<div class="muted" style="font-size:11px">${tr('cap_mining')}</div>`+
+          _capBar(`👷 ${tr('cap_workers')}`, m.available_workers||0, m.required_workers||0, (m.staffing||1)<1)+
+          `<div class="muted" style="font-size:11px">⛏ ${tr('cap_minesat')} ${Math.round((m.staffing||0)*100)}%</div>`;
+      }
+      const h=hbp[pk]||{};
+      for(const d of Object.keys(h)){ const c=h[d]; if((c.capacity||0)===0 && (c.occupancy||0)===0) continue;
+        body+=_capBar(tr('dom_'+d)||d, c.occupancy||0, c.capacity||0, (c.free||0)<0); }
+      for(const [mk,c] of Object.entries(stp[pk]||{}))
+        body+=_capBar(`${ico('mineral',mk)} ${mname(mk,'capacidad')}`, Math.round(c.stock), Math.round(c.cap), c.overflowing);
+      return _collapse('cap:'+pk, `<span class="muted" style="font-size:11px">${tag} ${esc(planetName(pk))}</span>`, body||'<span class="muted">—</span>');
+    }).join("")||`<span class="muted">—</span>`;
+    return;
+  }
   const parts=[];
   const m=state.mining||{};
   if((m.required_workers||0)>0 || (m.available_workers||0)>0){

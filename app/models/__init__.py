@@ -169,6 +169,22 @@ class UnitStock(Base):
     player: Mapped[Player] = relationship()
 
 
+class TroopMove(Base):
+    """SDD 62: traslado de tropas entre bases propias. Salen de `from_base` al crearse y se
+    depositan en `to_base` al llegar (lazy by timestamp)."""
+
+    __tablename__ = "troop_moves"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    from_base_id: Mapped[int] = mapped_column(ForeignKey("bases.id", ondelete="CASCADE"))
+    to_base_id: Mapped[int] = mapped_column(ForeignKey("bases.id", ondelete="CASCADE"))
+    units: Mapped[str] = mapped_column(Text, default="{}")   # JSON unit_key -> qty
+    status: Mapped[str] = mapped_column(String(20), default="moving")  # moving | done
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    arrives_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class TrainingOrder(Base):
     """A queued batch of units; lands in UnitStock when its timer elapses."""
 

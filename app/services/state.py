@@ -59,6 +59,8 @@ async def advance(session: AsyncSession, player: Player) -> None:
     await process_spy_missions(session, now, observer_id=player.id)
     from app.services.market import process_transport_missions  # SDD 42 Fase 2
     await process_transport_missions(session, now, player_id=player.id)
+    from app.services.troops import process_moves  # SDD 62: traslados de tropas entre bases
+    await process_moves(session, now, player_id=player.id)
     # Eventos dinámicos (SDD 36): energía ×evento + soldados gratis (una vez por evento).
     from app.services.events import event_multiplier, grant_due_free_units
     regen = effective_energy_regen(player, settings) * await event_multiplier(
@@ -153,6 +155,65 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         "required_workers": required_w,
         "enforced": settings.mining_staffing_enabled,
     }
+
+    # SDD 62: con guarnición ON, minería y alojamiento se desglosan POR PLANETA (obreros/edificios
+    # de cada planeta) → la "capacidad por planeta" del front. Con OFF quedan vacíos.
+    mining_by_planet: dict[str, dict] = {}
+    housing_by_planet: dict[str, dict] = {}
+    troop_moves_out: list = []
+    if settings.garrison_enabled:
+        from app.schemas import TroopMoveOut
+        from app.services.troops import active_moves
+        troop_moves_out = [
+            TroopMoveOut(id=m.id, from_base_id=m.from_base_id, to_base_id=m.to_base_id,
+                         units=json.loads(m.units), status=m.status, arrives_at=m.arrives_at)
+            for m in await active_moves(session, player.id)
+        ]
+        from app.services.housing import housing_capacity, housing_occupancy
+        from app.services.production import staffing_ratio
+        mining_power = content.units.get("worker", {}).get("mining_power", 1)
+        planets = {pk for (pk, _bt) in base_info.values()}
+        units_pp: dict[str, dict[str, int]] = {}
+        for bid, u in units_per_base.items():
+            pk = base_info.get(bid, (None,))[0]
+            if pk is None:
+                continue
+            dst = units_pp.setdefault(pk, {})
+            for uk, q in u.items():
+                dst[uk] = dst.get(uk, 0) + q
+        queued_pp: dict[str, dict[str, int]] = {}
+        for o in training_out:
+            pk = base_info.get(o.base_id, (None,))[0]
+            if pk is None:
+                continue
+            queued_pp.setdefault(pk, {})[o.unit_key] = (
+                queued_pp.setdefault(pk, {}).get(o.unit_key, 0) + o.quantity
+            )
+        for pk in planets:
+            blds = [b for b in all_buildings if base_info.get(b.base_id, (None,))[0] == pk]
+            akeys = [b.building_key for b in blds if b.status == "active"]
+            required = sum(
+                content.buildings[b.building_key].get("worker_slots", 0)
+                for b in blds
+                if b.status == "active"
+                and content.buildings.get(b.building_key, {}).get("category") == "mine"
+            )
+            punits = units_pp.get(pk, {})
+            available = punits.get("worker", 0) * mining_power
+            ratio = staffing_ratio(available, required)
+            floor = settings.mining_staffing_floor if required > 0 else 0.0
+            mining_by_planet[pk] = {
+                "staffing": round(max(floor, ratio), 3),
+                "available_workers": float(available),
+                "required_workers": float(required),
+            }
+            cap = housing_capacity(akeys)
+            occ = housing_occupancy(punits, queued_pp.get(pk, {}))
+            housing_by_planet[pk] = {
+                d: {"capacity": cap.get(d, 0), "occupancy": occ.get(d, 0),
+                    "free": cap.get(d, 0) - occ.get(d, 0)}
+                for d in sorted(set(cap) | set(occ)) if cap.get(d, 0) or occ.get(d, 0)
+            }
 
     storage_block: dict = {}
     if settings.storage_caps_enabled:
@@ -342,6 +403,9 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         transports=transports_out,
         spy_missions=spy_out,
         mining=mining_block,
+        mining_by_planet=mining_by_planet,
+        housing_by_planet=housing_by_planet,
+        troop_moves=troop_moves_out,
         storage=storage_block,
         housing=housing_block,
         strikes=strikes_out,

@@ -2837,6 +2837,34 @@ async def test_garrison_combat_uses_only_attacked_base_e2e(client, monkeypatch):
     assert reports and reports[0]["outcome"] == "attacker"
 
 
+async def test_move_troops_e2e(client, monkeypatch):
+    """SDD 62: mover tropas entre bases propias por la API (happy path + error de misma base)."""
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import Base_, UnitStock
+    monkeypatch.setattr(get_settings(), "garrison_enabled", True)
+    h = await _register(client.http, "mover_e2e")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    natal = st["bases"][0]["id"]
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "mover_e2e"))).scalar_one()
+        colony = Base_(player_id=p.id, name="Col", planet_key="venus", base_type="surface")
+        s.add(colony)
+        await s.flush()
+        s.add(UnitStock(player_id=p.id, unit_key="tank", quantity=5, base_id=natal))
+        cid = colony.id
+        await s.commit()
+    r = await client.http.post(f"/api/v1/bases/{natal}/move-troops", headers=h,
+                               json={"to_base_id": cid, "units": {"tank": 3}})
+    assert r.status_code == 201, r.text
+    assert r.json()["to_base_id"] == cid
+    # error: mover a la misma base
+    r2 = await client.http.post(f"/api/v1/bases/{natal}/move-troops", headers=h,
+                                json={"to_base_id": natal, "units": {"tank": 1}})
+    assert r2.status_code == 400
+
+
 async def test_worker_floor_survives_combat_e2e(client):
     """SDD 54: tras un ataque arrasador, al defensor SIEMPRE le quedan ≥ min_surviving_workers
     trabajadores → puede seguir juntando material (no queda trabado)."""

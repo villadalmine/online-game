@@ -181,6 +181,20 @@ class AttackRequest(BaseModel):
     source_base_id: int | None = None   # SDD 62: base de la que salen las tropas (guarnición)
 
 
+class MoveTroopsRequest(BaseModel):
+    to_base_id: int
+    units: dict[str, int]
+
+
+class TroopMoveOut(BaseModel):
+    id: int
+    from_base_id: int
+    to_base_id: int
+    units: dict[str, int]
+    status: str
+    arrives_at: datetime
+
+
 class AttackMissionOut(BaseModel):
     id: int
     target_base_id: int
@@ -586,6 +600,10 @@ class PlayerStateOut(BaseModel):
     # SDD 47: estado de minería. mining = {staffing, available_workers, required_workers};
     # storage = {planeta: {mineral: {cap, stock, free, overflowing}}}. Vacío si los flags están off.
     mining: dict = {}
+    # SDD 62: con guarnición ON, capacidad por planeta ({planet: {...}}). Vacío en modo global.
+    mining_by_planet: dict = {}
+    housing_by_planet: dict = {}
+    troop_moves: list[TroopMoveOut] = []   # SDD 62: traslados de tropas en curso
     storage: dict = {}
     # SDD 46: alojamiento. housing = {dominio: {capacity, occupancy, free}}.
     housing: dict = {}

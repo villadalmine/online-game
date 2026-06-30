@@ -65,6 +65,9 @@ async def run_tick(session: AsyncSession) -> dict:
     # SDD 49: resolver salvas de misiles que llegaron (todo el mundo).
     from app.services.strike import process_strikes
     strikes = await process_strikes(session)
+    # SDD 62: depositar traslados de tropas que llegaron (todo el mundo).
+    from app.services.troops import process_moves
+    await process_moves(session)
     await session.commit()
 
     # Advance everyone's queues (humans included) for offline progress.

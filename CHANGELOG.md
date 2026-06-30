@@ -7,6 +7,21 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-30 — SDD 62 pasos 2b+3/4: capacidad por planeta + mover tropas + UI (flag OFF)
+> Casi todo el sistema de guarnición, aún detrás de `garrison_enabled=False` (se prende en el próximo
+> release tras verificar el backfill). Ver `docs/sdd-garrison-troops-per-base.md`.
+- **Capacidad por planeta:** con guarnición, minería (obreros↔minas) y alojamiento se computan POR BASE
+  y el snapshot expone `mining_by_planet`/`housing_by_planet`; el entrenamiento valida plazas de ESA
+  base. El panel "Economía/capacidad" muestra cada planeta (minería + plazas + almacén) colapsable.
+- **Tu imperio por planeta:** las unidades se muestran agrupadas por planeta (de `units_by_base`),
+  colapsable (SDD 60). Atacar suma un selector de **base de origen**.
+- **Mover tropas:** `TroopMove` (migración `5d27e1bf7a19`) + `POST /bases/{id}/move-troops` + servicio
+  lazy (`process_moves` en advance y tick) + panel web (origen→destino, unidad, cantidad) + ETA por
+  distancia. e2e `test_move_troops_e2e` + `tests/test_troops.py`.
+- **Backfill (migración `b8f1c2a4e6d0`):** asigna las unidades globales existentes (base_id NULL) a la
+  base natal, para que al prender la guarnición nadie quede indefenso. Seguro con el flag OFF.
+- Suite 413 ✓ (OFF sin cambios). El flag se prende en el próximo release.
+
 ## [1.114.0] - 2026-06-30
 
 ### 2026-06-30 — SDD 62 paso 2/4: combate por base + base de origen (flag OFF)
