@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.111.0] - 2026-06-30
+
 ### 2026-06-30 — Fixes UX: qué edificio da plazas + el hack crea minas/silos
 > Dos reportes del usuario jugando.
 - **Plazas de alojamiento (SDD 56 fix):** al quedarte sin plazas, el panel decía "construí 🛡
