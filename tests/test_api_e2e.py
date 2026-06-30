@@ -51,13 +51,14 @@ async def _onboard(http, headers, planet="mars", race="martian") -> dict:
     return r.json()
 
 
-async def _grant_units(maker, username, units: dict[str, int]) -> None:
-    """Arrange: drop units straight into a player's stock (bypasses training timers)."""
+async def _grant_units(maker, username, units: dict[str, int], base_id=None) -> None:
+    """Arrange: drop units straight into a player's stock (bypasses training timers). SDD 62:
+    `base_id` los estaciona en una base (guarnición); None = pool global (histórico)."""
     async with maker() as s:
         res = await s.execute(select(Player).where(Player.username == username))
         player = res.scalar_one()
         for unit_key, qty in units.items():
-            s.add(UnitStock(player_id=player.id, unit_key=unit_key, quantity=qty))
+            s.add(UnitStock(player_id=player.id, unit_key=unit_key, quantity=qty, base_id=base_id))
         await s.commit()
 
 
@@ -2795,6 +2796,45 @@ async def test_attacks_received_today_exposed_e2e(client, monkeypatch):
     assert r.status_code == 201, r.text
     me1 = (await client.http.get("/api/v1/players/me", headers=hd)).json()
     assert me1["attacks_received_today"] >= 1
+
+
+async def test_garrison_combat_uses_only_attacked_base_e2e(client, monkeypatch):
+    """SDD 62: con guarnición ON, el combate usa SOLO la guarnición de la base atacada y la flota
+    sale de una base; las unidades en otra base / pool global no defienden ni atacan."""
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "garrison_enabled", True)
+    monkeypatch.setattr(get_settings(), "attacks_per_window", 0)
+    ha = await _register(client.http, "gar_atk")
+    ast = await _onboard(client.http, ha, planet="mars", race="martian")
+    a_base = ast["bases"][0]["id"]
+    hd = await _register(client.http, "gar_def")
+    dst = await _onboard(client.http, hd, planet="venus", race="venusian")
+    d_base = dst["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "gar_atk", "gar_def")
+    await _set_energy(client.session_maker, "gar_atk", 1_000_000)
+    # atacante: tropas EN su base natal; defensor: 50 soldados en el POOL GLOBAL (no en su base).
+    await _grant_units(client.session_maker, "gar_atk", {"tank": 10}, base_id=a_base)
+    await _grant_units(client.session_maker, "gar_def", {"soldier": 50})  # global, NO en d_base
+
+    # el snapshot muestra la guarnición por base
+    me = (await client.http.get("/api/v1/players/me", headers=ha)).json()
+    assert me["units_by_base"].get(str(a_base), {}).get("tank") == 10
+
+    # atacar SIN tropas en la base de origen falla (prueba que lee por base)
+    rbad = await client.http.post("/api/v1/combat/attack", headers=hd,
+                                  json={"target_base_id": a_base, "force": {"soldier": 1}})
+    assert rbad.status_code == 400  # el defensor tiene soldados globales, pero no en su base
+
+    # atacar desde la base con guarnición funciona
+    r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                               json={"target_base_id": d_base, "force": {"tank": 10},
+                                     "source_base_id": a_base})
+    assert r.status_code == 201, r.text
+    await _fast_forward_arrivals(client.session_maker)
+    await client.http.post("/api/v1/admin/tick", headers=ha)
+    reports = (await client.http.get("/api/v1/combat/reports", headers=ha)).json()
+    # los 50 soldados del defensor estaban globales (no en d_base) → base indefensa → gana atk
+    assert reports and reports[0]["outcome"] == "attacker"
 
 
 async def test_worker_floor_survives_combat_e2e(client):

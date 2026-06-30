@@ -52,6 +52,14 @@ async def player_units(session: AsyncSession, player_id: int) -> dict[str, int]:
     return out
 
 
+async def natal_base_id(session: AsyncSession, player_id: int) -> int | None:
+    """SDD 62: la base natal (HQ, la primera) — default para depositar/lanzar con guarnición."""
+    res = await session.execute(
+        select(Base_.id).where(Base_.player_id == player_id).order_by(Base_.id).limit(1)
+    )
+    return res.scalar_one_or_none()
+
+
 async def units_at_base(session: AsyncSession, player_id: int, base_id: int) -> dict[str, int]:
     """SDD 62: unidades estacionadas en UNA base (guarnición). Vacío si no hay."""
     res = await session.execute(

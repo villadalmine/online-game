@@ -81,7 +81,9 @@ async def do_attack(
             status.HTTP_429_TOO_MANY_REQUESTS, "Demasiados ataques; espera un momento."
         )
     try:
-        mission = await start_attack(session, player, body.target_base_id, body.force)
+        mission = await start_attack(
+            session, player, body.target_base_id, body.force, body.source_base_id
+        )
     except CombatError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()

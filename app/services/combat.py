@@ -28,7 +28,9 @@ from app.services.physics import effective_energy_max, effective_energy_regen
 from app.services.training import (
     finalize_due_training,
     get_or_create_unit_stock,
+    natal_base_id,
     player_units,
+    units_at_base,
 )
 
 
@@ -181,7 +183,8 @@ async def _bombard_buildings(
 # Dispatch: launch a fleet (units leave now, battle resolves on arrival)
 # --------------------------------------------------------------------------- #
 async def start_attack(
-    session: AsyncSession, attacker: Player, target_base_id: int, force: dict[str, int]
+    session: AsyncSession, attacker: Player, target_base_id: int, force: dict[str, int],
+    source_base_id: int | None = None,
 ) -> AttackMission:
     content = get_content()
     settings = get_settings()
@@ -267,11 +270,24 @@ async def start_attack(
 
     await _advance_economy(session, attacker, now)
 
-    units = await player_units(session, attacker.id)
+    # SDD 62 (guarnición): con el flag ON la flota SALE de una base (la elegida o la natal) y se
+    # descuenta de SU guarnición; con OFF, del pool global (histórico).
+    if settings.garrison_enabled:
+        if source_base_id is None:
+            source_base_id = await natal_base_id(session, attacker.id)
+        src = await session.get(Base_, source_base_id) if source_base_id else None
+        if src is None or src.player_id != attacker.id:
+            raise CombatError("Base de origen inválida.")
+        units = await units_at_base(session, attacker.id, source_base_id)
+        where = " en esa base"
+    else:
+        source_base_id = None
+        units = await player_units(session, attacker.id)
+        where = ""
     for unit_key, qty in force.items():
         have = units.get(unit_key, 0)
         if have < qty:
-            raise CombatError(f"No tienes suficientes {unit_key} (tienes {have}).")
+            raise CombatError(f"No tienes suficientes {unit_key} (tienes {have}){where}.")
 
     if not spend_energy(
         attacker,
@@ -282,9 +298,9 @@ async def start_attack(
     ):
         raise CombatError("Energia insuficiente para atacar.")
 
-    # Lock the committed units: they leave the stock while in transit.
+    # Lock the committed units: salen del stock en tránsito (de la base origen si garrison).
     for unit_key, qty in force.items():
-        stock = await get_or_create_unit_stock(session, attacker.id, unit_key)
+        stock = await get_or_create_unit_stock(session, attacker.id, unit_key, source_base_id)
         stock.quantity -= qty
 
     travel = travel_seconds(attacker.planet_key, defender.planet_key)
@@ -300,6 +316,7 @@ async def start_attack(
         attacker_id=attacker.id,
         defender_id=defender.id,
         target_base_id=target_base_id,
+        source_base_id=source_base_id,
         force=json.dumps(force),
         status="outbound",
         arrives_at=now + timedelta(seconds=travel),
@@ -339,9 +356,14 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
     defender = await session.get(Player, mission.defender_id)
     force = json.loads(mission.force)
 
-    # Defender's army reflects reality at the moment of impact.
+    # Defender's army reflects reality at the moment of impact. SDD 62: con guarnición ON, solo
+    # defiende la guarnición de la base atacada; con OFF, todo el ejército (histórico).
     await _advance_economy(session, defender, now)
-    defender_force = await player_units(session, defender.id)
+    def_base = mission.target_base_id if settings.garrison_enabled else None
+    if settings.garrison_enabled:
+        defender_force = await units_at_base(session, defender.id, mission.target_base_id)
+    else:
+        defender_force = await player_units(session, defender.id)
 
     atk_mult = content.races[attacker.race_key]["bonuses"].get("military_attack", 1.0)
     def_mult = content.races[defender.race_key]["bonuses"].get("defense", 1.0)
@@ -363,9 +385,9 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
     flat_defense += await mutual_defense_flat(session, defender)
     result = resolve_combat(force, defender_force, atk_mult, def_mult, flat_defense)
 
-    # Defender unit losses.
+    # Defender unit losses (de la guarnición de la base atacada si garrison ON).
     for unit_key, lost in result.defender_losses.items():
-        stock = await get_or_create_unit_stock(session, defender.id, unit_key)
+        stock = await get_or_create_unit_stock(session, defender.id, unit_key, def_base)
         before = stock.quantity
         new_q = max(0, before - lost)
         # SDD 54: nunca dejar al defensor sin trabajadores → siempre puede seguir juntando material
@@ -475,8 +497,11 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
 
 async def _process_return(session: AsyncSession, mission: AttackMission) -> None:
     details = json.loads(mission.details or "{}")
+    # SDD 62: los sobrevivientes vuelven a la base de origen (None = pool global, modo histórico).
     for unit_key, qty in details.get("survivors", {}).items():
-        (await get_or_create_unit_stock(session, mission.attacker_id, unit_key)).quantity += qty
+        (await get_or_create_unit_stock(
+            session, mission.attacker_id, unit_key, mission.source_base_id
+        )).quantity += qty
     # El botín se descarga en el mundo natal del atacante (SDD 42).
     attacker = await session.get(Player, mission.attacker_id)
     home = attacker.planet_key if attacker else ""

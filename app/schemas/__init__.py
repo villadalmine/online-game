@@ -178,6 +178,7 @@ class IntelReportOut(BaseModel):
 class AttackRequest(BaseModel):
     target_base_id: int
     force: dict[str, int]
+    source_base_id: int | None = None   # SDD 62: base de la que salen las tropas (guarnición)
 
 
 class AttackMissionOut(BaseModel):

@@ -229,6 +229,8 @@ class AttackMission(Base):
         ForeignKey("players.id", ondelete="CASCADE"), index=True
     )
     target_base_id: Mapped[int] = mapped_column(Integer)
+    # SDD 62: base de la que SALEN las tropas (guarnición). NULL = pool global (modo histórico).
+    source_base_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     force: Mapped[str] = mapped_column(Text, default="{}")  # JSON unit_key -> qty
     status: Mapped[str] = mapped_column(String(20), default="outbound")  # outbound|returning|done
     details: Mapped[str] = mapped_column(Text, default="{}")  # JSON: outcome/loot/survivors

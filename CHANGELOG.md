@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-30 — SDD 62 paso 2/4: combate por base + base de origen (flag OFF)
+> Segundo paso (invisible con `garrison_enabled=False`): el combate respeta la guarnición. Ver
+> `docs/sdd-garrison-troops-per-base.md`.
+- `AttackMission.source_base_id` (migración `cfcbb3d53d70`): la flota SALE de una base.
+- Con guarnición ON: el ataque se descuenta de la guarnición de la base origen (elegida o natal); el
+  defensor pelea **solo con la guarnición de la base atacada**; las pérdidas se aplican a esa base; los
+  sobrevivientes vuelven a la base origen. Con OFF: pool global (histórico, sin cambios).
+- API `POST /combat/attack` acepta `source_base_id` (opcional, default natal).
+- e2e `test_garrison_combat_uses_only_attacked_base_e2e` (con flag ON). Suite 409 ✓ (OFF sin cambios).
+
 ## [1.113.0] - 2026-06-30
 
 ### 2026-06-30 — SDD 62 paso 1/4: fundamento de guarnición (tropas por base, flag OFF)
