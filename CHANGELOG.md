@@ -7,6 +7,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-30 — SDD 60: paneles por planeta colapsables (bases, materiales, capacidad)
+> Reporte: con varias colonias los paneles se hacían enormes; pedido de poder colapsar por planeta
+> "como el de Bases y edificios".
+- **Bases y edificios**: ahora **agrupado por planeta** y cada planeta es una sección **colapsable**
+  (summary "⭐/🪐 Planeta · N 🏗" + sus minerales). Antes era una lista plana que crecía sin fin.
+- **Materiales** (con colonias) y **Capacidad → almacén**: cada planeta colapsable también.
+- El estado abierto/cerrado se guarda en `localStorage` (`collapsed`) → sobrevive el refresh de 4 s y
+  las recargas; default **abierto** (nada se oculta sin que lo pidas). Solo front, `<details>` nativo.
+- Nota: **unidades** son del imperio (globales, sin planeta en el modelo) y **minería/alojamiento** son
+  agregados → no se fuerza un desglose por planeta que el backend no da (v2). Guard: web smoke
+  (`test_web_smoke.py`, sin errores de JS). `docs/sdd-collapsible-planet-panels.md`.
+
 ## [1.111.0] - 2026-06-30
 
 ### 2026-06-30 — Fixes UX: qué edificio da plazas + el hack crea minas/silos
