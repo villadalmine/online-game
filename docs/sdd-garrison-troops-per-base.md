@@ -1,7 +1,8 @@
 # SDD 62 — Guarnición: tropas estacionadas por base + mover tropas entre planetas
 
-> **Estado:** **DISEÑO** 2026-06-30 (sin implementar) · **Pedido:** usuario, 2026-06-30 (eligió
-> "guarnición real" sobre dejar el ejército global).
+> **Estado:** **IMPLEMENTADO + PRENDIDO EN PROD** 2026-06-30 (1.113.0→1.116.0; `garrison_enabled=true`
+> vía values-prod). · **Pedido:** usuario, 2026-06-30 (eligió "guarnición real" sobre dejar el ejército
+> global). Rollout en 4 pasos detrás del flag + backfill de unidades a la base natal antes de prender.
 > **Relacionado:** [SDD 46 alojamiento por edificio/base](sdd-unit-housing-capacity.md) (ya es por
 > base — la guarnición lo vuelve coherente), [SDD 42 stock de minerales por planeta](sdd-per-planet-stocks.md)
 > (mismo patrón para unidades), [SDD 47 minería/staffing](sdd-mining-workers-storage.md),
