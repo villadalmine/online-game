@@ -256,3 +256,41 @@ buildings:
       structural: 200
       energetic: 140
       advanced: 90
+  # SDD 61: cosmódromo (lanza satélites) + inhibidor de señal (protege del mapeo).
+  - key: cosmodrome
+    icon: 🛰
+    name: "Cosmódromo"
+    name_en: "Cosmodrome"
+    real: "Base de lanzamiento orbital: cohetes que ponen satélites en órbita."
+    real_en: "Orbital launch site: rockets that put satellites in orbit."
+    sources: ["Wikipedia: Spaceport"]
+    category: orbital
+    requires: research_lab
+    requires_tech: satellite_tech
+    description: "Lanza y aloja satélites (recon propio + espía que mapea al enemigo, SDD 61)."
+    description_en: "Launches and houses satellites (own recon + enemy-mapping spies, SDD 61)."
+    houses: { satellite: 6 }   # SDD 46/61: aloja satélites (dominio satellite)
+    energy_cost: 30
+    build_seconds: 260
+    cost:
+      structural: 260
+      energetic: 220
+      advanced: 180
+  - key: signal_inhibitor
+    icon: 📡
+    name: "Inhibidor de señal"
+    name_en: "Signal inhibitor"
+    real: "Guerra electrónica: jamming que estorba el reconocimiento satelital."
+    real_en: "Electronic warfare: jamming that hinders satellite reconnaissance."
+    sources: ["Wikipedia: Radar jamming and deception"]
+    category: defense
+    requires: research_lab
+    requires_tech: advanced_signals
+    description: "Protege tus bases del mapeo satelital. Más edificios tenés, más inhibidores necesitás."
+    description_en: "Shields your bases from satellite mapping. The more you build, the more you need."
+    energy_cost: 16
+    build_seconds: 140
+    inhibit_power: 8   # SDD 61: jamming; cobertura = min(1, Σinhibit / nº de edificios)
+    cost:
+      structural: 180
+      advanced: 100

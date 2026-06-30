@@ -302,6 +302,29 @@ class DroneSquadron(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class SatelliteMission(Base):
+    """SDD 61: un satélite en órbita. `kind=survey` orbita tu planeta; `kind=spy` orbita el de un
+    enemigo y acumula `discovered_pct` (mapa de sus bases). Lazy by timestamp: `advance_satellites`
+    aplica las órbitas (sube el %, drena energía, lo bajan los drones, deorbita)."""
+
+    __tablename__ = "satellite_missions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    target_id: Mapped[int | None] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    unit_key: Mapped[str] = mapped_column(String(50))
+    kind: Mapped[str] = mapped_column(String(20), default="spy")   # survey | spy
+    target_planet: Mapped[str] = mapped_column(String(50), default="")
+    shield_grade: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    energy: Mapped[float] = mapped_column(Float, default=0.0)
+    discovered_pct: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+    status: Mapped[str] = mapped_column(String(20), default="orbiting")  # orbiting|lost|deorbited
+    last_tick_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class SpyMission(Base):
     """Espías en tránsito hacia un objetivo (SDD 35). Resuelven al llegar (generan intel) y vuelven;
     si los detectan, algunos caen y el defensor es notificado."""

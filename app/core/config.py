@@ -214,6 +214,19 @@ class Settings(BaseSettings):
     drones_enabled: bool = True
     drone_tick_seconds: int = 600   # 10 min por tick de órbita
 
+    # Satélites (SDD 61): recon propio + espía que mapea al enemigo. OFF hasta balancear.
+    # Mapeo: 1 satélite sin inhibidores → 100% en `sat_scan_hours_solo` h; N satélites lineal.
+    # Inhibidores del defensor: coverage = min(1, Σinhibit_power / nº edificios) → topea %; cada
+    # inhibidor cubre `sat_inhibitor_jam` edificios. Órbita LEO `sat_orbit_minutes`; por órbita el
+    # satélite drena `1 + sat_drain_per_grade·grado` y los drones del defensor lo bajan con prob
+    # `sat_base_loss·drones / resist[grado]` (resist 1/2/4/8). Vida útil ~7d sin escudo.
+    satellites_enabled: bool = False
+    sat_scan_hours_solo: float = 96.0     # 1 satélite, sin inhibidores → 100% en 96 h
+    sat_inhibitor_jam: int = 8            # edificios por inhibidor (fallback; YAML manda)
+    sat_orbit_minutes: int = 90          # período orbital LEO real
+    sat_drain_per_grade: float = 0.3     # drenaje extra de energía por grado de escudo
+    sat_base_loss: float = 0.005         # prob de baja por dron del defensor por órbita (grado 0)
+
     # Analítica por jugador + gráficos in-app (SDD 51): muestreo throttleado del estado en advance.
     analytics_enabled: bool = True
     analytics_sample_seconds: int = 300   # ≤ 1 muestra cada N s por jugador (barato, lazy)

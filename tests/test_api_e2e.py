@@ -2837,6 +2837,27 @@ async def test_garrison_combat_uses_only_attacked_base_e2e(client, monkeypatch):
     assert reports and reports[0]["outcome"] == "attacker"
 
 
+async def test_satellite_launch_and_intel_e2e(client, monkeypatch):
+    """SDD 61: lanzar un satélite espía y verlo en el intel (happy path + error con flag OFF)."""
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "satellites_enabled", True)
+    ha = await _register(client.http, "sat_e2e_atk")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "sat_e2e_def")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    await _grant_units(client.session_maker, "sat_e2e_atk", {"spy_satellite": 1})
+    r = await client.http.post("/api/v1/satellites/launch", headers=ha,
+                               json={"unit_key": "spy_satellite", "target_id": dstate["id"]})
+    assert r.status_code == 201, r.text
+    intel = (await client.http.get("/api/v1/satellites/intel", headers=ha)).json()
+    assert any(s["kind"] == "spy" for s in intel["satellites"])
+    # error: espía sin objetivo
+    await _grant_units(client.session_maker, "sat_e2e_atk", {"spy_satellite": 1})
+    r2 = await client.http.post("/api/v1/satellites/launch", headers=ha,
+                                json={"unit_key": "spy_satellite"})
+    assert r2.status_code == 400
+
+
 async def test_move_troops_e2e(client, monkeypatch):
     """SDD 62: mover tropas entre bases propias por la API (happy path + error de misma base)."""
     from sqlalchemy import select

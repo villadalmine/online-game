@@ -30,6 +30,7 @@ def build_catalog() -> dict:
         "heavy_units": list(c.heavy.values()),
         "ordnance": list(c.ordnance.values()),   # SDD 49: misiles
         "drones": list(c.drones.values()),       # SDD 50: drones
+        "satellites": list(c.satellites.values()),  # SDD 61: satélites
         "moons": list(c.moons.values()),
         "technologies": list(c.technologies.values()),
         "alliance_types": list(c.alliance_types.values()),

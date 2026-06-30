@@ -78,6 +78,7 @@ async def run_tick(session: AsyncSession) -> dict:
 
     researched = 0
     from app.services.drones import advance_drones  # SDD 50
+    from app.services.satellites import advance_satellites  # SDD 61
     for player in players:
         finalized += await finalize_due_builds(session, player)
         expeditions += await finalize_due_expeditions(session, player)
@@ -85,6 +86,7 @@ async def run_tick(session: AsyncSession) -> dict:
         trained += await finalize_due_training(session, player)
         researched += await finalize_due_research(session, player)
         await advance_drones(session, player)
+        await advance_satellites(session, player)
     await session.commit()
 
     # Eventos dinámicos "happy hour" (SDD 36): quizás arrancar uno en horas aleatorias.

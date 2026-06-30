@@ -186,6 +186,11 @@ class MoveTroopsRequest(BaseModel):
     units: dict[str, int]
 
 
+class SatelliteLaunchRequest(BaseModel):
+    unit_key: str                       # survey_satellite | spy_satellite
+    target_id: int | None = None        # jugador objetivo (solo para spy)
+
+
 class TroopMoveOut(BaseModel):
     id: int
     from_base_id: int
@@ -612,6 +617,9 @@ class PlayerStateOut(BaseModel):
     strikes: list[StrikeMissionOut] = []
     drones: list[DroneSquadronOut] = []
     intel_live: dict = {}
+    # SDD 61: satélites propios en órbita + mapas de enemigos ({target_id: {pct, bases}}).
+    satellites: list[dict] = []
+    enemy_maps: dict = {}
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

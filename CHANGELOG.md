@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-30 — SDD 61: satélites (backend, flag OFF)
+> Reconocimiento orbital. Detrás de `satellites_enabled` (default OFF) hasta sumar panel + balancear.
+- **Contenido** (`content/*.yaml`): techs `satellite_tech`/`advanced_signals`/`sat_shield_mk1..3`;
+  edificios `cosmodrome` (lanza/aloja satélites) y `signal_inhibitor` (protege del mapeo); unidades
+  `survey_satellite` (tu planeta) y `spy_satellite` (mapea al enemigo). Catálogo expone `satellites`.
+- **Mecánica** (`app/services/satellites.py`, modelo `SatelliteMission`, migración `d7846da3329d`):
+  el spy acumula `discovered_pct` del enemigo — 1 sat sin inhibidores = 100% en 96 h (4 días), N sats
+  suman (2 = 2 días); los **inhibidores** del defensor topean el % (`coverage = Σinhibit / nº
+  edificios`); órbita LEO 90 min, drena energía (vida útil ~7 días, menos con escudo), y los **drones**
+  del defensor lo bajan (los **escudos** mk1-3 lo resisten ×2/4/8). Lazy by timestamp (`advance_satellites`).
+- **API** `/satellites/launch|{id}/recall|intel`; snapshot suma `satellites` + `enemy_maps`
+  ({target: {pct, bases+unidades}}). Tests `tests/test_satellites.py` + e2e
+  `test_satellite_launch_and_intel_e2e`. Suite 417 ✓. **Pendiente:** panel web + NPC + prender el flag.
+
 ## [1.117.0] - 2026-06-30
 
 ### 2026-06-30 — Bases: edificios ordenados alfabéticamente

@@ -316,3 +316,42 @@ drone:
     train_seconds: 90
     energy_cost: 9
     cost: { structural: 70, energetic: 60, advanced: 40 }
+
+# SDD 61: satélites — recon propio + espía que mapea al enemigo. Orbitan lazy-by-timestamp,
+# drenan energía, los bajan los drones del defensor; el blindaje (sat_shield_mk1..3) los protege.
+satellite:
+  - key: survey_satellite
+    icon: 🛰
+    name: "Satélite de reconocimiento"
+    name_en: "Survey satellite"
+    real: "Satélite de observación terrestre: vigila tu propio planeta."
+    real_en: "Earth-observation satellite: watches your own planet."
+    sources: ["Wikipedia: Earth observation satellite"]
+    requires: cosmodrome
+    requires_tech: satellite_tech
+    domain: satellite
+    housing_size: 1
+    kind: survey
+    sat_energy: 112
+    orbit_minutes: 90
+    train_seconds: 240
+    energy_cost: 20
+    cost: { structural: 120, energetic: 220, advanced: 160 }
+  - key: spy_satellite
+    icon: 🛰
+    name: "Satélite espía"
+    name_en: "Spy satellite"
+    real: "Satélite de reconocimiento: fotografía las bases enemigas desde la órbita."
+    real_en: "Reconnaissance satellite: photographs enemy bases from orbit."
+    sources: ["Wikipedia: Reconnaissance satellite"]
+    requires: cosmodrome
+    requires_tech: satellite_tech
+    domain: satellite
+    housing_size: 1
+    kind: spy
+    sat_scan_power: 1.0
+    sat_energy: 112
+    orbit_minutes: 90
+    train_seconds: 300
+    energy_cost: 28
+    cost: { structural: 140, energetic: 280, advanced: 220 }

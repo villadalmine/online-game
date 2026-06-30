@@ -238,3 +238,64 @@ technologies:
     research_seconds: 2400
     cost: { structural: 500, energetic: 900, advanced: 800 }
     magnitude: 1.0
+  # SDD 61: satélites — tecnología satelital, señales avanzadas (inhibidores) y blindaje (grados).
+  - key: satellite_tech
+    name: "Tecnología satelital"
+    category: orbital
+    name_en: "Satellite technology"
+    description: "Pone satélites en órbita: recon de tu planeta y espía que mapea al enemigo."
+    description_en: "Puts satellites in orbit: recon of your planet and spies that map the enemy."
+    requires: research_lab
+    requires_tech: antigravity
+    energy_cost: 70
+    research_seconds: 1800
+    cost: { structural: 300, energetic: 500, advanced: 450 }
+    magnitude: 1.0
+  - key: advanced_signals
+    name: "Señales avanzadas"
+    category: espionage
+    name_en: "Advanced signals"
+    description: "Guerra electrónica: habilita el inhibidor de señal que protege tus bases del mapeo."
+    description_en: "Electronic warfare: unlocks the signal inhibitor that shields your bases from mapping."
+    requires: research_lab
+    requires_tech: counter_espionage
+    energy_cost: 40
+    research_seconds: 900
+    cost: { structural: 260, energetic: 200, advanced: 140 }
+    magnitude: 1.0
+  - key: sat_shield_mk1
+    name: "Blindaje de satélites I"
+    category: orbital
+    name_en: "Satellite shielding I"
+    description: "Coraza ligera: tus satélites resisten mejor los disparos de drones (gastan más energía)."
+    description_en: "Light armor: your satellites resist drone fire better (drain more energy)."
+    requires: research_lab
+    requires_tech: satellite_tech
+    energy_cost: 50
+    research_seconds: 1200
+    cost: { structural: 200, energetic: 400, advanced: 300 }
+    magnitude: 1.0
+  - key: sat_shield_mk2
+    name: "Blindaje de satélites II"
+    category: orbital
+    name_en: "Satellite shielding II"
+    description: "Aleaciones reforzadas: más resistencia a drones, vida útil algo menor."
+    description_en: "Reinforced alloys: more drone resistance, slightly shorter lifetime."
+    requires: research_lab
+    requires_tech: sat_shield_mk1
+    energy_cost: 60
+    research_seconds: 1600
+    cost: { structural: 250, energetic: 550, advanced: 450 }
+    magnitude: 1.0
+  - key: sat_shield_mk3
+    name: "Blindaje de satélites III"
+    category: orbital
+    name_en: "Satellite shielding III"
+    description: "Coraza de fin de juego: casi inmune a drones, pero la energía cae rápido al orbitar."
+    description_en: "Endgame armor: nearly drone-immune, but energy drops fast in orbit."
+    requires: research_lab
+    requires_tech: sat_shield_mk2
+    energy_cost: 80
+    research_seconds: 2200
+    cost: { structural: 300, energetic: 750, advanced: 650 }
+    magnitude: 1.0

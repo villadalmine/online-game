@@ -41,9 +41,12 @@ class GameContent:
         # (POST /combat/strike, POST /drones/launch), no en una flota de ataque clásica.
         self.ordnance: dict[str, dict] = {u["key"]: u for u in units.get("ordnance", [])}
         self.drones: dict[str, dict] = {u["key"]: u for u in units.get("drone", [])}
-        # Combined lookup for any trainable unit (personnel, heavy, ordnance, drones).
+        # Satélites (SDD 61): se fabrican como unidades pero orbitan por su propia vía
+        # (POST /satellites/launch) — recon propio + espía que mapea al enemigo.
+        self.satellites: dict[str, dict] = {u["key"]: u for u in units.get("satellite", [])}
+        # Combined lookup for any trainable unit (personnel, heavy, ordnance, drones, satellites).
         self.units: dict[str, dict] = {
-            **self.personnel, **self.heavy, **self.ordnance, **self.drones
+            **self.personnel, **self.heavy, **self.ordnance, **self.drones, **self.satellites
         }
 
         self.moons: dict[str, dict] = {m["key"]: m for m in _load("gods.yaml")["moons"]}
