@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.113.0] - 2026-06-30
+
 ### 2026-06-30 — SDD 62 paso 1/4: fundamento de guarnición (tropas por base, flag OFF)
 > Primer paso (invisible, sin cambio de comportamiento) del sistema de guarnición: ubicar las unidades
 > por base. Se mete la **migración sola** para de-riesgar el cambio de esquema en prod antes de
