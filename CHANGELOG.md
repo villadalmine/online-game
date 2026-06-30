@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.112.0] - 2026-06-30
+
 ### 2026-06-30 — SDD 60: paneles por planeta colapsables (bases, materiales, capacidad)
 > Reporte: con varias colonias los paneles se hacían enormes; pedido de poder colapsar por planeta
 > "como el de Bases y edificios".
