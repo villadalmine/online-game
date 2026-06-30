@@ -7,6 +7,10 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-30 — Bases: edificios ordenados alfabéticamente
+- En "Bases y edificios", los edificios de cada base se listan **en orden alfabético** por nombre
+  (orden estable, no saltan en el refresh de 4 s). Pedido del usuario. Solo front.
+
 ## [1.116.0] - 2026-06-30
 
 ## [1.115.0] - 2026-06-30

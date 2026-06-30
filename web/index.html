@@ -1239,7 +1239,10 @@ async function refresh(){
   // SDD 60: agrupado por planeta y colapsable (con varias colonias el panel se hacía enorme).
   const _baseBlock=b=>`<div style="margin-bottom:8px"><b>${baseTag(b)} ${picB?planetIcon(b.planet_key):esc(b.name)}</b> <span class="muted">#${b.id}${picB?'':' · '+esc(b.planet_key)}</span>`+
     (_hasDefense(b)?"":`<div class="item bad" style="font-size:12px">${esc(tr('nodef'))}</div>`)+
-    b.buildings.map(bl=>`<div class="item"><div class="top"><span>${picB?ico('build',bl.building_key):esc(bl.building_key)}${bl.production_mineral?(picB?' '+mname(bl.production_mineral,'bases'):` (${esc(bl.production_mineral)})`):""}</span>`+
+    // SDD 60: edificios ordenados alfabéticamente por nombre (estable, no salta al refrescar).
+    [...b.buildings].sort((x,y)=>((spec.build[x.building_key]||{}).name||x.building_key)
+      .localeCompare((spec.build[y.building_key]||{}).name||y.building_key))
+    .map(bl=>`<div class="item"><div class="top"><span>${picB?ico('build',bl.building_key):esc(bl.building_key)}${bl.production_mineral?(picB?' '+mname(bl.production_mineral,'bases'):` (${esc(bl.production_mineral)})`):""}</span>`+
       `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?(picB?'✓':'✓ activo'):cd(bl.completes_at)}</span></div>`+
       (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`;
   const _byPlanet={}; state.bases.forEach(b=>{ (_byPlanet[b.planet_key]=_byPlanet[b.planet_key]||[]).push(b); });

@@ -36,7 +36,9 @@ que el colapso aguante recargas.
 
 ### 3.2 Aplicación
 - **Bases y edificios**: agrupar `state.bases` por `planet_key`; cada planeta = un `<details>` con
-  summary "⭐/🪐 Planeta · N edificios" + el detalle de edificios adentro.
+  summary "⭐/🪐 Planeta · N edificios" + el detalle de edificios adentro. Los **edificios van
+  ordenados alfabéticamente** por nombre (orden estable: no saltan al refrescar cada 4 s). Pedido del
+  usuario 2026-06-30.
 - **Materiales** (con >1 planeta): cada planeta = un `<details>` (summary con los totales/chips).
 - **Capacidad**: el bloque de almacén por planeta, cada planeta colapsable; minería/alojamiento en una
   sección "imperio".
