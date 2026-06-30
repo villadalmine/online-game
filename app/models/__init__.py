@@ -147,15 +147,24 @@ class ResourceStock(Base):
 
 
 class UnitStock(Base):
-    """How many of each unit a player has (counts), like ResourceStock for minerals."""
+    """How many of each unit a player has (counts), like ResourceStock for minerals.
+
+    SDD 62 (guarnición): `base_id` ubica la unidad en una base. NULL = pool global del jugador
+    (comportamiento histórico, modo `garrison_enabled=False`). Con guarnición, cada base tiene sus
+    propias tropas. `player_units` suma todas las filas (global) → el modo OFF no cambia."""
 
     __tablename__ = "unit_stocks"
-    __table_args__ = (UniqueConstraint("player_id", "unit_key", name="uq_player_unit"),)
+    __table_args__ = (
+        UniqueConstraint("player_id", "unit_key", "base_id", name="uq_player_unit_base"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
     unit_key: Mapped[str] = mapped_column(String(50))
     quantity: Mapped[int] = mapped_column(Integer, default=0)
+    base_id: Mapped[int | None] = mapped_column(
+        ForeignKey("bases.id", ondelete="CASCADE"), nullable=True, index=True
+    )
 
     player: Mapped[Player] = relationship()
 

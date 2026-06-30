@@ -192,6 +192,12 @@ class Settings(BaseSettings):
     housing_enforced: bool = True
     base_housing_per_domain: int = 10          # plazas de gracia por dominio aun sin edificio
 
+    # SDD 62 (guarnición): tropas/obreros estacionados POR BASE. OFF = ejército global (histórico):
+    # el combate usa TODAS tus unidades para defender cualquier base; las unidades se guardan en
+    # `UnitStock.base_id=NULL`. ON = cada base tiene su guarnición; el combate usa solo la base
+    # atacada; entrenar deposita en la base; mover tropas viaja. Prender tras balancear.
+    garrison_enabled: bool = False
+
     # Lanzadera de misiles (SDD 49): vía de "golpe" intra-planeta, paralela a la flota. PRENDIDO
     # (v1.5): el contenido carga y se puede disparar. Frenos: protección de novato (SDD 11), no
     # atacás aliados, intra-planeta, tope de `ordnance` (alojamiento). El daño de una salva destruye

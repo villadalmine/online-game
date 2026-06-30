@@ -24,22 +24,51 @@ def _aware(dt: datetime) -> datetime:
 
 
 async def get_or_create_unit_stock(
-    session: AsyncSession, player_id: int, unit_key: str
+    session: AsyncSession, player_id: int, unit_key: str, base_id: int | None = None
 ) -> UnitStock:
+    """SDD 62: la fila de stock es por (jugador, unidad, base). `base_id=None` = pool global
+    (histórico). El lookup respeta NULL (no mezcla la fila global con las de una base)."""
+    cond = (UnitStock.base_id.is_(None)) if base_id is None else (UnitStock.base_id == base_id)
     res = await session.execute(
-        select(UnitStock).where(UnitStock.player_id == player_id, UnitStock.unit_key == unit_key)
+        select(UnitStock).where(
+            UnitStock.player_id == player_id, UnitStock.unit_key == unit_key, cond
+        )
     )
     stock = res.scalar_one_or_none()
     if stock is None:
-        stock = UnitStock(player_id=player_id, unit_key=unit_key, quantity=0)
+        stock = UnitStock(player_id=player_id, unit_key=unit_key, quantity=0, base_id=base_id)
         session.add(stock)
         await session.flush()
     return stock
 
 
 async def player_units(session: AsyncSession, player_id: int) -> dict[str, int]:
+    """Total del jugador (suma TODAS las bases + el pool global). SDD 62: puede haber varias filas
+    por unidad (una por base) → hay que SUMAR (antes un dict-comprehension las pisaba)."""
     res = await session.execute(select(UnitStock).where(UnitStock.player_id == player_id))
-    return {s.unit_key: s.quantity for s in res.scalars()}
+    out: dict[str, int] = {}
+    for s in res.scalars():
+        out[s.unit_key] = out.get(s.unit_key, 0) + s.quantity
+    return out
+
+
+async def units_at_base(session: AsyncSession, player_id: int, base_id: int) -> dict[str, int]:
+    """SDD 62: unidades estacionadas en UNA base (guarnición). Vacío si no hay."""
+    res = await session.execute(
+        select(UnitStock).where(UnitStock.player_id == player_id, UnitStock.base_id == base_id)
+    )
+    return {s.unit_key: s.quantity for s in res.scalars() if s.quantity}
+
+
+async def units_by_base(session: AsyncSession, player_id: int) -> dict[int, dict[str, int]]:
+    """SDD 62: {base_id: {unit: qty}} para el panel por planeta. Ignora el pool global (NULL)."""
+    res = await session.execute(select(UnitStock).where(UnitStock.player_id == player_id))
+    out: dict[int, dict[str, int]] = {}
+    for s in res.scalars():
+        if s.base_id is None or not s.quantity:
+            continue
+        out.setdefault(s.base_id, {})[s.unit_key] = s.quantity
+    return out
 
 
 async def _player_training_orders(session: AsyncSession, player_id: int) -> list[TrainingOrder]:
@@ -59,9 +88,13 @@ async def finalize_due_training(
 
     now = now or datetime.now(UTC)
     delivered = 0
+    # SDD 62: con guarnición ON, las unidades entrenadas quedan en SU base; con OFF, al pool global.
+    garrison = get_settings().garrison_enabled
     for order in await _player_training_orders(session, player.id):
         if order.status == "training" and _aware(order.completes_at) <= now:
-            stock = await get_or_create_unit_stock(session, player.id, order.unit_key)
+            stock = await get_or_create_unit_stock(
+                session, player.id, order.unit_key, order.base_id if garrison else None
+            )
             stock.quantity += order.quantity
             order.status = "done"
             await notify(

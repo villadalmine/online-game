@@ -555,6 +555,9 @@ class PlayerStateOut(BaseModel):
     stocks: dict[str, float]
     stocks_by_planet: dict[str, dict[str, float]] = {}   # SDD 42: stock por planeta
     units: dict[str, int] = {}
+    # SDD 62: guarnición — unidades por base ({base_id: {unit: qty}}). Vacío en modo global (OFF)
+    # hasta entrenar con garrison ON. El front agrupa por planeta sumando las bases.
+    units_by_base: dict[str, dict[str, int]] = {}
     bases: list[BaseOut]
     training: list[TrainingOrderOut] = []
     expeditions: list[ExpeditionOrderOut] = []

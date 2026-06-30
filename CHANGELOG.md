@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-30 — SDD 62 paso 1/4: fundamento de guarnición (tropas por base, flag OFF)
+> Primer paso (invisible, sin cambio de comportamiento) del sistema de guarnición: ubicar las unidades
+> por base. Se mete la **migración sola** para de-riesgar el cambio de esquema en prod antes de
+> superponer la lógica. Ver `docs/sdd-garrison-troops-per-base.md`.
+- `UnitStock.base_id` (nullable, FK a `bases`) + unique `(player_id, unit_key, base_id)`. NULL = pool
+  global (histórico). Migración `a2749737ed1d`.
+- `player_units` ahora **SUMA** todas las filas (antes un dict-comprehension las pisaba si había varias
+  por unidad) → total correcto con o sin guarnición. Helpers `units_at_base`/`units_by_base`.
+- Snapshot `/players/me` suma `units_by_base` ({base_id: {unit: qty}}). El entrenamiento deposita en la
+  base **solo si** `garrison_enabled` (config, **default OFF**) — con OFF todo sigue global e idéntico.
+- Suite 408 ✓ (cero cambios de comportamiento). Próximos pasos: combate/minería/alojamiento por base
+  tras el flag, mover tropas + UI, balance y recién ahí prender el flag.
+
 ## [1.112.0] - 2026-06-30
 
 ### 2026-06-30 — SDD 60: paneles por planeta colapsables (bases, materiales, capacidad)

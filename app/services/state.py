@@ -36,7 +36,7 @@ from app.services.expedition import finalize_due_expeditions
 from app.services.notifications import unread_count
 from app.services.physics import effective_energy_max, effective_energy_regen
 from app.services.research import finalize_due_research, in_progress, researched_techs
-from app.services.training import finalize_due_training, player_units
+from app.services.training import finalize_due_training, player_units, units_by_base
 
 
 async def advance(session: AsyncSession, player: Player) -> None:
@@ -84,6 +84,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         if rs.amount:
             by_planet.setdefault(rs.planet_key, {})[rs.mineral_key] = round(rs.amount, 2)
     units = await player_units(session, player.id)
+    units_per_base = await units_by_base(session, player.id)   # SDD 62: guarnición por base (UI)
 
     res = await session.execute(select(Base_).where(Base_.player_id == player.id))
     bases = list(res.scalars())
@@ -316,6 +317,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         stocks={k: round(v, 2) for k, v in stocks.items()},
         stocks_by_planet=by_planet,
         units=units,
+        units_by_base={str(k): v for k, v in units_per_base.items()},
         bases=bases_out,
         training=training_out,
         expeditions=expeditions_out,
