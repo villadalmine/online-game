@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.118.0] - 2026-06-30
+
 ### 2026-06-30 — SDD 61: satélites (backend, flag OFF)
 > Reconocimiento orbital. Detrás de `satellites_enabled` (default OFF) hasta sumar panel + balancear.
 - **Contenido** (`content/*.yaml`): techs `satellite_tech`/`advanced_signals`/`sat_shield_mk1..3`;
