@@ -1,7 +1,8 @@
 # SDD 54 — Bugs de economía/defensa: staffing de minas, torreta que no defiende, piso de trabajadores
 
-> **Estado:** **IMPLEMENTADO (parcial)** 2026-06-29 — staffing floor + piso de trabajadores HECHOS;
-> torreta REPRODUCIDA (no es bug en una base; ver §6). · **Diseño:** 2026-06-29
+> **Estado:** **IMPLEMENTADO** 2026-06-29/30 — staffing floor + piso de trabajadores HECHOS;
+> torreta REPRODUCIDA (no es bug en una base; ver §6) + aviso UX "sin defensas" (2026-06-30, §7). ·
+> **Diseño:** 2026-06-29
 > **Relacionado:** [SDD 47 minería/trabajadores/silos](sdd-mining-workers-storage.md),
 > [SDD 46 alojamiento](sdd-unit-housing-capacity.md), `app/services/combat.py` (resolución de ataque),
 > `app/services/production.py` / `app/services/state.py` (producción lazy + staffing),
@@ -83,3 +84,11 @@ Tres bugs/inconsistencias que dejan al jugador **trabado y vulnerable**:
   torreta está en OTRA base/planeta del jugador, o aún está `building` (no `active`), no defiende la
   base golpeada. **Pendiente (UX, no bug)**: que la UI avise "esta base no tiene defensas" y el
   asistente sugiera torretas por base (queda como follow-up, no se tocó código de combate).
+
+## 7. Follow-up UX (2026-06-30)
+- ✅ **Aviso "sin defensas" por base** (`web/index.html`): el panel "Bases y edificios" muestra
+  "⚠ sin defensas — construí una 🔫 torreta" en cada base sin ningún edificio defensivo
+  (`defense_power>0`) **activo**. Data-driven (lee `defense_power` del catálogo, no hardcodea `turret`).
+  Cierra la confusión "tengo torreta pero no me defiende" (estaba en otra base — defensa por base).
+  e2e `test_base_defense_detectable_for_no_defense_warning_e2e` (verifica que el catálogo expone
+  `defense_power` y que una base nueva no tiene defensa → el front la marca).

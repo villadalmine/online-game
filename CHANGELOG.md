@@ -7,6 +7,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-30 — SDD 54/55: follow-ups de UX (aviso "sin defensas" + contador de ataques del día)
+> Cierra los dos pendientes de UX que quedaban de SDD 54 y 55 (la lógica de juego ya estaba en prod).
+- **SDD 54 (UX):** el panel "Bases y edificios" ahora **avisa "⚠ sin defensas — construí una 🔫
+  torreta"** en cada base que no tiene ningún edificio defensivo (`defense_power>0`) **activo**. La
+  defensa es por base; este aviso evita la confusión de "tengo torreta pero no me defiende" (estaba en
+  OTRA base). Solo front, data-driven (lee `defense_power` del catálogo). e2e
+  `test_base_defense_detectable_for_no_defense_warning_e2e`.
+- **SDD 55 §3.3 (UX):** el snapshot `/players/me` expone `attacks_received_today` +
+  `max_incoming_attacks_per_day`; el panel "Temporada" muestra **"⚔ ataques recibidos hoy X/Y"** (en
+  amarillo al pasar la mitad, en rojo al llegar al tope, con la nota anti-abuso). e2e
+  `test_attacks_received_today_exposed_e2e`.
+
 ## [1.109.0] - 2026-06-29
 
 ### 2026-06-29 — SDD 57 v2: el hiperespacio acelera el viaje de flotas espaciales

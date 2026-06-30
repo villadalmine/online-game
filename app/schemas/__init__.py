@@ -561,6 +561,10 @@ class PlayerStateOut(BaseModel):
     boons: list[ActiveBoonOut] = []
     missions_outgoing: list[AttackMissionOut] = []
     missions_incoming: list[IncomingAttackOut] = []
+    # SDD 55 §3.3: ataques recibidos en las últimas 24 h + tope diario (anti-farmeo). El front
+    # muestra "ataques recibidos hoy X/Y". 0 en max = sin tope.
+    attacks_received_today: int = 0
+    max_incoming_attacks_per_day: int = 0
     technologies: list[str] = []
     research: list[ResearchOrderOut] = []
     alliance_id: int | None = None

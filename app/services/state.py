@@ -1,8 +1,8 @@
 """Advance a player's lazy state (energy + production + build timers) and snapshot it."""
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -220,6 +220,16 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         for m in ires.scalars()
     ]
 
+    # SDD 55 §3.3: cuántos ataques recibí en las últimas 24 h (misma ventana que el tope de
+    # combat.py) para mostrar "ataques recibidos hoy X/Y" en el front.
+    day_start = datetime.now(UTC) - timedelta(seconds=86400)
+    attacks_received_today = (await session.execute(
+        select(func.count(AttackMission.id)).where(
+            AttackMission.defender_id == player.id,
+            AttackMission.created_at >= day_start,
+        )
+    )).scalar_one()
+
     # SDD 49: salvas de misiles propias en vuelo.
     from app.models import StrikeMission
     from app.schemas import StrikeMissionOut
@@ -312,6 +322,8 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         boons=boons_out,
         missions_outgoing=outgoing,
         missions_incoming=incoming,
+        attacks_received_today=attacks_received_today,
+        max_incoming_attacks_per_day=settings.max_incoming_attacks_per_day,
         technologies=sorted(await researched_techs(session, player.id)),
         research=[
             ResearchOrderOut(id=o.id, tech_key=o.tech_key, completes_at=o.completes_at)

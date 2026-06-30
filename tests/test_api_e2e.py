@@ -2756,6 +2756,31 @@ async def test_attack_incoming_daily_cap_e2e(client, monkeypatch):
     assert r.status_code == 400 and ("golpeado" in r.text.lower() or "abuso" in r.text.lower())
 
 
+async def test_attacks_received_today_exposed_e2e(client, monkeypatch):
+    """SDD 55 §3.3: el snapshot expone ataques recibidos hoy + tope, para el contador del front."""
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "attacks_per_window", 0)
+    monkeypatch.setattr(get_settings(), "attacks_per_target_per_day", 0)
+    monkeypatch.setattr(get_settings(), "max_incoming_attacks_per_day", 6)
+    ha = await _register(client.http, "counter_atk")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "counter_def")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    target = dstate["bases"][0]["id"]
+    # antes del ataque: cero recibidos, tope visible
+    me0 = (await client.http.get("/api/v1/players/me", headers=hd)).json()
+    assert me0["attacks_received_today"] == 0
+    assert me0["max_incoming_attacks_per_day"] == 6
+    await _clear_protection(client.session_maker, "counter_atk", "counter_def")
+    await _grant_units(client.session_maker, "counter_atk", {"soldier": 5})
+    await _set_energy(client.session_maker, "counter_atk", 1_000_000)
+    r = await client.http.post("/api/v1/combat/attack", headers=ha,
+                               json={"target_base_id": target, "force": {"soldier": 1}})
+    assert r.status_code == 201, r.text
+    me1 = (await client.http.get("/api/v1/players/me", headers=hd)).json()
+    assert me1["attacks_received_today"] >= 1
+
+
 async def test_worker_floor_survives_combat_e2e(client):
     """SDD 54: tras un ataque arrasador, al defensor SIEMPRE le quedan ≥ min_surviving_workers
     trabajadores → puede seguir juntando material (no queda trabado)."""
@@ -2813,6 +2838,22 @@ async def test_turret_counts_as_defense_e2e(client):
     det = reports[0].get("details", reports[0])
     # 3 soldados (ataque 24) NO superan la defensa fija de la torreta → la torreta defendió.
     assert reports[0]["outcome"] == "defender", det
+
+
+async def test_base_defense_detectable_for_no_defense_warning_e2e(client):
+    """SDD 54 (UX): el front avisa "esta base no tiene defensas". Necesita (a) el catálogo con
+    `defense_power` por edificio y (b) los edificios de cada base → acá verificamos ambos datos."""
+    cat = (await client.http.get("/api/v1/catalog")).json()
+    turret = next(b for b in cat["buildings"] if b["key"] == "turret")
+    assert turret.get("defense_power", 0) > 0     # la torreta es defensiva (el front la detecta)
+    h = await _register(client.http, "no_def_base")
+    st = await _onboard(client.http, h, planet="earth", race="terran")
+    base = st["bases"][0]
+    defmap = {b["key"]: b.get("defense_power", 0) for b in cat["buildings"]}
+    # una base recién creada (solo HQ) no tiene ningún edificio defensivo activo → el front avisa
+    has_def = any(bl["status"] == "active" and defmap.get(bl["building_key"], 0) > 0
+                  for bl in base["buildings"])
+    assert not has_def
 
 
 async def test_hyperspace_speeds_up_space_fleet_e2e(client):

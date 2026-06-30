@@ -1,7 +1,8 @@
 # SDD 55 — Inteligencia de la IA: tope de ataques por objetivo/día (anti-farmeo) + agresividad
 
-> **Estado:** **IMPLEMENTADO** 2026-06-29 — topes duros (por objetivo/día + entrante/día) + sesgo del
-> cerebro NPC §3.2 (no patear al débil + no apilar flotas). · **Diseño:** 2026-06-29
+> **Estado:** **IMPLEMENTADO** 2026-06-29/30 — topes duros (por objetivo/día + entrante/día) + sesgo
+> del cerebro NPC §3.2 (no patear al débil + no apilar flotas) + visibilidad §3.3 (contador "ataques
+> recibidos hoy", 2026-06-30). · **Diseño:** 2026-06-29
 > **Relacionado:** [SDD 29 inteligencia estratégica de NPCs](sdd-npc-strategic-intelligence.md)
 > (perfiles + memoria + reflexión), [SDD 25 catch-up de novatos](sdd-newcomer-catchup.md),
 > [SDD 53 balance](sdd-resource-balance.md), [SDD 54 bugs economía/defensa](sdd-economy-defense-bugs.md),
@@ -66,8 +67,12 @@ abusos." → Una NPC (o varias) puede **farmear** a un mismo jugador hasta estra
   débil**: salta a un HUMANO con score < `npc_weak_protect_ratio` (0.5) del suyo → lo deja crecer
   (anti-snowball); (b) **reparte la presión**: salta rivales a los que ya tiene una flota outbound
   (no apila). e2e `test_rule_brain_spares_a_much_weaker_human` (+ control
-  `test_rule_brain_ganks_the_leading_human` sigue verde). Pendiente menor: visibilidad de "ataques
-  recibidos hoy" en el panel (UX).
+  `test_rule_brain_ganks_the_leading_human` sigue verde).
+- ✅ **§3.3 (visibilidad, 2026-06-30)**: el snapshot `/players/me` expone `attacks_received_today` +
+  `max_incoming_attacks_per_day` (ventana de 24 h, la misma del tope de `combat.py`); el panel
+  "Temporada" del front muestra **"⚔ ataques recibidos hoy X/Y"** (amarillo al pasar la mitad, rojo al
+  llegar al tope, con nota anti-abuso). e2e `test_attacks_received_today_exposed_e2e`. **SDD 55
+  COMPLETO.**
 
 ## 5. Rollout / riesgos
 - Config + lógica acotada en `combat.py` (conteo por par/por defensor) y `npc.py` (sesgo + cooldown);
