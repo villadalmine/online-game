@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.114.0] - 2026-06-30
+
 ### 2026-06-30 — SDD 62 paso 2/4: combate por base + base de origen (flag OFF)
 > Segundo paso (invisible con `garrison_enabled=False`): el combate respeta la guarnición. Ver
 > `docs/sdd-garrison-troops-per-base.md`.
