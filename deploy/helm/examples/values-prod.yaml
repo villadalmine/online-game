@@ -36,3 +36,9 @@ scaling:
 postgres:
   maxConnections: 200         # más conexiones para soportar más réplicas/queries (default era 100)
   sharedBuffers: "256MB"
+
+# Flags de juego (SDD 62): guarnición — tropas/obreros por base, el combate usa solo la base atacada,
+# capacidad por planeta y mover tropas. El backfill (migración b8f1c2a4e6d0) ya movió las unidades
+# globales a la base natal. Reversible (poné "false"). Ver docs/sdd-garrison-troops-per-base.md.
+env:
+  GARRISON_ENABLED: "true"
