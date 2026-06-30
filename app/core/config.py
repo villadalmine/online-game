@@ -99,6 +99,9 @@ class Settings(BaseSettings):
     # EXCEDENTES (nunca HQ/minas ni el último de su tipo). siege_per_building = siege para volar 1.
     siege_enabled: bool = True
     siege_per_building: int = 300
+    # SDD 57 v2: una flota con naves espaciales y la tech `hyperspace_travel` viaja a esta fracción
+    # del tiempo normal (saltos por el hiperespacio). 1.0 = sin efecto.
+    hyperspace_travel_factor: float = 0.5
     loot_fraction: float = 0.2  # share of each defender mineral looted on a win
     # Fleet travel time (seconds): one-way. Same planet is quick; cross-planet is slow.
     travel_seconds_same_planet: int = 60

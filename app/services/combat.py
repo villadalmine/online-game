@@ -288,6 +288,14 @@ async def start_attack(
         stock.quantity -= qty
 
     travel = travel_seconds(attacker.planet_key, defender.planet_key)
+    # SDD 57 v2: si la flota lleva naves espaciales y el atacante investigó el hiperespacio, salta
+    # más rápido. El retorno hereda la ida (se calcula de arrives-created).
+    if settings.hyperspace_travel_factor < 1.0 and any(
+        content.units.get(k, {}).get("domain") == "space" for k in force
+    ):
+        from app.services.research import researched_techs
+        if "hyperspace_travel" in await researched_techs(session, attacker.id):
+            travel = max(1, int(travel * settings.hyperspace_travel_factor))
     mission = AttackMission(
         attacker_id=attacker.id,
         defender_id=defender.id,
@@ -458,9 +466,9 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
     mission.details = json.dumps({"outcome": result.outcome, "survivors": survivors, "loot": loot})
     if survivors or loot:
         mission.status = "returning"
-        mission.returns_at = now + timedelta(
-            seconds=travel_seconds(attacker.planet_key, defender.planet_key)
-        )
+        # El retorno tarda lo mismo que la ida (incluye la rebaja por hiperespacio, SDD 57 v2).
+        one_way = (_aware(mission.arrives_at) - _aware(mission.created_at)).total_seconds()
+        mission.returns_at = now + timedelta(seconds=one_way)
     else:
         mission.status = "done"  # fleet wiped out, nothing returns
 

@@ -1,7 +1,7 @@
 # SDD 57 — Viajes por el hiperespacio: research de velocidad + nave capital "rompe-bases"
 
-> **Estado:** **IMPLEMENTADO (v1)** 2026-06-29 — árbol + acorazado + bombardeo con anti-lockout.
-> Pendiente v2: reducir tiempo de viaje por hiperespacio (ver §4). · **Diseño:** 2026-06-29
+> **Estado:** **IMPLEMENTADO (v1 + v2)** 2026-06-29 — árbol + acorazado + bombardeo anti-lockout (v1)
+> + `hyperspace_travel` acelera el viaje de flotas espaciales (v2). · **Diseño:** 2026-06-29
 > **Relacionado:** `content/technologies.yaml` (árbol de research), `content/units.yaml` (unidades
 > espaciales), `app/services/combat.py` (resolución de ataque + destrucción de edificios),
 > `app/services/strike.py` (precedente: misiles que destruyen edificios, SDD 49),
@@ -101,5 +101,13 @@ edificios** del defensor según `siege_power`, respetando invariantes anti-locko
 - **Tests**: e2e `test_dreadnought_razes_surplus_buildings_e2e` (gana → vuela 1 cuartel excedente,
   deja el otro + el HQ).
 - Config: `siege_enabled=True`, `siege_per_building=300`.
+
+## 7. Implementación v2 (2026-06-29) — viaje por hiperespacio
+- `combat.py:start_attack`: si la flota lleva una unidad de dominio `space` y el atacante investigó
+  `hyperspace_travel`, el tiempo de viaje se multiplica por `hyperspace_travel_factor` (config, 0.5).
+  El **retorno** ahora se calcula como `arrives_at - created_at` (hereda la rebaja, antes recomputaba).
+- e2e `test_hyperspace_speeds_up_space_fleet_e2e` (misma flota: con la tech llega más rápido).
+- Resuelve la pregunta abierta §4: la rebaja aplica a CUALQUIER flota con naves espaciales (no solo
+  la capital).
 - Riesgo: arma de fin de juego muy fuerte → snowball. Mitigan: invariantes anti-lockout, costo altísimo,
   defensa (shields/torretas) que absorbe `siege_power`, y los topes de ataque (SDD 55).

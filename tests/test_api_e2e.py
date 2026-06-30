@@ -2815,6 +2815,41 @@ async def test_turret_counts_as_defense_e2e(client):
     assert reports[0]["outcome"] == "defender", det
 
 
+async def test_hyperspace_speeds_up_space_fleet_e2e(client):
+    """SDD 57 v2: una flota con naves espaciales y la tech `hyperspace_travel` llega más rápido."""
+    from sqlalchemy import select
+
+    from app.models import AttackMission, PlayerTech
+    ha = await _register(client.http, "jumper")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "jdef")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")  # cross-planet
+    target = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "jumper", "jdef")
+    await _grant_units(client.session_maker, "jumper", {"shuttle": 2})
+    await _set_energy(client.session_maker, "jumper", 1_000_000)
+
+    # 1) sin tech: viaje normal
+    r1 = await client.http.post("/api/v1/combat/attack", headers=ha,
+                                json={"target_base_id": target, "force": {"shuttle": 1}})
+    assert r1.status_code == 201, r1.text
+    # 2) con hyperspace_travel investigado: salto más rápido
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "jumper"))).scalar_one()
+        s.add(PlayerTech(player_id=p.id, tech_key="hyperspace_travel"))
+        await s.commit()
+        pid = p.id
+    r2 = await client.http.post("/api/v1/combat/attack", headers=ha,
+                                json={"target_base_id": target, "force": {"shuttle": 1}})
+    assert r2.status_code == 201, r2.text
+    async with client.session_maker() as s:
+        ms = (await s.execute(select(AttackMission).where(
+            AttackMission.attacker_id == pid).order_by(AttackMission.id))).scalars().all()
+    d_normal = (ms[0].arrives_at - ms[0].created_at).total_seconds()
+    d_hyper = (ms[1].arrives_at - ms[1].created_at).total_seconds()
+    assert d_hyper < d_normal, (d_hyper, d_normal)
+
+
 async def test_dreadnought_razes_surplus_buildings_e2e(client):
     """SDD 57: el acorazado (siege_power) al ganar demuele edificios EXCEDENTES de la base — nunca
     el HQ ni el último de su tipo (anti-lockout)."""
