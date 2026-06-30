@@ -258,7 +258,12 @@ async def ask(
     # asistente lo CREA GRATIS solo (tengas o no materiales). Si el hack no aplica (mina/silo piden
     # mineral), sigue con la respuesta normal.
     qwords = set(message.lower().replace(",", " ").replace(".", " ").split())
-    if len(matched) == 1 and (qwords & _BUILD_CMD_WORDS) and hacks_left(player) > 0:
+    # mina/silo NO se auto-hackean por lenguaje natural: el jugador elige el mineral (se ofrece como
+    # sugerencia que lo lleva). El botón directo /hack sí los crea (default estructural).
+    _picks_mineral = get_content().buildings.get(
+        matched[0] if matched else "", {}).get("category") in ("mine", "storage")
+    if (len(matched) == 1 and (qwords & _BUILD_CMD_WORDS) and hacks_left(player) > 0
+            and not _picks_mineral):
         _pid = player.id   # capturar ANTES (un rollback expira el objeto → .id haría IO lazy)
         try:
             res = await grant_hack(session, player, matched[0])   # crea gratis (cadena completa)
@@ -426,7 +431,9 @@ async def _llm_or_fallback(
 # --------------------------------------------------------------------------- #
 # Hack
 # --------------------------------------------------------------------------- #
-async def grant_hack(session: AsyncSession, player: Player, target: str) -> dict:
+async def grant_hack(
+    session: AsyncSession, player: Player, target: str, target_mineral: str | None = None
+) -> dict:
     if not player.race_key:
         raise AdvisorError("Primero hacé el onboarding.", 400)
     try:
@@ -463,7 +470,8 @@ async def grant_hack(session: AsyncSession, player: Player, target: str) -> dict
             player.energy += cost.energy
             player.energy_updated_at = now
             granted["energy"] = granted.get("energy", 0.0) + cost.energy
-        verb = await _auto_execute(session, player, item, activate=(item != target))
+        verb = await _auto_execute(session, player, item, activate=(item != target),
+                                   target_mineral=target_mineral if item == target else None)
         if verb:
             built_items.append(f"{verb} {item}")
 
@@ -501,11 +509,13 @@ def _tech_chain(target: str) -> list[str]:
 
 
 async def _auto_execute(
-    session: AsyncSession, player: Player, target: str, *, activate: bool = False
+    session: AsyncSession, player: Player, target: str, *, activate: bool = False,
+    target_mineral: str | None = None,
 ) -> str | None:
     """Tras el hack, ejecuta la acción del `target` en la base natal (best-effort). `activate`=True
     (para los edificios PREVIOS de la cadena) lo deja ACTIVO al instante, así el siguiente paso ve
-    su requisito cumplido. Devuelve el verbo en pasado, o None si pide elección/falló."""
+    su requisito cumplido. `target_mineral` (mina/silo) usa el elegido o el estructural de la raza.
+    Devuelve el verbo en pasado, o None si pide elección/falló."""
     content = get_content()
     kind = depgraph.target_kind(content, target)
     try:
@@ -529,11 +539,15 @@ async def _auto_execute(
             from app.services.training import start_training
             await start_training(session, player, base, target, 1)
             return "entrené"
-        # building: las que piden mineral (mina/silo) las deja para que el jugador elija.
-        if content.buildings.get(target, {}).get("category") in ("mine", "storage"):
-            return None
         from app.services.build import start_build
-        building = await start_build(session, player, base, target)
+        # mina/silo piden un mineral: usá el elegido o el estructural (siempre producible) como
+        # default, así el hack también crea minas/silos (antes los saltaba → "no pude crear").
+        mineral = None
+        if content.buildings.get(target, {}).get("category") in ("mine", "storage"):
+            mineral = target_mineral or content.resolve_role(player.race_key, "structural")
+            if mineral is None:
+                return None
+        building = await start_build(session, player, base, target, target_mineral=mineral)
         if activate:   # edificio previo de la cadena → activarlo ya (el hack saltea el timer)
             building.status = "active"
             building.completes_at = datetime.now(UTC)

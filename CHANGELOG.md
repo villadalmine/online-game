@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-06-30 — Fixes UX: qué edificio da plazas + el hack crea minas/silos
+> Dos reportes del usuario jugando.
+- **Plazas de alojamiento (SDD 56 fix):** al quedarte sin plazas, el panel decía "construí 🛡
+  Terrestres" (el **dominio**, no un edificio) → no sabías qué construir. Ahora **nombra el/los
+  edificios** que dan alojamiento para ese dominio (data-driven desde `houses` del catálogo: ground→
+  Taller, personnel→Laboratorio, infantry→Cuartel, etc.). Solo front.
+- **Hack crea minas/silos (SDD 2 fix):** el "crear gratis" fallaba en mina/silo ("necesita elegir
+  mineral") y dejaba al jugador sin saber qué hacer. Ahora el endpoint `/advisor/hack` acepta
+  `target_mineral` opcional y, si no se pasa, usa el **mineral estructural** de la raza (siempre
+  producible) → crea mina/silo gratis igual. El asistente por lenguaje natural ("quiero una mina de
+  silicio") sigue **sugiriendo** el mineral nombrado (no auto-hackea mina/silo, para respetar tu
+  elección). e2e `test_advisor_hack_creates_silo_with_default_mineral` + `test_advisor.py` actualizado.
+
 ## [1.110.0] - 2026-06-30
 
 ### 2026-06-30 — SDD 54/55: follow-ups de UX (aviso "sin defensas" + contador de ataques del día)

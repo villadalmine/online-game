@@ -1090,6 +1090,22 @@ async def test_advisor_hack_grants_and_exhausts_daily_budget(client):
     assert r.status_code == 429, r.text
 
 
+async def test_advisor_hack_creates_silo_with_default_mineral(client):
+    """SDD 2 fix: el hack también crea mina/silo (antes fallaba "elegí mineral"). Sin pasar mineral,
+    usa el estructural de la raza; también acepta uno explícito."""
+    h = await _register(client.http, "silo_hacker")
+    await _onboard(client.http, h, planet="earth", race="terran")
+    # sin target_mineral → usa el estructural por default y crea el silo
+    r = await client.http.post(
+        "/api/v1/players/me/advisor/hack", headers=h, json={"target": "silo"}
+    )
+    assert r.status_code == 200, r.text
+    assert "silo" in r.json()["message"].lower()
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    silos = [bl for b in me["bases"] for bl in b["buildings"] if bl["building_key"] == "silo"]
+    assert silos, "el hack debería haber creado un silo"
+
+
 # ---- métricas + showcase público (SDD 12) -----------------------------------
 async def test_public_endpoints_no_auth_and_no_email(client):
     h = await _register(client.http, "famous")

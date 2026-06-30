@@ -52,7 +52,7 @@ async def hack(
     session: AsyncSession = Depends(get_session),
 ):
     try:
-        return await advisor.grant_hack(session, player, body.target)
+        return await advisor.grant_hack(session, player, body.target, body.target_mineral)
     except advisor.AdvisorError as e:
         raise HTTPException(e.status, str(e)) from e
 

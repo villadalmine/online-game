@@ -92,13 +92,16 @@ async def test_hack_creates_free_even_with_materials(session):
     assert (await session.execute(select(Building).where(
         Building.building_key == "barracks"))).first() is not None
 
-    # mina/silo piden elegir mineral → el hack no aplica (400 claro)
+    # SDD 2 fix: mina/silo ahora SÍ se crean por hack — usan el mineral elegido o, si no, el
+    # estructural de la raza por default (siempre producible).
     p = await session.get(Player, p.id)
-    try:
-        await adv.grant_hack(session, p, "mine")
-        raise AssertionError("mina debería pedir mineral")
-    except adv.AdvisorError as e:
-        assert e.status == 400
+    res = await adv.grant_hack(session, p, "mine")
+    assert "mine" in res["message"].lower()
+    from app.content.registry import get_content
+    struct = get_content().resolve_role(p.race_key, "structural")
+    mine = (await session.execute(select(Building).where(
+        Building.building_key == "mine"))).scalars().first()
+    assert mine is not None and mine.production_mineral == struct
 
 
 async def test_hack_daily_budget_exhausts_and_resets(session):

@@ -655,6 +655,9 @@ class AdvisorReply(BaseModel):
 
 class AdvisorHackRequest(BaseModel):
     target: str = Field(min_length=1, max_length=50)
+    # SDD 2: mina/silo eligen qué mineral extraen/almacenan. Si no se pasa, el hack usa el mineral
+    # estructural de la raza (siempre producible) como default → el hack también crea minas/silos.
+    target_mineral: str | None = None
 
 
 class AdvisorHackResult(BaseModel):
