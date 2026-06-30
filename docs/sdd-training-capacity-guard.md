@@ -57,3 +57,11 @@ poner miles de unidades sin nada." Hoy:
   **"sin plazas — construí …"** cuando no hay lugar. i18n `free_slots`/`no_slots` (es/en).
 - e2e `test_training_capacity_headroom_e2e`: `/players/me` trae `housing.infantry.free` y entrenar más
   soldados que plazas (con material/energía de sobra) → 4xx con "plaza".
+
+## 6. Fix UX (2026-06-30, va en 1.111.0)
+- Reporte jugando: "sin plazas — construí 👷 Personal / 🛡 Terrestres" nombraba el **dominio**, no un
+  edificio → el jugador no sabía qué construir (y "✓ alcanza" confundía: hay material pero no plaza).
+- Fix (`web/index.html`): el aviso ahora **nombra el/los edificios** que dan alojamiento para ese
+  dominio, data-driven desde `houses` del catálogo (ground→Taller, personnel→HQ+Laboratorio, infantry→
+  Cuartel, air/space→Hangar, naval→Puerto, ordnance→Lanzadera, drone→Fábrica de drones; HQ excluido
+  porque no se re-construye). Helper `_housingBuildings(dom)`, i18n `no_slots_dom`. Solo front.

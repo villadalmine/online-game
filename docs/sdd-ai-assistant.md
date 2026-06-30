@@ -191,3 +191,15 @@ dropdown.
   ser local: Ollama/LiteLLM) — coherente con que el LLM ya es del operador, no de Anthropic por
   defecto.
 - **Degradación:** sin LLM y sin Redis, el asistente y el hack funcionan igual (DB + SDD1).
+
+## 8. Fix: el hack crea minas/silos (2026-06-30, va en 1.111.0)
+- Reporte jugando: "no puedo construir silo desde el hack, dice que falta material". Causa:
+  `_auto_execute` saltaba mina/silo (categoría `mine`/`storage`) porque piden elegir mineral y el hack
+  no lo pasaba → `built_items` vacío → error "no pude crear … (elegí mineral)".
+- Fix: `AdvisorHackRequest.target_mineral` opcional → `grant_hack` → `_auto_execute` → `start_build`.
+  Si no se pasa, usa el **mineral estructural** de la raza (`resolve_role(race,"structural")`, siempre
+  producible). Así el botón "crear gratis" también crea minas/silos.
+- Importante: el camino de **lenguaje natural** (`ask`, "quiero una mina de silicio") NO auto-hackea
+  mina/silo — sigue **sugiriendo** el mineral nombrado (respeta la elección; si auto-hackeara usaría el
+  estructural, no el silicio pedido). e2e `test_advisor_hack_creates_silo_with_default_mineral`;
+  `tests/test_advisor.py::test_hack_creates_free_even_with_materials` actualizado (mina ahora se crea).
