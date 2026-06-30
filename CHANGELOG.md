@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.109.0] - 2026-06-29
+
 ### 2026-06-29 — SDD 57 v2: el hiperespacio acelera el viaje de flotas espaciales
 - `combat.py`: una flota con naves espaciales (dominio `space`) cuyo dueño investigó `hyperspace_travel`
   viaja en `hyperspace_travel_factor` (0.5) del tiempo normal — saltos por el hiperespacio. El retorno
