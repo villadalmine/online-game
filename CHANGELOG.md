@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.110.0] - 2026-06-30
+
 ### 2026-06-30 — SDD 54/55: follow-ups de UX (aviso "sin defensas" + contador de ataques del día)
 > Cierra los dos pendientes de UX que quedaban de SDD 54 y 55 (la lógica de juego ya estaba en prod).
 - **SDD 54 (UX):** el panel "Bases y edificios" ahora **avisa "⚠ sin defensas — construí una 🔫
