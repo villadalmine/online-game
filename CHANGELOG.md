@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.116.0] - 2026-06-30
+
 ## [1.115.0] - 2026-06-30
 
 ### 2026-06-30 — SDD 62 pasos 2b+3/4: capacidad por planeta + mover tropas + UI (flag OFF)
