@@ -170,6 +170,40 @@ async def _my_outbound(session: AsyncSession, player: Player) -> list[AttackMiss
     return list(res.scalars())
 
 
+async def _npc_reinforce(session: AsyncSession, player: Player, target_base_id: int) -> bool:
+    """SDD 62: la NPC mueve tropas de otra base a la base atacada (guarnición). Best-effort."""
+    from app.services.training import units_by_base
+    from app.services.troops import TroopError, start_move
+    content = get_content()
+    ubb = await units_by_base(session, player.id)
+    mil = {k for k, u in content.units.items() if u.get("domain") in ("infantry", "ground")}
+    for bid, units in ubb.items():
+        if bid == target_base_id:
+            continue
+        send = {k: v for k, v in units.items() if k in mil and v > 0}
+        if not send:
+            continue
+        try:
+            await start_move(session, player, bid, target_base_id, send)
+            return True
+        except TroopError:
+            return False
+    return False
+
+
+async def _npc_launch_satellite(session: AsyncSession, player: Player, rivals: list) -> bool:
+    """SDD 61: si la NPC tiene un satélite espía, lo lanza contra un rival. Best-effort."""
+    from app.services.satellites import SatelliteError, launch
+    units = await player_units(session, player.id)
+    if units.get("spy_satellite", 0) <= 0 or not rivals:
+        return False
+    try:
+        await launch(session, player, "spy_satellite", rivals[0].id)
+        return True
+    except SatelliteError:
+        return False
+
+
 async def _base_defense_estimate(session: AsyncSession, base: Base_) -> float:
     """Defender unit defense + active turret power at a base (what an attacker faces)."""
     content = get_content()
@@ -301,11 +335,17 @@ class RuleBasedBrain:
             return _can_afford(stocks, energy, cost, e)
 
         # 0) THREAT RESPONSE: under attack -> recall a roaming fleet, then fortify.
-        if await _incoming_attacks(session, player):
+        incoming = await _incoming_attacks(session, player)
+        if incoming:
             outbound = await _my_outbound(session, player)
             if outbound:
                 await recall_mission(session, player, outbound[0].id)
                 return "recall fleet to defend"
+            # SDD 62: con guarnición, reforzar la base atacada moviendo tropas de otra base propia.
+            if _settings.garrison_enabled and await _npc_reinforce(
+                session, player, incoming[0].target_base_id
+            ):
+                return "move troops to defend"
             if turrets < 3 and afford_building("turret"):
                 await start_build(session, player, base, "turret")
                 return "build turret (under attack)"
@@ -419,6 +459,17 @@ class RuleBasedBrain:
         # 4.5) SDD 49/50: ablandá una base enemiga del MISMO planeta antes de la flota — lanzá
         # misiles (destruyen defensas) y/o un escuadrón de drones espía/ataque. Intra-planeta: el
         # objetivo debe estar en tu planeta. Best-effort: si falla, seguís con el turno normal.
+        # SDD 61: recon orbital — si tiene satélite espía, mapear a un rival (best-effort).
+        if _settings.satellites_enabled and units.get("spy_satellite", 0) > 0:
+            _seen: set[int] = set()
+            _rivals = []
+            for b in await _enemy_bases(session, player):
+                if b.player_id not in _seen:
+                    _seen.add(b.player_id)
+                    _rivals.append(await session.get(Player, b.player_id))
+            if await _npc_launch_satellite(session, player, _rivals):
+                return "launch spy satellite"
+
         same_planet = [b for b in await _enemy_bases(session, player)
                        if b.planet_key == player.planet_key]
         if _settings.strike_enabled and units.get("sonic_missile", 0) >= 4 and same_planet:

@@ -558,3 +558,59 @@ async def test_pick_posture_rush_when_army_beats_a_target(session):
     session.add(UnitStock(player_id=npc.id, unit_key="tank", quantity=50))  # ejército fuerte
     await session.flush()
     assert await pick_posture_rules(session, npc) in ("rush", "raid")
+
+
+async def test_npc_reinforces_attacked_base_with_garrison(session, monkeypatch):
+    """SDD 62: bajo ataque y con guarnición, la NPC mueve tropas de otra base a la base atacada."""
+    from app.core.config import get_settings
+    from app.models import Player, UnitStock
+    from app.services.onboarding import onboard_player
+    monkeypatch.setattr(get_settings(), "garrison_enabled", True)
+    npc = Player(username="garr_npc", password_hash="x", is_npc=True)
+    session.add(npc)
+    await session.flush()
+    natal = await onboard_player(session, npc, "milky_way", "mars", "martian")
+    colony = Base_(player_id=npc.id, name="Col", planet_key="venus", base_type="surface")
+    session.add(colony)
+    await session.flush()
+    # tropas en la NATAL; la COLONIA está siendo atacada y no tiene tropas
+    session.add(UnitStock(player_id=npc.id, unit_key="soldier", quantity=10, base_id=natal.id))
+    atk = Player(username="garr_atk", password_hash=hash_password("secret123"))
+    session.add(atk)
+    await session.flush()
+    session.add(AttackMission(attacker_id=atk.id, defender_id=npc.id, target_base_id=colony.id,
+                              force="{}", status="outbound",
+                              arrives_at=datetime.now(UTC) + timedelta(hours=1)))
+    npc.energy = 999
+    await session.commit()
+
+    npc = (await session.execute(
+        select(Player).where(Player.username == "garr_npc"))).scalar_one()
+    action = await RuleBasedBrain().act(session, npc)
+    assert action == "move troops to defend", action
+
+
+async def test_npc_launch_satellite_helper(session, monkeypatch):
+    """SDD 61: el helper de satélite de la NPC lanza un espía contra un rival si lo tiene."""
+    from app.core.config import get_settings
+    from app.models import Player, SatelliteMission, UnitStock
+    from app.services.npc import _npc_launch_satellite
+    from app.services.onboarding import onboard_player
+    monkeypatch.setattr(get_settings(), "satellites_enabled", True)
+    npc = Player(username="sat_npc", password_hash="x", is_npc=True)
+    session.add(npc)
+    await session.flush()
+    await onboard_player(session, npc, "milky_way", "mars", "martian")
+    rival = Player(username="sat_rival", password_hash=hash_password("secret123"))
+    session.add(rival)
+    await session.flush()
+    await onboard_player(session, rival, "milky_way", "venus", "venusian")
+    session.add(UnitStock(player_id=npc.id, unit_key="spy_satellite", quantity=1))
+    await session.commit()
+
+    ok = await _npc_launch_satellite(session, npc, [rival])
+    await session.commit()
+    assert ok
+    sats = (await session.execute(
+        select(SatelliteMission).where(SatelliteMission.owner_id == npc.id))).scalars().all()
+    assert sats and sats[0].kind == "spy" and sats[0].target_id == rival.id

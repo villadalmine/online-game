@@ -3,8 +3,8 @@
 > **Estado:** **IMPLEMENTADO + PRENDIDO** 2026-07-01 — backend (techs/edificios/unidades + modelo
 > `SatelliteMission` + `advance_satellites` + API `/satellites/*` + snapshot) **y panel web** ("🛰
 > Satélites": lanzar recon/espía, ver los propios y el mapa de enemigos con % y bases/unidades).
-> `satellites_enabled=true` en prod (aditivo, gateado por research carísimo). **Pendiente menor:** NPC
-> que lance satélites. · **Diseño:** 2026-06-30 · **Pedido:** usuario
+> `satellites_enabled=true` en prod (aditivo, gateado por research carísimo). NPC lanza satélite espía
+> best-effort (`_npc_launch_satellite`). SDD 61 COMPLETO. · **Diseño:** 2026-06-30 · **Pedido:** usuario
 > **Relacionado:** [SDD 50 drones intra-planeta](sdd-drones-intraplanet.md) (modelo lazy de orbitar +
 > caída por antiaéreo — el satélite se modela igual), [SDD 35 espionaje](sdd-espionage.md) (intel de
 > bases enemigas + visión de alianza), [SDD 37 colonización/órbita](sdd-colonization.md),

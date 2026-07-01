@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-01 — Fix UI: entrenar misiles/drones/satélites + NPC (satélites, reforzar)
+- **Fix (UI):** misiles, drones y satélites **no aparecían en el desplegable de "Entrenar"** (solo
+  infantería + pesadas) → no se podían crear desde la web. Ahora se listan (con el 🔒 que avisa si falta
+  el edificio/research). Se entrenan en su edificio (Lanzadera/Fábrica de drones/Cosmódromo), no se
+  compran. Solo front.
+- **NPC (SDD 61):** la IA lanza un **satélite espía** contra un rival si lo tiene (recon best-effort).
+- **NPC (SDD 62):** bajo ataque y con guarnición, la IA **mueve tropas** de otra base a la base atacada
+  para defenderla. Tests `test_npc.py`. Suite 422 ✓.
+
 ## [1.120.0] - 2026-07-01
 
 ### 2026-07-01 — SDD 63: salto espacial (jumpers) + prendido en prod

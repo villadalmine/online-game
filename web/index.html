@@ -546,7 +546,10 @@ async function loadCatalog(){
   fill("race",catalog.races.map(r=>[r.key,r.name]));
   fill("building",catalog.buildings.filter(b=>b.key!=="headquarters").map(b=>[b.key,b.name]));
   fill("mineral",catalog.minerals.map(m=>[m.key,m.name]));
-  fill("unit",[...catalog.personnel,...catalog.heavy_units].map(u=>[u.key,u.name]));
+  // SDD 49/50/61: misiles, drones y satélites también se entrenan (en su edificio, gateados por
+  // tech). El 🔒 del costo avisa si te falta el edificio/investigación.
+  fill("unit",[...catalog.personnel,...catalog.heavy_units,...(catalog.ordnance||[]),
+    ...(catalog.drones||[]),...(catalog.satellites||[])].map(u=>[u.key,u.name]));
   fill("moon",catalog.moons.map(m=>[m.key,m.name]));
   $("races").innerHTML=catalog.races.map(r=>`<div class="item"><b>${esc(r.name)}</b> <span class="muted">${esc(r.description||"")}</span></div>`).join("");
   renderCost(); renderTrainCost(); renderExpInfo();
