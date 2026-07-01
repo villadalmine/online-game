@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.121.0] - 2026-07-01
+
 ### 2026-07-01 — Fix UI: entrenar misiles/drones/satélites + NPC (satélites, reforzar)
 - **Fix (UI):** misiles, drones y satélites **no aparecían en el desplegable de "Entrenar"** (solo
   infantería + pesadas) → no se podían crear desde la web. Ahora se listan (con el 🔒 que avisa si falta
