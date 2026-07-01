@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.122.0] - 2026-07-01
+
 ### 2026-07-01 — Fix UX: los paneles ya no borran tu selección al refrescar (4s)
 > Reporte: "no puedo ni poner la unidad o a quién enviarles, se sale". El ciclo de refresco de 4 s
 > re-renderizaba los paneles y **borraba los `<select>`/inputs mientras los usabas**.
