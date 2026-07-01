@@ -24,6 +24,15 @@ from app.services.state import advance, snapshot
 router = APIRouter()
 
 
+def _npc_recent_actions(p: Player, limit: int = 5) -> list[str]:
+    """SDD 29: últimas jugadas de la NPC (de su memoria) para mostrar "qué hizo" en la UI."""
+    import json
+    try:
+        return json.loads(p.npc_memory or "[]")[-limit:]
+    except (ValueError, TypeError):
+        return []
+
+
 @router.get("/me/history")
 async def my_history(
     hours: float = 24.0,
@@ -78,6 +87,7 @@ async def list_players(
                 home_base_id=bres.scalar_one_or_none(),
                 alliance_id=p.alliance_id,
                 posture=p.npc_posture if p.is_npc else None,
+                recent_actions=_npc_recent_actions(p) if p.is_npc else [],
             )
         )
     return out

@@ -8,6 +8,7 @@ to rules — so the game never depends on the network to take an NPC turn.
 """
 import json
 import logging
+import random
 import re
 from datetime import UTC, datetime
 from typing import Protocol
@@ -505,6 +506,9 @@ class RuleBasedBrain:
             atk_pool = await units_at_base(session, player.id, base.id)
         army = {k: atk_pool[k] for k in ("soldier", "tank", "aircraft") if atk_pool.get(k)}
         my_power = _force_attack_power(army)
+        # ataque ESPORÁDICO y ARRIESGADO: ~35% de los turnos baja el margen (ataca con menos, se
+        # arriesga) → la NPC no espera la superioridad total.
+        eff_margin = margin * (0.6 if random.random() < 0.35 else 1.0)
         if my_power > 0 and energy >= get_settings().attack_energy_cost:
             # SDD 55 §3.2: no patear al débil (dejar crecer al humano muy por debajo, anti-snowball)
             # + repartir la presión (no apilar varias flotas sobre el MISMO rival → rotar objetivo).
@@ -516,7 +520,7 @@ class RuleBasedBrain:
                 if b.player_id in already:           # ya tengo flota yendo a ese rival → roto
                     continue
                 defense = await _base_defense_estimate(session, b)
-                if my_power > defense * margin:  # don't trade evenly (margin del perfil)
+                if my_power > defense * eff_margin:  # margen efectivo (a veces arriesga)
                     owner = await session.get(Player, b.player_id)
                     # no patear al débil: a un HUMANO muy por debajo mío lo dejo crecer.
                     if not owner.is_npc and ratio > 0 \
@@ -564,12 +568,30 @@ class RuleBasedBrain:
             except Exception:
                 pass
 
+        # 8) SDD 35: LEER EL TABLERO — mandá un espía a un rival (intel fresca, best-effort).
+        if units.get("spy", 0) > 0:
+            enemies = await _enemy_bases(session, player)
+            if enemies:
+                try:
+                    from app.services.espionage import start_spy
+                    tb = random.choice(enemies)
+                    await start_spy(session, player, tb.id, {"spy": 1})
+                    return f"spy base {tb.id}"
+                except Exception:
+                    pass
+
         # 7) Otherwise grow energy capacity.
         if "power_plant" not in keys and afford_building("power_plant"):
             await start_build(session, player, base, "power_plant")
             return "build power_plant"
 
-        return None
+        # 9) ANTI-IDLE: nunca quedarse parado. Entrená lo más barato que puedas pagar/alojar; si no,
+        #    juntá recursos (turno pasivo, raro). Así la NPC "siempre decide algo".
+        for uk in ("soldier", "worker", "scientist", "spy"):
+            if afford_units(uk, 1) and house_ok(uk, 1):
+                await start_training(session, player, base, uk, 1)
+                return f"train {uk} (keep busy)"
+        return "accumulate"   # sin recursos para nada → espera (no es "idle" mudo)
 
 
 async def _bases(session: AsyncSession, player: Player) -> list[Base_]:

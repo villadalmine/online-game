@@ -494,6 +494,7 @@ class PlayerSummaryOut(BaseModel):
     home_base_id: int | None
     alliance_id: int | None = None
     posture: str | None = None   # SDD 29 v2: perfil/postura vigente de la NPC (qué está jugando)
+    recent_actions: list[str] = []   # SDD 29: últimas jugadas de la NPC (qué hizo / cómo reaccionó)
 
 
 # ---- SDD 8: galaxy instances ------------------------------------------------

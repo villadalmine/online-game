@@ -649,3 +649,22 @@ async def test_npc_attacks_with_garrison_on(session, monkeypatch):
     assert action and action.startswith("attack"), action
     assert m is not None and m.source_base_id == natal.id
     _ = (Base_, wbase)   # (usados en el arreglo del escenario)
+
+
+async def test_npc_never_idle(session):
+    """SDD 29: la NPC nunca queda 'parada' — sin recursos ni objetivos, decide 'accumulate'."""
+    from app.models import Player, ResourceStock
+    from app.services.onboarding import onboard_player
+    npc = Player(username="busy_npc", password_hash="x", is_npc=True)
+    session.add(npc)
+    await session.flush()
+    await onboard_player(session, npc, "milky_way", "mars", "martian")
+    npc.energy = 0
+    for st in (await session.execute(
+        select(ResourceStock).where(ResourceStock.player_id == npc.id))).scalars():
+        st.amount = 0            # sin minerales, sin energía, sin ejército, sin objetivos
+    await session.commit()
+    npc = (await session.execute(
+        select(Player).where(Player.username == "busy_npc"))).scalar_one()
+    action = await RuleBasedBrain().act(session, npc)
+    assert action is not None and action != ""   # SIEMPRE decide algo

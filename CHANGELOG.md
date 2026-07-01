@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-01 — IA más agresiva/viva (arriesga, espía, nunca idle) + ver qué hace
+> Reporte: "la IA es muy débil y no ataca; que arriesgue, mande a espiar, haga ataques esporádicos,
+> nunca esté parada, use la inteligencia leyendo el tablero".
+- **Ataque esporádico arriesgado**: ~35% de los turnos la NPC baja el margen exigido (ataca con menos,
+  se arriesga) → no espera la superioridad total.
+- **Espía (lee el tablero)**: si tiene espías, manda una misión de espionaje a un rival para tener intel
+  fresca (SDD 35).
+- **Nunca idle**: si no puede construir/atacar/expandir, entrena lo más barato que pueda alojar; si ni
+  eso, "accumulate" (junta recursos). La NPC siempre decide algo. e2e/servicio `test_npc_never_idle`.
+- **Observabilidad**: `/players` expone `recent_actions` de cada NPC (últimas jugadas) → el mapa las
+  muestra en el tooltip de la postura ("últimas jugadas: …"). Sumado al dashboard Grafana `npc-ai`
+  (`game_npc_actions_total` incluye `idle`) y a `game_npc_posture`. Suite 433 ✓.
+
 ## [1.124.0] - 2026-07-01
 
 ### 2026-07-01 — Fix (regresión): la IA dejó de atacar con la guarnición prendida
