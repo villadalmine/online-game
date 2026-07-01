@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.123.0] - 2026-07-01
+
 ### 2026-07-01 — Fix (bloqueador): el panel de Investigación ocultaba satélites/búnker
 > Reporte: "para el salto espacial necesito satélite tecnológico pero no lo veo" + "Salto espacial
 > (undefined ×1)". El panel de Investigación **descartaba** las categorías que no estaban en su lista
