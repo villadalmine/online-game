@@ -130,3 +130,36 @@ def test_per_race_mineral_asymmetry_preserved():
     for role in ("structural", "energetic", "advanced"):
         minerals = {c.resolve_role(r, role) for r in RACES}
         assert len(minerals) >= 2, (role, minerals)
+
+
+# --- SDD 61/63: contenido endgame (satélites, jumper, salto espacial) ---
+def test_endgame_units_are_the_most_expensive():
+    # dreadnought / jumper / spy_satellite son de fin de juego: más caros que las básicas.
+    c = get_content()
+    basic = max(_roles(c.units[k]) for k in ("soldier", "tank", "aircraft"))
+    for k in ("dreadnought", "jumper", "spy_satellite"):
+        assert _roles(c.units[k]) > basic, (k, _roles(c.units[k]), basic)
+
+
+def test_signal_inhibitor_not_gated_by_energetic():
+    # SDD 61: el inhibidor es defensa/EW → NO depende del rol energetic (pagable con tu base),
+    # coherente con turret/counter_intel (anti-lockout).
+    c = get_content()
+    assert "energetic" not in c.buildings["signal_inhibitor"]["cost"]
+
+
+def test_space_jump_is_endgame_capstone():
+    # SDD 63: space_jump exige TODO el árbol endgame y es la tech más cara.
+    c = get_content()
+    sj = c.technologies["space_jump"]
+    reqs = {sj.get("requires_tech")} | set(sj.get("requires_techs", []))
+    assert {"hyperspace_travel", "satellite_tech", "nuclear_fission",
+            "attack_drones", "orbital_robotics"} <= reqs
+    assert _roles(sj) == max(_roles(t) for t in c.technologies.values())
+
+
+def test_jumper_and_satellite_params_sane():
+    c = get_content()
+    assert c.units["jumper"].get("jump_capacity", 0) > 0
+    assert c.units["spy_satellite"].get("kind") == "spy"
+    assert c.units["survey_satellite"].get("kind") == "survey"

@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-01 — Balance: verificado + fijado con invariantes (SDD 61/62/63)
+> `make balance` confirma que el contenido nuevo (satélites, cosmódromo, inhibidor, jumper,
+> `space_jump`) respeta las reglas de rol (SDD 53): defensa/EW pagable con el mineral base, endgame
+> caro en energetic+advanced, anti-lockout intacto. Sin cambios de números (estaban coherentes); se
+> agregan invariantes en `tests/test_balance.py` para que un futuro rebalanceo no los rompa:
+> unidades endgame más caras que las básicas, inhibidor sin `energetic`, `space_jump` = capstone (5
+> prereqs) y la tech más cara, params de jumper/satélite sanos.
+
 ## [1.121.0] - 2026-07-01
 
 ### 2026-07-01 — Fix UI: entrenar misiles/drones/satélites + NPC (satélites, reforzar)

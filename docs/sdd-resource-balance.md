@@ -79,3 +79,12 @@ advanced → hacés torretas/soldados/minas; etc. Ningún faltante te deja sin j
   `test_defense_never_locked_by_single_mineral_e2e` (con SOLO iron, un terran entrena soldier=OK pero
   worker=bloqueado). **Reporte**: `scripts/balance.py` (`make balance`) suma `roles_report()` con el
   reparto S/E/A por item + la verificación anti-lockout por raza.
+
+## 7. Contenido endgame verificado (2026-07-01, SDD 61/62/63)
+`make balance` confirma que satélites/cosmódromo/inhibidor/jumper/`space_jump` respetan las reglas de
+rol: el **inhibidor** (defensa/EW) no depende del `energetic` (pagable con el mineral base, como
+turret/counter_intel); satélites/jumper/dreadnought son endgame (energetic+advanced dominante) y más
+caros que las unidades básicas; el anti-lockout por raza sigue intacto. Sin cambios de números (ya
+coherentes). Invariantes nuevos en `tests/test_balance.py`: `test_endgame_units_are_the_most_expensive`,
+`test_signal_inhibitor_not_gated_by_energetic`, `test_space_jump_is_endgame_capstone`,
+`test_jumper_and_satellite_params_sane`.
