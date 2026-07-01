@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-01 — SDD 63: salto espacial (jumpers) + prendido en prod
+- **Tech capstone `space_jump`**: requiere TODO el árbol endgame (`hyperspace_travel` + `satellite_tech`
+  + `nuclear_fission` + `attack_drones` + `orbital_robotics`). `research.py` ahora soporta
+  `requires_techs: [...]` (multi-prerrequisito).
+- **Unidad `jumper`** (dominio space, `jump_capacity: 6`): construida en el laboratorio con `space_jump`.
+- **Salto INSTANTÁNEO**: mover tropas (SDD 62) desde una base con jumper(s) llega **al instante** (sin
+  viaje), hasta la capacidad de los jumpers; gasta `jump_energy_cost`. Reusa `/bases/{id}/move-troops`.
+- Prendido en prod (`SPACE_JUMP_ENABLED=true`): aditivo, gateado por research carísimo, reversible.
+  Tests `tests/test_troops.py` + e2e `test_space_jump_instant_move_e2e`. Suite 420 ✓.
+
 ## [1.119.0] - 2026-07-01
 
 ### 2026-07-01 — SDD 61: panel de satélites + prendido en prod

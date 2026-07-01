@@ -299,3 +299,17 @@ technologies:
     research_seconds: 2200
     cost: { structural: 300, energetic: 750, advanced: 650 }
     magnitude: 1.0
+  # SDD 63: salto espacial — capstone del árbol endgame (requiere TODO). Habilita la nave "jumper".
+  - key: space_jump
+    name: "Salto espacial"
+    category: hyperspace
+    name_en: "Space jump"
+    description: "Puente de Einstein-Rosen: naves saltadoras que mueven tropas entre tus bases al instante."
+    description_en: "Einstein-Rosen bridge: jumper ships that move troops between your bases instantly."
+    requires: research_lab
+    requires_tech: hyperspace_travel
+    requires_techs: [satellite_tech, nuclear_fission, attack_drones, orbital_robotics]
+    energy_cost: 120
+    research_seconds: 3600
+    cost: { structural: 600, energetic: 1400, advanced: 1200 }
+    magnitude: 1.0

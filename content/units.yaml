@@ -179,6 +179,23 @@ heavy:
     # SDD 53: espacio = energetic + advanced (alto). Carísimo: arma de fin de juego.
     cost: { energetic: 1200, advanced: 900 }
     stats: { attack: 120, defense: 90, hp: 400 }
+  - key: jumper
+    icon: "🛸"
+    name: "Nave saltadora"
+    name_en: "Jumper ship"
+    real: "Nave de salto: mueve tropas entre tus bases al instante (logística de fin de juego)."
+    real_en: "Jump ship: moves troops between your bases instantly (endgame logistics)."
+    sources: ["Wikipedia: Wormhole"]
+    requires: research_lab
+    requires_tech: space_jump
+    domain: space           # SDD 46: se aloja en el hangar
+    housing_size: 3
+    jump_capacity: 6        # SDD 63: plazas de tropa que ferria por salto instantáneo
+    energy_cost: 50
+    train_seconds: 500
+    # SDD 53: fin de juego (energetic + advanced alto). Es transporte: stats de combate bajos.
+    cost: { energetic: 900, advanced: 700 }
+    stats: { attack: 10, defense: 20, hp: 120 }
 
 # Misiles (SDD 49): munición intra-planeta. domain `ordnance` (se aloja en la lanzadera). Se
 # fabrican como una unidad más y se DISPARAN con POST /combat/strike (no van en una flota).

@@ -198,6 +198,12 @@ class Settings(BaseSettings):
     # atacada; entrenar deposita en la base; mover tropas viaja. Prender tras balancear.
     garrison_enabled: bool = False
 
+    # SDD 63: salto espacial — la nave `jumper` mueve tropas entre TUS bases al INSTANTE,
+    # hasta `jump_capacity` (del YAML) por jumper. Cada salto gasta energía. OFF hasta balancear;
+    # gateado por la tech `space_jump` (capstone). Ver docs/sdd-space-jump-jumpers.md.
+    space_jump_enabled: bool = False
+    jump_energy_cost: float = 40.0        # energía por salto instantáneo
+
     # Lanzadera de misiles (SDD 49): vía de "golpe" intra-planeta, paralela a la flota. PRENDIDO
     # (v1.5): el contenido carga y se puede disparar. Frenos: protección de novato (SDD 11), no
     # atacás aliados, intra-planeta, tope de `ordnance` (alojamiento). El daño de una salva destruye

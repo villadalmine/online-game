@@ -1,6 +1,9 @@
 # SDD 63 — Saltos espaciales: naves "jumper" para logística instantánea entre tus bases
 
-> **Estado:** **DISEÑO** 2026-06-30 (sin implementar) · **Pedido:** usuario, 2026-06-30.
+> **Estado:** **IMPLEMENTADO + PRENDIDO** 2026-07-01 — tech capstone `space_jump` (multi-prereq: todo
+> el árbol endgame) + unidad `jumper` (cap 6) + salto INSTANTÁNEO en `troops.py:start_move` (reusa
+> mover-tropas SDD 62; gasta energía). `space_jump_enabled=true` en prod (aditivo, gateado por research
+> carísimo). v1 solo logística propia. Tests `test_troops.py` + e2e. · **Diseño:** 2026-06-30 · usuario.
 > **Relacionado (PRERREQUISITOS — es el techo del árbol):** [SDD 61 satélites](sdd-satellites-recon.md),
 > [SDD 37 conquista orbital](sdd-colonization.md) (`orbital_robotics`), [SDD 49 misiles](sdd-missile-launcher.md)
 > (`nuclear_fission`), [SDD 50 drones](sdd-drones-intraplanet.md), [SDD 57 hiperespacio](sdd-hyperspace-base-buster.md)

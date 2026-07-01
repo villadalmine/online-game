@@ -66,3 +66,43 @@ async def test_move_troops_off_is_disabled(session, monkeypatch):
         raise AssertionError("con garrison OFF no se mueven tropas")
     except TroopError:
         pass
+
+
+async def test_space_jump_is_instant(session, monkeypatch):
+    """SDD 63: con jumper + tech space_jump + flag, mover tropas es INSTANTÁNEO (arrives≈ahora)."""
+    from app.models import PlayerTech
+    monkeypatch.setattr(get_settings(), "garrison_enabled", True)
+    monkeypatch.setattr(get_settings(), "space_jump_enabled", True)
+    p, natal, colony = await _two_bases(session)
+    p.energy = 10000
+    session.add(UnitStock(player_id=p.id, unit_key="tank", quantity=5, base_id=natal.id))
+    session.add(UnitStock(player_id=p.id, unit_key="jumper", quantity=1, base_id=natal.id))
+    session.add(PlayerTech(player_id=p.id, tech_key="space_jump"))
+    await session.commit()
+
+    move = await start_move(session, p, natal.id, colony.id, {"tank": 1})  # 1 tank = 2 plazas ≤ 6
+    await session.commit()
+    # instantáneo: ya llegó (o llega en <=1s)
+    from datetime import datetime as _dt
+    delta = (move.arrives_at.replace(tzinfo=UTC) if move.arrives_at.tzinfo is None
+             else move.arrives_at) - _dt.now(UTC)
+    assert delta.total_seconds() <= 1, delta
+
+
+async def test_space_jump_capacity_limit(session, monkeypatch):
+    """SDD 63: un jumper carga jump_capacity (6) plazas; pasarse falla."""
+    from app.models import PlayerTech
+    monkeypatch.setattr(get_settings(), "garrison_enabled", True)
+    monkeypatch.setattr(get_settings(), "space_jump_enabled", True)
+    p, natal, colony = await _two_bases(session)
+    p.energy = 10000
+    session.add(UnitStock(player_id=p.id, unit_key="tank", quantity=10, base_id=natal.id))
+    session.add(UnitStock(player_id=p.id, unit_key="jumper", quantity=1, base_id=natal.id))
+    session.add(PlayerTech(player_id=p.id, tech_key="space_jump"))
+    await session.commit()
+    # 4 tanks = 8 plazas > cap 6 → error
+    try:
+        await start_move(session, p, natal.id, colony.id, {"tank": 4})
+        raise AssertionError("debería exceder la capacidad del jumper")
+    except TroopError as e:
+        assert "plaza" in str(e).lower() or "jumper" in str(e).lower()

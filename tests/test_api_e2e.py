@@ -2837,6 +2837,35 @@ async def test_garrison_combat_uses_only_attacked_base_e2e(client, monkeypatch):
     assert reports and reports[0]["outcome"] == "attacker"
 
 
+async def test_space_jump_instant_move_e2e(client, monkeypatch):
+    """SDD 63: con jumper + tech space_jump, mover tropas por la API es instantáneo."""
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import Base_, PlayerTech, UnitStock
+    monkeypatch.setattr(get_settings(), "garrison_enabled", True)
+    monkeypatch.setattr(get_settings(), "space_jump_enabled", True)
+    h = await _register(client.http, "jumper_e2e")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    natal = st["bases"][0]["id"]
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "jumper_e2e"))).scalar_one()
+        colony = Base_(player_id=p.id, name="Col", planet_key="venus", base_type="surface")
+        s.add(colony)
+        await s.flush()
+        s.add(UnitStock(player_id=p.id, unit_key="tank", quantity=3, base_id=natal))
+        s.add(UnitStock(player_id=p.id, unit_key="jumper", quantity=1, base_id=natal))
+        s.add(PlayerTech(player_id=p.id, tech_key="space_jump"))
+        cid = colony.id
+        await s.commit()
+    r = await client.http.post(f"/api/v1/bases/{natal}/move-troops", headers=h,
+                               json={"to_base_id": cid, "units": {"tank": 1}})
+    assert r.status_code == 201, r.text
+    from datetime import datetime
+    arrives = datetime.fromisoformat(r.json()["arrives_at"].replace("Z", "+00:00"))
+    assert (arrives - datetime.now(arrives.tzinfo)).total_seconds() <= 2  # instantáneo
+
+
 async def test_satellite_launch_and_intel_e2e(client, monkeypatch):
     """SDD 61: lanzar un satélite espía y verlo en el intel (happy path + error con flag OFF)."""
     from app.core.config import get_settings

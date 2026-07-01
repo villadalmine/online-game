@@ -42,9 +42,12 @@ async def start_move(
             raise TroopError(f"No tenés {q} {k} en la base de origen (tenés {have.get(k, 0)}).")
 
     now = datetime.now(UTC)
+    settings = get_settings()
+    # SDD 63: salto INSTANTÁNEO si hay jumper(s) en la base de origen + `space_jump` investigado.
+    instant = await _try_space_jump(session, player, from_base_id, units, have, now, settings)
     for k, q in units.items():   # bloquear: salen de la base origen
         (await get_or_create_unit_stock(session, player.id, k, from_base_id)).quantity -= q
-    travel = travel_seconds(src.planet_key, dst.planet_key)
+    travel = 0 if instant else travel_seconds(src.planet_key, dst.planet_key)
     move = TroopMove(
         player_id=player.id, from_base_id=from_base_id, to_base_id=to_base_id,
         units=json.dumps(units), status="moving", arrives_at=now + timedelta(seconds=travel),
@@ -52,6 +55,32 @@ async def start_move(
     session.add(move)
     await session.flush()
     return move
+
+
+async def _try_space_jump(session, player, from_base_id, units, have, now, settings) -> bool:
+    """SDD 63: ¿el traslado sale por salto instantáneo? Requiere flag + tech `space_jump` + jumper
+    en la base origen con capacidad. Gasta energía. Devuelve True si es instantáneo."""
+    if not settings.space_jump_enabled:
+        return False
+    from app.content.registry import get_content
+    from app.services.research import researched_techs
+    if "space_jump" not in await researched_techs(session, player.id):
+        return False
+    jumpers = have.get("jumper", 0)
+    if jumpers <= 0:
+        return False
+    content = get_content()
+    cap = jumpers * content.units.get("jumper", {}).get("jump_capacity", 6)
+    load = sum(content.units.get(k, {}).get("housing_size", 1) * q for k, q in units.items())
+    if load > cap:
+        raise TroopError(f"Los jumpers cargan {cap} plazas; querés mover {load}. Sumá jumpers.")
+    from app.services.energy import spend_energy
+    from app.services.physics import effective_energy_max, effective_energy_regen
+    if not spend_energy(player, settings.jump_energy_cost, now,
+                        effective_energy_regen(player, settings),
+                        effective_energy_max(player, settings)):
+        raise TroopError("Energía insuficiente para el salto espacial.")
+    return True
 
 
 async def process_moves(
