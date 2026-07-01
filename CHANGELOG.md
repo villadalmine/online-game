@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-01 — Fix UX: los paneles ya no borran tu selección al refrescar (4s)
+> Reporte: "no puedo ni poner la unidad o a quién enviarles, se sale". El ciclo de refresco de 4 s
+> re-renderizaba los paneles y **borraba los `<select>`/inputs mientras los usabas**.
+- **Satélites** y **Mover tropas**: se separan los **controles** (selects unidad/objetivo/origen/
+  destino) del **estado** (satélites en órbita, mapa, traslados en curso). Los controles solo se
+  rebuildean si cambian las opciones, **preservando** lo que elegiste; el estado se actualiza cada ciclo.
+- **Arsenal** (misiles/drones): no se rebuildea mientras tenés el foco en un input (no pisa lo que
+  estás escribiendo/eligiendo). Solo front.
+
 ### 2026-07-01 — Balance: verificado + fijado con invariantes (SDD 61/62/63)
 > `make balance` confirma que el contenido nuevo (satélites, cosmódromo, inhibidor, jumper,
 > `space_jump`) respeta las reglas de rol (SDD 53): defensa/EW pagable con el mineral base, endgame

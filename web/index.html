@@ -869,6 +869,8 @@ function renderArsenal(){
   const feat=catalog.features||{}; const card=$("arsenalcard");
   if(card) card.classList.toggle('hidden', !(feat.strike||feat.drones));
   if(!(feat.strike||feat.drones)) return;
+  // no rebuildear (borrar) los inputs mientras el usuario los está usando (el ciclo de 4s los pisaba).
+  if(el.contains(document.activeElement)) return;
   const pic=isPicto('arsenal'); let html="";
   if(feat.strike) html+=_missilePanel(pic);
   if(feat.drones) html+=_dronePanel(pic);
@@ -884,27 +886,37 @@ function renderSatellites(){
   const cat=catalog.satellites||[];
   const owned=cat.filter(u=>(state.units[u.key]||0)>0);
   const enemies=(players||[]).filter(p=>p.id!==state.id);
-  let h="";
-  // lanzar
-  if(owned.length){
-    const uopts=owned.map(u=>`<option value="${u.key}">${esc(pic?(u.icon||'🛰')+' '+u.key:u.name)} (${state.units[u.key]||0})</option>`).join("");
-    const eopts=enemies.map(p=>`<option value="${p.id}">${esc(p.username)}</option>`).join("")||`<option value="">—</option>`;
-    h+=`<div class="row" style="gap:6px;align-items:center;margin-bottom:6px">`+
-      `<select id="sat_unit" onchange="renderSatellites()">${uopts}</select>`+
-      `<span id="sat_tgtwrap">🎯 <select id="sat_target">${eopts}</select></span>`+
-      `<button class="sm" onclick="launchSat()">🛰 ${esc(tr('sat_launch'))}</button></div>`;
-  } else {
-    h+=`<p class="muted">${esc(tr('sat_none_built'))}</p>`;
+  // contenedores fijos (una vez): controles (selects) + estado (satélites/mapa)
+  if(!$("sat_ctrl")||!$("sat_stat")) el.innerHTML=`<div id="sat_ctrl"></div><div id="sat_stat"></div>`;
+  // CONTROLES: solo se rebuildean si cambian las OPCIONES → no borra el select que estás usando.
+  const sig=JSON.stringify([owned.map(u=>[u.key,state.units[u.key]||0]),
+                            enemies.map(p=>[p.id,p.username]),pic]);
+  const ctrl=$("sat_ctrl");
+  if(ctrl.dataset.sig!==sig){
+    const prevU=($("sat_unit")||{}).value, prevT=($("sat_target")||{}).value;
+    ctrl.dataset.sig=sig;
+    if(owned.length){
+      const uopts=owned.map(u=>`<option value="${u.key}">${esc(pic?(u.icon||'🛰')+' '+u.key:u.name)} (${state.units[u.key]||0})</option>`).join("");
+      const eopts=enemies.map(p=>`<option value="${p.id}">${esc(p.username)}</option>`).join("")||`<option value="">—</option>`;
+      ctrl.innerHTML=`<div class="row" style="gap:6px;align-items:center;margin-bottom:6px">`+
+        `<select id="sat_unit" onchange="_satTgtToggle()">${uopts}</select>`+
+        `<span id="sat_tgtwrap">🎯 <select id="sat_target">${eopts}</select></span>`+
+        `<button class="sm" onclick="launchSat()">🛰 ${esc(tr('sat_launch'))}</button></div>`;
+      if(owned.some(u=>u.key===prevU)) $("sat_unit").value=prevU;
+      if(enemies.some(p=>String(p.id)===prevT)) $("sat_target").value=prevT;
+    } else {
+      ctrl.innerHTML=`<p class="muted">${esc(tr('sat_none_built'))}</p>`;
+    }
   }
-  // satélites propios en órbita
-  const mine=state.satellites||[];
+  _satTgtToggle();
+  // ESTADO (sin inputs → se puede rebuildear cada ciclo).
+  let h=""; const mine=state.satellites||[];
   if(mine.length){
     h+=`<div class="muted" style="font-size:11px;margin-top:4px">${esc(tr('sat_orbit'))}</div>`;
     h+=mine.map(s=>{const who=s.kind==='spy'?('🎯 '+esc(playerName(s.target_id))):('⭐ '+esc(planetName(s.target_planet)));
       return `<div class="item"><div class="top"><span>${s.kind==='spy'?'🛰🔍':'🛰'} ${who} <span class="muted">🛡${s.shield_grade} · 🔋${Math.round(s.energy)}</span></span>`+
       `<span>${s.kind==='spy'?('📡 '+Math.round(s.discovered_pct)+'%'):''} <button class="sm danger" onclick="recallSat(${s.id})">↩</button></span></div></div>`;}).join("");
   }
-  // mapa de enemigos
   const maps=state.enemy_maps||{};
   if(Object.keys(maps).length){
     h+=`<div class="muted" style="font-size:11px;margin-top:6px">${esc(tr('sat_maps'))}</div>`;
@@ -916,11 +928,10 @@ function renderSatellites(){
         `<div class="bar"><div style="width:${Math.round(m.pct)}%"></div></div>${bases}</div>`;
     }
   }
-  el.innerHTML=h;
-  // el target solo aplica a spy
-  const us=catalog.satellites.find(u=>u.key===(($("sat_unit")||{}).value)); const tw=$("sat_tgtwrap");
-  if(tw) tw.style.display=(us&&us.kind==='spy')?'':'none';
+  $("sat_stat").innerHTML=h;
 }
+function _satTgtToggle(){ const us=(catalog.satellites||[]).find(u=>u.key===(($("sat_unit")||{}).value));
+  const tw=$("sat_tgtwrap"); if(tw) tw.style.display=(us&&us.kind==='spy')?'':'none'; }
 function playerName(id){ const p=(players||[]).find(x=>x.id===id); return p?p.username:('#'+id); }
 async function launchSat(){
   const unit=($("sat_unit")||{}).value; if(!unit){ msg(tr('sat_none_built'),false); return; }
@@ -1333,24 +1344,33 @@ function _capBar(label,a,b,danger){
 // SDD 62: panel de mover tropas entre bases propias (solo con guarnición y ≥2 bases).
 function renderMoveTroops(){
   const el=$("movetroops"); if(!el||!state) return;
-  if(!_garrisonOn() || (state.bases||[]).length<2){ el.innerHTML=""; return; }
+  if(!_garrisonOn() || (state.bases||[]).length<2){ el.innerHTML=""; el.dataset.sig=""; return; }
   const opts=(state.bases||[]).map(b=>`<option value="${b.id}">${esc(popBaseLabel(b))}</option>`).join("");
+  // CONTROLES: rebuild solo si cambian las bases o la guarnición → no borra tus selects al refrescar.
+  const sig=JSON.stringify([(state.bases||[]).map(b=>[b.id,b.planet_key]), state.units_by_base||{}]);
+  if(el.dataset.sig!==sig){
+    const pf=($("mt_from")||{}).value, pt=($("mt_to")||{}).value, pu=($("mt_unit")||{}).value;
+    el.dataset.sig=sig;
+    el.innerHTML=`<div class="item"><div class="top"><span><b>🚚 ${esc(tr('move_troops'))}</b></span></div>`+
+      `<div class="row" style="margin-top:4px;gap:4px;align-items:center">`+
+      `<select id="mt_from">${opts}</select> → <select id="mt_to">${opts}</select>`+
+      `<input id="mt_qty" type="number" min="1" value="1" style="width:54px">`+
+      `<select id="mt_unit"></select>`+
+      `<button class="sm" onclick="moveTroops()">${esc(tr('move_send'))}</button></div>`+
+      `<div id="mt_moves"></div></div>`;
+    if(pf) $("mt_from").value=pf; if(pt) $("mt_to").value=pt;
+    $("mt_from").onchange=_mtFillUnits; _mtFillUnits();
+    if(pu&&[...$("mt_unit").options].some(o=>o.value===pu)) $("mt_unit").value=pu;
+  }
+  // ESTADO: la lista de traslados en curso (sin inputs) se actualiza siempre.
   const moves=(state.troop_moves||[]).map(m=>`<div class="muted" style="font-size:11px">🚚 #${m.from_base_id}→#${m.to_base_id} `+
     Object.entries(m.units).map(([k,v])=>(isPicto('bases')?ico('unit',k):k)+v).join(" ")+` · ${cd(m.arrives_at)}</div>`).join("");
-  el.innerHTML=`<div class="item"><div class="top"><span><b>🚚 ${esc(tr('move_troops'))}</b></span></div>`+
-    `<div class="row" style="margin-top:4px;gap:4px;align-items:center">`+
-    `<select id="mt_from">${opts}</select> → <select id="mt_to">${opts}</select>`+
-    `<input id="mt_qty" type="number" min="1" value="1" style="width:54px">`+
-    `<select id="mt_unit"></select>`+
-    `<button class="sm" onclick="moveTroops()">${esc(tr('move_send'))}</button></div>${moves}</div>`;
-  // poblar las unidades disponibles en la base de origen
-  _mtFillUnits();
-  const fromSel=$("mt_from"); if(fromSel) fromSel.onchange=_mtFillUnits;
+  if($("mt_moves")) $("mt_moves").innerHTML=moves;
 }
 function _mtFillUnits(){
   const from=+(($("mt_from")||{}).value), sel=$("mt_unit"); if(!sel) return;
   const u=(state.units_by_base||{})[String(from)]||{};
-  sel.innerHTML=Object.entries(u).filter(([,v])=>v>0).map(([k,v])=>`<option value="${k}">${esc(isPicto('bases')?k:k)} (${v})</option>`).join("")||`<option value="">—</option>`;
+  sel.innerHTML=Object.entries(u).filter(([,v])=>v>0).map(([k,v])=>`<option value="${k}">${esc(k)} (${v})</option>`).join("")||`<option value="">—</option>`;
 }
 async function moveTroops(){
   const from=+($("mt_from").value), to=+($("mt_to").value), unit=$("mt_unit").value, qty=+$("mt_qty").value||1;
