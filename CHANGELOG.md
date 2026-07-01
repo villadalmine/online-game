@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.119.0] - 2026-07-01
+
 ### 2026-07-01 — SDD 61: panel de satélites + prendido en prod
 - **Panel web "🛰 Satélites"**: lanzar recon propio / espía a un enemigo, ver tus satélites en órbita
   (🛡 escudo · 🔋 energía · 📡 % descubierto + retirar) y el **mapa de enemigos** (% + bases con
