@@ -1,9 +1,10 @@
 # SDD 61 — Satélites: cosmódromo, mapeo orbital del enemigo, inhibidores de señal y escudos
 
-> **Estado:** **IMPLEMENTADO (backend, flag OFF)** 2026-06-30 — techs/edificios/unidades + modelo
-> `SatelliteMission` + `advance_satellites` (mapeo %, inhibidores, escudos, energía/órbita, destrucción
-> por drones) + API `/satellites/*` + snapshot `satellites`/`enemy_maps`. **Pendiente:** panel web
-> (mapa emergente) + NPC + prender `satellites_enabled`. · **Diseño:** 2026-06-30 · **Pedido:** usuario
+> **Estado:** **IMPLEMENTADO + PRENDIDO** 2026-07-01 — backend (techs/edificios/unidades + modelo
+> `SatelliteMission` + `advance_satellites` + API `/satellites/*` + snapshot) **y panel web** ("🛰
+> Satélites": lanzar recon/espía, ver los propios y el mapa de enemigos con % y bases/unidades).
+> `satellites_enabled=true` en prod (aditivo, gateado por research carísimo). **Pendiente menor:** NPC
+> que lance satélites. · **Diseño:** 2026-06-30 · **Pedido:** usuario
 > **Relacionado:** [SDD 50 drones intra-planeta](sdd-drones-intraplanet.md) (modelo lazy de orbitar +
 > caída por antiaéreo — el satélite se modela igual), [SDD 35 espionaje](sdd-espionage.md) (intel de
 > bases enemigas + visión de alianza), [SDD 37 colonización/órbita](sdd-colonization.md),

@@ -291,6 +291,12 @@
       <div id="arsenal"></div>
     </div>
 
+    <div class="card collapsed hidden" id="satcard" data-panel="satelites">
+      <h2>🛰 <span data-i18n="sat_title">Satélites</span></h2>
+      <p class="muted" data-i18n="sat_help">Lanzá satélites: recon de tu planeta y espías que mapean las bases enemigas (%).</p>
+      <div id="satellites"></div>
+    </div>
+
     <div class="card" data-panel="investigacion">
       <h2>🔬 Investigación</h2>
       <div id="research"></div>
@@ -865,6 +871,60 @@ function renderArsenal(){
   if(feat.drones) html+=_dronePanel(pic);
   el.innerHTML=html;
 }
+// SDD 61: panel de satélites — lanzar (recon propio / espía a un enemigo), ver los propios y el mapa.
+function renderSatellites(){
+  const el=$("satellites"); if(!el||!catalog||!state) return;
+  const on=(catalog.features||{}).satellites; const card=$("satcard");
+  if(card) card.classList.toggle('hidden', !on);
+  if(!on){ return; }
+  const pic=isPicto('satelites');
+  const cat=catalog.satellites||[];
+  const owned=cat.filter(u=>(state.units[u.key]||0)>0);
+  const enemies=(players||[]).filter(p=>p.id!==state.id);
+  let h="";
+  // lanzar
+  if(owned.length){
+    const uopts=owned.map(u=>`<option value="${u.key}">${esc(pic?(u.icon||'🛰')+' '+u.key:u.name)} (${state.units[u.key]||0})</option>`).join("");
+    const eopts=enemies.map(p=>`<option value="${p.id}">${esc(p.username)}</option>`).join("")||`<option value="">—</option>`;
+    h+=`<div class="row" style="gap:6px;align-items:center;margin-bottom:6px">`+
+      `<select id="sat_unit" onchange="renderSatellites()">${uopts}</select>`+
+      `<span id="sat_tgtwrap">🎯 <select id="sat_target">${eopts}</select></span>`+
+      `<button class="sm" onclick="launchSat()">🛰 ${esc(tr('sat_launch'))}</button></div>`;
+  } else {
+    h+=`<p class="muted">${esc(tr('sat_none_built'))}</p>`;
+  }
+  // satélites propios en órbita
+  const mine=state.satellites||[];
+  if(mine.length){
+    h+=`<div class="muted" style="font-size:11px;margin-top:4px">${esc(tr('sat_orbit'))}</div>`;
+    h+=mine.map(s=>{const who=s.kind==='spy'?('🎯 '+esc(playerName(s.target_id))):('⭐ '+esc(planetName(s.target_planet)));
+      return `<div class="item"><div class="top"><span>${s.kind==='spy'?'🛰🔍':'🛰'} ${who} <span class="muted">🛡${s.shield_grade} · 🔋${Math.round(s.energy)}</span></span>`+
+      `<span>${s.kind==='spy'?('📡 '+Math.round(s.discovered_pct)+'%'):''} <button class="sm danger" onclick="recallSat(${s.id})">↩</button></span></div></div>`;}).join("");
+  }
+  // mapa de enemigos
+  const maps=state.enemy_maps||{};
+  if(Object.keys(maps).length){
+    h+=`<div class="muted" style="font-size:11px;margin-top:6px">${esc(tr('sat_maps'))}</div>`;
+    for(const [tid,m] of Object.entries(maps)){
+      const bases=(m.bases||[]).map(b=>{
+        const u=b.units?Object.entries(b.units).map(([k,v])=>(pic?ico('unit',k):k)+v).join(" "):'❓';
+        return `<div class="muted" style="font-size:11px">🪐 ${esc(planetName(b.planet))} #${b.base_id}: ${u}</div>`;}).join("");
+      h+=`<div class="item"><div class="top"><span>🎯 ${esc(playerName(+tid))}</span><span>📡 ${Math.round(m.pct)}%</span></div>`+
+        `<div class="bar"><div style="width:${Math.round(m.pct)}%"></div></div>${bases}</div>`;
+    }
+  }
+  el.innerHTML=h;
+  // el target solo aplica a spy
+  const us=catalog.satellites.find(u=>u.key===(($("sat_unit")||{}).value)); const tw=$("sat_tgtwrap");
+  if(tw) tw.style.display=(us&&us.kind==='spy')?'':'none';
+}
+function playerName(id){ const p=(players||[]).find(x=>x.id===id); return p?p.username:('#'+id); }
+async function launchSat(){
+  const unit=($("sat_unit")||{}).value; if(!unit){ msg(tr('sat_none_built'),false); return; }
+  const us=catalog.satellites.find(u=>u.key===unit);
+  const body={unit_key:unit}; if(us&&us.kind==='spy') body.target_id=+($("sat_target").value)||null;
+  try{ await api("/api/v1/satellites/launch","POST",body); msg(tr('sat_launched'),true); refresh(); }catch(e){ msg(e.message,false);} }
+async function recallSat(id){ try{ await api(`/api/v1/satellites/${id}/recall`,"POST"); msg(tr('sat_recalled'),true); refresh(); }catch(e){ msg(e.message,false);} }
 function _missilePanel(pic){
   const base=_baseWith('launcher');
   let h=`<div style="border-top:1px solid var(--line,#333);padding-top:6px;margin-top:6px"><h3 style="margin:0 0 4px">🗼 ${esc(tr('ars_missiles'))}</h3>`;
@@ -1037,7 +1097,7 @@ document.addEventListener('click', e=>{ const h=e.target.closest('.card[data-pan
 // i18n del chrome (ES/EN). El contenido del juego (nombres/descripciones) viene del catálogo ya
 // traducido; acá traducimos títulos de paneles y botones fijos. SDD docs/sdd-i18n.md
 const I18N={
-  es:{ panels:{acciones:"Acciones",perfil:"👤 Perfil",mercado:"💱 Mercado",hub:"🛰 Hub galáctico",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",combate:"⚔ Reportes de combate",eventos:"📣 Eventos",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",meta:"📈 Meta (aprendido de partidas)",asistente:"🧠 Asistente AI",anuncios:"📰 Novedades",universos:"🌌 Universos",admin:"🛡 Admin",capacidad:"📦 Economía / capacidad",arsenal:"🚀 Arsenal intra-planeta",guia:"📖 Guía — ¿qué es cada cosa?"},
+  es:{ panels:{acciones:"Acciones",perfil:"👤 Perfil",mercado:"💱 Mercado",hub:"🛰 Hub galáctico",atacar:"⚔ Atacar",investigacion:"🔬 Investigación",alianzas:"🤝 Alianzas",chat:"💬 Chat de alianza",galaxias:"🌌 Galaxias",transitos:"🚀 Flotas en tránsito",imperio:"Tu imperio",bases:"Bases y edificios",colas:"Colas y flotas",combate:"⚔ Reportes de combate",eventos:"📣 Eventos",temporada:"📅 Temporada",ranking:"🏆 Ranking",notis:"🔔 Notificaciones",mundo:"🌍 Eventos del mundo",meta:"📈 Meta (aprendido de partidas)",asistente:"🧠 Asistente AI",anuncios:"📰 Novedades",universos:"🌌 Universos",admin:"🛡 Admin",capacidad:"📦 Economía / capacidad",arsenal:"🚀 Arsenal intra-planeta",satelites:"🛰 Satélites",guia:"📖 Guía — ¿qué es cada cosa?"},
   postures:{economy:"💰 Económico",expand:"🌍 Expansivo",research:"🔬 Investigación",rush:"⚡ Ataque rápido",aggressive:"⚔ Agresivo",raid:"🚀 Raider",turtle:"🛡 Conservador",defensive:"🛡 Defensivo",opportunist:"🎲 Oportunista"},
     ui:{build:"🏗 Construir",pfsave:"guardar",lvlbtn:"⚡ Nivelar",pfhelp:"Cambiá tu nick o clave sin validar. ¿Olvidaste la clave? Entrá con código por email y cambiala acá.",train:"👷 Entrenar",expedition:"🌙 Expedición",refresh:"↻ Refrescar",attack:"Lanzar flota",markread:"marcar leídas",guidetoggle:"mostrar / ocultar",ask:"preguntar",loadranking:"cargar ranking",amode_gpu:"🖥️ GPU local",amode_cloud:"☁️ Nube (free→pago)",amode_byok:"🔑 Tu modelo",admin_title:"Admin — altas pendientes",acct_wait_title:"Cuenta en revisión",ac_title:"Consola de admin — cuentas",ac_help:"Administrá las cuentas (ABM): renombrar, email, estado, 🔑 reset, 🗑 borrar. Un admin no juega: solo administra.",ac_npc_title:"NPC — cómo juega la IA",ac_npc_help:"Por cada NPC: score, postura, mezcla de acciones y récord de combate. La GPU se usa en el tick (NPC pensando) y cuando consultás el asistente.",graf_open:"Ver en Grafana",graf_embed:"Embeber dashboard",graf_hint:"el embebido carga si tenés sesión de Grafana en este navegador",ac_battles_title:"Batallas — quién ganó",ac_battles_help:"Historial global de combates (todos los jugadores): atacante vs defensor, ruta (origen→destino), ganador y botín. Sin datos de unidades (eso se sabe espiando). El espionaje no aparece acá.",ac_battles_none:"Todavía no hubo batallas.",ac_b_atkwins:"gana atacante",ac_b_defwins:"gana defensor",allbattles_title:"Batallas de todos",allbattles_help:"Quién atacó a quién y quién ganó, agrupado por atacante. Sin datos de unidades (eso se sabe espiando).",
       logout:"salir",authtitle:"Crear cuenta / Entrar",otptitle:"Entrar con email (sin contraseña)",regbtn:"✅ Registrar y jugar",enter:"Entrar",sendcode:"Enviar código",onboardtitle:"Elegir imperio",start:"Comenzar 🚀",planet:"Planeta",race:"Raza",energy:"Energía",minerals:"Minerales",units:"Unidades",seasonrank:"ver ranking de temporada",send:"enviar",worldtip:"El mundo es en tiempo real: avanza solo cada pocos segundos (energía, producción, colas, flotas, turnos de las NPC) y tu vista se actualiza sola.",attacktip:"Tip: tocá una base enemiga en el mapa para elegir objetivo.",targetbase:"objetivo base",calc:"📊 Calcular"},
@@ -1053,11 +1113,11 @@ const I18N={
       planBtn:"📊 planear",planLoading:"calculando…",planLoss:"pierde",planDef:"defensa est.",planMargin:"margen",planNeed:"poder de ataque",planUse:"usar",planTarget:"objetivo",needtarget:"poné el id de la base objetivo (o tocá una en el mapa)",
       calc_title:"Calculadora de combate",calc_help:"Probá fuerzas sin gastar nada: te dice si ganás y cuánto pierde cada lado (mismo cálculo que el combate real).",calc_attacker:"⚔ Atacante",calc_defender:"🛡 Defensor",calc_turrets:"🛡 torretas (defensa fija)",calc_win:"🟢 Ganás",calc_lose:"🔴 Perdés",calc_youlose:"perdés",calc_theylose:"el rival pierde",calc_none:"poné unidades en los dos lados",calc_fromintel:"a la calculadora",
       youhave:"tenés",nospies:"No tenés espías — entrenalos en el cuartel/laboratorio primero.",noattackunits:"no tenés unidades de ataque — entrená soldados/tanques primero",lowenergy:"poca energía",unitssel:"unidades",pickunits:"elegí cuántas unidades mandás",fleetsent:"🚀 Flota despachada, llega",trainfirst:"entrená {u} primero",
-      arsenal_title:"Arsenal intra-planeta",arsenal_help:"Misiles y drones golpean bases del MISMO planeta (no salen del planeta).",ars_missiles:"Misiles",ars_drones:"Drones",ars_no_launcher:"Construí una Lanzadera (requiere Cohetería) y fabricá misiles.",ars_no_missiles:"Fabricá misiles en la lanzadera (entrenalos).",ars_no_factory:"Construí una Fábrica de drones (requiere Dronística) y fabricá drones.",ars_no_drones:"Fabricá drones en la fábrica (entrenalos).",ars_enemy_turrets:"torretas del rival (de tu intel)",ars_launch:"Lanzar",ars_launched:"🚀 Lanzado",ars_recalled:"⏹ Drones volviendo",ars_impact:"impactan",ars_intercepted:"interceptados",
+      arsenal_title:"Arsenal intra-planeta",arsenal_help:"Misiles y drones golpean bases del MISMO planeta (no salen del planeta).",ars_missiles:"Misiles",ars_drones:"Drones",ars_no_launcher:"Construí una Lanzadera (requiere Cohetería) y fabricá misiles.",ars_no_missiles:"Fabricá misiles en la lanzadera (entrenalos).",ars_no_factory:"Construí una Fábrica de drones (requiere Dronística) y fabricá drones.",ars_no_drones:"Fabricá drones en la fábrica (entrenalos).",ars_enemy_turrets:"torretas del rival (de tu intel)",ars_launch:"Lanzar",ars_launched:"🚀 Lanzado",ars_recalled:"⏹ Drones volviendo",ars_impact:"impactan",ars_intercepted:"interceptados",sat_title:"Satélites",sat_help:"Lanzá satélites: recon de tu planeta y espías que mapean las bases enemigas (%).",sat_launch:"lanzar",sat_launched:"🛰 Satélite en órbita",sat_recalled:"↩ satélite de vuelta",sat_none_built:"Fabricá satélites en el cosmódromo (entrenalos).",sat_orbit:"En órbita",sat_maps:"Mapa de enemigos (satélites espía)",
       cNone:"nada",cYouAtk:"vos →",cAtkYou:"te atacó",cWon:"✓ ganaste",cLost:"✗ perdiste",cYouLost:"perdiste",cTheyLost:"perdió",cLoot:"botín",cLooted:"te saquearon",cNoReports:"todavía no hubo batallas",
       perunit:"de ataque c/u",atkperunit:"Ataque por unidad (sumás esto × cantidad al mandar la flota)",
       bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
-  en:{ panels:{acciones:"Actions",perfil:"👤 Profile",mercado:"💱 Market",hub:"🛰 Galactic hub",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",eventos:"📣 Events",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",meta:"📈 Meta (learned)",asistente:"🧠 AI Assistant",anuncios:"📰 News",admin:"🛡 Admin",capacidad:"📦 Economy / capacity",arsenal:"🚀 Intra-planet arsenal",guia:"📖 Guide — what is each thing?"},
+  en:{ panels:{acciones:"Actions",perfil:"👤 Profile",mercado:"💱 Market",hub:"🛰 Galactic hub",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",eventos:"📣 Events",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",meta:"📈 Meta (learned)",asistente:"🧠 AI Assistant",anuncios:"📰 News",admin:"🛡 Admin",capacidad:"📦 Economy / capacity",arsenal:"🚀 Intra-planet arsenal",satelites:"🛰 Satellites",guia:"📖 Guide — what is each thing?"},
   postures:{economy:"💰 Economic",expand:"🌍 Expansive",research:"🔬 Research",rush:"⚡ Fast attack",aggressive:"⚔ Aggressive",raid:"🚀 Raider",turtle:"🛡 Turtle",defensive:"🛡 Defensive",opportunist:"🎲 Opportunist"},
     ui:{build:"🏗 Build",pfsave:"save",lvlbtn:"⚡ Level up",pfhelp:"Change your nick or password without validation. Forgot it? Log in with an email code and change it here.",train:"👷 Train",expedition:"🌙 Expedition",refresh:"↻ Refresh",attack:"Launch fleet",markread:"mark read",guidetoggle:"show / hide",ask:"ask",loadranking:"load ranking",amode_gpu:"🖥️ Local GPU",amode_cloud:"☁️ Cloud (free→paid)",amode_byok:"🔑 Your model",admin_title:"Admin — pending signups",acct_wait_title:"Account under review",ac_title:"Admin console — accounts",ac_help:"Manage accounts (CRUD): rename, email, status, 🔑 reset, 🗑 delete. Admins don't play: they administer.",ac_npc_title:"NPC — how the AI plays",ac_npc_help:"Per NPC: score, posture, action mix and combat record. The GPU is used in the tick (NPCs thinking) and when you query the assistant.",graf_open:"Open in Grafana",graf_embed:"Embed dashboard",graf_hint:"the embed loads if you have a Grafana session in this browser",ac_battles_title:"Battles — who won",ac_battles_help:"Global combat history (all players): attacker vs defender, route (origin→destination), winner and loot. No unit data (that's what spying is for). Espionage doesn't show here.",ac_battles_none:"No battles yet.",ac_b_atkwins:"attacker wins",ac_b_defwins:"defender wins",allbattles_title:"Everyone's battles",allbattles_help:"Who attacked whom and who won, grouped by attacker. No unit data (that's what spying is for).",
       logout:"log out",authtitle:"Sign up / Log in",otptitle:"Log in with email (passwordless)",regbtn:"✅ Register and play",enter:"Log in",sendcode:"Send code",onboardtitle:"Choose your empire",start:"Start 🚀",planet:"Planet",race:"Race",energy:"Energy",minerals:"Minerals",units:"Units",seasonrank:"view season ranking",send:"send",worldtip:"The world is real-time: it advances by itself every few seconds (energy, production, queues, fleets, NPC turns) and your view updates on its own.",attacktip:"Tip: click an enemy base on the map to target it.",targetbase:"target base",calc:"📊 Calculate"},
@@ -1073,7 +1133,7 @@ const I18N={
       planBtn:"📊 plan",planLoading:"calculating…",planLoss:"loses",planDef:"est. defense",planMargin:"margin",planNeed:"attack power",planUse:"use",planTarget:"target",needtarget:"enter the target base id (or click one on the map)",
       calc_title:"Combat calculator",calc_help:"Try forces without spending anything: tells you if you win and how much each side loses (same math as real combat).",calc_attacker:"⚔ Attacker",calc_defender:"🛡 Defender",calc_turrets:"🛡 turrets (fixed defense)",calc_win:"🟢 You win",calc_lose:"🔴 You lose",calc_youlose:"you lose",calc_theylose:"enemy loses",calc_none:"put units on both sides",calc_fromintel:"to calculator",
       youhave:"you have",nospies:"You have no spies — train them at the barracks/lab first.",noattackunits:"no attack units — train soldiers/tanks first",lowenergy:"low energy",unitssel:"units",pickunits:"pick how many units to send",fleetsent:"🚀 Fleet dispatched, arrives",trainfirst:"train {u} first",
-      arsenal_title:"Intra-planet arsenal",arsenal_help:"Missiles and drones hit bases on the SAME planet (they don't leave the planet).",ars_missiles:"Missiles",ars_drones:"Drones",ars_no_launcher:"Build a Launcher (needs Rocketry) and make missiles.",ars_no_missiles:"Make missiles at the launcher (train them).",ars_no_factory:"Build a Drone factory (needs Dronework) and make drones.",ars_no_drones:"Make drones at the factory (train them).",ars_enemy_turrets:"enemy turrets (from your intel)",ars_launch:"Launch",ars_launched:"🚀 Launched",ars_recalled:"⏹ Drones returning",ars_impact:"impact",ars_intercepted:"intercepted",
+      arsenal_title:"Intra-planet arsenal",arsenal_help:"Missiles and drones hit bases on the SAME planet (they don't leave the planet).",ars_missiles:"Missiles",ars_drones:"Drones",ars_no_launcher:"Build a Launcher (needs Rocketry) and make missiles.",ars_no_missiles:"Make missiles at the launcher (train them).",ars_no_factory:"Build a Drone factory (needs Dronework) and make drones.",ars_no_drones:"Make drones at the factory (train them).",ars_enemy_turrets:"enemy turrets (from your intel)",ars_launch:"Launch",ars_launched:"🚀 Launched",ars_recalled:"⏹ Drones returning",ars_impact:"impact",ars_intercepted:"intercepted",sat_title:"Satellites",sat_help:"Launch satellites: recon of your planet and spies that map enemy bases (%).",sat_launch:"launch",sat_launched:"🛰 Satellite in orbit",sat_recalled:"↩ satellite back",sat_none_built:"Build satellites at the cosmodrome (train them).",sat_orbit:"In orbit",sat_maps:"Enemy map (spy satellites)",
       cNone:"nothing",cYouAtk:"you →",cAtkYou:"attacked you",cWon:"✓ you won",cLost:"✗ you lost",cYouLost:"you lost",cTheyLost:"they lost",cLoot:"loot",cLooted:"looted from you",cNoReports:"no battles yet",
       perunit:"attack each",atkperunit:"Attack per unit (this × quantity is added when you send the fleet)",
       bMines:"Shared bonus: +production/attack/defense for all members",bUnit:"Unit tech: each race shares its edge with the whole alliance",bDef:"Mutual defense: your allies help defend your base",bVis:"Shared vision: you see attacks your allies receive",bTrade:"Trade: transfer minerals between allies"} },
@@ -1254,7 +1314,7 @@ async function refresh(){
   // SÓLO renders locales (sin red) en el ciclo rápido de 4s.
   renderQueues(); renderMap(); renderTransits(); renderResearch(); renderAlliances(); renderSeason();
   renderCost(); renderTrainCost(); renderExpInfo(); renderForcePicker(); renderCapacity();
-  renderArsenal(); renderMoveTroops();
+  renderArsenal(); renderMoveTroops(); renderSatellites();
 }
 
 // SDD 46/47: barras de capacidad (staffing de minería, almacén/silos y plazas de alojamiento).

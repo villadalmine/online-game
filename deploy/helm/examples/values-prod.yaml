@@ -40,5 +40,8 @@ postgres:
 # Flags de juego (SDD 62): guarnición — tropas/obreros por base, el combate usa solo la base atacada,
 # capacidad por planeta y mover tropas. El backfill (migración b8f1c2a4e6d0) ya movió las unidades
 # globales a la base natal. Reversible (poné "false"). Ver docs/sdd-garrison-troops-per-base.md.
+# SDD 61: satélites — aditivo y de bajo riesgo (nadie tiene satélites hasta construirlos tras un árbol
+# de research carísimo). Reversible. Ver docs/sdd-satellites-recon.md.
 env:
   GARRISON_ENABLED: "true"
+  SATELLITES_ENABLED: "true"

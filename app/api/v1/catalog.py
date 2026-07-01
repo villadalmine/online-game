@@ -43,8 +43,11 @@ def build_catalog() -> dict:
             "drone_tick_seconds": s.drone_tick_seconds,
             "energy_regen_per_hour": s.energy_regen_per_hour,
         },
-        # Flags de features (SDD 49/50): el cliente muestra/oculta el arsenal según el flag.
-        "features": {"strike": s.strike_enabled, "drones": s.drones_enabled},
+        # Flags de features (SDD 49/50/61/62): el cliente muestra/oculta paneles según el flag.
+        "features": {
+            "strike": s.strike_enabled, "drones": s.drones_enabled,
+            "satellites": s.satellites_enabled, "garrison": s.garrison_enabled,
+        },
     }
 
 

@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-01 — SDD 61: panel de satélites + prendido en prod
+- **Panel web "🛰 Satélites"**: lanzar recon propio / espía a un enemigo, ver tus satélites en órbita
+  (🛡 escudo · 🔋 energía · 📡 % descubierto + retirar) y el **mapa de enemigos** (% + bases con
+  unidades al 100%). Gateado por `catalog.features.satellites`. Catálogo expone `satellites` + los
+  flags `satellites`/`garrison` en `features`.
+- **Prendido en prod** (`SATELLITES_ENABLED=true` en values-prod): aditivo y de bajo riesgo (nadie
+  tiene satélites hasta construirlos tras el árbol de research). Reversible. Pendiente menor: NPC.
+
 ## [1.118.0] - 2026-06-30
 
 ### 2026-06-30 — SDD 61: satélites (backend, flag OFF)
