@@ -72,7 +72,9 @@ tropas estén **estacionadas por base/planeta** y que **solo las de la base atac
 - **Entrenar**: ya elegís base; el headroom de plazas (SDD 56) pasa a ser de ESA base (real).
 - **Atacar**: selector de **base de origen** (de dónde salen las tropas).
 - **Mover tropas**: mini-panel (base origen → base destino + cantidades + ETA), como el transporte de
-  minerales (SDD 42).
+  minerales (SDD 42). **Fix UX (1.122.0)**: separa controles (selects, rebuild solo si cambian las
+  bases/guarnición, preservando la selección) del estado (lista de traslados) → el refresco de 4 s no
+  borra lo que estás eligiendo.
 
 ## 4. Balance / riesgos
 - **Cambia el balance defensivo**: hoy una guarnición + torretas cubre todo; con guarnición tenés que

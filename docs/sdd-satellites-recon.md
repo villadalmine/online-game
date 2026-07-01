@@ -150,6 +150,10 @@ peso = más consumo). Sin escudo dura la semana nominal pero cualquier dron lo v
 - Reusa el render de mapa existente (`renderMap`) + `intel_live` (SDD 50). Datos de
   `GET /players/me` (snapshot) o `GET /satellites/intel`.
 - **Pictográfico/TTS (SDD 43)**: íconos para base/unidad/% y lectura del estado.
+- **Implementado (1.119.0)**: panel "🛰 Satélites" (`renderSatellites`). **Fix UX (1.122.0)**: el panel
+  separa **controles** (selects de unidad/objetivo, rebuild solo si cambian las opciones, preservando
+  la selección) del **estado** (satélites + mapa, rebuild cada ciclo) → el refresco de 4 s ya NO borra
+  lo que estás eligiendo. Mismo patrón en Mover tropas (SDD 62) y guard por foco en Arsenal (SDD 49/50).
 
 ## 7. Modelo de datos + API (lazy-by-timestamp, como drones)
 - Modelo **`SatelliteMission`** (o `Satellite`): `owner_id`, `target_player_id` (null = propio),
