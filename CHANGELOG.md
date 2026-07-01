@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.120.0] - 2026-07-01
+
 ### 2026-07-01 — SDD 63: salto espacial (jumpers) + prendido en prod
 - **Tech capstone `space_jump`**: requiere TODO el árbol endgame (`hyperspace_travel` + `satellite_tech`
   + `nuclear_fission` + `attack_drones` + `orbital_robotics`). `research.py` ahora soporta
