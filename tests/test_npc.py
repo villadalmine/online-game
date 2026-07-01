@@ -614,3 +614,38 @@ async def test_npc_launch_satellite_helper(session, monkeypatch):
     sats = (await session.execute(
         select(SatelliteMission).where(SatelliteMission.owner_id == npc.id))).scalars().all()
     assert sats and sats[0].kind == "spy" and sats[0].target_id == rival.id
+
+
+async def test_npc_attacks_with_garrison_on(session, monkeypatch):
+    """SDD 62 fix: con guarnición ON la NPC sigue atacando (evalúa la guarnición de la base atacada,
+    no todo el ejército del rival) y la flota sale de su base con source_base_id."""
+    from app.core.config import get_settings
+    from app.models import AttackMission, Base_, Player, ResourceStock, UnitStock
+    from app.services.onboarding import onboard_player
+    monkeypatch.setattr(get_settings(), "garrison_enabled", True)
+    monkeypatch.setattr(get_settings(), "npc_weak_protect_ratio", 0)  # aislar: no perdonar al débil
+    npc = Player(username="garr_raider", password_hash="x", is_npc=True)
+    session.add(npc)
+    await session.flush()
+    natal = await onboard_player(session, npc, "milky_way", "mars", "martian")
+    weak = Player(username="garr_prey", password_hash=hash_password("secret123"))
+    session.add(weak)
+    await session.flush()
+    wbase = await onboard_player(session, weak, "milky_way", "mars", "martian")
+    weak.protected_until = None
+    npc.energy = 999
+    for st in (await session.execute(
+        select(ResourceStock).where(ResourceStock.player_id == npc.id))).scalars():
+        st.amount = 0            # sin minerales → llega directo al paso de ataque
+    # ejército del NPC EN su base natal (guarnición); la presa no tiene guarnición
+    session.add(UnitStock(player_id=npc.id, unit_key="tank", quantity=30, base_id=natal.id))
+    await session.commit()
+
+    npc = (await session.execute(
+        select(Player).where(Player.username == "garr_raider"))).scalar_one()
+    action = await RuleBasedBrain().act(session, npc)
+    m = (await session.execute(
+        select(AttackMission).where(AttackMission.attacker_id == npc.id))).scalars().first()
+    assert action and action.startswith("attack"), action
+    assert m is not None and m.source_base_id == natal.id
+    _ = (Base_, wbase)   # (usados en el arreglo del escenario)

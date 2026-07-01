@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-01 — Fix (regresión): la IA dejó de atacar con la guarnición prendida
+> Reporte: "la IA dejó de hacer cosas". Con `garrison_enabled` ON, la NPC estimaba la defensa de un
+> objetivo sumando TODO el ejército del rival (global), pero el combate usa solo la guarnición de la
+> base atacada → sobreestimaba a todos → nunca hallaba objetivo "batible" → dejaba de atacar.
+- `npc.py:_base_defense_estimate` ahora cuenta solo la **guarnición de la base atacada** (garrison ON).
+- El ataque de la NPC arma la flota con las tropas de **su base** (no el global) y sale con
+  `source_base_id`; el `start_attack` va en try/except (topes SDD 55 / falta de tropas ya no abortan
+  todo el turno). e2e/servicio `test_npc_attacks_with_garrison_on`. Suite 432 ✓.
+- (Inerte, prep SDD 64 paso 2) modelo `BunkerRaid` + migración `623fd747de84` (log de incursiones).
+
 ## [1.123.0] - 2026-07-01
 
 ### 2026-07-01 — Fix (bloqueador): el panel de Investigación ocultaba satélites/búnker

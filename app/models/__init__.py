@@ -356,6 +356,22 @@ class BunkerRoom(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class BunkerRaid(Base):
+    """SDD 64: una incursión de sabotaje sobre el búnker de un rival (gas/ratas/agua). Log para el
+    tope diario e historial."""
+
+    __tablename__ = "bunker_raids"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    attacker_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    target_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    bunker_id: Mapped[int] = mapped_column(ForeignKey("bunkers.id", ondelete="CASCADE"))
+    action: Mapped[str] = mapped_column(String(20))   # gas | rats | water
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class SpyMission(Base):
     """Espías en tránsito hacia un objetivo (SDD 35). Resuelven al llegar (generan intel) y vuelven;
     si los detectan, algunos caen y el defensor es notificado."""

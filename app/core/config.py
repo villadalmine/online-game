@@ -212,6 +212,9 @@ class Settings(BaseSettings):
     bunker_meter_decay_per_hour: float = 2.0   # decaimiento base de cada medidor por hora
     bunker_gas_damage: float = 25.0       # golpe de gas a la salud de gente (mitiga ventilación)
     bunker_vent_mitigation: float = 0.25  # cada ventilación reduce el gas 25% (tope ~90%)
+    bunker_sabotage_damage: float = 25.0  # golpe de ratas (comida) / contaminar (agua)
+    bunker_raid_min_map_pct: float = 50.0  # % descubierto (satélites) mínimo para poder sabotear
+    bunker_raids_per_target_per_day: int = 3  # tope de sabotajes por (atacante,objetivo)/día
 
     # Lanzadera de misiles (SDD 49): vía de "golpe" intra-planeta, paralela a la flota. PRENDIDO
     # (v1.5): el contenido carga y se puede disparar. Frenos: protección de novato (SDD 11), no

@@ -21,7 +21,7 @@ from app.core.config import get_settings
 from app.core.security import hash_password
 from app.models import AttackMission, Base_, Building, CombatLog, Player
 from app.services.build import start_build
-from app.services.combat import recall_mission, start_attack
+from app.services.combat import CombatError, recall_mission, start_attack
 from app.services.drones import launch_drones
 from app.services.economy import player_stocks
 from app.services.energy import compute_energy
@@ -205,9 +205,14 @@ async def _npc_launch_satellite(session: AsyncSession, player: Player, rivals: l
 
 
 async def _base_defense_estimate(session: AsyncSession, base: Base_) -> float:
-    """Defender unit defense + active turret power at a base (what an attacker faces)."""
+    """Defender unit defense + active turret power at a base (what an attacker faces). SDD 62: con
+    guarnición, solo defiende la guarnición de ESA base (no todo el ejército) → estimar por base."""
     content = get_content()
-    owner_units = await player_units(session, base.player_id)
+    if get_settings().garrison_enabled:
+        from app.services.training import units_at_base
+        owner_units = await units_at_base(session, base.player_id, base.id)
+    else:
+        owner_units = await player_units(session, base.player_id)
     unit_def = sum(
         qty * content.units.get(k, {}).get("stats", {}).get("defense", 0)
         for k, qty in owner_units.items()
@@ -491,7 +496,14 @@ class RuleBasedBrain:
         # 5) Attack: entre las bases que claramente superamos (poder > defensa × margin del PERFIL),
         #    pegale al objetivo estratégico; si no, al RIVAL más fuerte que batas —humano O NPC
         #    (los NPC ya no se cubren entre sí salvo que compartan alianza); si no, a la más débil.
-        army = {k: units[k] for k in ("soldier", "tank", "aircraft") if units.get(k)}
+        # SDD 62: con guarnición la flota sale de la base natal → el ejército disponible es el de
+        # ESA base (no el global), para que el poder estimado coincida con lo enviable.
+        src_base_id = base.id
+        atk_pool = units
+        if _settings.garrison_enabled:
+            from app.services.training import units_at_base
+            atk_pool = await units_at_base(session, player.id, base.id)
+        army = {k: atk_pool[k] for k in ("soldier", "tank", "aircraft") if atk_pool.get(k)}
         my_power = _force_attack_power(army)
         if my_power > 0 and energy >= get_settings().attack_energy_cost:
             # SDD 55 §3.2: no patear al débil (dejar crecer al humano muy por debajo, anti-snowball)
@@ -521,8 +533,11 @@ class RuleBasedBrain:
                               for (_d, o, b) in beatable]
                     scored.sort(key=lambda x: (x[0], x[1]), reverse=True)
                     target = scored[0][2]
-                await start_attack(session, player, target.id, army)
-                return f"attack base {target.id}"
+                try:
+                    await start_attack(session, player, target.id, army, src_base_id)
+                    return f"attack base {target.id}"
+                except CombatError:
+                    pass   # garrison/topes SDD 55: si no se puede, seguí con el resto del turno
 
         # 6) Expansión/exploración (perfiles expand/opportunist): construí un transbordador, mandá
         #    expediciones a lunas y fundá colonias. Gated por el perfil para no distraer al resto.
