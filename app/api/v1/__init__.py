@@ -7,6 +7,7 @@ from app.api.v1 import (
     announcements,
     auth,
     bases,
+    bunker,
     catalog,
     colonize,
     combat,
@@ -37,6 +38,7 @@ api_router.include_router(bases.router, prefix="/bases", tags=["bases"])
 api_router.include_router(combat.router, prefix="/combat", tags=["combat"])
 api_router.include_router(drones.router, prefix="/drones", tags=["drones"])
 api_router.include_router(satellites.router, prefix="/satellites", tags=["satellites"])
+api_router.include_router(bunker.router, prefix="/bunker", tags=["bunker"])
 api_router.include_router(expeditions.router, prefix="/expeditions", tags=["expeditions"])
 api_router.include_router(research.router, prefix="/research", tags=["research"])
 api_router.include_router(alliances.router, prefix="/alliances", tags=["alliances"])

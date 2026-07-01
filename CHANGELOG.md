@@ -7,6 +7,26 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-01 — Fix (bloqueador): el panel de Investigación ocultaba satélites/búnker
+> Reporte: "para el salto espacial necesito satélite tecnológico pero no lo veo" + "Salto espacial
+> (undefined ×1)". El panel de Investigación **descartaba** las categorías que no estaban en su lista
+> de orden → `orbital` (satélites/blindaje) y `underground` (búnker) no se mostraban, y las techs sin
+> `effect` salían "(undefined ×1)"; además el 🔒 no chequeaba el multi-prerrequisito (SDD 63).
+- Se agregan las categorías **orbital** y **underground** al panel (ahora se ven/investigan
+  `satellite_tech`, blindajes, `bunker_engineering`…). El 🔒 ahora lista **todos** los prereqs faltantes
+  (`requires_tech` + `requires_techs`). Las techs "gate" sin efecto ya no muestran "undefined". Solo front.
+
+### 2026-07-01 — SDD 64 paso 1/5: búnkeres subterráneos (backend, flag OFF)
+> Fundamento del sistema de búnkeres (invisible con `bunkers_enabled=False`). Ver
+> `docs/sdd-atomic-bunkers.md`.
+- Research `bunker_engineering`/`bunker_defense`; habitaciones en `content/underground.yaml` (viviendas,
+  cultivos, comedor, reserva de agua, sala de investigación, laboratorio atómico, ventilación).
+- Modelos `Bunker` + `BunkerRoom` (migración `30029a54c5b5`); servicio `bunkers.py`: `dig` (cava el
+  búnker bajo una base) + `build_room` (celda del mapa NxN) + `advance_bunker` (medidores comida/agua/
+  gente 0-100 regeneran por las salas y decaen lazy). API `/bunker/dig|build-room`; snapshot `bunkers`.
+- Tests `tests/test_bunkers.py` + e2e `test_bunker_dig_and_build_room_e2e`. Suite 431 ✓. **Pendiente:**
+  entradas/brechas + intel satelital, defensas, sabotaje (gas/ratas/agua), panel, prender.
+
 ## [1.122.0] - 2026-07-01
 
 ### 2026-07-01 — Fix UX: los paneles ya no borran tu selección al refrescar (4s)

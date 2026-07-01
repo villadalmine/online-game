@@ -1,0 +1,66 @@
+# SDD 64: habitaciones del búnker subterráneo. Data-driven (costos por rol, SDD 53). Cada sala mejora
+# uno de los medidores (comida/agua/gente) o habilita defensa. `requires_tech` gatea por el árbol.
+# food/water/people = aporte al regen del medidor correspondiente (0-100). vent = mitigación de gas.
+rooms:
+  - key: quarters
+    icon: "🛏"
+    name: "Viviendas"
+    name_en: "Living quarters"
+    requires_tech: bunker_engineering
+    people: 8            # aloja/sostiene gente (regen de salud de gente)
+    energy_cost: 10
+    build_seconds: 180
+    cost: { structural: 120, energetic: 40 }
+  - key: farm
+    icon: "🌱"
+    name: "Cultivos"
+    name_en: "Crops"
+    requires_tech: bunker_engineering
+    food: 10            # produce comida (regen de salud de comida)
+    energy_cost: 12
+    build_seconds: 200
+    cost: { structural: 90, energetic: 60, advanced: 20 }
+  - key: canteen
+    icon: "🍲"
+    name: "Comedor"
+    name_en: "Canteen"
+    requires_tech: bunker_engineering
+    food: 6
+    energy_cost: 8
+    build_seconds: 150
+    cost: { structural: 100, energetic: 30 }
+  - key: water_reserve
+    icon: "💧"
+    name: "Reserva de agua"
+    name_en: "Water reserve"
+    requires_tech: bunker_engineering
+    water: 12          # produce/almacena agua (regen de salud de agua)
+    energy_cost: 10
+    build_seconds: 190
+    cost: { structural: 130, energetic: 40 }
+  - key: research_room
+    icon: "🔬"
+    name: "Sala de investigación"
+    name_en: "Research room"
+    requires_tech: bunker_engineering
+    energy_cost: 20
+    build_seconds: 260
+    cost: { structural: 100, energetic: 180, advanced: 90 }
+  - key: atomic_lab
+    icon: "☢"
+    name: "Laboratorio atómico"
+    name_en: "Atomic lab"
+    requires_tech: bunker_engineering
+    energy_cost: 40
+    build_seconds: 400
+    cost: { structural: 200, energetic: 400, advanced: 400 }
+  # SDD 64 §3.5: defensas (requieren bunker_defense).
+  - key: ventilation
+    icon: "🌀"
+    name: "Ventilación"
+    name_en: "Ventilation"
+    requires_tech: bunker_defense
+    vent: 1            # cada una mitiga el gas tóxico (tope en config)
+    energy_cost: 15
+    build_seconds: 200
+    cost: { structural: 160, advanced: 80 }

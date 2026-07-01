@@ -204,6 +204,15 @@ class Settings(BaseSettings):
     space_jump_enabled: bool = False
     jump_energy_cost: float = 40.0        # energía por salto instantáneo
 
+    # SDD 64: búnkeres atómicos — cavar túneles + habitaciones subterráneas + guerra de sabotaje
+    # (gas/ratas/agua). Medidores de salud comida/agua/gente (0-100, regen lazy por las salas). OFF
+    # hasta balancear; gateado por `bunker_engineering`. Ver docs/sdd-atomic-bunkers.md.
+    bunkers_enabled: bool = False
+    bunker_grid: int = 4                  # celdas NxN del mapa subterráneo por búnker
+    bunker_meter_decay_per_hour: float = 2.0   # decaimiento base de cada medidor por hora
+    bunker_gas_damage: float = 25.0       # golpe de gas a la salud de gente (mitiga ventilación)
+    bunker_vent_mitigation: float = 0.25  # cada ventilación reduce el gas 25% (tope ~90%)
+
     # Lanzadera de misiles (SDD 49): vía de "golpe" intra-planeta, paralela a la flota. PRENDIDO
     # (v1.5): el contenido carga y se puede disparar. Frenos: protección de novato (SDD 11), no
     # atacás aliados, intra-planeta, tope de `ordnance` (alojamiento). El daño de una salva destruye

@@ -57,6 +57,8 @@ async def advance(session: AsyncSession, player: Player) -> None:
     await advance_drones(session, player, now)
     from app.services.satellites import advance_satellites  # SDD 61: satélites orbitando
     await advance_satellites(session, player, now)
+    from app.services.bunkers import advance_bunker  # SDD 64: búnkeres subterráneos
+    await advance_bunker(session, player, now)
     from app.services.espionage import process_spy_missions  # SDD 35
     await process_spy_missions(session, now, observer_id=player.id)
     from app.services.market import process_transport_missions  # SDD 42 Fase 2
@@ -316,6 +318,8 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
     # SDD 61: satélites propios + mapas de enemigos (% descubierto + bases/unidades).
     from app.services.satellites import satellites_state
     satellites_out, enemy_maps = await satellites_state(session, player)
+    from app.services.bunkers import bunker_state  # SDD 64
+    bunkers_out = await bunker_state(session, player)
 
     # Alliance: type + shared-vision alerts (attacks inbound on allies).
     alliance = await session.get(Alliance, player.alliance_id) if player.alliance_id else None
@@ -418,6 +422,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         intel_live=intel_live,
         satellites=satellites_out,
         enemy_maps=enemy_maps,
+        bunkers=bunkers_out,
     )
 
 

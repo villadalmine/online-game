@@ -299,6 +299,31 @@ technologies:
     research_seconds: 2200
     cost: { structural: 300, energetic: 750, advanced: 650 }
     magnitude: 1.0
+  # SDD 64: búnkeres atómicos — cavar túneles + habitaciones subterráneas; defensa (cerradura/ventilación).
+  - key: bunker_engineering
+    name: "Ingeniería de búnkeres"
+    category: underground
+    name_en: "Bunker engineering"
+    description: "Cavá túneles atómicos: se abre un mapa subterráneo donde construís habitaciones."
+    description_en: "Dig atomic tunnels: opens an underground map where you build rooms."
+    requires: research_lab
+    requires_tech: nuclear_fission
+    energy_cost: 70
+    research_seconds: 1600
+    cost: { structural: 500, energetic: 300, advanced: 250 }
+    magnitude: 1.0
+  - key: bunker_defense
+    name: "Defensa de búnkeres"
+    category: underground
+    name_en: "Bunker defense"
+    description: "Cerraduras (sellan entradas) y ventilación (mitiga el gas tóxico) para tu búnker."
+    description_en: "Lockdown (seals entrances) and ventilation (mitigates toxic gas) for your bunker."
+    requires: research_lab
+    requires_tech: bunker_engineering
+    energy_cost: 50
+    research_seconds: 1200
+    cost: { structural: 400, energetic: 200, advanced: 200 }
+    magnitude: 1.0
   # SDD 63: salto espacial — capstone del árbol endgame (requiere TODO). Habilita la nave "jumper".
   - key: space_jump
     name: "Salto espacial"

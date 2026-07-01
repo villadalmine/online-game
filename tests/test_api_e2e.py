@@ -2866,6 +2866,32 @@ async def test_space_jump_instant_move_e2e(client, monkeypatch):
     assert (arrives - datetime.now(arrives.tzinfo)).total_seconds() <= 2  # instantáneo
 
 
+async def test_bunker_dig_and_build_room_e2e(client, monkeypatch):
+    """SDD 64: cavar el búnker y construir una habitación por la API (+ error sin la tech)."""
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import PlayerTech
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    h = await _register(client.http, "bunker_e2e")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    base = st["bases"][0]["id"]
+    # sin la tech → 400
+    r0 = await client.http.post("/api/v1/bunker/dig", headers=h, json={"base_id": base})
+    assert r0.status_code == 400
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "bunker_e2e"))).scalar_one()
+        s.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+        await s.commit()
+    r = await client.http.post("/api/v1/bunker/dig", headers=h, json={"base_id": base})
+    assert r.status_code == 201, r.text
+    rr = await client.http.post("/api/v1/bunker/build-room", headers=h,
+                                json={"base_id": base, "room_key": "farm", "cell": 0})
+    assert rr.status_code == 201, rr.text
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["bunkers"] and me["bunkers"][0]["food_health"] == 100.0
+
+
 async def test_satellite_launch_and_intel_e2e(client, monkeypatch):
     """SDD 61: lanzar un satélite espía y verlo en el intel (happy path + error con flag OFF)."""
     from app.core.config import get_settings

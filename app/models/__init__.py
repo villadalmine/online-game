@@ -325,6 +325,37 @@ class SatelliteMission(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class Bunker(Base):
+    """SDD 64: búnker subterráneo bajo una base. Mapa de habitaciones + medidores de salud
+    (comida/agua/gente, 0-100) que regeneran lazy por las salas y bajan por sabotaje."""
+
+    __tablename__ = "bunkers"
+    __table_args__ = (UniqueConstraint("base_id", name="uq_bunker_base"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    base_id: Mapped[int] = mapped_column(ForeignKey("bases.id", ondelete="CASCADE"), index=True)
+    food_health: Mapped[float] = mapped_column(Float, default=100.0, server_default="100")
+    water_health: Mapped[float] = mapped_column(Float, default=100.0, server_default="100")
+    people_health: Mapped[float] = mapped_column(Float, default=100.0, server_default="100")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class BunkerRoom(Base):
+    """SDD 64: una habitación del búnker en una celda del mapa subterráneo."""
+
+    __tablename__ = "bunker_rooms"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    bunker_id: Mapped[int] = mapped_column(ForeignKey("bunkers.id", ondelete="CASCADE"), index=True)
+    room_key: Mapped[str] = mapped_column(String(50))
+    cell: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20), default="building")  # building | active
+    completes_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class SpyMission(Base):
     """Espías en tránsito hacia un objetivo (SDD 35). Resuelven al llegar (generan intel) y vuelven;
     si los detectan, algunos caen y el defensor es notificado."""

@@ -1456,22 +1456,25 @@ function refreshPanels(){
   if(panelOpen('hub')) loadHub();
   if(panelOpen('admin')) loadAdmin();
 }
-const TECH_CAT={es:{economy:"⛏ Economía",military:"⚔ Militar",strike:"🚀 Misiles",drones:"🛸 Drones",espionage:"🕵 Espionaje",colonization:"🪐 Colonización",hyperspace:"🌌 Hiperespacio",other:"Otras"},
-  en:{economy:"⛏ Economy",military:"⚔ Military",strike:"🚀 Missiles",drones:"🛸 Drones",espionage:"🕵 Espionage",colonization:"🪐 Colonization",hyperspace:"🌌 Hyperspace",other:"Other"}};
+const TECH_CAT={es:{economy:"⛏ Economía",military:"⚔ Militar",strike:"🚀 Misiles",drones:"🛸 Drones",espionage:"🕵 Espionaje",colonization:"🪐 Colonización",hyperspace:"🌌 Hiperespacio",orbital:"🛰 Orbital / satélites",underground:"🕳 Búnkeres",other:"Otras"},
+  en:{economy:"⛏ Economy",military:"⚔ Military",strike:"🚀 Missiles",drones:"🛸 Drones",espionage:"🕵 Espionage",colonization:"🪐 Colonization",hyperspace:"🌌 Hyperspace",orbital:"🛰 Orbital / satellites",underground:"🕳 Bunkers",other:"Other"}};
 function renderResearch(){
   if(!catalog||!state) return; const done=new Set(state.technologies||[]);
   const pic=isPicto('investigacion');
   const techRow=t=>{
     const order=(state.research||[]).find(r=>r.tech_key===t.key);
-    // 🔒 si falta la tech previa (SDD 43: prerequisito como candado)
-    const lockedReq=t.requires_tech && !done.has(t.requires_tech);
+    // 🔒 si falta ALGÚN prerrequisito (SDD 43): requires_tech + requires_techs (multi, SDD 63).
+    const allReqs=[...(t.requires_tech?[t.requires_tech]:[]),...(t.requires_techs||[])];
+    const missing=allReqs.filter(rt=>!done.has(rt));
     let right;
     if(done.has(t.key)) right=`<span class="ok">${pic?'✓':esc(tr('ready'))}</span>`;
     else if(order) right=`<span class="warn">${cd(order.completes_at)}</span>`;
-    else if(lockedReq) right=`<span class="bad">🔒 ${pic?ico('tech',t.requires_tech):esc(techName(t.requires_tech))}</span>`;
+    else if(missing.length) right=`<span class="bad">🔒 ${missing.map(rt=>pic?ico('tech',rt):esc(techName(rt))).join(", ")}</span>`;
     else right=actbtn('sm',`doResearch('${t.key}')`,'🔬','research','investigacion');
-    const label=pic?`${ico('tech',t.key)} <span class="muted">×${t.magnitude}</span>`
-                   :`${esc(t.name)} <span class="muted">(${esc(t.effect)} ×${t.magnitude})</span>`;
+    // el efecto es opcional (las techs "gate" no tienen) → no mostrar "undefined".
+    const label=pic?`${ico('tech',t.key)}${(t.magnitude&&t.magnitude!==1)?` <span class="muted">×${t.magnitude}</span>`:''}`
+                   :`${esc(t.name)}${t.effect?` <span class="muted">(${esc(t.effect)} ×${t.magnitude})</span>`:''}`;
+    const lockedReq=missing.length>0;
     // SDD 42: la investigación se paga con el material del planeta NATAL ("se investiga en casa").
     const mc=resolveCost(t.cost||{});
     const costLine=(!done.has(t.key)&&!order&&!lockedReq)
@@ -1483,7 +1486,7 @@ function renderResearch(){
   const cats=(TECH_CAT[lang]||TECH_CAT.es);
   const byCat={};
   catalog.technologies.forEach(t=>{ (byCat[t.category||"other"]=byCat[t.category||"other"]||[]).push(t); });
-  const order=["economy","military","strike","drones","espionage","colonization","hyperspace","other"];
+  const order=["economy","military","strike","drones","espionage","colonization","hyperspace","orbital","underground","other"];
   $("research").innerHTML=order.filter(c=>byCat[c]).map(c=>
     `<div class="muted" style="margin:6px 0 2px">${esc(cats[c]||c)}</div>`+byCat[c].map(techRow).join("")
   ).join("");

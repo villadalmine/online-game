@@ -33,6 +33,8 @@ class GameContent:
         self.races: dict[str, dict] = {r["key"]: r for r in _load("races.yaml")["races"]}
         buildings_raw = _load("buildings.yaml")["buildings"]
         self.buildings: dict[str, dict] = {b["key"]: b for b in buildings_raw}
+        # SDD 64: habitaciones del búnker subterráneo (data-driven, capa aparte de los edificios).
+        self.rooms: dict[str, dict] = {r["key"]: r for r in _load("underground.yaml")["rooms"]}
 
         units = _load("units.yaml")
         self.personnel: dict[str, dict] = {u["key"]: u for u in units.get("personnel", [])}

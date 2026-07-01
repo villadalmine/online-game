@@ -191,6 +191,16 @@ class SatelliteLaunchRequest(BaseModel):
     target_id: int | None = None        # jugador objetivo (solo para spy)
 
 
+class BunkerDigRequest(BaseModel):
+    base_id: int
+
+
+class BunkerBuildRequest(BaseModel):
+    base_id: int
+    room_key: str
+    cell: int
+
+
 class TroopMoveOut(BaseModel):
     id: int
     from_base_id: int
@@ -620,6 +630,8 @@ class PlayerStateOut(BaseModel):
     # SDD 61: satélites propios en órbita + mapas de enemigos ({target_id: {pct, bases}}).
     satellites: list[dict] = []
     enemy_maps: dict = {}
+    # SDD 64: búnkeres subterráneos (medidores comida/agua/gente + mapa de salas).
+    bunkers: list[dict] = []
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

@@ -1,6 +1,9 @@
 # SDD 64 — Búnkeres atómicos: túneles, mapa subterráneo, brechas y guerra de sabotaje
 
-> **Estado:** **DISEÑO** 2026-07-01 (sin implementar) · **Pedido:** usuario, 2026-07-01.
+> **Estado:** **EN PROGRESO — paso 1/5 (backend, flag OFF)** 2026-07-01: research + habitaciones
+> (`content/underground.yaml`) + modelos `Bunker`/`BunkerRoom` + `bunkers.py` (dig/build_room/
+> advance con medidores comida/agua/gente) + API `/bunker/*` + snapshot. **Pendiente:** entradas/
+> brechas + intel satelital, defensas, sabotaje, panel, prender. · **Diseño:** 2026-07-01 · usuario.
 > **Relacionado:** [SDD 61 satélites](sdd-satellites-recon.md) (mapear al enemigo → ubicar su HQ bajo
 > tierra), [SDD 62 guarnición](sdd-garrison-troops-per-base.md) (unidades por base), [SDD 49 misiles/
 > nuclear](sdd-missile-launcher.md) (`nuclear_fission`), [SDD 46 alojamiento](sdd-unit-housing-capacity.md),
