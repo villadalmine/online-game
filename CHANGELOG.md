@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.125.0] - 2026-07-01
+
 ### 2026-07-01 — IA más agresiva/viva (arriesga, espía, nunca idle) + ver qué hace
 > Reporte: "la IA es muy débil y no ataca; que arriesgue, mande a espiar, haga ataques esporádicos,
 > nunca esté parada, use la inteligencia leyendo el tablero".
