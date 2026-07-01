@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.124.0] - 2026-07-01
+
 ### 2026-07-01 — Fix (regresión): la IA dejó de atacar con la guarnición prendida
 > Reporte: "la IA dejó de hacer cosas". Con `garrison_enabled` ON, la NPC estimaba la defensa de un
 > objetivo sumando TODO el ejército del rival (global), pero el combate usa solo la guarnición de la
