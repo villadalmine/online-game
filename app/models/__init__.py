@@ -271,8 +271,10 @@ class StrikeMission(Base):
     launcher_base_id: Mapped[int] = mapped_column(Integer)
     target_base_id: Mapped[int] = mapped_column(Integer)
     force: Mapped[str] = mapped_column(Text, default="{}")  # JSON missile_key -> qty
-    status: Mapped[str] = mapped_column(String(20), default="outbound")  # outbound | done
+    status: Mapped[str] = mapped_column(String(20), default="outbound")  # outbound|done|cancelled
     details: Mapped[str] = mapped_column(Text, default="{}")  # JSON: impacted/intercepted/damage
+    # SDD 67: oferta de tributo del defensor (diplomacia nuclear). JSON {minerals:{}, energy}.
+    tribute: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     arrives_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

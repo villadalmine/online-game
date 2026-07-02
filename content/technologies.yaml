@@ -299,6 +299,18 @@ technologies:
     research_seconds: 2200
     cost: { structural: 300, energetic: 750, advanced: 650 }
     magnitude: 1.0
+  # SDD 67: diplomacia — requiere el edificio de gobierno; habilita el tributo ante un nuclear.
+  - key: diplomacy
+    name: "Diplomacia"
+    category: politics
+    name_en: "Diplomacy"
+    description: "Política exterior: ante un misil nuclear entrante podés ofrecer tributo para que lo cancelen."
+    description_en: "Foreign policy: when a nuclear missile is inbound you can offer tribute to cancel it."
+    requires: government
+    energy_cost: 45
+    research_seconds: 1100
+    cost: { structural: 240, energetic: 180, advanced: 120 }
+    magnitude: 1.0
   # SDD 64: búnkeres atómicos — cavar túneles + habitaciones subterráneas; defensa (cerradura/ventilación).
   - key: bunker_engineering
     name: "Ingeniería de búnkeres"

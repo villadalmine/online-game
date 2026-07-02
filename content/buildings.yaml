@@ -276,6 +276,24 @@ buildings:
       structural: 260
       energetic: 220
       advanced: 180
+  # SDD 67: política/diplomacia — el gobierno habilita investigar diplomacia (y futuros tratados).
+  - key: government
+    icon: 🏛
+    name: "Edificio de gobierno"
+    name_en: "Government building"
+    real: "Sede de gobierno: política exterior, tratados y diplomacia."
+    real_en: "Seat of government: foreign policy, treaties and diplomacy."
+    sources: ["Wikipedia: Government"]
+    category: politics
+    requires: research_lab
+    description: "Sede política del imperio: habilita investigar Diplomacia (tributos, tratados)."
+    description_en: "Political seat of the empire: unlocks researching Diplomacy (tributes, treaties)."
+    energy_cost: 25
+    build_seconds: 240
+    cost:
+      structural: 220
+      energetic: 120
+      advanced: 60
   - key: signal_inhibitor
     icon: 📡
     name: "Inhibidor de señal"

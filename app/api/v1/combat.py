@@ -22,10 +22,17 @@ from app.schemas import (
     StrikeRequest,
     StrikeSimOut,
     StrikeSimRequest,
+    TributeRequest,
 )
 from app.services.combat import CombatError, recall_mission, resolve_combat, start_attack
 from app.services.combat_calc import PlanError, plan_attack
-from app.services.strike import StrikeError, simulate_strike, start_strike
+from app.services.strike import (
+    StrikeError,
+    accept_tribute,
+    offer_tribute,
+    simulate_strike,
+    start_strike,
+)
 
 router = APIRouter()
 
@@ -156,6 +163,37 @@ async def do_strike(
         target_base_id=mission.target_base_id, force=json.loads(mission.force),
         status=mission.status, arrives_at=mission.arrives_at,
     )
+
+
+@router.post("/strike/{mission_id}/tribute")
+async def strike_tribute(
+    mission_id: int,
+    body: TributeRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 67: el defensor ofrece tributo para cancelar un misil nuclear entrante."""
+    try:
+        m = await offer_tribute(session, player, mission_id, body.minerals, body.energy)
+    except StrikeError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return {"mission_id": m.id, "tribute": json.loads(m.tribute)}
+
+
+@router.post("/strike/{mission_id}/accept-tribute")
+async def strike_accept_tribute(
+    mission_id: int,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 67: el atacante acepta el tributo y cancela su misil nuclear."""
+    try:
+        result = await accept_tribute(session, player, mission_id)
+    except StrikeError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
 
 
 @router.get("/reports", response_model=list[CombatLogOut])

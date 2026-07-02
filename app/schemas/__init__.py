@@ -206,6 +206,11 @@ class BunkerRaidRequest(BaseModel):
     action: str   # gas | rats | water
 
 
+class TributeRequest(BaseModel):
+    minerals: dict[str, float] = {}
+    energy: float = 0.0
+
+
 class TroopMoveOut(BaseModel):
     id: int
     from_base_id: int

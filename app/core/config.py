@@ -217,6 +217,11 @@ class Settings(BaseSettings):
     bunker_raids_per_target_per_day: int = 3  # tope de sabotajes por (atacante,objetivo)/día
     bunker_raid_energy_cost: float = 20.0  # energía por incursión de sabotaje
 
+    # SDD 67: diplomacia nuclear — una salva con nuclear tarda 24 h (ventana para negociar) y el
+    # defensor con `diplomacy` (tech) + `government` (edificio activo) puede ofrecer TRIBUTO
+    # (minerales+energía) para que el atacante la cancele. Sin recall unilateral.
+    nuclear_travel_seconds: int = 86400
+
     # Lanzadera de misiles (SDD 49): vía de "golpe" intra-planeta, paralela a la flota. PRENDIDO
     # (v1.5): el contenido carga y se puede disparar. Frenos: protección de novato (SDD 11), no
     # atacás aliados, intra-planeta, tope de `ordnance` (alojamiento). El daño de una salva destruye

@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — SDD 67: diplomacia nuclear (el nuclear tarda 24 h y se puede negociar)
+- **El misil nuclear tarda 24 h** en llegar (`nuclear_travel_seconds`) — ventana de negociación; no
+  hay recall (los misiles no se retiran).
+- **Edificio `government` 🏛** (cat `politics`, req research_lab) + **tech `diplomacy`** (req government):
+  el defensor con ambos activos puede **ofrecer tributo** (`/combat/strike/{id}/tribute`
+  {minerals,energy}) ante un nuclear entrante; el **atacante lo acepta** (`.../accept-tribute`) →
+  transfiere los recursos y **cancela** el misil. Re-validación al aceptar. `StrikeMission.tribute`
+  (migración `79fc068c4f1e`). El panel de Investigación suma la categoría **🏛 Política**.
+- Tests `test_strike.py` (viaja 24 h, ofrecer/aceptar transfiere y cancela, exige gobierno+diplomacia).
+  Suite 444 ✓. **Pendiente:** UI del tributo (form + salva entrante con countdown).
+
 ## [1.129.0] - 2026-07-02
 
 ### 2026-07-02 — SDD 64 pasos 2-5: sabotaje de búnkeres + panel + prendido en prod

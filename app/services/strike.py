@@ -29,6 +29,75 @@ class StrikeError(Exception):
     pass
 
 
+async def offer_tribute(
+    session: AsyncSession, defender: Player, mission_id: int,
+    minerals: dict[str, float], energy: float,
+) -> StrikeMission:
+    """SDD 67: el DEFENSOR de una salva nuclear entrante ofrece tributo para que el atacante la
+    cancele. Requiere `government` activo + `diplomacy` y tener los recursos ofrecidos."""
+    mission = await session.get(StrikeMission, mission_id)
+    if mission is None or mission.defender_id != defender.id or mission.status != "outbound":
+        raise StrikeError("Salva no encontrada.")
+    if "nuclear_missile" not in json.loads(mission.force):
+        raise StrikeError("Solo se puede negociar un misil nuclear.")
+    if not await _has_active(session, None, "government", player_id=defender.id):
+        raise StrikeError("Necesitás un Edificio de gobierno activo.")
+    from app.services.research import researched_techs
+    if "diplomacy" not in await researched_techs(session, defender.id):
+        raise StrikeError("Requiere investigar: diplomacy.")
+    minerals = {k: float(v) for k, v in (minerals or {}).items() if v and float(v) > 0}
+    energy = max(0.0, float(energy or 0))
+    if not minerals and energy <= 0:
+        raise StrikeError("Ofrecé algo (minerales y/o energía).")
+    from app.services.economy import planet_stocks
+    here = await planet_stocks(session, defender.id, defender.planet_key)
+    for m, v in minerals.items():
+        if here.get(m, 0.0) < v:
+            raise StrikeError(f"No tenés {v:g} de {m} para ofrecer.")
+    mission.tribute = json.dumps({"minerals": minerals, "energy": energy})
+    await notify(session, mission.attacker_id, "tribute_offered",
+                 f"{defender.username} ofrece tributo para cancelar tu misil nuclear",
+                 {"mission_id": mission.id, "minerals": minerals, "energy": energy})
+    await session.flush()
+    return mission
+
+
+async def accept_tribute(session: AsyncSession, attacker: Player, mission_id: int) -> dict:
+    """SDD 67: el ATACANTE acepta el tributo → transfiere recursos y CANCELA el misil."""
+    mission = await session.get(StrikeMission, mission_id)
+    if mission is None or mission.attacker_id != attacker.id or mission.status != "outbound":
+        raise StrikeError("Salva no encontrada.")
+    if not mission.tribute:
+        raise StrikeError("No hay tributo ofrecido.")
+    offer = json.loads(mission.tribute)
+    defender = await session.get(Player, mission.defender_id)
+    from app.services.economy import get_or_create_stock, planet_stocks
+    here = await planet_stocks(session, defender.id, defender.planet_key)
+    minerals = offer.get("minerals", {})
+    for m, v in minerals.items():
+        if here.get(m, 0.0) < v:
+            raise StrikeError("El defensor ya no tiene los recursos ofrecidos.")
+    for m, v in minerals.items():   # defensor natal → atacante natal
+        (await get_or_create_stock(session, defender.id, m, defender.planet_key)).amount -= v
+        (await get_or_create_stock(session, attacker.id, m, attacker.planet_key)).amount += v
+    settings = get_settings()
+    now = datetime.now(UTC)
+    if offer.get("energy"):
+        from app.services.combat import _advance_economy
+        await _advance_economy(session, attacker, now)
+        attacker.energy = min(effective_energy_max(attacker, settings),
+                              attacker.energy + float(offer["energy"]))
+        attacker.energy_updated_at = now
+    mission.status = "cancelled"
+    mission.details = json.dumps({"cancelled_by_tribute": offer})
+    await notify(session, defender.id, "tribute_accepted",
+                 "Tu tributo fue aceptado: el misil nuclear se canceló", offer)
+    from app.services.journal import record
+    await record(session, "nuclear_cancelled", attacker.id, defender_id=defender.id, tribute=offer)
+    await session.flush()
+    return {"cancelled": True, "tribute": offer}
+
+
 def _aware(dt: datetime) -> datetime:
     return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
@@ -168,12 +237,15 @@ async def start_strike(
     for key, qty in force.items():
         (await get_or_create_unit_stock(session, attacker.id, key)).quantity -= qty
 
+    # SDD 67: una salva con NUCLEAR tarda 24 h (ventana de negociación diplomática); no hay recall.
+    travel = travel_seconds(launcher_base.planet_key, target.planet_key)
+    if "nuclear_missile" in force:
+        travel = max(travel, settings.nuclear_travel_seconds)
     mission = StrikeMission(
         attacker_id=attacker.id, defender_id=defender.id,
         launcher_base_id=launcher_base_id, target_base_id=target_base_id,
         force=json.dumps(force), status="outbound",
-        arrives_at=now + timedelta(seconds=travel_seconds(
-            launcher_base.planet_key, target.planet_key)),
+        arrives_at=now + timedelta(seconds=travel),
     )
     session.add(mission)
     await session.flush()
@@ -188,14 +260,16 @@ async def start_strike(
     return mission
 
 
-async def _has_active(session: AsyncSession, base_id: int, building_key: str) -> bool:
-    res = await session.execute(
-        select(Building).where(
-            Building.base_id == base_id, Building.building_key == building_key,
-            Building.status == "active",
-        )
-    )
-    return res.first() is not None
+async def _has_active(
+    session: AsyncSession, base_id: int | None, building_key: str, player_id: int | None = None
+) -> bool:
+    q = select(Building).where(
+        Building.building_key == building_key, Building.status == "active")
+    if player_id is not None:   # SDD 67: ¿el jugador tiene ESTE edificio activo en alguna base?
+        q = q.join(Base_, Building.base_id == Base_.id).where(Base_.player_id == player_id)
+    else:
+        q = q.where(Building.base_id == base_id)
+    return (await session.execute(q)).first() is not None
 
 
 async def _resolve_strike(session: AsyncSession, mission: StrikeMission, now: datetime) -> None:

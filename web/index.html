@@ -1550,8 +1550,8 @@ function refreshPanels(){
   if(panelOpen('hub')) loadHub();
   if(panelOpen('admin')) loadAdmin();
 }
-const TECH_CAT={es:{economy:"⛏ Economía",military:"⚔ Militar",strike:"🚀 Misiles",drones:"🛸 Drones",espionage:"🕵 Espionaje",colonization:"🪐 Colonización",hyperspace:"🌌 Hiperespacio",orbital:"🛰 Orbital / satélites",underground:"🕳 Búnkeres",other:"Otras"},
-  en:{economy:"⛏ Economy",military:"⚔ Military",strike:"🚀 Missiles",drones:"🛸 Drones",espionage:"🕵 Espionage",colonization:"🪐 Colonization",hyperspace:"🌌 Hyperspace",orbital:"🛰 Orbital / satellites",underground:"🕳 Bunkers",other:"Other"}};
+const TECH_CAT={es:{economy:"⛏ Economía",military:"⚔ Militar",strike:"🚀 Misiles",drones:"🛸 Drones",espionage:"🕵 Espionaje",colonization:"🪐 Colonización",hyperspace:"🌌 Hiperespacio",orbital:"🛰 Orbital / satélites",underground:"🕳 Búnkeres",politics:"🏛 Política",other:"Otras"},
+  en:{economy:"⛏ Economy",military:"⚔ Military",strike:"🚀 Missiles",drones:"🛸 Drones",espionage:"🕵 Espionage",colonization:"🪐 Colonization",hyperspace:"🌌 Hyperspace",orbital:"🛰 Orbital / satellites",underground:"🕳 Bunkers",politics:"🏛 Politics",other:"Other"}};
 function renderResearch(){
   if(!catalog||!state) return; const done=new Set(state.technologies||[]);
   const pic=isPicto('investigacion');
@@ -1580,7 +1580,7 @@ function renderResearch(){
   const cats=(TECH_CAT[lang]||TECH_CAT.es);
   const byCat={};
   catalog.technologies.forEach(t=>{ (byCat[t.category||"other"]=byCat[t.category||"other"]||[]).push(t); });
-  const order=["economy","military","strike","drones","espionage","colonization","hyperspace","orbital","underground","other"];
+  const order=["economy","military","strike","drones","espionage","colonization","hyperspace","orbital","underground","politics","other"];
   $("research").innerHTML=order.filter(c=>byCat[c]).map(c=>
     `<div class="muted" style="margin:6px 0 2px">${esc(cats[c]||c)}</div>`+byCat[c].map(techRow).join("")
   ).join("");
