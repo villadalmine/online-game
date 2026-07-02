@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — SDD 65 Fase 2: la NPC lee TODO el tablero (grafo + intel + satélites + guarnición)
+- **Estado del LLM enriquecido** (`_npc_state`): `research_options` (frontera del árbol de tech —
+  investigables YA, del grafo SDD 1), `intel` (espías SDD 35, con confianza), `enemy_maps` (mapeo
+  satelital SDD 61, % + bases/unidades al 100%), `my_garrison` (tropas por base SDD 62). Los
+  `enemies[].units` y `build/train_options` ahora son **garrison- y tech-aware** (no ofrece lo
+  tech-gateado → menos fallback).
+- **Acciones nuevas del LLM:** `{"action":"research","tech":…}` y `{"action":"spy",…}` en
+  `dispatch_action` → la IA investiga la frontera del grafo y manda espías para leer el tablero.
+  Prompt actualizado ("READ THE BOARD"). Tests `test_npc_state_reads_the_whole_board`,
+  `test_llm_dispatch_research_and_spy`. Suite 436 ✓. Pendiente: F3 (bandit por win-rate).
+
 ## [1.126.0] - 2026-07-02
 
 ### 2026-07-02 — Reportes agrupados + fixes de arsenal/reportes + edificios ×N + SDD 65/66

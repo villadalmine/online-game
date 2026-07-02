@@ -634,6 +634,17 @@ async def dispatch_action(session: AsyncSession, player: Player, action: dict) -
     if kind == "expedition":
         await start_expedition(session, player, action["moon_key"])
         return f"llm expedition {action['moon_key']}"
+    # SDD 65 Fase 2: el LLM también puede investigar (frontera del grafo) y espiar el tablero.
+    if kind == "research":
+        from app.services.research import start_research
+        tech = action.get("tech")
+        await start_research(session, player, tech)
+        return f"llm research {tech}"
+    if kind == "spy":
+        from app.services.espionage import start_spy
+        target = int(action["target_base_id"])
+        await start_spy(session, player, target, {"spy": 1})
+        return f"llm spy base {target}"
     return None  # "none" / unknown -> no-op
 
 
@@ -651,36 +662,72 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
     # aplicadas (la afinación). El prompt le pide elegir SOLO opciones con affordable=true.
     # Solo opciones PAGABLES ahora (minerales+energía y edificio requerido). Pasarle al LLM solo lo
     # factible evita que el modelo (sobre todo los chicos) elija lo impagable → menos fallback.
-    def _afford(cost, ecost, req):
+    from app.services.research import researched_techs
+    done_techs = await researched_techs(session, player.id)
+    _settings = get_settings()
+
+    def _afford(cost, ecost, req, rtech=None):
         return (_can_afford(stocks, energy_now, cost, ecost)
-                and (not req or req == "headquarters" or req in active_bld))
+                and (not req or req == "headquarters" or req in active_bld)
+                and (not rtech or rtech in done_techs))   # SDD 65: no ofrecer lo tech-gateado
     build_options = {
         key: {"minerals": content.building_cost_in_minerals(player.race_key, key),
               "energy": spec.get("energy_cost", 0), "category": spec["category"]}
         for key, spec in content.buildings.items()
         if key != "headquarters" and _afford(
             content.building_cost_in_minerals(player.race_key, key),
-            spec.get("energy_cost", 0), spec.get("requires"))
+            spec.get("energy_cost", 0), spec.get("requires"), spec.get("requires_tech"))
     }
     train_options = {
         key: {"minerals": content.unit_cost_in_minerals(player.race_key, key),
               "energy": spec.get("energy_cost", 0), "requires": spec.get("requires")}
         for key, spec in content.units.items()
         if _afford(content.unit_cost_in_minerals(player.race_key, key),
-                   spec.get("energy_cost", 0), spec.get("requires"))
+                   spec.get("energy_cost", 0), spec.get("requires"), spec.get("requires_tech"))
     }
+    # SDD 65 Fase 2 (grafo SDD 1): frontera de investigación — techs INVESTIGABLES YA (prereqs
+    # cumplidos, no hechas, pagables). El LLM puede elegir {"action":"research","tech":...}.
+    research_options = [
+        k for k, t in content.technologies.items()
+        if k not in done_techs
+        and (not t.get("requires_tech") or t["requires_tech"] in done_techs)
+        and all(r in done_techs for r in t.get("requires_techs", []))
+        and _afford(content.tech_cost_in_minerals(player.race_key, k),
+                    t.get("energy_cost", 0), t.get("requires"))
+    ][:6]
     enemies = []
     for b in await _enemy_bases(session, player):
         owner = await session.get(Player, b.player_id)
+        # SDD 62: con guarnición, lo que defiende esa base es SU guarnición (no el ejército global).
+        if _settings.garrison_enabled:
+            from app.services.training import units_at_base
+            owner_units = await units_at_base(session, b.player_id, b.id)
+        else:
+            owner_units = await player_units(session, b.player_id)
         enemies.append(
             {
                 "target_base_id": b.id,
                 "is_human": not owner.is_npc,
                 "is_target": owner.id == player.npc_target_id,  # SDD 29: objetivo estratégico
-                "units": await player_units(session, b.player_id),
+                "units": owner_units,
                 "defense_estimate": round(await _base_defense_estimate(session, b), 1),
             }
         )
+    # SDD 65 Fase 2: leer TODO el tablero — intel de espías (SDD 35) + mapeo satelital (SDD 61)
+    # + tus tropas por base (SDD 62). Compacto (trunca) para no inflar el prompt.
+    from app.services.espionage import player_intel
+    intel = [{k: v for k, v in r.items() if not k.startswith("_")}
+             for r in (await player_intel(session, player))[:5]]
+    enemy_maps = {}
+    if _settings.satellites_enabled:
+        from app.services.satellites import satellites_state
+        _sats, raw_maps = await satellites_state(session, player)
+        enemy_maps = {tid: ({"pct": m["pct"], "bases": m["bases"]} if m["pct"] >= 100
+                            else {"pct": m["pct"]}) for tid, m in raw_maps.items()}
+    my_garrison = {}
+    if _settings.garrison_enabled:
+        from app.services.training import units_by_base
+        my_garrison = {str(k): v for k, v in (await units_by_base(session, player.id)).items()}
 
     incoming = [
         {
@@ -714,6 +761,10 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
         ],
         "build_options": build_options,
         "train_options": train_options,
+        "research_options": research_options,   # SDD 65: frontera del árbol (ya investigables)
+        "intel": intel,                          # SDD 35: lo que saben tus espías (con confianza)
+        "enemy_maps": enemy_maps,                # SDD 61: mapeo satelital por rival (% descubierto)
+        "my_garrison": my_garrison,              # SDD 62: tus tropas por base
         "enemies": enemies,
         "incoming_attacks": incoming,
         "my_missions": my_missions,
@@ -1043,15 +1094,20 @@ async def _llm_decide(state: dict) -> dict:
         "Honor your `posture`: 'aggressive'/'raid' -> prioritize attacking a beatable enemy "
         "(prefer enemies[].is_target=true, then is_human=true); 'defensive' -> turret/recall; "
         "'expand' -> mines/buildings/expedition. "
-        "CRITICAL: `build_options`/`train_options` already list ONLY what you can afford now; "
-        "pick a build/train ONLY from those keys. If both are empty, do NOT build/train — choose "
-        "another action or {\"action\":\"none\"}. Only `attack` if `can_attack` is true. Check "
-        "`recent_actions` and do NOT repeat a move that just failed. "
+        "CRITICAL: `build_options`/`train_options`/`research_options` already list ONLY what you "
+        "can afford now; pick ONLY from those keys. If all are empty, do NOT pick those — "
+        "choose another action or {\"action\":\"none\"}. Only `attack` if `can_attack` is true. "
+        "Check `recent_actions` and do NOT repeat a move that just failed. "
+        "READ THE BOARD: `intel` (spies) and `enemy_maps` (satellites) tell you what enemies have; "
+        "if you know little about a rival and own a spy, spying is a cheap smart move. "
+        "`my_garrison` shows where YOUR troops are stationed (attacks depart from your home base). "
         "Given your state, choose exactly ONE affordable action consistent with your personality. "
         'Respond with ONLY JSON, one of: '
         '{"action":"build","building":"<key>","mineral":"<key|null>"} (mineral only for a mine), '
         '{"action":"train","unit":"<key>","quantity":<int>}, '
         '{"action":"attack","target_base_id":<int>,"force":{"soldier":<int>,"tank":<int>}}, '
+        '{"action":"research","tech":"<key>"}, '
+        '{"action":"spy","target_base_id":<int>}, '
         '{"action":"recall","mission_id":<int>}, '
         '{"action":"expedition","moon_key":"<key>"}, '
         'or {"action":"none"}. '

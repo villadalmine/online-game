@@ -1,6 +1,9 @@
 # SDD 65 — NPC autónoma v3: leer TODO el entorno, cadena GPU→cloud→reglas y auto-evaluación
 
-> **Estado:** **DISEÑO + Fase 1 implementada** 2026-07-01 (cadena de modelos GPU→cloud→reglas). ·
+> **Estado:** **Fases 1-2 implementadas** — F1 (1.126.0): cadena GPU→cloud→reglas; F2 (1.127.0): el
+> LLM lee TODO el tablero (`research_options` frontera del grafo + `intel` espías + `enemy_maps`
+> satélites + `my_garrison`; enemies/opciones garrison- y tech-aware) y puede `research`/`spy`.
+> **Pendiente:** F3 (bandit por win-rate) + F4 opcional (mini-loop agéntico). ·
 > **Pedido:** usuario, 2026-07-01: "que la inteligencia del NPC sea más autónoma; que use las mejores
 > técnicas para leer el entorno, la API, las métricas, el grafo de todo el juego, y el modelo de GPU
 > y si no va, pasar a la de cloud".
@@ -45,7 +48,7 @@ El cerebro ya es de 2 capas (SDD 29) y bastante capaz; conviene saber qué exist
   da autonomía real (sigue jugando "con cabeza") sin gastar nube salvo cuando hace falta. Reglas queda
   como red final (un tick nunca rompe).
 
-### Fase 2 — Estado más rico (leer TODO el entorno)
+### Fase 2 — Estado más rico (leer TODO el entorno) ✅ (implementada 1.127.0)
 - Sumar a `_npc_state`: `enemy_maps` (satélites, % descubierto + bases/unidades), intel de espías
   (`player_intel`), guarnición propia por base (`units_by_base`) y los medidores del búnker (SDD 64)
   cuando existan. Marcar todo con factibilidad como ya se hace (clave para modelos chicos).

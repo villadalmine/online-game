@@ -690,3 +690,51 @@ async def test_llm_gpu_falls_back_to_cloud_model(session, monkeypatch):
     await session.commit()
     assert desc == "llm build mine (iron)"
     assert len(calls) == 2   # 1º gpu (falla) + 2º nube (rescata)
+
+
+async def test_npc_state_reads_the_whole_board(session, monkeypatch):
+    """SDD 65 Fase 2: el estado del LLM incluye frontera de research, intel, mapas y guarnición."""
+    from app.core.config import get_settings
+    monkeypatch.setattr(get_settings(), "garrison_enabled", True)
+    monkeypatch.setattr(get_settings(), "satellites_enabled", True)
+    await ensure_npcs(session)
+    npc = await _npc(session)
+    st = await _npc_state(session, npc)
+    for key in ("research_options", "intel", "enemy_maps", "my_garrison"):
+        assert key in st, key
+    assert isinstance(st["research_options"], list)
+
+
+async def test_llm_dispatch_research_and_spy(session):
+    """SDD 65 Fase 2: el LLM puede investigar (frontera del grafo) y espiar (leer el tablero)."""
+    from app.content.registry import get_content
+    from app.models import UnitStock
+    from app.services.economy import get_or_create_stock
+    await ensure_npcs(session)
+    npc = await _npc(session)
+    base = await _base_of(session, npc)
+    session.add(Building(base_id=base.id, building_key="research_lab", status="active"))
+    for m in get_content().minerals:
+        (await get_or_create_stock(session, npc.id, m, npc.planet_key)).amount = 100000
+    npc.energy = 100000
+    session.add(UnitStock(player_id=npc.id, unit_key="spy", quantity=1))
+    await session.commit()
+
+    async def research_decide(state):
+        assert "mining_efficiency" in state["research_options"]   # frontera visible
+        return {"action": "research", "tech": "mining_efficiency"}
+
+    desc = await LlmBrain(decide=research_decide).act(session, npc)
+    await session.commit()
+    assert desc == "llm research mining_efficiency"
+
+    npc = await _npc(session)
+    enemy = await _npc(session, "npc_terran")
+    ebase = await _base_of(session, enemy)
+
+    async def spy_decide(state):
+        return {"action": "spy", "target_base_id": ebase.id}
+
+    desc = await LlmBrain(decide=spy_decide).act(session, npc)
+    await session.commit()
+    assert desc == f"llm spy base {ebase.id}"
