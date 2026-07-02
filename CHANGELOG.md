@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.133.0] - 2026-07-02
+
 ### 2026-07-02 — SDD 64 v2: el búnker como refugio + repoblación (electrónica) + costos + SDD 68
 > Feedback jugando: darle SENTIDO al búnker (sobrevivir a un nuke y rearmarse).
 - **Electrónica** (`Bunker.electronics`, migración `b639bf6cca68`): `research_room`/`atomic_lab`
