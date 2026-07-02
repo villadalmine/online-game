@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.134.0] - 2026-07-02
+
 ### 2026-07-02 — SDD 68: vista del planeta con niebla de guerra por escaneo satelital
 - El modal de planeta (zoom en 🌌 Galaxias) ahora muestra, por cada rival del planeta, su estado
   **satelital**: 📡 % escaneado + bases/unidades reveladas (de `enemy_maps`, SDD 61) si lo mapeaste, o
