@@ -127,14 +127,15 @@ nivel cuesta electrónica + minerales avanzados + tiempo, y **desbloquea automat
   auto-recolecta/auto-coloniza según el `autonomy_scope` del nivel; test de que el techo NPC sube.
 - Servicio: puros para skills (mining/travel/speed/quality) y para el planificador autónomo determinista.
 
-## 7. Preguntas abiertas / decisiones para el usuario
-1. **Escape real del planeta natal (Fase 3):** ¿mudar el HQ a la colonia (fuerte, cambia el juego) o
-   solo fundar colonia + trasladar acopio (v1 conservador)? — propongo v1 conservador primero.
-2. **Alcance de la automatización (Fase 4):** ¿el robot puede **atacar/defender** solo, o solo
-   economía (minar/colonizar/comerciar)? — propongo **solo economía** primero (menos riesgo de balance).
-3. **Presupuesto LLM del piloto autónomo:** ¿usa el mismo cupo diario que el asistente, uno propio, o
-   solo GPU local? — propongo GPU local + reglas (barato), cloud solo como rescate.
-4. **Techo de IA para NPC (`artificial_life_npc_ceiling`):** ¿lo fija dalmine global, o depende del
-   nivel de vida artificial más alto alcanzado en la partida? — propongo knob admin + tope por partida.
+## 7. Decisiones del usuario (2026-07-02)
+1. **Escape (Fase 3):** **fundar colonia + trasladar acopio** (conservador; no muda el HQ en v1).
+2. **Alcance de la automatización (Fase 4):** **TODO — el robot también ataca/defiende** (no solo
+   economía). El piloto autónomo juega por vos como un NPC completo. (Máxima ambición → llega detrás de
+   flags y con más balance/tests; se habilita por partes: economía → defensa → ataque.)
+3. **Presupuesto LLM del piloto autónomo:** **GPU local + reglas, nube solo como rescate** (barato y
+   sostenible; lo determinista por reglas cada tick, lo no trivial por GPU).
+4. **Orden:** **Fase 1 completa primero** (búnker mini-base + expansión subterránea), después Fases 3/4.
+5. **Techo de IA para NPC (`artificial_life_npc_ceiling`):** knob admin (lo fija dalmine) + tope por
+   partida (pendiente de detalle al llegar a Fase 4).
 ```
 ```
