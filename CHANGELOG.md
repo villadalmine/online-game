@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — SDD 64 v2: el búnker como refugio + repoblación (electrónica) + costos + SDD 68
+> Feedback jugando: darle SENTIDO al búnker (sobrevivir a un nuke y rearmarse).
+- **Electrónica** (`Bunker.electronics`, migración `b639bf6cca68`): `research_room`/`atomic_lab`
+  producen electrónica (lazy, modulada por la salud de la gente) — la **moneda de reconstrucción**.
+- **Sets de repoblación** (`content/repopulation_sets.yaml`: económico/militar/científico):
+  `POST /bunker/repopulate {base_id, set_key}` gasta electrónica y **reconstruye un paquete de
+  edificios al instante** — tu seguro tras un ataque que te arrasa la superficie (el búnker sobrevive).
+- **Costos visibles:** el panel del búnker muestra el costo de cada sala; sección de repoblación con la
+  electrónica disponible y los sets.
+- **SDD 68 (diseño):** vista del planeta al hacer zoom — tus bases siempre, las enemigas solo si las
+  escaneaste con satélites (niebla si no). `docs/sdd-planet-view-scan.md`.
+- Tests `test_bunkers.py` (repoblación gasta/reconstruye, exige electrónica). Suite 447 ✓.
+
 ## [1.132.0] - 2026-07-02
 
 ### 2026-07-02 — SDD 66: estado de edificios (averiada/sana, reparar/demoler/mejorar) + prendido

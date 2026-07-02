@@ -35,6 +35,10 @@ class GameContent:
         self.buildings: dict[str, dict] = {b["key"]: b for b in buildings_raw}
         # SDD 64: habitaciones del búnker subterráneo (data-driven, capa aparte de los edificios).
         self.rooms: dict[str, dict] = {r["key"]: r for r in _load("underground.yaml")["rooms"]}
+        # SDD 64 v2: sets de repoblación (paquetes de edificios pagados con electrónica del búnker).
+        self.repop_sets: dict[str, dict] = {
+            s["key"]: s for s in _load("repopulation_sets.yaml")["sets"]
+        }
 
         units = _load("units.yaml")
         self.personnel: dict[str, dict] = {u["key"]: u for u in units.get("personnel", [])}

@@ -211,6 +211,11 @@ class TributeRequest(BaseModel):
     energy: float = 0.0
 
 
+class RepopulateRequest(BaseModel):
+    base_id: int
+    set_key: str
+
+
 class TroopMoveOut(BaseModel):
     id: int
     from_base_id: int

@@ -43,6 +43,7 @@ rooms:
     name: "Sala de investigación"
     name_en: "Research room"
     requires_tech: bunker_engineering
+    electronics: 6      # SDD 64 v2: produce electrónica/h (moneda de repoblación)
     energy_cost: 20
     build_seconds: 260
     cost: { structural: 100, energetic: 180, advanced: 90 }
@@ -51,6 +52,7 @@ rooms:
     name: "Laboratorio atómico"
     name_en: "Atomic lab"
     requires_tech: bunker_engineering
+    electronics: 15     # SDD 64 v2: la electrónica de alto valor
     energy_cost: 40
     build_seconds: 400
     cost: { structural: 200, energetic: 400, advanced: 400 }

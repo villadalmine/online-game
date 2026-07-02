@@ -32,6 +32,7 @@ def build_catalog() -> dict:
         "drones": list(c.drones.values()),       # SDD 50: drones
         "satellites": list(c.satellites.values()),  # SDD 61: satélites
         "rooms": list(c.rooms.values()),             # SDD 64: habitaciones del búnker
+        "repop_sets": list(c.repop_sets.values()),   # SDD 64 v2: sets de repoblación
         "moons": list(c.moons.values()),
         "technologies": list(c.technologies.values()),
         "alliance_types": list(c.alliance_types.values()),

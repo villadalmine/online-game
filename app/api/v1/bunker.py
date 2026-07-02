@@ -5,8 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import lock_current_player
 from app.core.db import get_session
 from app.models import Player
-from app.schemas import BunkerBuildRequest, BunkerDigRequest, BunkerRaidRequest
-from app.services.bunkers import BunkerError, build_room, dig, raid
+from app.schemas import (
+    BunkerBuildRequest,
+    BunkerDigRequest,
+    BunkerRaidRequest,
+    RepopulateRequest,
+)
+from app.services.bunkers import BunkerError, build_room, dig, raid, repopulate
 
 router = APIRouter()
 
@@ -37,6 +42,21 @@ async def do_build_room(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()
     return {"id": r.id, "room_key": r.room_key, "cell": r.cell, "status": r.status}
+
+
+@router.post("/repopulate", status_code=status.HTTP_201_CREATED)
+async def do_repopulate(
+    body: RepopulateRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 64 v2: gastá electrónica del búnker para reconstruir un set de edificios."""
+    try:
+        result = await repopulate(session, player, body.base_id, body.set_key)
+    except BunkerError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
 
 
 @router.post("/raid", status_code=status.HTTP_201_CREATED)

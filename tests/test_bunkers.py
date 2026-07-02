@@ -157,3 +157,41 @@ async def test_raid_daily_cap(session, monkeypatch):
         raise AssertionError("tope diario de sabotajes")
     except BunkerError as e:
         assert "hoy" in str(e).lower()
+
+
+async def test_repopulate_spends_electronics_and_rebuilds(session, monkeypatch):
+    """SDD 64 v2: la electrónica del búnker paga un set de repoblación (reconstruye edificios)."""
+    from datetime import timedelta
+
+    from app.models import Building, Bunker, BunkerRoom
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    p, base = await _player(session)
+    b = await dig(session, p, base.id)
+    # una sala de investigación activa que produjo electrónica hace rato
+    session.add(BunkerRoom(bunker_id=b.id, room_key="research_room", cell=0, status="active",
+                           completes_at=datetime.now(UTC) - timedelta(seconds=1)))
+    b.electronics = 500.0
+    await session.commit()
+    from app.services.bunkers import repopulate
+    res = await repopulate(session, p, base.id, "economic")   # cuesta 120
+    await session.commit()
+    assert res["built"] == ["mine", "mine", "power_plant"]
+    b = await session.get(Bunker, b.id)
+    assert b.electronics < 500.0    # se descontó
+    n = len((await session.execute(
+        select(Building).where(Building.base_id == base.id,
+                               Building.building_key == "mine"))).scalars().all())
+    assert n >= 2
+
+
+async def test_repopulate_needs_enough_electronics(session, monkeypatch):
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    p, base = await _player(session)
+    await dig(session, p, base.id)   # 0 electrónica
+    await session.commit()
+    from app.services.bunkers import BunkerError, repopulate
+    try:
+        await repopulate(session, p, base.id, "economic")
+        raise AssertionError("sin electrónica no se repuebla")
+    except BunkerError as e:
+        assert "electrónica" in str(e).lower()

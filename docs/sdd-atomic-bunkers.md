@@ -122,6 +122,21 @@ misma pantalla del mapa de búnkeres (clic en la puerta → atacar):
 - Riesgo: mucha superficie nueva (2ª capa) → arrancar simple (grilla chica, 3 medidores) y expandir.
   Depende de SDD 61 (satélites) para la parte de ubicar al enemigo.
 
+## 8. v2 — El búnker como SEGURO DE SUPERVIVENCIA + repoblación (usuario, 2026-07-02)
+Feedback jugando: al búnker le falta **sentido**. La idea: es tu **refugio** — sobrevive a un misil
+atómico / a que te arrasen la superficie — y desde ahí **repoblás**.
+- **Sobrevive a los ataques de superficie:** el búnker y sus salas NO se destruyen con misiles/flota
+  (viven bajo tierra). Ya es así (nada apunta al búnker salvo el sabotaje). Reforzar en la UI.
+- **Produce electrónica avanzada:** `research_room`/`atomic_lab` generan un recurso **`electronics`**
+  (lazy, como los medidores) — tu **moneda de reconstrucción**.
+- **Repoblación por SETS:** un set = paquete de 2-3 edificios que deja una base operativa de nuevo
+  (económico = mine+mine+power_plant; militar = barracks+factory+turret). `POST /bunker/repopulate
+  {base_id, set_key}` los construye pagando con `electronics`. Podés armar varios sets para rearmarte
+  tras un ataque. Data-driven: `content/repopulation_sets.yaml`.
+- **Costos visibles** (hecho 1.133.0): el panel muestra el costo de cada sala.
+- **Pendiente/decidir:** ¿electrónica para otras cosas (mercado/tech)? ¿invasión FÍSICA con tropas
+  (además del sabotaje)? (mapa "en globo": el usuario dijo que la grilla está bien.)
+
 ## 7. Preguntas abiertas
 - ¿El mapa subterráneo es una **grilla** (coordenadas) o un **grafo** de celdas conectadas? (Propuesta:
   grilla chica NxN por base para v1.)

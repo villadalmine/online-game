@@ -133,6 +133,10 @@ async def advance_bunker(
         b.food_health = _clamp(b.food_health + food_rate * hours)
         b.water_health = _clamp(b.water_health + water_rate * hours)
         b.people_health = _clamp(b.people_health + people_rate * hours)
+        # SDD 64 v2: la electrónica se acumula (sin tope), modulada por la salud de la gente (si el
+        # búnker está muerto de hambre/gas, produce menos). Es la moneda de repoblación.
+        elec = sum(s.get("electronics", 0) for s in active) * (b.people_health / 100.0)
+        b.electronics += elec * hours
         b.updated_at = now
 
 
@@ -224,6 +228,56 @@ async def raid(
             "people": round(bunker.people_health, 1)}
 
 
+async def repopulate(
+    session: AsyncSession, player: Player, base_id: int, set_key: str
+) -> dict:
+    """SDD 64 v2: gastá la electrónica del búnker para reconstruir un SET de edificios (emergencia,
+    activos al instante) en una base propia. La electrónica es tu seguro tras un ataque."""
+    settings = get_settings()
+    if not settings.bunkers_enabled:
+        raise BunkerError("Los búnkeres están desactivados.")
+    content = get_content()
+    spec = content.repop_sets.get(set_key)
+    if spec is None:
+        raise BunkerError(f"Set desconocido: {set_key}")
+    base = await session.get(Base_, base_id)
+    if base is None or base.player_id != player.id:
+        raise BunkerError("Base inválida.")
+    now = datetime.now(UTC)
+    await advance_bunker(session, player, now)   # electrónica al día antes de cobrar
+    bunkers = (await session.execute(
+        select(Bunker).where(Bunker.player_id == player.id).order_by(Bunker.id)
+    )).scalars().all()
+    total = sum(b.electronics for b in bunkers)
+    need = float(spec.get("electronics", 0))
+    if total < need:
+        raise BunkerError(f"Electrónica insuficiente ({total:.0f}/{need:.0f}). Producila con "
+                          "salas de investigación / laboratorio atómico.")
+    left = need                                   # descontar de los búnkeres (en orden)
+    for b in bunkers:
+        take = min(b.electronics, left)
+        b.electronics -= take
+        left -= take
+        if left <= 0:
+            break
+    from app.models import Building
+    built = []
+    for bk in spec.get("buildings", []):
+        if bk == "headquarters":
+            continue
+        mineral = None
+        if content.buildings.get(bk, {}).get("category") in ("mine", "storage"):
+            mineral = content.resolve_role(player.race_key, "structural")
+        session.add(Building(base_id=base_id, building_key=bk, status="active",
+                             completes_at=now, production_mineral=mineral))
+        built.append(bk)
+    from app.services.notifications import notify
+    await notify(session, player.id, "repopulated",
+                 f"Repoblación ({set_key}): {len(built)} edificios reconstruidos", {"built": built})
+    await session.flush()
+    return {"set": set_key, "built": built, "electronics_left": round(total - need, 1)}
+
+
 async def bunker_state(session: AsyncSession, player: Player) -> list[dict]:
     """Snapshot de los búnkeres propios (medidores + mapa de salas) para el front."""
     if not get_settings().bunkers_enabled:
@@ -240,6 +294,7 @@ async def bunker_state(session: AsyncSession, player: Player) -> list[dict]:
             "id": b.id, "base_id": b.base_id,
             "food_health": round(b.food_health, 1), "water_health": round(b.water_health, 1),
             "people_health": round(b.people_health, 1),
+            "electronics": round(b.electronics, 1),   # SDD 64 v2: moneda de repoblación
             "rooms": [{"cell": r.cell, "room_key": r.room_key, "status": r.status,
                        "completes_at": r.completes_at.isoformat()} for r in rooms],
         })

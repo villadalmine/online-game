@@ -1,0 +1,22 @@
+# SDD 64 v2: sets de repoblación. Tras un ataque que te arrasa la superficie, gastás la ELECTRÓNICA
+# que produjo tu búnker para reconstruir un paquete de edificios de una (emergencia). Data-driven.
+# electronics = costo; buildings = qué se levanta (activos al instante). Nunca duplica el HQ.
+sets:
+  - key: economic
+    icon: "⛏"
+    name: "Set económico"
+    name_en: "Economic set"
+    electronics: 120
+    buildings: [mine, mine, power_plant]
+  - key: military
+    icon: "⚔"
+    name: "Set militar"
+    name_en: "Military set"
+    electronics: 160
+    buildings: [barracks, factory, turret]
+  - key: science
+    icon: "🔬"
+    name: "Set científico"
+    name_en: "Science set"
+    electronics: 200
+    buildings: [research_lab, turret, silo]
