@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.127.0] - 2026-07-02
+
 ### 2026-07-02 — SDD 65 Fase 2: la NPC lee TODO el tablero (grafo + intel + satélites + guarnición)
 - **Estado del LLM enriquecido** (`_npc_state`): `research_options` (frontera del árbol de tech —
   investigables YA, del grafo SDD 1), `intel` (espías SDD 35, con confianza), `enemy_maps` (mapeo
