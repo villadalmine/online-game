@@ -1,6 +1,11 @@
 # SDD 66 — Estado de edificios: averiada/sana, reparar, demoler y mejoras (defensa/antimisil)
 
-> **Estado:** **DISEÑO** 2026-07-02 (sin implementar) · **Pedido:** usuario, 2026-07-02.
+> **Estado:** **IMPLEMENTADO + PRENDIDO** 2026-07-02 (1.132.0, `building_condition_enabled=true`):
+> `Building.condition` 0-100 (migración `12f6f91d3989`); misiles/bombardeo dañan gradual (destruyen a
+> 0); torretas rinden × condición y suman por nivel de mejora `defense`; endpoints
+> `/bases/buildings/{id}/repair|demolish|upgrade`; UI en el panel de bases (💚sana/🩹averiada + 🩹⬆🗑).
+> **Pendiente menor:** aplicar la fracción de condición a la PRODUCCIÓN (hoy solo a la defensa) + más
+> edificios con `upgrade`. · **Pedido:** usuario, 2026-07-02.
 > **Relacionado:** [SDD 49 misiles](sdd-missile-launcher.md) (hoy una salva **borra** el edificio),
 > [SDD 57 bombardeo](sdd-hyperspace-base-buster.md) (ídem), [SDD 60 paneles](sdd-collapsible-planet-panels.md)
 > (la vista agrupada "torreta ×5" ya muestra ✓activas/🏗en obra — acá se suma sanas/averiadas),

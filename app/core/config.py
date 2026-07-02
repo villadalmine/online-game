@@ -222,6 +222,13 @@ class Settings(BaseSettings):
     # (minerales+energía) para que el atacante la cancele. Sin recall unilateral.
     nuclear_travel_seconds: int = 86400
 
+    # SDD 66: estado de edificios. OFF = los ataques DESTRUYEN el edificio (histórico). ON = daño
+    # GRADUAL a `condition` (rinde a fracción; se destruye recién a 0) + reparar/demoler/mejorar.
+    building_condition_enabled: bool = False
+    building_repair_cost_fraction: float = 0.5   # reparar cuesta (daño%) × esta fracción del costo
+    building_salvage_fraction: float = 0.3       # demoler propio devuelve esta fracción del costo
+    building_upgrade_cost_mult: float = 1.5      # cada nivel de mejora cuesta ×este del costo base
+
     # Lanzadera de misiles (SDD 49): vía de "golpe" intra-planeta, paralela a la flota. PRENDIDO
     # (v1.5): el contenido carga y se puede disparar. Frenos: protección de novato (SDD 11), no
     # atacás aliados, intra-planeta, tope de `ordnance` (alojamiento). El daño de una salva destruye

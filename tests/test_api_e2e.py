@@ -3132,3 +3132,46 @@ async def test_dreadnought_razes_surplus_buildings_e2e(client):
             .where(Base_.player_id == p.id))).scalars()]
     assert keys.count("barracks") == 1            # de 2 → 1 (solo el excedente)
     assert "headquarters" in keys                 # el HQ nunca se destruye
+
+
+async def test_building_repair_demolish_upgrade_e2e(client, monkeypatch):
+    """SDD 66: reparar (averiada→sana), demoler (salvage), mejorar (sube nivel). Flag ON."""
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import Building, PlayerTech
+    monkeypatch.setattr(get_settings(), "building_condition_enabled", True)
+    h = await _register(client.http, "bld_ops")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    base = st["bases"][0]["id"]
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "bld_ops"))).scalar_one()
+        s.add(PlayerTech(player_id=p.id, tech_key="weapons"))
+        # torreta activa averiada + una segunda para demoler
+        t = Building(base_id=base, building_key="turret", status="active", condition=40.0)
+        s.add(t)
+        s.add(Building(base_id=base, building_key="turret", status="active", condition=100.0))
+        await s.flush()
+        tid = t.id
+        # recursos para pagar
+        from app.services.economy import get_or_create_stock
+        for m in ("iron", "sulfur", "magnesium"):
+            (await get_or_create_stock(s, p.id, m, p.planet_key)).amount = 100000
+        p.energy = 100000
+        await s.commit()
+    # reparar
+    r = await client.http.post(f"/api/v1/bases/buildings/{tid}/repair", headers=h)
+    assert r.status_code == 200 and r.json()["condition"] == 100.0, r.text
+    # mejorar defensa → nivel 2
+    r2 = await client.http.post(f"/api/v1/bases/buildings/{tid}/upgrade?kind=defense", headers=h)
+    assert r2.status_code == 200 and r2.json()["level"] == 2, r2.text
+    # demoler
+    r3 = await client.http.post(f"/api/v1/bases/buildings/{tid}/demolish", headers=h)
+    assert r3.status_code == 200 and r3.json()["salvage"], r3.text
+    # no se puede demoler el HQ
+    async with client.session_maker() as s:
+        hq = (await s.execute(select(Building).where(
+            Building.base_id == base, Building.building_key == "headquarters"))).scalar_one()
+        hqid = hq.id
+    r4 = await client.http.post(f"/api/v1/bases/buildings/{hqid}/demolish", headers=h)
+    assert r4.status_code == 400

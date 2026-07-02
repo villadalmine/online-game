@@ -128,6 +128,18 @@ def travel_seconds(planet_a: str | None, planet_b: str | None) -> int:
     return s.travel_seconds_same_planet if planet_a == planet_b else s.travel_seconds_cross_planet
 
 
+def _building_defense(content, b, settings) -> float:
+    """SDD 66: defensa fija de un edificio = base + mejoras de nivel `defense`, escalada por la
+    condición (averiada rinde a fracción; solo si `building_condition_enabled`)."""
+    spec = content.buildings.get(b.building_key, {})
+    val = spec.get("defense_power", 0)
+    up = (spec.get("upgrade") or {}).get("defense", {}).get("defense_power", 0)
+    val += up * max(0, (b.level or 1) - 1)
+    if settings.building_condition_enabled:
+        val *= max(0.0, min(1.0, (b.condition if b.condition is not None else 100.0) / 100.0))
+    return val
+
+
 # --------------------------------------------------------------------------- #
 # SDD 57: bombardeo "rompe-bases" — naves con `siege_power` demuelen edificios al ganar.
 # --------------------------------------------------------------------------- #
@@ -370,15 +382,13 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
     atk_mult *= await effect_mult(session, attacker.id, "attack", now)
     def_mult *= await effect_mult(session, defender.id, "defense", now)
 
-    # Static base defense: active defensive buildings at the targeted base.
+    # Static base defense (SDD 66: mejora `defense` por nivel; la condición averiada lo escala).
     bres = await session.execute(
         select(Building).where(
             Building.base_id == mission.target_base_id, Building.status == "active"
         )
     )
-    flat_defense = sum(
-        content.buildings[b.building_key].get("defense_power", 0) for b in bres.scalars()
-    )
+    flat_defense = sum(_building_defense(content, b, settings) for b in bres.scalars())
     # Allies lend defense if the defender's alliance has mutual_defense.
     from app.services.alliances import mutual_defense_flat
 

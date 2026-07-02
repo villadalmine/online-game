@@ -48,6 +48,9 @@ env:
   # SDD 64: búnkeres — aditivo, gateado por research (nuclear_fission → bunker_engineering) y el
   # sabotaje además exige mapear con satélites (≥50%). Reversible. Ver docs/sdd-atomic-bunkers.md.
   BUNKERS_ENABLED: "true"
+  # SDD 66: los misiles/bombardeo dañan la CONDICIÓN (gradual) en vez de destruir de una; habilita
+  # reparar. Da más peso a la defensa (cruza el balance de torretas). Ver docs/sdd-building-condition-upgrades.md.
+  BUILDING_CONDITION_ENABLED: "true"
   # SDD 63: salto espacial (jumpers) — aditivo, gateado por el capstone `space_jump` (requiere TODO el
   # árbol endgame). Nadie lo tiene hasta investigarlo. Reversible. Ver docs/sdd-space-jump-jumpers.md.
   SPACE_JUMP_ENABLED: "true"

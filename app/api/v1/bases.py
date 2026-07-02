@@ -12,7 +12,13 @@ from app.schemas import (
     TrainRequest,
     TroopMoveOut,
 )
-from app.services.build import BuildError, start_build
+from app.services.build import (
+    BuildError,
+    demolish_building,
+    repair_building,
+    start_build,
+    upgrade_building,
+)
 from app.services.training import TrainingError, start_training
 from app.services.troops import TroopError, start_move
 
@@ -75,6 +81,39 @@ async def train(
         quantity=order.quantity,
         completes_at=order.completes_at,
     )
+
+
+@router.post("/buildings/{building_id}/repair")
+async def repair(building_id: int, player: Player = Depends(lock_current_player),
+                 session: AsyncSession = Depends(get_session)):
+    try:
+        b = await repair_building(session, player, building_id)
+    except BuildError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return {"id": b.id, "condition": b.condition}
+
+
+@router.post("/buildings/{building_id}/demolish")
+async def demolish(building_id: int, player: Player = Depends(lock_current_player),
+                   session: AsyncSession = Depends(get_session)):
+    try:
+        result = await demolish_building(session, player, building_id)
+    except BuildError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
+
+
+@router.post("/buildings/{building_id}/upgrade")
+async def upgrade(building_id: int, kind: str, player: Player = Depends(lock_current_player),
+                  session: AsyncSession = Depends(get_session)):
+    try:
+        b = await upgrade_building(session, player, building_id, kind)
+    except BuildError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return {"id": b.id, "level": b.level}
 
 
 @router.post(

@@ -116,6 +116,9 @@ class Building(Base):
     building_key: Mapped[str] = mapped_column(String(50))
     level: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(String(20), default="building")  # building | active
+    # SDD 66: condición 0-100 (100 = sana). El daño de misiles/bombardeo la baja (gradual, gated por
+    # `building_condition_enabled`); < 50 = averiada (rinde a fracción); 0 = destruida.
+    condition: Mapped[float] = mapped_column(Float, default=100.0, server_default="100")
 
     # For mines: which mineral this extracts + lazy production bookkeeping
     production_mineral: Mapped[str | None] = mapped_column(String(50), nullable=True)

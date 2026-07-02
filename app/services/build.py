@@ -118,3 +118,95 @@ async def start_build(
     await record(session, "build_queued", player.id,
                  building=building_key, mineral=target_mineral, base_id=base.id)
     return building
+
+
+async def _owned_building(session, player, building_id):
+    b = await session.get(Building, building_id)
+    if b is None:
+        raise BuildError("Edificio no encontrado.")
+    base = await session.get(Base_, b.base_id)
+    if base is None or base.player_id != player.id:
+        raise BuildError("Ese edificio no es tuyo.")
+    return b, base
+
+
+async def _charge(session, player, base, cost, energy_cost):
+    """SDD 66: cobra energía + minerales (del planeta de la base), como start_build."""
+    settings = get_settings()
+    now = datetime.now(UTC)
+    await collect_mines(session, player, now)
+    if not spend_energy(player, energy_cost, now, effective_energy_regen(player, settings),
+                        effective_energy_max(player, settings)):
+        raise BuildError(energy_shortfall_msg(energy_cost, player.energy,
+                                              effective_energy_regen(player, settings)))
+    from app.services.economy import get_or_create_stock, planet_stocks
+    here = await planet_stocks(session, player.id, base.planet_key)
+    for m, a in cost.items():
+        if here.get(m, 0.0) < a:
+            raise BuildError(f"Falta {m} en {base.planet_key} (necesita {a:g}).")
+    for m, a in cost.items():
+        (await get_or_create_stock(session, player.id, m, base.planet_key)).amount -= a
+
+
+async def repair_building(session: AsyncSession, player: Player, building_id: int) -> Building:
+    """SDD 66: repara un edificio averiado a 100 de condición; cuesta proporcional al daño."""
+    if not get_settings().building_condition_enabled:
+        raise BuildError("La reparación de edificios está desactivada.")
+    content = get_content()
+    b, base = await _owned_building(session, player, building_id)
+    if b.condition >= 100:
+        raise BuildError("Ese edificio está sano.")
+    dmg = (100.0 - b.condition) / 100.0
+    frac = dmg * get_settings().building_repair_cost_fraction
+    base_cost = content.building_cost_in_minerals(player.race_key, b.building_key)
+    cost = {m: a * frac for m, a in base_cost.items()}
+    espec = content.buildings.get(b.building_key, {})
+    await _charge(session, player, base, cost, espec.get("energy_cost", 0) * frac)
+    b.condition = 100.0
+    await session.flush()
+    return b
+
+
+async def demolish_building(session: AsyncSession, player: Player, building_id: int) -> dict:
+    """SDD 66: demolición propia — devuelve `building_salvage_fraction` del costo. Nunca HQ/mina."""
+    content = get_content()
+    b, base = await _owned_building(session, player, building_id)
+    cat = content.buildings.get(b.building_key, {}).get("category")
+    if b.building_key == "headquarters" or cat in ("core", "mine"):
+        raise BuildError("No podés demoler la base central ni una mina.")
+    from app.services.economy import get_or_create_stock
+    salvage = {}
+    frac = get_settings().building_salvage_fraction
+    for m, a in content.building_cost_in_minerals(player.race_key, b.building_key).items():
+        got = a * frac
+        (await get_or_create_stock(session, player.id, m, base.planet_key)).amount += got
+        salvage[m] = round(got, 1)
+    key = b.building_key
+    await session.delete(b)
+    await session.flush()
+    return {"demolished": key, "salvage": salvage}
+
+
+async def upgrade_building(
+    session: AsyncSession, player: Player, building_id: int, kind: str
+) -> Building:
+    """SDD 66: mejora un edificio (defense/antimissile) → sube `level`; costo crece por nivel."""
+    content = get_content()
+    b, base = await _owned_building(session, player, building_id)
+    if b.status != "active":
+        raise BuildError("El edificio todavía no está activo.")
+    ups = content.buildings.get(b.building_key, {}).get("upgrade") or {}
+    if kind not in ups:
+        raise BuildError(f"Ese edificio no admite la mejora '{kind}'.")
+    lvl = (b.level or 1)
+    mult = get_settings().building_upgrade_cost_mult * lvl
+    base_cost = content.building_cost_in_minerals(player.race_key, b.building_key)
+    cost = {m: a * mult for m, a in base_cost.items()}
+    espec = content.buildings.get(b.building_key, {})
+    await _charge(session, player, base, cost, espec.get("energy_cost", 0) * mult)
+    b.level = lvl + 1
+    await session.flush()
+    from app.services.journal import record
+    await record(session, "building_upgraded", player.id, building=b.building_key,
+                 kind=kind, level=b.level)
+    return b

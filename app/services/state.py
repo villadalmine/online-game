@@ -112,6 +112,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
                 status=b.status,
                 production_mineral=b.production_mineral,
                 completes_at=b.completes_at,
+                condition=b.condition if b.condition is not None else 100.0,
             )
             for b in models
         ]

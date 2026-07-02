@@ -423,6 +423,7 @@ class BuildingOut(BaseModel):
     status: str
     production_mineral: str | None
     completes_at: datetime
+    condition: float = 100.0   # SDD 66: 0-100 (averiada < 50)
 
 
 class BaseOut(BaseModel):

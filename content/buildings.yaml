@@ -157,6 +157,10 @@ buildings:
     build_seconds: 150
     defense_power: 60   # se suma a la defensa de la base al resolver un ataque (balance: +50% para
                         # que invertir en torretas se note; ~2 torretas ≈ 1 tanque de ataque)
+    # SDD 66: mejoras por nivel (data-driven). defense: +defensa/HP; antimissile: +intercepción.
+    upgrade:
+      defense: { defense_power: 25, hp: 40 }
+      antimissile: { intercept_power: 8 }
     hp: 120             # SDD 49: aguante ante misiles (cuánto daño absorbe antes de ser destruida)
     # SDD 49 (balance v1.1): capacidad antimisil por torreta. Ratio vs intercept_cost de cada misil =
     # cuántos frena 1 torreta → sónico 5, transatlántico ~1.6, nuclear 0.33 (hacen falta 3 torretas

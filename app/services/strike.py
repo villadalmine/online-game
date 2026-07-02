@@ -274,6 +274,7 @@ async def _has_active(
 
 async def _resolve_strike(session: AsyncSession, mission: StrikeMission, now: datetime) -> None:
     content = get_content()
+    settings = get_settings()
     from app.services.effects import multiplier as effect_mult
     attacker = await session.get(Player, mission.attacker_id)
     defender = await session.get(Player, mission.defender_id)
@@ -290,12 +291,23 @@ async def _resolve_strike(session: AsyncSession, mission: StrikeMission, now: da
                if b.building_key != "headquarters"]
     targets.sort(key=lambda b: (0 if _is_defensive(b.building_key) else 1, b.id))
     pool = result.damage
+    gradual = settings.building_condition_enabled   # SDD 66: dañar la condición en vez de borrar
     destroyed: list[str] = []
     for b in targets:
         if not result.area and not _is_defensive(b.building_key):
             break  # sin área solo derriba defensas
         hp = _building_hp(b.building_key)
-        if pool >= hp:
+        if gradual:
+            # el daño baja la condición proporcional al HP; se destruye recién a 0.
+            take = min(pool, hp * (b.condition / 100.0))
+            pool -= take
+            b.condition = max(0.0, b.condition - (take / hp) * 100.0)
+            if b.condition <= 0:
+                destroyed.append(b.building_key)
+                await session.delete(b)
+            if pool <= 0:
+                break
+        elif pool >= hp:
             pool -= hp
             destroyed.append(b.building_key)
             await session.delete(b)

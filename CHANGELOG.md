@@ -7,6 +7,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — SDD 66: estado de edificios (averiada/sana, reparar/demoler/mejorar) + prendido
+- **Condición 0-100 por edificio** (`Building.condition`, migración `12f6f91d3989`): los misiles/
+  bombardeo ahora **dañan gradual** (destruyen recién a 0, antes borraban de una). Una torreta averiada
+  **defiende a fracción** de su condición.
+- **Acciones por edificio** (`/bases/buildings/{id}/repair|demolish|upgrade`): 🩹 reparar (cuesta según
+  el daño), 🗑 demoler (devuelve ~30% del costo; nunca HQ/mina), ⬆ mejorar `defense` (+defensa/HP por
+  nivel) / `antimissile` (+intercepción) — la torreta ya trae ambas mejoras en `buildings.yaml`.
+- **UI:** el panel de bases muestra la condición (💚 sana / 🩹 averiada) en la vista agrupada
+  ("torreta ×5 💚3 🩹2") y los botones 🩹⬆🗑 por edificio.
+- Prendido en prod (`BUILDING_CONDITION_ENABLED=true`): da peso a la defensa (cruza el balance de
+  torretas). e2e `test_building_repair_demolish_upgrade_e2e`. Suite 445 ✓.
+
 ## [1.131.0] - 2026-07-02
 
 ### 2026-07-02 — UI del tributo nuclear + balance de defensa (torretas +50%)
