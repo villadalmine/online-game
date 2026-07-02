@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.135.0] - 2026-07-02
+
 ### 2026-07-02 — SDD 66: una mina averiada produce menos (condición → producción)
 - `collect_mines` escala el output de cada mina por su **condición** (averiada rinde a fracción),
   cerrando el "rinde a fracción" para la economía (antes solo la defensa). Gated por
