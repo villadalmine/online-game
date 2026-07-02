@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.129.0] - 2026-07-02
+
 ### 2026-07-02 — SDD 64 pasos 2-5: sabotaje de búnkeres + panel + prendido en prod
 - **Sabotaje** (`POST /bunker/raid`, servicio `bunkers.raid`): gas ☠ (baja la salud de **gente**; la
   **ventilación** lo mitiga −25%/sala, tope 90%), ratas 🐀 (pudre **comida**), contaminar 🧪 (**agua**).
