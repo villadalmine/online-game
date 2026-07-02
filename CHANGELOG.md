@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.130.0] - 2026-07-02
+
 ### 2026-07-02 — SDD 67: diplomacia nuclear (el nuclear tarda 24 h y se puede negociar)
 - **El misil nuclear tarda 24 h** en llegar (`nuclear_travel_seconds`) — ventana de negociación; no
   hay recall (los misiles no se retiran).
