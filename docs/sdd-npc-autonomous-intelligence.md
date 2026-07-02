@@ -1,9 +1,11 @@
 # SDD 65 — NPC autónoma v3: leer TODO el entorno, cadena GPU→cloud→reglas y auto-evaluación
 
-> **Estado:** **Fases 1-2 implementadas** — F1 (1.126.0): cadena GPU→cloud→reglas; F2 (1.127.0): el
+> **Estado:** **Fases 1-3 implementadas** — F1 (1.126.0): cadena GPU→cloud→reglas; F2 (1.127.0): el
 > LLM lee TODO el tablero (`research_options` frontera del grafo + `intel` espías + `enemy_maps`
-> satélites + `my_garrison`; enemies/opciones garrison- y tech-aware) y puede `research`/`spy`.
-> **Pendiente:** F3 (bandit por win-rate) + F4 opcional (mini-loop agéntico). ·
+> satélites + `my_garrison`; enemies/opciones garrison- y tech-aware) y puede `research`/`spy`;
+> F3 (1.128.0): **auto-evaluación** — ledger {postura: w/l} en `reflect_on_battle` + `bandit_posture`
+> epsilon-greedy en `decide_strategy` (deja de insistir con la postura que viene perdiendo).
+> **Pendiente:** F4 opcional (mini-loop agéntico), solo con datos que lo justifiquen. ·
 > **Pedido:** usuario, 2026-07-01: "que la inteligencia del NPC sea más autónoma; que use las mejores
 > técnicas para leer el entorno, la API, las métricas, el grafo de todo el juego, y el modelo de GPU
 > y si no va, pasar a la de cloud".
@@ -58,7 +60,7 @@ El cerebro ya es de 2 capas (SDD 29) y bastante capaz; conviene saber qué exist
   reusar `retrieve`/`build_tree` — NO duplicar conocimiento en prosa (regla del proyecto:
   [[unified-graph-model-for-ai]]).
 
-### Fase 3 — Auto-evaluación por métricas (bandit liviano sobre posturas)
+### Fase 3 — Auto-evaluación por métricas (bandit liviano sobre posturas) ✅ (implementada 1.128.0)
 - La NPC ya registra batallas (stats wins/losses) y acciones. Agregar a `decide_strategy` un sesgo
   **epsilon-greedy**: con prob. 1−ε elegir la postura con mejor win-rate propio de los últimos N días
   (de `PlayerStats`/journal, sin infra nueva); con prob. ε explorar otra. Determinista, barato, y es

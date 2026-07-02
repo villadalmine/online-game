@@ -805,6 +805,18 @@ async def reflect_on_battle(
     verbo = ("gané" if won else "perdí")
     como = "defendiendo de" if role == "defender" else "atacando a"
     _remember(npc, f"{verbo} {como} {opponent}")
+    try:
+        strat = json.loads(npc.npc_strategy or "{}")
+    except Exception:
+        strat = {}
+    # SDD 65 F3: ledger por postura — con qué postura peleó y cómo le fue. `bandit_posture` lo lee
+    # para dejar de insistir con lo que viene perdiendo (auto-evaluación por sus propias métricas).
+    held = npc.npc_posture or "opportunist"
+    stats = strat.get("posture_stats") or {}
+    entry = stats.get(held) or {"w": 0, "l": 0}
+    entry["w" if won else "l"] += 1
+    stats[held] = entry
+    strat["posture_stats"] = stats
     if role == "defender" and not won:
         new_posture = "defensive"      # me reventaron en casa → proteger
     elif role == "attacker" and not won:
@@ -814,10 +826,6 @@ async def reflect_on_battle(
     else:
         new_posture = npc.npc_posture  # ganó defendiendo → mantener
     npc.npc_posture = new_posture
-    try:
-        strat = json.loads(npc.npc_strategy or "{}")
-    except Exception:
-        strat = {}
     strat["last_battle"] = {"role": role, "won": won, "opponent": opponent,
                             "posture": new_posture}
     npc.npc_strategy = json.dumps(strat)
@@ -871,6 +879,35 @@ POSTURES = set(PROFILES)
 
 def _profile(player: Player) -> dict:
     return PROFILES.get(player.npc_posture, PROFILES["opportunist"])
+
+
+def _posture_stats(player: Player) -> dict:
+    """SDD 65 F3: ledger {postura: {w, l}} en npc_strategy (lo escribe reflect_on_battle)."""
+    try:
+        return json.loads(player.npc_strategy or "{}").get("posture_stats") or {}
+    except (ValueError, TypeError):
+        return {}
+
+
+def bandit_posture(player: Player, picked: str, rng=None) -> str:
+    """SDD 65 F3 — auto-evaluación (epsilon-greedy): si `picked` viene PERDIENDO en el historial
+    propio (win-rate < 30% con ≥4 batallas), cambiá a la postura con mejor win-rate (≥2 batallas,
+    > 50%); con prob ε insistí igual (explorar). Determinista: aprende de sus métricas."""
+    stats = _posture_stats(player)
+    entry = stats.get(picked) or {}
+    n = entry.get("w", 0) + entry.get("l", 0)
+    if n < 4 or (entry.get("w", 0) / n) >= 0.3:
+        return picked                       # sin evidencia en contra → respetar la elección
+    if (rng or random.random)() < get_settings().npc_explore_epsilon:
+        return picked                       # explorar: a veces insistir igual
+    best, best_wr = picked, -1.0
+    for posture, st in stats.items():
+        m = st.get("w", 0) + st.get("l", 0)
+        if posture in PROFILES and m >= 2:
+            wr = st.get("w", 0) / m
+            if wr > best_wr:
+                best, best_wr = posture, wr
+    return best if best_wr > 0.5 else picked
 
 
 def _load_strategy(player: Player) -> dict:
@@ -1018,7 +1055,8 @@ async def decide_strategy(
     # Base DETERMINISTA: elegí el perfil según el estado (funciona SIN LLM → la IA adapta igual).
     if strategize is _llm_strategy and not settings.llm_key:
         try:
-            posture = await pick_posture_rules(session, player)
+            ledger = _posture_stats(player)   # F3: preservar el ledger al reescribir npc_strategy
+            posture = bandit_posture(player, await pick_posture_rules(session, player))
             board = await npc_scoreboard(session, player)
             humans = [b for b in board if b["is_human"]]
             target = (humans or board or [None])[0]
@@ -1026,7 +1064,8 @@ async def decide_strategy(
             player.npc_target_id = target["id"] if target else None
             player.npc_strategy_updated_at = now
             player.npc_strategy = json.dumps(
-                {"why": "rules", "scores": {b["name"]: b["score"] for b in board}}
+                {"why": "rules", "scores": {b["name"]: b["score"] for b in board},
+                 "posture_stats": ledger}
             )
             await session.commit()
             return posture
@@ -1053,12 +1092,15 @@ async def decide_strategy(
         posture = str(out.get("posture", "")).strip()
         if posture not in POSTURES:
             return player.npc_posture
+        ledger = _posture_stats(player)   # F3: preservar el ledger al reescribir npc_strategy
+        posture = bandit_posture(player, posture)   # F3: no insistir con lo que viene perdiendo
         target_name = out.get("target")
         target_id = next((b["id"] for b in board if b["name"] == target_name), None)
         player.npc_posture = posture
         player.npc_target_id = target_id
         player.npc_strategy = json.dumps(
-            {"why": str(out.get("why", ""))[:200], "scores": {b["name"]: b["score"] for b in board}}
+            {"why": str(out.get("why", ""))[:200],
+             "scores": {b["name"]: b["score"] for b in board}, "posture_stats": ledger}
         )
         player.npc_strategy_updated_at = now
         await session.commit()

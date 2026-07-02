@@ -738,3 +738,42 @@ async def test_llm_dispatch_research_and_spy(session):
     desc = await LlmBrain(decide=spy_decide).act(session, npc)
     await session.commit()
     assert desc == f"llm spy base {ebase.id}"
+
+
+async def test_bandit_switches_losing_posture(session, monkeypatch):
+    """SDD 65 F3: si la postura elegida viene perdiendo (wr<30%, n≥4), el bandit cambia a la de
+    mejor historial propio; con buen historial respeta la elección."""
+    import json as _json
+
+    from app.core.config import get_settings
+    from app.services.npc import bandit_posture
+    monkeypatch.setattr(get_settings(), "npc_explore_epsilon", 0.0)   # sin exploración (test)
+    p = Player(username="bandit_npc", password_hash="x", is_npc=True)
+    p.npc_strategy = _json.dumps({"posture_stats": {
+        "raid": {"w": 0, "l": 5},        # viene perdiendo SIEMPRE con raid
+        "economy": {"w": 4, "l": 1},     # y le fue bien con economy
+    }})
+    assert bandit_posture(p, "raid", rng=lambda: 1.0) == "economy"   # cambia a lo que funciona
+    assert bandit_posture(p, "economy") == "economy"                  # lo bueno se respeta
+    monkeypatch.setattr(get_settings(), "npc_explore_epsilon", 1.0)
+    assert bandit_posture(p, "raid", rng=lambda: 0.5) == "raid"       # ε=1 → siempre explora
+
+
+async def test_reflection_records_posture_ledger(session):
+    """SDD 65 F3: reflect_on_battle anota w/l para la postura con la que peleó."""
+    import json as _json
+
+    from app.services.npc import reflect_on_battle
+    await ensure_npcs(session)
+    npc = await _npc(session)
+    npc.npc_posture = "rush"
+    await reflect_on_battle(session, npc, "attacker", True, "victima")
+    await session.commit()
+    npc = await _npc(session)
+    stats = _json.loads(npc.npc_strategy)["posture_stats"]
+    assert stats["rush"]["w"] == 1
+    await reflect_on_battle(session, npc, "attacker", False, "victima")   # peleó como raid ahora
+    await session.commit()
+    npc = await _npc(session)
+    stats = _json.loads(npc.npc_strategy)["posture_stats"]
+    assert stats["raid"]["l"] == 1   # tras ganar pasó a raid; la derrota se anota a raid

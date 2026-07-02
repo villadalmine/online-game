@@ -258,6 +258,9 @@ class Settings(BaseSettings):
     npc_strategy_enabled: bool = True
     npc_strategy_interval_seconds: int = 1800   # recalcular la estrategia cada ~30 min/NPC
     npc_strategy_max_tokens: int = 250
+    # SDD 65 F3 (bandit): si la postura elegida viene PERDIENDO (wr<30%, ≥4 batallas), pasá a
+    # la de mejor historial propio; con prob ε insistí igual (explorar). 0 = sin exploración.
+    npc_explore_epsilon: float = 0.2
 
     # Multiplicadores físicos del planeta (SDD 13 §4). Opt-in: off ⇒ comportamiento actual. Anclados
     # a la Tierra=1.0; gravity_g→tiempo de construcción, insolation→regen de energía. Acotados.

@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — SDD 65 Fase 3: la NPC aprende de sus propias métricas (bandit por win-rate)
+- **Ledger por postura:** `reflect_on_battle` anota gané/perdí para la postura con la que peleó
+  (`posture_stats` en `npc_strategy`, preservado en cada reescritura).
+- **`bandit_posture` (epsilon-greedy):** al fijar estrategia (rules y LLM), si la postura elegida
+  viene perdiendo (win-rate < 30% con ≥4 batallas), cambia a la de mejor historial propio (>50%,
+  ≥2 batallas); con prob. `npc_explore_epsilon` (0.2) insiste igual (exploración). Determinista y
+  barato: "aprende" de sus resultados sin entrenar nada. Tests
+  `test_bandit_switches_losing_posture`, `test_reflection_records_posture_ledger`. Suite 438 ✓.
+  SDD 65 queda con F1-F3 hechas (F4 mini-loop agéntico: solo si los datos lo justifican).
+
 ## [1.127.0] - 2026-07-02
 
 ### 2026-07-02 — SDD 65 Fase 2: la NPC lee TODO el tablero (grafo + intel + satélites + guarnición)
