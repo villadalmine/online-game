@@ -85,3 +85,80 @@ async def event_counts(
         .group_by(GameEvent.type)
     )).all()
     return {t: int(n) for t, n in rows}
+
+
+async def combat_summary(
+    session: AsyncSession, player_id: int, hours: float = 24.0
+) -> dict:
+    """SDD 71: cómo van MIS ataques y defensas (del `CombatLog`, per-jugador) en la ventana.
+    Ataque: yo soy `attacker_id` (gané si outcome=='attacker'). Defensa: yo soy `defender_id`
+    (gané si outcome=='defender'). Devuelve totales + botín ganado/perdido + serie por hora."""
+    from app.models import CombatLog
+    now = datetime.now(UTC)
+    since = now - timedelta(hours=hours)
+    rows = list((await session.execute(
+        select(CombatLog).where(
+            CombatLog.created_at >= since,
+            CombatLog.outcome.in_(("attacker", "defender", "draw")),
+            (CombatLog.attacker_id == player_id) | (CombatLog.defender_id == player_id),
+        ).order_by(CombatLog.created_at)
+    )).scalars())
+    out = {"atk_won": 0, "atk_lost": 0, "def_won": 0, "def_lost": 0,
+           "loot_gained": 0.0, "loot_lost": 0.0}
+    buckets = max(1, min(24, int(hours)))          # ~1 barra por hora (tope 24)
+    span = (hours * 3600.0) / buckets
+    series = [{"atk": 0, "def": 0} for _ in range(buckets)]
+    for r in rows:
+        iam_atk = r.attacker_id == player_id
+        try:
+            loot = sum(float(v) for v in json.loads(r.details or "{}").get("loot", {}).values())
+        except (ValueError, TypeError):
+            loot = 0.0
+        idx = min(buckets - 1, int(((_aware(r.created_at) - since).total_seconds()) / span))
+        if iam_atk:
+            series[idx]["atk"] += 1
+            if r.outcome == "attacker":
+                out["atk_won"] += 1
+                out["loot_gained"] += loot
+            elif r.outcome == "defender":
+                out["atk_lost"] += 1
+        else:   # yo defiendo
+            series[idx]["def"] += 1
+            if r.outcome == "defender":
+                out["def_won"] += 1
+            elif r.outcome == "attacker":
+                out["def_lost"] += 1
+                out["loot_lost"] += loot
+    out["loot_gained"] = round(out["loot_gained"], 1)
+    out["loot_lost"] = round(out["loot_lost"], 1)
+    out["series"] = series
+    return out
+
+
+async def llm_usage(
+    session: AsyncSession, player_id: int, hours: float = 24.0
+) -> dict:
+    """SDD 71: TU uso de IA (asistente) en la ventana, del journal (`advisor_ask`, payload `mode`).
+    Desglosa por ruta gpu/cloud/byok/hack + serie por hora. Es tu consumo real de GPU (per-jugador,
+    sin el problema de las 3 réplicas del /metrics del proceso)."""
+    now = datetime.now(UTC)
+    since = now - timedelta(hours=hours)
+    rows = list((await session.execute(
+        select(GameEvent.created_at, GameEvent.payload).where(
+            GameEvent.player_id == player_id, GameEvent.type == "advisor_ask",
+            GameEvent.created_at >= since,
+        )
+    )).all())
+    by_mode: dict[str, int] = {}
+    buckets = max(1, min(24, int(hours)))
+    span = (hours * 3600.0) / buckets
+    series = [0 for _ in range(buckets)]
+    for at, payload in rows:
+        try:
+            mode = (json.loads(payload or "{}").get("mode")) or "gpu"
+        except (ValueError, TypeError):
+            mode = "gpu"
+        by_mode[mode] = by_mode.get(mode, 0) + 1
+        idx = min(buckets - 1, int(((_aware(at) - since).total_seconds()) / span))
+        series[idx] += 1
+    return {"total": len(rows), "by_mode": by_mode, "series": series}

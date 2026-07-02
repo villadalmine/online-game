@@ -274,7 +274,7 @@ async def ask(
         if res:
             await _save(session, player, "user", message)
             from app.services.journal import record
-            await record(session, "advisor_ask", player.id)
+            await record(session, "advisor_ask", player.id, mode="hack")  # sin LLM (crear gratis)
             await session.commit()
             return AdvisorReply(reply=res["message"], blockers=[], suggestions=[],
                                 hack_available=False, hacks_left=res["hacks_left"])
@@ -300,7 +300,7 @@ async def ask(
     await _save(session, player, "user", message)
     await _save(session, player, "assistant", reply_text)
     from app.services.journal import record  # SDD 40: uso del asistente por jugador
-    await record(session, "advisor_ask", player.id)
+    await record(session, "advisor_ask", player.id, mode=mode)  # gpu|cloud|byok → gráfico in-app
     await session.commit()
 
     return AdvisorReply(

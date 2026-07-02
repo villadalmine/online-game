@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — SDD 71: gráficos in-app de ataques/defensas + tu uso de IA (en 📈 Tu historia)
+- **⚔ Ataques y defensas (24 h)** en el modal 📈 Tu historia: ganados/perdidos atacando y defendiendo,
+  **efectividad** (win-rate), 💰 botín ganado/perdido, y sparkline de batallas/hora. De `CombatLog`
+  (per-jugador). `combat_summary` en `app/services/analytics.py`.
+- **🖥️ Tu uso de IA (asistente)**: total + desglose por ruta gpu/cloud/byok/hack + sparkline por hora.
+  Señal per-jugador de GPU (del journal `advisor_ask` con su `mode`; sin el problema de 3 réplicas del
+  `/metrics`). `llm_usage` en analytics. `GET /players/me/history` ahora devuelve `combat` y `llm`.
+- Tests: `tests/test_analytics.py` (win/loss/loot + desglose por modo) + e2e de la forma en history.
+
 ## [1.137.0] - 2026-07-02
 
 ### 2026-07-02 — SDD 67: balance nuclear (10 torretas / parcial 50%) + vuelve al hangar + verás la GPU

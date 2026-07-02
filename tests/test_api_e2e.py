@@ -2686,6 +2686,12 @@ async def test_player_history_analytics_e2e(client, monkeypatch):
     assert len(data["samples"]) >= 1
     assert "energy" in data["samples"][0] and "score" in data["samples"][0]
     assert isinstance(data["events"], dict)
+    # SDD 71: bloques nuevos de combate y uso de IA (per-jugador) para los gráficos in-app.
+    c = data["combat"]
+    assert {"atk_won", "atk_lost", "def_won", "def_lost", "series"} <= set(c)
+    assert isinstance(c["series"], list)
+    L = data["llm"]
+    assert {"total", "by_mode", "series"} <= set(L)
 
 
 async def test_attack_rate_limit_per_window_e2e(client, monkeypatch):
