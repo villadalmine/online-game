@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.128.0] - 2026-07-02
+
 ### 2026-07-02 — SDD 65 Fase 3: la NPC aprende de sus propias métricas (bandit por win-rate)
 - **Ledger por postura:** `reflect_on_battle` anota gané/perdí para la postura con la que peleó
   (`posture_stats` en `npc_strategy`, preservado en cada reescritura).
