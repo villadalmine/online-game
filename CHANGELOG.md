@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.132.0] - 2026-07-02
+
 ### 2026-07-02 — SDD 66: estado de edificios (averiada/sana, reparar/demoler/mejorar) + prendido
 - **Condición 0-100 por edificio** (`Building.condition`, migración `12f6f91d3989`): los misiles/
   bombardeo ahora **dañan gradual** (destruyen recién a 0, antes borraban de una). Una torreta averiada
