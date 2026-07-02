@@ -201,6 +201,11 @@ class BunkerBuildRequest(BaseModel):
     cell: int
 
 
+class BunkerRaidRequest(BaseModel):
+    target_id: int
+    action: str   # gas | rats | water
+
+
 class TroopMoveOut(BaseModel):
     id: int
     from_base_id: int

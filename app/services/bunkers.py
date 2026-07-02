@@ -136,6 +136,94 @@ async def advance_bunker(
         b.updated_at = now
 
 
+async def raid(
+    session: AsyncSession, attacker: Player, target_id: int, action: str
+) -> dict:
+    """SDD 64 §3.6: incursión de SABOTAJE al búnker de un rival. Requiere haberlo MAPEADO con
+    satélites (≥ `bunker_raid_min_map_pct`); una `lockdown` ACTIVA del defensor sella la entrada.
+    Acciones: gas (baja gente; mitiga la ventilación), rats (pudre comida), water (contamina)."""
+    settings = get_settings()
+    if not settings.bunkers_enabled:
+        raise BunkerError("Los búnkeres están desactivados.")
+    if action not in ("gas", "rats", "water"):
+        raise BunkerError(f"Sabotaje desconocido: {action}")
+    target = await session.get(Player, target_id)
+    if target is None or target.id == attacker.id:
+        raise BunkerError("Objetivo inválido.")
+    if attacker.alliance_id is not None and attacker.alliance_id == target.alliance_id:
+        raise BunkerError("No podés sabotear a un aliado.")
+    now = datetime.now(UTC)
+    if not target.is_npc and target.protected_until is not None:
+        prot = target.protected_until
+        if (prot if prot.tzinfo else prot.replace(tzinfo=UTC)) > now:
+            raise BunkerError("Ese jugador está bajo protección de novato.")
+    # gate de INTEL (SDD 61): tenés que haber mapeado el búnker con tus satélites espía.
+    from app.services.satellites import satellites_state
+    _sats, maps = await satellites_state(session, attacker)
+    pct = (maps.get(str(target_id)) or {}).get("pct", 0.0)
+    if pct < settings.bunker_raid_min_map_pct:
+        raise BunkerError(
+            f"Necesitás mapear al rival con satélites (≥{settings.bunker_raid_min_map_pct:g}%; "
+            f"tenés {pct:g}%)."
+        )
+    bunker = (await session.execute(
+        select(Bunker).where(Bunker.player_id == target_id).order_by(Bunker.id)
+    )).scalars().first()
+    if bunker is None:
+        raise BunkerError("Ese rival no tiene búnker.")
+    rooms = (await session.execute(
+        select(BunkerRoom).where(BunkerRoom.bunker_id == bunker.id, BunkerRoom.status == "active")
+    )).scalars().all()
+    content = get_content()
+    if any(content.rooms.get(r.room_key, {}).get("lock") for r in rooms):
+        raise BunkerError("El búnker está sellado (cerradura activa).")
+    # tope diario por (atacante, objetivo) — cruza SDD 55 (anti-farmeo).
+    from datetime import timedelta
+
+    from sqlalchemy import func
+
+    from app.models import BunkerRaid
+    day_start = now - timedelta(seconds=86400)
+    done = (await session.execute(
+        select(func.count(BunkerRaid.id)).where(
+            BunkerRaid.attacker_id == attacker.id, BunkerRaid.target_id == target_id,
+            BunkerRaid.created_at >= day_start)
+    )).scalar_one()
+    if done >= settings.bunker_raids_per_target_per_day:
+        raise BunkerError("Ya saboteaste a ese rival demasiado hoy (anti-abuso).")
+    if not spend_energy(attacker, settings.bunker_raid_energy_cost, now,
+                        effective_energy_regen(attacker, settings),
+                        effective_energy_max(attacker, settings)):
+        raise BunkerError("Energía insuficiente para la incursión.")
+
+    # aplicar el sabotaje sobre el estado ACTUAL (advance primero, no sobre medidores viejos).
+    await advance_bunker(session, target, now)
+    if action == "gas":
+        vents = sum(1 for r in rooms if content.rooms.get(r.room_key, {}).get("vent"))
+        mitig = min(0.9, vents * settings.bunker_vent_mitigation)
+        dmg = settings.bunker_gas_damage * (1.0 - mitig)
+        bunker.people_health = _clamp(bunker.people_health - dmg)
+    elif action == "rats":
+        dmg = settings.bunker_sabotage_damage
+        bunker.food_health = _clamp(bunker.food_health - dmg)
+    else:   # water
+        dmg = settings.bunker_sabotage_damage
+        bunker.water_health = _clamp(bunker.water_health - dmg)
+    session.add(BunkerRaid(attacker_id=attacker.id, target_id=target_id,
+                           bunker_id=bunker.id, action=action, created_at=now))
+    from app.services.notifications import notify
+    await notify(session, target_id, "bunker_raided",
+                 f"¡Sabotaje en tu búnker ({action})!",
+                 {"action": action, "damage": round(dmg, 1), "by": attacker.username})
+    from app.services.journal import record
+    await record(session, "bunker_raid", attacker.id, target_id=target_id,
+                 action=action, damage=round(dmg, 1))
+    await session.flush()
+    return {"action": action, "damage": round(dmg, 1),
+            "food": round(bunker.food_health, 1), "water": round(bunker.water_health, 1),
+            "people": round(bunker.people_health, 1)}
+
+
 async def bunker_state(session: AsyncSession, player: Player) -> list[dict]:
     """Snapshot de los búnkeres propios (medidores + mapa de salas) para el front."""
     if not get_settings().bunkers_enabled:

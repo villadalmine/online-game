@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — SDD 64 pasos 2-5: sabotaje de búnkeres + panel + prendido en prod
+- **Sabotaje** (`POST /bunker/raid`, servicio `bunkers.raid`): gas ☠ (baja la salud de **gente**; la
+  **ventilación** lo mitiga −25%/sala, tope 90%), ratas 🐀 (pudre **comida**), contaminar 🧪 (**agua**).
+  Gateado por **intel satelital** (SDD 61): hay que tener al rival mapeado ≥50% (`bunker_raid_min_map_pct`).
+  Una **cerradura** 🔒 activa (sala `lockdown`, tech `bunker_defense`) **sella** el búnker. Tope diario
+  3/(atacante,objetivo) + energía por incursión + protección de novato. Log `BunkerRaid` (migración
+  `623fd747de84`) + notificación al defensor.
+- **Panel web "🕳 Búnker"**: cavar (⛏, requiere `bunker_engineering`), construir habitaciones en la
+  **grilla** NxN, medidores 🍲💧👥 en vivo, y sección de sabotaje con los rivales mapeados. Salas
+  nuevas en `underground.yaml`: `lockdown` 🔒 (además de `ventilation` 🌀).
+- **Prendido en prod** (`BUNKERS_ENABLED=true`): aditivo, doble gate (research caro + intel satelital).
+  Tests servicio (`tests/test_bunkers.py`: intel/ventilación/cerradura/tope) + e2e `test_bunker_raid_e2e`.
+  Suite 442 ✓. Pendiente menor: NPC que use búnkeres; combate de tropas dentro del búnker (v2).
+
 ## [1.128.0] - 2026-07-02
 
 ### 2026-07-02 — SDD 65 Fase 3: la NPC aprende de sus propias métricas (bandit por win-rate)

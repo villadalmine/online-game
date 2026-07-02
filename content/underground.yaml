@@ -64,3 +64,12 @@ rooms:
     energy_cost: 15
     build_seconds: 200
     cost: { structural: 160, advanced: 80 }
+  - key: lockdown
+    icon: "🔒"
+    name: "Cerradura"
+    name_en: "Lockdown"
+    requires_tech: bunker_defense
+    lock: 1            # sella las entradas: sin cerradura ACTIVA, cualquiera con intel se te mete
+    energy_cost: 15
+    build_seconds: 220
+    cost: { structural: 200, advanced: 100 }

@@ -1,9 +1,12 @@
 # SDD 64 — Búnkeres atómicos: túneles, mapa subterráneo, brechas y guerra de sabotaje
 
-> **Estado:** **EN PROGRESO — paso 1/5 (backend, flag OFF)** 2026-07-01: research + habitaciones
-> (`content/underground.yaml`) + modelos `Bunker`/`BunkerRoom` + `bunkers.py` (dig/build_room/
-> advance con medidores comida/agua/gente) + API `/bunker/*` + snapshot. **Pendiente:** entradas/
-> brechas + intel satelital, defensas, sabotaje, panel, prender. · **Diseño:** 2026-07-01 · usuario.
+> **Estado:** **IMPLEMENTADO + PRENDIDO** 2026-07-02 (1.123.0 backend base; 1.129.0 sabotaje + panel +
+> `bunkers_enabled=true`). Cavar (`bunker_engineering`) → habitaciones en grilla NxN (comida/agua/
+> gente lazy) → **sabotaje** `POST /bunker/raid` (gas/ratas/agua) gateado por **intel satelital ≥50%**
+> (SDD 61); **cerradura** activa sella el búnker, **ventilación** mitiga el gas; tope diario 3/(par).
+> Panel web "🕳 Búnker" (medidores + grilla + botones de sabotaje). v1 simplificada: sin celdas de
+> puerta explícitas (la "brecha" es la incursión gateada por intel); **pendiente menor:** NPC que use
+> búnkeres, combate de tropas dentro del búnker (v2). · **Diseño:** 2026-07-01 · usuario.
 > **Relacionado:** [SDD 61 satélites](sdd-satellites-recon.md) (mapear al enemigo → ubicar su HQ bajo
 > tierra), [SDD 62 guarnición](sdd-garrison-troops-per-base.md) (unidades por base), [SDD 49 misiles/
 > nuclear](sdd-missile-launcher.md) (`nuclear_fission`), [SDD 46 alojamiento](sdd-unit-housing-capacity.md),

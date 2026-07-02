@@ -84,3 +84,76 @@ async def test_room_finalizes_and_feeds(session, monkeypatch):
     b = await session.get(Bunker, b.id)
     assert r.status == "active"
     assert b.food_health > 50.0   # la granja (food 10/h) supera el decaimiento (2/h) → sube
+
+
+async def _spy_map(session, owner, target, pct=60.0):
+    """Arrange: un satélite espía del atacante ya mapeó al objetivo (SDD 61)."""
+    from app.models import SatelliteMission
+    now = datetime.now(UTC)
+    session.add(SatelliteMission(
+        owner_id=owner.id, target_id=target.id, unit_key="spy_satellite", kind="spy",
+        target_planet=target.planet_key or "", shield_grade=0, energy=100.0,
+        discovered_pct=pct, status="orbiting", last_tick_at=now, created_at=now))
+    await session.commit()
+
+
+async def _raid_pair(session, monkeypatch):
+    from app.services.bunkers import raid  # noqa: F401 (import check)
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "satellites_enabled", True)
+    atk, _abase = await _player(session, "raider")
+    tgt, tbase = await _player(session, "victim")
+    tgt.protected_until = None
+    bunker = await dig(session, tgt, tbase.id)
+    atk.energy = 100000
+    await session.commit()
+    return atk, tgt, bunker
+
+
+async def test_raid_requires_satellite_intel(session, monkeypatch):
+    from app.services.bunkers import raid
+    atk, tgt, _b = await _raid_pair(session, monkeypatch)
+    try:
+        await raid(session, atk, tgt.id, "gas")
+        raise AssertionError("sin intel satelital no se sabotea")
+    except BunkerError as e:
+        assert "mapear" in str(e).lower()
+
+
+async def test_raid_gas_vent_lockdown_and_cap(session, monkeypatch):
+    from app.services.bunkers import raid
+    atk, tgt, bunker = await _raid_pair(session, monkeypatch)
+    await _spy_map(session, atk, tgt, pct=80.0)
+    # gas sin ventilación: −25 de gente
+    res = await raid(session, atk, tgt.id, "gas")
+    await session.commit()
+    assert abs(res["people"] - 75.0) < 3, res
+    # con ventilación activa, el gas pega menos
+    session.add(BunkerRoom(bunker_id=bunker.id, room_key="ventilation", cell=1, status="active"))
+    await session.commit()
+    res2 = await raid(session, atk, tgt.id, "gas")
+    await session.commit()
+    assert (res["people"] - res2["people"]) < 25.0 * 0.8   # mitigado (−18.75, no −25)
+    # cerradura activa → sellado
+    session.add(BunkerRoom(bunker_id=bunker.id, room_key="lockdown", cell=2, status="active"))
+    await session.commit()
+    try:
+        await raid(session, atk, tgt.id, "rats")
+        raise AssertionError("la cerradura debía sellar el búnker")
+    except BunkerError as e:
+        assert "sellado" in str(e).lower()
+
+
+async def test_raid_daily_cap(session, monkeypatch):
+    from app.services.bunkers import raid
+    atk, tgt, _b = await _raid_pair(session, monkeypatch)
+    monkeypatch.setattr(get_settings(), "bunker_raids_per_target_per_day", 1)
+    await _spy_map(session, atk, tgt, pct=80.0)
+    await raid(session, atk, tgt.id, "rats")
+    await session.commit()
+    try:
+        await raid(session, atk, tgt.id, "water")
+        raise AssertionError("tope diario de sabotajes")
+    except BunkerError as e:
+        assert "hoy" in str(e).lower()

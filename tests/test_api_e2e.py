@@ -2892,6 +2892,51 @@ async def test_bunker_dig_and_build_room_e2e(client, monkeypatch):
     assert me["bunkers"] and me["bunkers"][0]["food_health"] == 100.0
 
 
+async def test_bunker_raid_e2e(client, monkeypatch):
+    """SDD 64: sabotear el búnker de un rival mapeado por la API (happy) + 400 sin intel."""
+    from datetime import UTC, datetime
+
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import Bunker, PlayerTech, SatelliteMission
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    monkeypatch.setattr(get_settings(), "satellites_enabled", True)
+    ha = await _register(client.http, "bk_raider")
+    await _onboard(client.http, ha, planet="mars", race="martian")
+    hd = await _register(client.http, "bk_victim")
+    dstate = await _onboard(client.http, hd, planet="venus", race="venusian")
+    await _clear_protection(client.session_maker, "bk_raider", "bk_victim")
+    await _set_energy(client.session_maker, "bk_raider", 1_000_000)
+    now = datetime.now(UTC)
+    async with client.session_maker() as s:
+        atk = (await s.execute(select(Player).where(Player.username == "bk_raider"))).scalar_one()
+        tgt = (await s.execute(select(Player).where(Player.username == "bk_victim"))).scalar_one()
+        s.add(PlayerTech(player_id=tgt.id, tech_key="bunker_engineering"))
+        s.add(Bunker(player_id=tgt.id, base_id=dstate["bases"][0]["id"], food_health=100,
+                     water_health=100, people_health=100, updated_at=now, created_at=now))
+        tid = tgt.id
+        await s.commit()
+    # sin intel → 400
+    r0 = await client.http.post("/api/v1/bunker/raid", headers=ha,
+                                json={"target_id": tid, "action": "gas"})
+    assert r0.status_code == 400 and "mapear" in r0.text.lower()
+    # con el rival mapeado por satélites → sabotaje aplicado
+    async with client.session_maker() as s:
+        s.add(SatelliteMission(owner_id=atk.id, target_id=tid, unit_key="spy_satellite",
+                               kind="spy", target_planet="venus", shield_grade=0, energy=100,
+                               discovered_pct=80, status="orbiting",
+                               last_tick_at=now, created_at=now))
+        await s.commit()
+    r = await client.http.post("/api/v1/bunker/raid", headers=ha,
+                               json={"target_id": tid, "action": "gas"})
+    assert r.status_code == 201, r.text
+    assert r.json()["people"] < 100
+    # el defensor ve sus medidores golpeados en el snapshot
+    me = (await client.http.get("/api/v1/players/me", headers=hd)).json()
+    assert me["bunkers"][0]["people_health"] < 100
+
+
 async def test_satellite_launch_and_intel_e2e(client, monkeypatch):
     """SDD 61: lanzar un satélite espía y verlo en el intel (happy path + error con flag OFF)."""
     from app.core.config import get_settings

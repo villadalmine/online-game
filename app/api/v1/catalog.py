@@ -43,6 +43,9 @@ def build_catalog() -> dict:
             "turret_antiair_power": c.buildings.get("turret", {}).get("antiair_power", 30),
             "drone_tick_seconds": s.drone_tick_seconds,
             "energy_regen_per_hour": s.energy_regen_per_hour,
+            # SDD 64: para el panel del búnker (tamaño del mapa + gate de intel del sabotaje).
+            "bunker_grid": s.bunker_grid,
+            "bunker_raid_min_map_pct": s.bunker_raid_min_map_pct,
         },
         # Flags de features (SDD 49/50/61/62): el cliente muestra/oculta paneles según el flag.
         "features": {

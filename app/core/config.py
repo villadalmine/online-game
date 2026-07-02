@@ -215,6 +215,7 @@ class Settings(BaseSettings):
     bunker_sabotage_damage: float = 25.0  # golpe de ratas (comida) / contaminar (agua)
     bunker_raid_min_map_pct: float = 50.0  # % descubierto (satélites) mínimo para poder sabotear
     bunker_raids_per_target_per_day: int = 3  # tope de sabotajes por (atacante,objetivo)/día
+    bunker_raid_energy_cost: float = 20.0  # energía por incursión de sabotaje
 
     # Lanzadera de misiles (SDD 49): vía de "golpe" intra-planeta, paralela a la flota. PRENDIDO
     # (v1.5): el contenido carga y se puede disparar. Frenos: protección de novato (SDD 11), no
