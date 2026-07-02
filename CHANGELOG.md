@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.138.0] - 2026-07-02
+
 ### 2026-07-02 — SDD 71: gráficos in-app de ataques/defensas + tu uso de IA (en 📈 Tu historia)
 - **⚔ Ataques y defensas (24 h)** en el modal 📈 Tu historia: ganados/perdidos atacando y defendiendo,
   **efectividad** (win-rate), 💰 botín ganado/perdido, y sparkline de batallas/hora. De `CombatLog`
