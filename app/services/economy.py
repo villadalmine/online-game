@@ -213,6 +213,9 @@ async def collect_mines(
             abundance = content.planet_abundance(planet, b.production_mineral)
         output = compute_mine_output(since, now, spec.get("base_output_per_hour", 0), abundance)
         amount = output * prod_mult * staffing
+        # SDD 66: una mina averiada (condición < 100) rinde a fracción de su condición.
+        if settings.building_condition_enabled and b.condition is not None:
+            amount *= max(0.0, min(1.0, b.condition / 100.0))
         if btype in ("orbital", "lunar"):   # robots: rinde fijo, sin habitabilidad
             amount *= orbital_yield
         elif planet != home:     # colonia de superficie: rinde según habitabilidad raza×planeta

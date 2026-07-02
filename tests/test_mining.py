@@ -47,3 +47,43 @@ def test_storage_caps_aggregate_per_planet_and_mineral():
     caps = storage_caps_by_planet(c, buildings, base_info, 1000, c.minerals.keys())["earth"]
     assert caps["iron"] == 1000 + 5000 + 2000 + 10000   # base + HQ + mina + silo
     assert caps["silicon"] == 1000 + 5000               # base + HQ (silo en obra ignorado)
+
+
+async def test_damaged_mine_produces_less(session, monkeypatch):
+    """SDD 66: una mina averiada (condición baja) rinde a fracción cuando el flag está ON."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.core.config import get_settings
+    from app.core.security import hash_password
+    from app.models import Building, Player
+    from app.services.economy import collect_mines, player_stocks
+    from app.services.onboarding import onboard_player
+    monkeypatch.setattr(get_settings(), "building_condition_enabled", True)
+    monkeypatch.setattr(get_settings(), "mining_staffing_enabled", False)  # aislar la condición
+    p = Player(username="mineop", password_hash=hash_password("secret123"))
+    session.add(p)
+    await session.flush()
+    base = await onboard_player(session, p, "milky_way", "mars", "martian")
+    struct = get_content().resolve_role(p.race_key, "structural")
+    mine = Building(base_id=base.id, building_key="mine", status="active",
+                    production_mineral=struct)
+    session.add(mine)
+    await session.flush()
+    past = datetime.now(UTC) - timedelta(hours=5)
+    # sana (100)
+    mine.condition = 100.0
+    mine.last_collected_at = past
+    await session.commit()
+    before = (await player_stocks(session, p.id)).get(mine.production_mineral, 0)
+    await collect_mines(session, p)
+    await session.commit()
+    full = (await player_stocks(session, p.id)).get(mine.production_mineral, 0) - before
+    # averiada (40) por el mismo tiempo → rinde menos
+    mine.condition = 40.0
+    mine.last_collected_at = past
+    await session.commit()
+    before2 = (await player_stocks(session, p.id)).get(mine.production_mineral, 0)
+    await collect_mines(session, p)
+    await session.commit()
+    hurt = (await player_stocks(session, p.id)).get(mine.production_mineral, 0) - before2
+    assert full > 0 and hurt < full * 0.6, (full, hurt)
