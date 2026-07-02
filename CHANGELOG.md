@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.126.0] - 2026-07-02
+
 ### 2026-07-02 — Reportes agrupados + fixes de arsenal/reportes + edificios ×N + SDD 65/66
 > Batch de reportes del usuario jugando + pedido de IA más autónoma.
 - **Reportes de combate agrupados por período** (pedido): Hoy (abierto) / Ayer / Esta semana / por mes,
