@@ -10,12 +10,18 @@ def test_swarm_of_sonics_saturates_interception():
     assert r.damage == 120
 
 
-def test_nuclear_is_nearly_unstoppable():
-    # un nuclear cuesta 30 de capacidad: con capacidad 20 (2 torretas) no se frena → impacta + área.
-    r = simulate_strike({"nuclear_missile": 1}, intercept_capacity=20)
-    assert r.intercepted == {}
-    assert r.impacted == {"nuclear_missile": 1}
-    assert r.damage == 600 and r.area is True
+def test_nuclear_needs_ten_turrets_partial_below():
+    # SDD 67: nuclear cuesta 100 (10 torretas) para bloqueo total. Capacidad 0 → impacto pleno.
+    full = simulate_strike({"nuclear_missile": 1}, intercept_capacity=0)
+    assert full.impacted == {"nuclear_missile": 1} and full.area is True
+    assert full.damage == 600 and full.partial == {}
+    # con ALGO de antimisil pero < 100 → intercepción PARCIAL: impacta al 50%.
+    part = simulate_strike({"nuclear_missile": 1}, intercept_capacity=50)
+    assert part.impacted == {"nuclear_missile": 1} and part.partial == {"nuclear_missile": 1}
+    assert part.damage == 300 and part.area is True
+    # con 100 (10 torretas) → interceptado, sin daño.
+    blocked = simulate_strike({"nuclear_missile": 1}, intercept_capacity=100)
+    assert blocked.impacted == {} and blocked.damage == 0.0
 
 
 def test_cheap_missiles_are_intercepted_first():
@@ -94,6 +100,10 @@ async def test_nuclear_travels_24h_and_tribute_cancels(session):
     assert res["cancelled"] and m.status == "cancelled"
     # el mineral se transfirió al atacante
     assert (await player_stocks(session, atk.id)).get("iron", 0) >= 1000
+    # SDD 67: el nuclear cancelado VUELVE al hangar del atacante (no se pierde)
+    from app.services.training import player_units
+    assert (await player_units(session, atk.id)).get("nuclear_missile", 0) == 1
+    assert res["returned"] == {"nuclear_missile": 1}
 
 
 async def test_tribute_requires_government_and_diplomacy(session):

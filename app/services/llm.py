@@ -29,6 +29,7 @@ async def llm_chat(
     json_mode: bool = False,
     user: str | None = None,
     kind: str = "other",
+    route: str = "gpu",
     model: str | None = None,
     timeout: float | None = None,
     api_key: str | None = None,
@@ -38,7 +39,11 @@ async def llm_chat(
 
     `user` viaja como el campo OpenAI `user` → LiteLLM lo etiqueta `end_user` en sus métricas
     (atribución de tokens/costo por jugador y backend, SDD 28). `api_key`/`base_url` apuntan a OTRO
-    endpoint con la key del jugador (BYOK, SDD 9): nunca se persiste, solo en esta request."""
+    endpoint con la key del jugador (BYOK, SDD 9): nunca se persiste, solo en esta request.
+
+    `route` (gpu|cloud|byok) etiqueta QUÉ backend atendió la llamada → métricas propias del juego
+    (game_llm_route_total/tokens_total/last_ok_timestamp) para verificar que la GPU responde de
+    verdad y medir tokens sin depender solo de LiteLLM (SDD 65 observabilidad)."""
     settings = get_settings()
     key = api_key or settings.llm_key
     url = (base_url or settings.llm_url).rstrip("/")
@@ -66,13 +71,26 @@ async def llm_chat(
                 json=payload,
             )
             resp.raise_for_status()
-            out = resp.json()["choices"][0]["message"]["content"]
+            body = resp.json()
+            out = body["choices"][0]["message"]["content"]
         metrics.LLM_REQUESTS.inc(status="ok")  # SDD 19
         metrics.LLM_CALLS.inc(kind=kind, status="ok")  # SDD 28 §3.5
+        metrics.LLM_ROUTE.inc(kind=kind, route=route, status="ok")  # ¿pegó a la GPU? (SDD 65 obs)
+        # Tokens reales del campo `usage` (OpenAI/LiteLLM/Ollama/vLLM lo devuelven) → medís que la
+        # GPU genera de verdad y cuánto, por ruta. Si el server no lo manda, queda en 0 (no rompe).
+        usage = body.get("usage") or {}
+        pt = int(usage.get("prompt_tokens") or 0)
+        ct = int(usage.get("completion_tokens") or 0)
+        if pt:
+            metrics.LLM_TOKENS.inc(pt, kind=kind, route=route, type="prompt")
+        if ct:
+            metrics.LLM_TOKENS.inc(ct, kind=kind, route=route, type="completion")
+        metrics.LLM_LAST_OK.set(time.time(), route=route)  # heartbeat: última respuesta OK por ruta
         return out
     except Exception:
         metrics.LLM_REQUESTS.inc(status="error")
         metrics.LLM_CALLS.inc(kind=kind, status="error")
+        metrics.LLM_ROUTE.inc(kind=kind, route=route, status="error")
         raise
     finally:
         metrics.LLM_LATENCY.observe(time.perf_counter() - _t0)

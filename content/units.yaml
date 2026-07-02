@@ -250,7 +250,7 @@ ordnance:
     housing_size: 4
     range: intra_planet
     power: 600
-    intercept_cost: 30    # SDD 49 balance: hacen falta 3 torretas para 1 nuclear
+    intercept_cost: 100   # SDD 67 balance: 10 torretas para bloquear 1 nuclear; menos → impacta al 50%
     area: true            # SDD 49: además de la defensa, daña edificios no defensivos + fallout
     propulsion: rocket
     energy_cost: 30

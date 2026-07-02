@@ -7,6 +7,19 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — SDD 67: balance nuclear (10 torretas / parcial 50%) + vuelve al hangar + verás la GPU
+- **Nuclear ahora necesita 10 torretas para bloqueo total** (`intercept_cost` 30→100). Con menos
+  antimisil el nuclear **impacta PARCIAL al 50%** (`strike_partial_impact_factor`, nueva intercepción
+  parcial en `simulate_strike`) — antes era todo-o-nada. Pedido del usuario.
+- **Misil cancelado por diplomacia (tributo) VUELVE al hangar** (SDD 67): al aceptar el tributo, los
+  misiles se re-acreditan al stock del atacante (no se pierden) + notificación a ambos lados.
+- **Reporte de strike marca el impacto parcial** ("½ parcial (antimisil insuficiente)").
+- **Observabilidad real de la GPU (SDD 65):** el propio juego ahora emite `game_llm_route_total`
+  (llamadas por backend gpu/cloud/byok y ok/error), `game_llm_tokens_total` (tokens del campo `usage`
+  por ruta) y `game_llm_last_ok_timestamp` (heartbeat por ruta) — para NPC **y asistente**. Nuevos
+  paneles en el dashboard "LLM usage & GPU" desde el `/metrics` del juego (no solo LiteLLM): heartbeat
+  "GPU viva", llamadas por ruta y tokens por ruta. Ahora se ve si la API pega a tu GPU y cuánto.
+
 ## [1.136.0] - 2026-07-02
 
 ### 2026-07-02 — Tránsito completo + upgrade de mina + reporte de misiles más claro

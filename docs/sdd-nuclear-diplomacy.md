@@ -3,8 +3,11 @@
 > **Estado:** **IMPLEMENTADO** 2026-07-02 (1.130.0): edificio `government` + tech `diplomacy` (cat
 > `politics`) + el nuclear viaja 24 h (`nuclear_travel_seconds`) + `offer_tribute`/`accept_tribute`
 > (`/combat/strike/{id}/tribute` y `.../accept-tribute`) + migración `79fc068c4f1e`
-> (`StrikeMission.tribute`). Sin recall del misil. **Pendiente menor:** UI (form de tributo + salva
-> nuclear entrante con countdown) + gobierno "y más cosas" (tratados) en v2. · **Pedido:** usuario.
+> (`StrikeMission.tribute`). Sin recall unilateral. **v2 balance (1.137.0):** el nuclear necesita **10
+> torretas** para bloqueo total (`intercept_cost` 100) y con menos **impacta PARCIAL al 50%**
+> (`strike_partial_impact_factor`, intercepción parcial en `simulate_strike`); al **aceptar el tributo
+> el misil VUELVE al hangar** del atacante (no se pierde). **Pendiente menor:** gobierno "y más cosas"
+> (tratados) en v3. · **Pedido:** usuario.
 > **Relacionado:** [SDD 49 misiles](sdd-missile-launcher.md) (salvas + intercepción), [SDD 53 balance
 > por rol](sdd-resource-balance.md), `app/services/strike.py`, `content/{technologies,buildings}.yaml`.
 

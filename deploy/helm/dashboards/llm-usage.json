@@ -4,7 +4,7 @@
   "tags": ["online-game", "llm", "gpu"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "refresh": "10s",
   "time": { "from": "now-6h", "to": "now" },
   "templating": {
@@ -124,6 +124,33 @@
       "targets": [
         { "refId": "A", "format": "table", "instant": true, "expr": "sum by (kind) (label_replace(label_replace(increase(litellm_output_tokens_metric_total{end_user=~\"online-game:.*\"}[24h]), \"kind\", \"npc\", \"end_user\", \"online-game:npc:.*\"), \"kind\", \"usuario\", \"end_user\", \"online-game:player:.*\"))" }
       ]
+    },
+    {
+      "id": 20, "type": "text", "title": "🔎 ¿La API pega a MI GPU? (métricas del propio juego)",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 52 },
+      "options": { "mode": "markdown", "content": "Los paneles de arriba son la vista de **LiteLLM/HAMI** (el proxy/GPU). Los de ABAJO salen del **`/metrics` del propio juego** (`game_llm_*`) → prueban que la API del juego llegó a la GPU y cuentan tokens sin depender del proxy. **route** = `gpu` (local) / `cloud` / `byok`. Si `game_llm_route_total{route=\"gpu\",status=\"ok\"}` sube y el heartbeat está en verde, tu GPU está respondiendo de verdad." }
+    },
+    {
+      "id": 21, "type": "stat", "title": "GPU viva — seg. desde la última respuesta OK (juego)",
+      "description": "time() - game_llm_last_ok_timestamp{route=gpu}. Verde = tu GPU respondió hace poco; rojo = hace rato que no (¿caída a nube/reglas?).",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 300 }, { "color": "red", "value": 900 } ] } }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 55 },
+      "targets": [ { "refId": "A", "expr": "time() - max(game_llm_last_ok_timestamp{route=\"gpu\"})" } ]
+    },
+    {
+      "id": 22, "type": "timeseries", "title": "Llamadas del JUEGO al LLM por ruta (ok/error, rate 5m)",
+      "description": "game_llm_route_total: llamadas que hizo la API del juego, separadas por backend y resultado. route=gpu con ok>0 = tu GPU atiende.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 9, "x": 6, "y": 55 },
+      "targets": [ { "refId": "A", "expr": "sum by (route, status) (rate(game_llm_route_total[5m]))", "legendFormat": "{{route}} / {{status}}" } ]
+    },
+    {
+      "id": 23, "type": "timeseries", "title": "Tokens que el JUEGO ve por ruta (rate 5m)",
+      "description": "game_llm_tokens_total del campo `usage` de la respuesta (prompt/completion), por backend. Sube en route=gpu = la GPU genera tokens de verdad.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 9, "x": 15, "y": 55 },
+      "targets": [ { "refId": "A", "expr": "sum by (route, type) (rate(game_llm_tokens_total[5m]))", "legendFormat": "{{route}} / {{type}}" } ]
     }
   ]
 }

@@ -221,6 +221,10 @@ class Settings(BaseSettings):
     # defensor con `diplomacy` (tech) + `government` (edificio activo) puede ofrecer TRIBUTO
     # (minerales+energía) para que el atacante la cancele. Sin recall unilateral.
     nuclear_travel_seconds: int = 86400
+    # SDD 49/67: si un misil NO se intercepta del todo pero había ALGO de capacidad antimisil,
+    # impacta a esta fracción (intercepción PARCIAL). Nuclear (intercept_cost 100 = 10 torretas): 10
+    # torretas lo bloquean; menos → impacta al 50%. 1.0 = sin parcial (todo o nada, histórico).
+    strike_partial_impact_factor: float = 0.5
 
     # SDD 66: estado de edificios. OFF = los ataques DESTRUYEN el edificio (histórico). ON = daño
     # GRADUAL a `condition` (rinde a fracción; se destruye recién a 0) + reparar/demoler/mejorar.

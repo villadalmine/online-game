@@ -41,14 +41,16 @@ def test_cheap_missiles_are_more_mineral_efficient():
     assert dpr[0] > dpr[1] > dpr[2]
 
 
-def test_one_turret_cannot_intercept_a_nuclear():
-    # intención del SDD: el nuclear es casi imposible de frenar salvo MUCHA defensa.
+def test_nuclear_needs_ten_turrets_to_block():
+    # SDD 67: nuclear necesita 10 torretas (intercept_cost 100) para bloqueo total; menos = parcial.
     c = get_content()
     ip = c.buildings["turret"]["intercept_power"]
-    assert c.units["nuclear_missile"]["intercept_cost"] > ip
-    # 1-2 torretas no lo frenan; 3 sí.
-    assert simulate_strike({"nuclear_missile": 1}, 2 * ip).impacted
-    assert not simulate_strike({"nuclear_missile": 1}, 3 * ip).impacted
+    ic = c.units["nuclear_missile"]["intercept_cost"]
+    assert ic == 10 * ip                                 # 10 torretas exactas
+    # 9 torretas no lo frenan (pasa PARCIAL, al 50%); 10 sí.
+    part = simulate_strike({"nuclear_missile": 1}, 9 * ip)
+    assert part.impacted and part.partial == {"nuclear_missile": 1}
+    assert not simulate_strike({"nuclear_missile": 1}, 10 * ip).impacted
 
 
 def test_one_turret_stops_several_sonics_but_swarm_saturates():

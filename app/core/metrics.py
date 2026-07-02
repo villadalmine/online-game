@@ -173,6 +173,18 @@ LLM_LATENCY = Histogram("game_llm_latency_seconds", "Latencia del LLM")
 # SDD 28 §3.5: correlación propia del juego — llamadas LLM por TIPO (advisor|npc|other), baja
 # cardinalidad (sin player). La fuente de verdad de tokens/costo/backend sigue siendo LiteLLM.
 LLM_CALLS = Counter("game_llm_calls_total", "Llamadas al LLM por tipo", ("kind", "status"))
+# SDD 65 §obs: ¿ES REAL LA GPU? Estas 3 responden "la API pega a mi GPU y cuánto":
+#  - route = gpu|cloud|byok (qué backend atendió la llamada) → separá GPU local de la nube.
+#  - game_llm_route_total: llamadas por ruta y status (ok/error). >0 en gpu = tu GPU respondió.
+#  - game_llm_tokens_total: tokens del campo `usage` de la respuesta (prompt|completion). Si sube
+#    en route=gpu, tu GPU está generando tokens de verdad (no cae a reglas/nube).
+#  - game_llm_last_ok_timestamp{route}: heartbeat — unix ts de la última respuesta OK por ruta.
+LLM_ROUTE = Counter("game_llm_route_total", "Llamadas LLM por ruta (backend) y status",
+                    ("kind", "route", "status"))
+LLM_TOKENS = Counter("game_llm_tokens_total", "Tokens LLM por ruta (del campo usage)",
+                     ("kind", "route", "type"))
+LLM_LAST_OK = Gauge("game_llm_last_ok_timestamp", "Unix ts de la última respuesta LLM OK por ruta",
+                    ("route",))
 
 # NPC (SDD): entender CÓMO juega la IA y si "mejora". `action` = qué hizo (build/train/attack/...);
 # `brain` = rules|llm. `outcome` = llm (el LLM decidió) | fallback (falló y cayó a reglas) →

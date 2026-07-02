@@ -5,6 +5,10 @@
 > satélites + `my_garrison`; enemies/opciones garrison- y tech-aware) y puede `research`/`spy`;
 > F3 (1.128.0): **auto-evaluación** — ledger {postura: w/l} en `reflect_on_battle` + `bandit_posture`
 > epsilon-greedy en `decide_strategy` (deja de insistir con la postura que viene perdiendo).
+> **Observabilidad GPU (1.137.0):** el juego emite métricas propias del camino API→GPU —
+> `game_llm_route_total{kind,route,status}` (llamadas por backend gpu/cloud/byok), `game_llm_tokens_total`
+> (tokens del campo `usage` por ruta) y `game_llm_last_ok_timestamp{route}` (heartbeat) — para NPC y
+> asistente; paneles nuevos en el dashboard "LLM usage & GPU" (no dependen de LiteLLM).
 > **Pendiente:** F4 opcional (mini-loop agéntico), solo con datos que lo justifiquen. ·
 > **Pedido:** usuario, 2026-07-01: "que la inteligencia del NPC sea más autónoma; que use las mejores
 > técnicas para leer el entorno, la API, las métricas, el grafo de todo el juego, y el modelo de GPU

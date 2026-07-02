@@ -88,14 +88,22 @@ async def accept_tribute(session: AsyncSession, attacker: Player, mission_id: in
         attacker.energy = min(effective_energy_max(attacker, settings),
                               attacker.energy + float(offer["energy"]))
         attacker.energy_updated_at = now
+    # SDD 67: el misil se cancela y VUELVE al hangar del atacante (no se detona → no se pierde).
+    from app.services.training import get_or_create_unit_stock
+    returned = json.loads(mission.force)
+    for key, qty in returned.items():
+        (await get_or_create_unit_stock(session, attacker.id, key)).quantity += int(qty)
     mission.status = "cancelled"
-    mission.details = json.dumps({"cancelled_by_tribute": offer})
+    mission.details = json.dumps({"cancelled_by_tribute": offer, "returned": returned})
     await notify(session, defender.id, "tribute_accepted",
                  "Tu tributo fue aceptado: el misil nuclear se canceló", offer)
+    await notify(session, attacker.id, "strike_cancelled",
+                 "Aceptaste el tributo: tus misiles volvieron al hangar",
+                 {"tribute": offer, "returned": returned})
     from app.services.journal import record
     await record(session, "nuclear_cancelled", attacker.id, defender_id=defender.id, tribute=offer)
     await session.flush()
-    return {"cancelled": True, "tribute": offer}
+    return {"cancelled": True, "tribute": offer, "returned": returned}
 
 
 def _aware(dt: datetime) -> datetime:
@@ -108,6 +116,7 @@ class StrikeResult:
     intercepted: dict[str, int] = field(default_factory=dict)
     damage: float = 0.0
     area: bool = False   # True si algún misil de área (nuclear) impactó
+    partial: dict[str, int] = field(default_factory=dict)  # SDD 67: impactaron a fracción de daño
 
 
 def simulate_strike(
@@ -115,8 +124,12 @@ def simulate_strike(
 ) -> StrikeResult:
     """Resolución pura de una salva. La capacidad antimisil se gasta sobre los misiles entrantes
     en orden ascendente de `intercept_cost` (primero los baratos/fáciles). Un misil es interceptado
-    si queda capacidad ≥ su `intercept_cost`; si no, impacta. `damage` = Σ power de los que impactan
-    × atk_mult. Consecuencia: un enjambre de sónicos satura; el nuclear casi no se frena."""
+    si queda capacidad ≥ su `intercept_cost`; si queda ALGO pero no alcanza, impacta PARCIAL (SDD
+    67: daño × `strike_partial_impact_factor`, 0.5); sin capacidad, impacta pleno. `damage` =
+    Σ power (o power×factor si parcial) × atk_mult. El nuclear cuesta 100 = 10 torretas para bloqueo
+    total; con menos, entra al 50%. Un enjambre de sónicos igual satura."""
+    from app.core.config import get_settings
+    partial_factor = get_settings().strike_partial_impact_factor
     content = get_content()
     # expandir a misiles individuales (key, power, intercept_cost, area)
     missiles: list[tuple[str, float, float, bool]] = []
@@ -134,15 +147,24 @@ def simulate_strike(
     intercepted: dict[str, int] = {}
     damage = 0.0
     area_hit = False
+    partial: dict[str, int] = {}
     for key, power, ic, area in missiles:
         if remaining >= ic:
             remaining -= ic
             intercepted[key] = intercepted.get(key, 0) + 1
+        elif remaining > 0:
+            # SDD 67: intercepción PARCIAL — quedaba algo de antimisil pero no alcanzó; el misil
+            # entra pero a fracción de daño (default 50%). Se consume lo que quedaba.
+            remaining = 0.0
+            impacted[key] = impacted.get(key, 0) + 1
+            partial[key] = partial.get(key, 0) + 1
+            damage += power * partial_factor
+            area_hit = area_hit or area
         else:
             impacted[key] = impacted.get(key, 0) + 1
             damage += power
             area_hit = area_hit or area
-    return StrikeResult(impacted, intercepted, round(damage * atk_mult, 2), area_hit)
+    return StrikeResult(impacted, intercepted, round(damage * atk_mult, 2), area_hit, partial)
 
 
 async def _active_buildings(session: AsyncSession, base_id: int) -> list[Building]:
@@ -324,7 +346,7 @@ async def _resolve_strike(session: AsyncSession, mission: StrikeMission, now: da
 
     details = {
         "impacted": result.impacted, "intercepted": result.intercepted,
-        "damage": result.damage, "destroyed": destroyed,
+        "damage": result.damage, "destroyed": destroyed, "partial": result.partial,
     }
     session.add(CombatLog(
         attacker_id=attacker.id, defender_id=defender.id,

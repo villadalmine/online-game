@@ -1163,6 +1163,7 @@ async def _llm_decide(state: dict) -> dict:
     )
     user = state.pop("__user", None)  # SDD 28: atribución por usuario (no va en el prompt)
     model = state.pop("__model", None) or (settings.npc_llm_model or None)  # gpu/cloud por NPC
+    route = state.pop("__route", None) or "gpu"  # SDD 65 obs: qué backend atendió (gpu/cloud)
     content = await llm_chat(
         [
             {"role": "system", "content": system},
@@ -1172,6 +1173,7 @@ async def _llm_decide(state: dict) -> dict:
         json_mode=settings.llm_json_mode,
         user=user,
         kind="npc",
+        route=route,
         model=model,
         timeout=settings.npc_llm_timeout_seconds,
     )
@@ -1221,6 +1223,7 @@ class LlmBrain:
             state = await _npc_state(session, player)
             state["__user"] = f"npc:{player.username}"  # SDD 28: atribución de uso LLM por NPC
             state["__model"] = model                    # qué modelo usa ESTE NPC (gpu/cloud)
+            state["__route"] = backend                  # SDD 65 obs: ruta para métricas de tokens
             # CLAVE (perf): cerrar la transacción ANTES de la llamada lenta al LLM/GPU. Si no, la
             # conexión queda "idle in transaction" reteniendo snapshot/locks durante los ~20-30s de
             # la GPU y, con varios NPCs, el tick cuelga el juego ~2 min. Decidimos SIN transacción
@@ -1240,6 +1243,7 @@ class LlmBrain:
                 )
                 metrics.NPC_FALLBACK_REASON.inc(reason="gpu_rescued_by_cloud")
                 state["__model"] = settings.npc_cloud_model
+                state["__route"] = "cloud"   # SDD 65 obs: el reintento lo atiende la nube
                 backend = "cloud"
                 action = await self._decide(state)  # si la nube también falla → reglas
             player = await session.get(Player, player_id)  # re-cargar tras el commit
