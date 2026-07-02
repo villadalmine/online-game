@@ -31,6 +31,8 @@ buildings:
     energy_cost: 10
     build_seconds: 60
     base_output_per_hour: 60   # multiplied by planet abundance for the target mineral
+    upgrade:
+      production: { output_mult: 0.25 }   # SDD 66: +25% de producción por nivel de mejora
     worker_slots: 5            # SDD 47: trabajadores para operar esta mina al 100% (staffing)
     storage: 2000              # SDD 47: buffer de almacén que aporta para el mineral que extrae
     cost:

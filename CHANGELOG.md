@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — Tránsito completo + upgrade de mina + reporte de misiles más claro
+- **Panel "🚀 Flotas en tránsito"** ahora muestra TODO lo que está en vuelo/activo: flotas, misiles
+  (☢ si nuclear), misiles entrantes, traslados de tropas 🚚, transportes 📦, espías 🕵, y drones/
+  satélites orbitando (sección "en órbita"). Antes solo mostraba flotas/expediciones. Pedido del usuario.
+- **Mejora de producción de mina** (SDD 66): la mina admite `upgrade: production` (+25%/nivel, wireado
+  en `collect_mines`); ⬆⛏ en el panel. "Más edificios con upgrade" (antes solo la torreta).
+- **Reporte de misiles más claro:** marca **☢** cuando hubo un nuclear y, para el defensor,
+  "🛡 los interceptaste todos ✓" (interceptar todo = te protegiste); "impactaron/interceptados" con
+  etiquetas. (El "💥 0 · 🛡 6" = tus torretas frenaron los 6 misiles — está bien calculado.)
+
 ## [1.135.0] - 2026-07-02
 
 ### 2026-07-02 — SDD 66: una mina averiada produce menos (condición → producción)
