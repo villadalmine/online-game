@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.137.0] - 2026-07-02
+
 ### 2026-07-02 — SDD 67: balance nuclear (10 torretas / parcial 50%) + vuelve al hangar + verás la GPU
 - **Nuclear ahora necesita 10 torretas para bloqueo total** (`intercept_cost` 30→100). Con menos
   antimisil el nuclear **impacta PARCIAL al 50%** (`strike_partial_impact_factor`, nueva intercepción
