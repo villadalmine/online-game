@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.131.0] - 2026-07-02
+
 ### 2026-07-02 — UI del tributo nuclear + balance de defensa (torretas +50%)
 - **UI diplomacia nuclear (SDD 67):** el snapshot expone `strikes_incoming` (salvas entrantes, marca el
   nuclear + si podés ofrecer tributo) y `strikes[].tribute` (oferta recibida). En "🚀 Arsenal": una
