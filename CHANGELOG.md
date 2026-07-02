@@ -7,6 +7,26 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — Reportes agrupados + fixes de arsenal/reportes + edificios ×N + SDD 65/66
+> Batch de reportes del usuario jugando + pedido de IA más autónoma.
+- **Reportes de combate agrupados por período** (pedido): Hoy (abierto) / Ayer / Esta semana / por mes,
+  colapsables con el resumen "N ⚔ · ✓ganadas ✗perdidas". Lo abierto/cerrado se recuerda.
+- **Fix reportes de misiles:** una salva (outcome `strike`) se renderizaba como combate de flota →
+  "✗ perdiste, ⚔0 vs 🛡0, perdiste: nada". Ahora muestra lo real: 💥 impactaron · 🛡 interceptados ·
+  🏚 destruidos (el "ataque con misiles y fue 0" era intercepción total, no bug de daño).
+- **Fix arsenal (tránsito invisible):** tras clickear "Lanzar", el foco quedaba dentro del panel y el
+  guard anti-pisadas bloqueaba el refresco → las salvas ⏳ / escuadrones nunca aparecían. Ahora el
+  guard solo aplica si estás escribiendo en un campo (input/select), no sobre botones.
+- **Bases: edificios repetidos agrupados** (pedido): "torreta ×5 <span>✓4 🏗1</span>" colapsado, click
+  para ver cada una (prepara sanas/averiadas de SDD 66).
+- **SDD 65 (`docs/sdd-npc-autonomous-intelligence.md`)**: investigación + diseño de la NPC autónoma
+  (leer TODO el entorno, grafo SDD 1 como herramienta, auto-evaluación por métricas, mini-loop
+  agéntico opcional). **Fase 1 implementada:** cadena de modelos **GPU → cloud → reglas** — si la GPU
+  falla, reintenta UNA vez con el modelo de nube antes de caer a reglas (métrica
+  `gpu_rescued_by_cloud`). Test `test_llm_gpu_falls_back_to_cloud_model`.
+- **SDD 66 (`docs/sdd-building-condition-upgrades.md`, diseño)**: condición averiada/sana por edificio,
+  daño gradual de misiles/bombardeo, reparar/demoler/mejorar (defensa o antimisil). Pedido usuario.
+
 ## [1.125.0] - 2026-07-01
 
 ### 2026-07-01 — IA más agresiva/viva (arriesga, espía, nunca idle) + ver qué hace

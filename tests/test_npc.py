@@ -668,3 +668,25 @@ async def test_npc_never_idle(session):
         select(Player).where(Player.username == "busy_npc"))).scalar_one()
     action = await RuleBasedBrain().act(session, npc)
     assert action is not None and action != ""   # SIEMPRE decide algo
+
+
+async def test_llm_gpu_falls_back_to_cloud_model(session, monkeypatch):
+    """SDD 65 Fase 1: si la GPU falla, se reintenta con el modelo de NUBE antes de caer a reglas."""
+    from app.core.config import get_settings
+    await ensure_npcs(session)
+    npc = await _npc(session)
+    monkeypatch.setattr(get_settings(), "npc_cloud_model", "gemma-cloud")
+    monkeypatch.setattr(get_settings(), "npc_cloud_username", "")   # nadie designado → arranca gpu
+    calls = []
+
+    async def flaky(state):
+        calls.append(state["__model"])
+        if len(calls) == 1:
+            raise RuntimeError("gpu caida")
+        assert state["__model"] == "gemma-cloud"   # el reintento va con el modelo de nube
+        return {"action": "build", "building": "mine", "mineral": "iron"}
+
+    desc = await LlmBrain(decide=flaky).act(session, npc)
+    await session.commit()
+    assert desc == "llm build mine (iron)"
+    assert len(calls) == 2   # 1º gpu (falla) + 2º nube (rescata)

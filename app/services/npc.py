@@ -1128,7 +1128,22 @@ class LlmBrain:
             # la GPU y, con varios NPCs, el tick cuelga el juego ~2 min. Decidimos SIN transacción
             # abierta y aplicamos después en una transacción corta.
             await session.commit()
-            action = await self._decide(state)
+            try:
+                action = await self._decide(state)
+            except Exception as gpu_exc:
+                # SDD 65 Fase 1: cadena de modelos — si la GPU falla, reintentá UNA vez con el
+                # modelo de NUBE antes de caer a reglas (la NPC sigue jugando "con cabeza").
+                if backend != "gpu" or not settings.npc_cloud_model:
+                    raise
+                logging.getLogger("npc").warning(
+                    "NPC %s: GPU falló (%s: %s) → reintento con nube (%s)",
+                    getattr(player, "username", player_id), type(gpu_exc).__name__,
+                    str(gpu_exc)[:80], settings.npc_cloud_model,
+                )
+                metrics.NPC_FALLBACK_REASON.inc(reason="gpu_rescued_by_cloud")
+                state["__model"] = settings.npc_cloud_model
+                backend = "cloud"
+                action = await self._decide(state)  # si la nube también falla → reglas
             player = await session.get(Player, player_id)  # re-cargar tras el commit
             result = await dispatch_action(session, player, action)
             metrics.NPC_DECISIONS.inc(outcome="llm", backend=backend)   # el LLM decidió y se aplicó

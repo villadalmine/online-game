@@ -869,8 +869,11 @@ function renderArsenal(){
   const feat=catalog.features||{}; const card=$("arsenalcard");
   if(card) card.classList.toggle('hidden', !(feat.strike||feat.drones));
   if(!(feat.strike||feat.drones)) return;
-  // no rebuildear (borrar) los inputs mientras el usuario los está usando (el ciclo de 4s los pisaba).
-  if(el.contains(document.activeElement)) return;
+  // no rebuildear (borrar) los inputs mientras el usuario ESCRIBE en uno (el ciclo de 4s los pisaba).
+  // OJO: solo campos editables — si el foco quedó en un botón (p.ej. tras "Lanzar"), hay que
+  // refrescar igual, si no el tránsito (⏳ salvas / escuadrones) no aparecía nunca.
+  const _ae=document.activeElement;
+  if(el.contains(_ae) && _ae && /^(INPUT|SELECT|TEXTAREA)$/.test(_ae.tagName)) return;
   const pic=isPicto('arsenal'); let html="";
   if(feat.strike) html+=_missilePanel(pic);
   if(feat.drones) html+=_dronePanel(pic);
@@ -1128,7 +1131,7 @@ const I18N={
       calc_title:"Calculadora de combate",calc_help:"Probá fuerzas sin gastar nada: te dice si ganás y cuánto pierde cada lado (mismo cálculo que el combate real).",calc_attacker:"⚔ Atacante",calc_defender:"🛡 Defensor",calc_turrets:"🛡 torretas (defensa fija)",calc_win:"🟢 Ganás",calc_lose:"🔴 Perdés",calc_youlose:"perdés",calc_theylose:"el rival pierde",calc_none:"poné unidades en los dos lados",calc_fromintel:"a la calculadora",
       youhave:"tenés",nospies:"No tenés espías — entrenalos en el cuartel/laboratorio primero.",noattackunits:"no tenés unidades de ataque — entrená soldados/tanques primero",lowenergy:"poca energía",unitssel:"unidades",pickunits:"elegí cuántas unidades mandás",fleetsent:"🚀 Flota despachada, llega",trainfirst:"entrená {u} primero",
       arsenal_title:"Arsenal intra-planeta",arsenal_help:"Misiles y drones golpean bases del MISMO planeta (no salen del planeta).",ars_missiles:"Misiles",ars_drones:"Drones",ars_no_launcher:"Construí una Lanzadera (requiere Cohetería) y fabricá misiles.",ars_no_missiles:"Fabricá misiles en la lanzadera (entrenalos).",ars_no_factory:"Construí una Fábrica de drones (requiere Dronística) y fabricá drones.",ars_no_drones:"Fabricá drones en la fábrica (entrenalos).",ars_enemy_turrets:"torretas del rival (de tu intel)",ars_launch:"Lanzar",ars_launched:"🚀 Lanzado",ars_recalled:"⏹ Drones volviendo",ars_impact:"impactan",ars_intercepted:"interceptados",sat_title:"Satélites",sat_help:"Lanzá satélites: recon de tu planeta y espías que mapean las bases enemigas (%).",sat_launch:"lanzar",sat_launched:"🛰 Satélite en órbita",sat_recalled:"↩ satélite de vuelta",sat_none_built:"Fabricá satélites en el cosmódromo (entrenalos).",sat_orbit:"En órbita",sat_maps:"Mapa de enemigos (satélites espía)",
-      cNone:"nada",cYouAtk:"vos →",cAtkYou:"te atacó",cWon:"✓ ganaste",cLost:"✗ perdiste",cYouLost:"perdiste",cTheyLost:"perdió",cLoot:"botín",cLooted:"te saquearon",cNoReports:"todavía no hubo batallas",
+      cNone:"nada",cYouAtk:"vos →",cAtkYou:"te atacó",cWon:"✓ ganaste",cLost:"✗ perdiste",cYouLost:"perdiste",cTheyLost:"perdió",cLoot:"botín",cLooted:"te saquearon",cNoReports:"todavía no hubo batallas",rep_today:"Hoy",rep_yesterday:"Ayer",rep_week:"Esta semana",rep_struck_you:"te lanzó misiles",rep_intercepted_all:"interceptados",
       perunit:"de ataque c/u",atkperunit:"Ataque por unidad (sumás esto × cantidad al mandar la flota)",
       bMines:"Bonus compartido: +producción/ataque/defensa para todos los miembros",bUnit:"Tech de unidades: cada raza comparte su ventaja con toda la alianza",bDef:"Defensa mutua: tus aliados ayudan a defender tu base",bVis:"Visión compartida: ves los ataques que reciben tus aliados",bTrade:"Comercio: transferir minerales entre aliados"} },
   en:{ panels:{acciones:"Actions",perfil:"👤 Profile",mercado:"💱 Market",hub:"🛰 Galactic hub",atacar:"⚔ Attack",investigacion:"🔬 Research",alianzas:"🤝 Alliances",chat:"💬 Alliance chat",galaxias:"🌌 Galaxies",transitos:"🚀 Fleets in transit",imperio:"Your empire",bases:"Bases & buildings",colas:"Queues & fleets",combate:"⚔ Combat reports",eventos:"📣 Events",temporada:"📅 Season",ranking:"🏆 Ranking",notis:"🔔 Notifications",mundo:"🌍 World events",meta:"📈 Meta (learned)",asistente:"🧠 AI Assistant",anuncios:"📰 News",admin:"🛡 Admin",capacidad:"📦 Economy / capacity",arsenal:"🚀 Intra-planet arsenal",satelites:"🛰 Satellites",guia:"📖 Guide — what is each thing?"},
@@ -1148,7 +1151,7 @@ const I18N={
       calc_title:"Combat calculator",calc_help:"Try forces without spending anything: tells you if you win and how much each side loses (same math as real combat).",calc_attacker:"⚔ Attacker",calc_defender:"🛡 Defender",calc_turrets:"🛡 turrets (fixed defense)",calc_win:"🟢 You win",calc_lose:"🔴 You lose",calc_youlose:"you lose",calc_theylose:"enemy loses",calc_none:"put units on both sides",calc_fromintel:"to calculator",
       youhave:"you have",nospies:"You have no spies — train them at the barracks/lab first.",noattackunits:"no attack units — train soldiers/tanks first",lowenergy:"low energy",unitssel:"units",pickunits:"pick how many units to send",fleetsent:"🚀 Fleet dispatched, arrives",trainfirst:"train {u} first",
       arsenal_title:"Intra-planet arsenal",arsenal_help:"Missiles and drones hit bases on the SAME planet (they don't leave the planet).",ars_missiles:"Missiles",ars_drones:"Drones",ars_no_launcher:"Build a Launcher (needs Rocketry) and make missiles.",ars_no_missiles:"Make missiles at the launcher (train them).",ars_no_factory:"Build a Drone factory (needs Dronework) and make drones.",ars_no_drones:"Make drones at the factory (train them).",ars_enemy_turrets:"enemy turrets (from your intel)",ars_launch:"Launch",ars_launched:"🚀 Launched",ars_recalled:"⏹ Drones returning",ars_impact:"impact",ars_intercepted:"intercepted",sat_title:"Satellites",sat_help:"Launch satellites: recon of your planet and spies that map enemy bases (%).",sat_launch:"launch",sat_launched:"🛰 Satellite in orbit",sat_recalled:"↩ satellite back",sat_none_built:"Build satellites at the cosmodrome (train them).",sat_orbit:"In orbit",sat_maps:"Enemy map (spy satellites)",
-      cNone:"nothing",cYouAtk:"you →",cAtkYou:"attacked you",cWon:"✓ you won",cLost:"✗ you lost",cYouLost:"you lost",cTheyLost:"they lost",cLoot:"loot",cLooted:"looted from you",cNoReports:"no battles yet",
+      cNone:"nothing",cYouAtk:"you →",cAtkYou:"attacked you",cWon:"✓ you won",cLost:"✗ you lost",cYouLost:"you lost",cTheyLost:"they lost",cLoot:"loot",cLooted:"looted from you",cNoReports:"no battles yet",rep_today:"Today",rep_yesterday:"Yesterday",rep_week:"This week",rep_struck_you:"launched missiles at you",rep_intercepted_all:"intercepted",
       perunit:"attack each",atkperunit:"Attack per unit (this × quantity is added when you send the fleet)",
       bMines:"Shared bonus: +production/attack/defense for all members",bUnit:"Unit tech: each race shares its edge with the whole alliance",bDef:"Mutual defense: your allies help defend your base",bVis:"Shared vision: you see attacks your allies receive",bTrade:"Trade: transfer minerals between allies"} },
 };
@@ -1254,6 +1257,16 @@ function _collapse(key,titleHtml,bodyHtml){
   return `<details class="plgrp" data-k="${esc(key)}"${open} ontoggle="_onToggle('${esc(key)}',this.open)">`+
     `<summary>${titleHtml}</summary>${bodyHtml}</details>`;
 }
+// Variante default-CERRADO (historial largo: reportes viejos). Persiste las que ABRISTE.
+let _expanded=new Set();
+try{ _expanded=new Set(JSON.parse(localStorage.getItem('expanded')||'[]')); }catch{}
+function _onToggleC(key,isOpen){ if(isOpen)_expanded.add(key); else _expanded.delete(key);
+  try{ localStorage.setItem('expanded',JSON.stringify([..._expanded])); }catch{} }
+function _collapseC(key,titleHtml,bodyHtml){
+  const open=_expanded.has(key)?' open':'';
+  return `<details class="plgrp" data-k="${esc(key)}"${open} ontoggle="_onToggleC('${esc(key)}',this.open)">`+
+    `<summary>${titleHtml}</summary>${bodyHtml}</details>`;
+}
 
 // render
 async function refresh(){
@@ -1311,14 +1324,28 @@ async function refresh(){
   // SDD 54: avisá si una base no tiene defensa activa (torreta u otro edificio con defense_power).
   const _hasDefense=b=>b.buildings.some(bl=>bl.status==='active' && (((spec.build[bl.building_key]||{}).defense_power)||0)>0);
   // SDD 60: agrupado por planeta y colapsable (con varias colonias el panel se hacía enorme).
-  const _baseBlock=b=>`<div style="margin-bottom:8px"><b>${baseTag(b)} ${picB?planetIcon(b.planet_key):esc(b.name)}</b> <span class="muted">#${b.id}${picB?'':' · '+esc(b.planet_key)}</span>`+
-    (_hasDefense(b)?"":`<div class="item bad" style="font-size:12px">${esc(tr('nodef'))}</div>`)+
-    // SDD 60: edificios ordenados alfabéticamente por nombre (estable, no salta al refrescar).
-    [...b.buildings].sort((x,y)=>((spec.build[x.building_key]||{}).name||x.building_key)
-      .localeCompare((spec.build[y.building_key]||{}).name||y.building_key))
-    .map(bl=>`<div class="item"><div class="top"><span>${picB?ico('build',bl.building_key):esc(bl.building_key)}${bl.production_mineral?(picB?' '+mname(bl.production_mineral,'bases'):` (${esc(bl.production_mineral)})`):""}</span>`+
-      `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?(picB?'✓':'✓ activo'):cd(bl.completes_at)}</span></div>`+
-      (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`).join("")+`</div>`;
+  // fila individual de un edificio (estado + barra si está en obra)
+  const _bldLabel=bl=>`${picB?ico('build',bl.building_key):esc((spec.build[bl.building_key]||{}).name||bl.building_key)}${bl.production_mineral?(picB?' '+mname(bl.production_mineral,'bases'):` (${esc(bl.production_mineral)})`):""}`;
+  const _bldRow=bl=>`<div class="item"><div class="top"><span>${_bldLabel(bl)}</span>`+
+    `<span class="${bl.status==='active'?'ok':'warn'}">${bl.status==='active'?(picB?'✓':'✓ activo'):cd(bl.completes_at)}</span></div>`+
+    (bl.status!=='active'?bar((spec.build[bl.building_key]||{}).build_seconds,bl.completes_at):"")+`</div>`;
+  const _baseBlock=b=>{
+    // agrupar edificios REPETIDOS: "torreta ×5 ✓4 🏗1" colapsado; click para ver cada uno
+    // (pedido usuario: los planetas tienen muchas bases iguales; prepara el estado sana/averiada SDD 66).
+    const g={};
+    b.buildings.forEach(bl=>{ const k=bl.building_key+"|"+(bl.production_mineral||""); (g[k]=g[k]||[]).push(bl); });
+    // SDD 60: ordenado alfabéticamente por nombre (estable, no salta al refrescar).
+    const body=Object.keys(g).sort((x,y)=>((spec.build[g[x][0].building_key]||{}).name||x)
+      .localeCompare((spec.build[g[y][0].building_key]||{}).name||y)).map(k=>{
+      const arr=g[k];
+      if(arr.length===1) return _bldRow(arr[0]);
+      const act=arr.filter(x=>x.status==='active').length, wip=arr.length-act;
+      const title=`${_bldLabel(arr[0])} <b>×${arr.length}</b> <span class="ok">✓${act}</span>${wip?` <span class="warn">🏗${wip}</span>`:''}`;
+      return _collapseC('bg:'+b.id+':'+k, title, arr.map(_bldRow).join(""));
+    }).join("");
+    return `<div style="margin-bottom:8px"><b>${baseTag(b)} ${picB?planetIcon(b.planet_key):esc(b.name)}</b> <span class="muted">#${b.id}${picB?'':' · '+esc(b.planet_key)}</span>`+
+      (_hasDefense(b)?"":`<div class="item bad" style="font-size:12px">${esc(tr('nodef'))}</div>`)+body+`</div>`;
+  };
   const _byPlanet={}; state.bases.forEach(b=>{ (_byPlanet[b.planet_key]=_byPlanet[b.planet_key]||[]).push(b); });
   $("bases").innerHTML=Object.keys(_byPlanet).map(pk=>{
     const bs=_byPlanet[pk], nb=bs.reduce((n,b)=>n+b.buildings.length,0), tag=(pk===state.planet_key)?'⭐':'🪐';
@@ -1852,9 +1879,20 @@ async function loadReports(){
   let rs; try{ rs=await api("/api/v1/combat/reports"); }catch{ return; }
   const me=state&&state.id;
   const pic=isPicto('combate');
-  $("reports").innerHTML = rs.length ? rs.map(r=>{
+  const row=r=>{
     const iAtk=r.attacker_id===me, d=r.details||{};
     const other=iAtk?pname(r.defender_id):pname(r.attacker_id);
+    // SDD 49: una SALVA de misiles no es un combate de flota (no hay scores/pérdidas) → render propio.
+    if(r.outcome==='strike'){
+      const imp=(d.impacted||[]), inter=(d.intercepted||[]), des=(d.destroyed||[]);
+      const cnt=o=>Array.isArray(o)?o.length:Object.values(o||{}).reduce((a,b)=>a+b,0);
+      const dir=iAtk?`🚀 ${esc(tr('cYouAtk'))} ${esc(other)}`:`🚀 ${esc(other)} ${esc(tr('rep_struck_you'))}`;
+      const ok=cnt(imp)>0;
+      const res=ok?`<span class="${iAtk?'ok':'bad'}">💥 ${cnt(imp)}</span>`:`<span class="${iAtk?'bad':'ok'}">🛡 ${esc(tr('rep_intercepted_all'))}</span>`;
+      return `<div class="item"><div class="top"><span>${dir} <span class="muted">#${r.target_base_id}</span></span>${res}</div>`+
+        `<div class="muted">💥 ${cnt(imp)} · 🛡 ${cnt(inter)}${des.length?` · 🏚 ${des.map(k=>esc(k)).join(", ")}`:""}</div>`+
+        `<div class="muted" style="font-size:11px">${new Date(r.created_at).toLocaleString()}</div></div>`;
+    }
     const won=iAtk?(r.outcome==='attacker'):(r.outcome==='defender');
     const myLoss=iAtk?d.attacker_losses:d.defender_losses;
     const theirLoss=iAtk?d.defender_losses:d.attacker_losses;
@@ -1865,7 +1903,33 @@ async function loadReports(){
       `<div class="muted">${esc(tr('cYouLost'))}: ${unitsStr(myLoss,pic)} · ${esc(tr('cTheyLost'))}: ${unitsStr(theirLoss,pic)}`+
       (lootStr?` · ${esc(iAtk&&won?tr('cLoot'):tr('cLooted'))}: ${lootStr}`:"")+`</div>`+
       `<div class="muted" style="font-size:11px">⚔${Math.round(d.attack_score||0)} vs 🛡${Math.round(d.defense_score||0)} · ${new Date(r.created_at).toLocaleString()}</div></div>`;
-  }).join("") : `<span class="muted">${esc(tr('cNoReports'))}</span>`;
+  };
+  if(!rs.length){ $("reports").innerHTML=`<span class="muted">${esc(tr('cNoReports'))}</span>`; return; }
+  // Agrupado por período (Hoy / Ayer / Esta semana / mes): colapsable; solo "Hoy" abre por default.
+  const now=new Date(), dk=d=>d.toDateString();
+  const today=dk(now), yest=dk(new Date(now.getTime()-864e5)), weekAgo=now.getTime()-7*864e5;
+  const groups=new Map();   // key -> {label, items:[], wins, losses, defaultOpen}
+  for(const r of rs){
+    const dt=new Date(r.created_at); let key,label,defOpen=false;
+    if(dk(dt)===today){ key="rep:today"; label=`📅 ${tr('rep_today')}`; defOpen=true; }
+    else if(dk(dt)===yest){ key="rep:yest"; label=tr('rep_yesterday'); }
+    else if(dt.getTime()>weekAgo){ key="rep:week"; label=tr('rep_week'); }
+    else { key=`rep:${dt.getFullYear()}-${dt.getMonth()}`;
+      label=dt.toLocaleDateString(lang==='en'?'en':'es',{month:'long',year:'numeric'}); }
+    const g=groups.get(key)||{label,items:[],wins:0,losses:0,defOpen};
+    const iAtk=r.attacker_id===me;
+    let won;
+    if(r.outcome==='strike'){   // salva de misiles: "ganás" si impactó (atacando) o interceptaste todo
+      const impacted=((r.details||{}).impacted||[]).length>0;
+      won=iAtk?impacted:!impacted;
+    } else won=iAtk?(r.outcome==='attacker'):(r.outcome==='defender');
+    if(won) g.wins++; else g.losses++;
+    g.items.push(row(r)); groups.set(key,g);
+  }
+  $("reports").innerHTML=[...groups.entries()].map(([key,g])=>{
+    const title=`<b>${esc(g.label)}</b> <span class="muted" style="font-size:11px">${g.items.length} ⚔ · <span class="ok">✓${g.wins}</span> <span class="bad">✗${g.losses}</span></span>`;
+    return (g.defOpen?_collapse:_collapseC)(key,title,g.items.join(""));
+  }).join("");
 }
 
 // alliance chat — its own card so the input survives the 4s refresh
