@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.136.0] - 2026-07-02
+
 ### 2026-07-02 — Tránsito completo + upgrade de mina + reporte de misiles más claro
 - **Panel "🚀 Flotas en tránsito"** ahora muestra TODO lo que está en vuelo/activo: flotas, misiles
   (☢ si nuclear), misiles entrantes, traslados de tropas 🚚, transportes 📦, espías 🕵, y drones/
