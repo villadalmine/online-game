@@ -313,6 +313,16 @@ class StrikeMissionOut(BaseModel):
     force: dict[str, int]
     status: str
     arrives_at: datetime
+    tribute: dict | None = None      # SDD 67: oferta de tributo del defensor (si la hay)
+
+
+class IncomingStrikeOut(BaseModel):
+    id: int
+    target_base_id: int
+    arrives_at: datetime
+    is_nuclear: bool = False         # SDD 67: solo el nuclear se puede negociar
+    tribute: dict | None = None      # lo que ya ofreciste (para no re-ofrecer)
+    can_offer: bool = False          # tenés government activo + diplomacy
 
 
 class StrikeSimRequest(BaseModel):
@@ -636,6 +646,7 @@ class PlayerStateOut(BaseModel):
     # SDD 49: salvas de misiles en vuelo (propias). SDD 50: escuadrones de drones orbitando + intel
     # en vivo por base objetivo. Vacíos si los flags strike_enabled/drones_enabled están off.
     strikes: list[StrikeMissionOut] = []
+    strikes_incoming: list[IncomingStrikeOut] = []   # SDD 67: salvas entrantes (nuclear negociable)
     drones: list[DroneSquadronOut] = []
     intel_live: dict = {}
     # SDD 61: satélites propios en órbita + mapas de enemigos ({target_id: {pct, bases}}).

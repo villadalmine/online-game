@@ -298,11 +298,12 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
 
     # SDD 49: salvas de misiles propias en vuelo.
     from app.models import StrikeMission
-    from app.schemas import StrikeMissionOut
+    from app.schemas import IncomingStrikeOut, StrikeMissionOut
     strikes_out = [
         StrikeMissionOut(
             id=m.id, launcher_base_id=m.launcher_base_id, target_base_id=m.target_base_id,
             force=json.loads(m.force), status=m.status, arrives_at=m.arrives_at,
+            tribute=json.loads(m.tribute) if m.tribute else None,   # SDD 67
         )
         for m in (await session.execute(
             select(StrikeMission).where(
@@ -310,6 +311,26 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
             )
         )).scalars()
     ]
+    # SDD 67: salvas ENTRANTES (para negociar el nuclear). can_offer si tenés gobierno + diplomacia.
+    from app.services.research import researched_techs as _rt
+    _can_offer = None
+    strikes_incoming = []
+    for m in (await session.execute(
+        select(StrikeMission).where(
+            StrikeMission.defender_id == player.id, StrikeMission.status == "outbound"
+        )
+    )).scalars():
+        is_nuke = "nuclear_missile" in json.loads(m.force)
+        if is_nuke and _can_offer is None:
+            has_gov = (await session.execute(
+                select(Building.id).join(Base_, Building.base_id == Base_.id).where(
+                    Base_.player_id == player.id, Building.building_key == "government",
+                    Building.status == "active"))).first() is not None
+            _can_offer = has_gov and "diplomacy" in await _rt(session, player.id)
+        strikes_incoming.append(IncomingStrikeOut(
+            id=m.id, target_base_id=m.target_base_id, arrives_at=m.arrives_at, is_nuclear=is_nuke,
+            tribute=json.loads(m.tribute) if m.tribute else None,
+            can_offer=bool(is_nuke and _can_offer)))
     # SDD 50: escuadrones de drones orbitando + intel en vivo.
     from app.schemas import DroneSquadronOut
     from app.services.drones import squadrons_state
@@ -418,6 +439,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         storage=storage_block,
         housing=housing_block,
         strikes=strikes_out,
+        strikes_incoming=strikes_incoming,
         drones=drones_out,
         intel_live=intel_live,
         satellites=satellites_out,

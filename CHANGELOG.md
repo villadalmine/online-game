@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — UI del tributo nuclear + balance de defensa (torretas +50%)
+- **UI diplomacia nuclear (SDD 67):** el snapshot expone `strikes_incoming` (salvas entrantes, marca el
+  nuclear + si podés ofrecer tributo) y `strikes[].tribute` (oferta recibida). En "🚀 Arsenal": una
+  salva nuclear entrante muestra **🕊 ofrecer tributo** (si tenés gobierno+diplomacia) y tus salvas con
+  oferta muestran **aceptar** (cancela el misil y te llevás el tributo).
+- **Balance de defensa:** `turret.defense_power` 40 → **60** (+50%) para que invertir en torretas se
+  note (~2 torretas ≈ el ataque de 1 tanque). Recordá: con guarnición, la defensa es POR base.
+
 ## [1.130.0] - 2026-07-02
 
 ### 2026-07-02 — SDD 67: diplomacia nuclear (el nuclear tarda 24 h y se puede negociar)
