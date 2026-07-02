@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-02 — SDD 68: vista del planeta con niebla de guerra por escaneo satelital
+- El modal de planeta (zoom en 🌌 Galaxias) ahora muestra, por cada rival del planeta, su estado
+  **satelital**: 📡 % escaneado + bases/unidades reveladas (de `enemy_maps`, SDD 61) si lo mapeaste, o
+  🌫 "sin datos — mandá un satélite espía" si no. Reusa lo que ya expone el snapshot; solo front.
+
 ## [1.133.0] - 2026-07-02
 
 ### 2026-07-02 — SDD 64 v2: el búnker como refugio + repoblación (electrónica) + costos + SDD 68

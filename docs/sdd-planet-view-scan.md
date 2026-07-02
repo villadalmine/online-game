@@ -1,6 +1,8 @@
 # SDD 68 — Vista del planeta: zoom a un mundo, tus bases siempre, las enemigas solo si escaneaste
 
-> **Estado:** **DISEÑO** 2026-07-02 · **Pedido:** usuario, 2026-07-02.
+> **Estado:** **IMPLEMENTADO** 2026-07-02 (1.134.0, front): el modal de planeta (`openPlanet`) suma la
+> visibilidad SATELITAL — por cada rival del planeta muestra 📡 % escaneado + bases/unidades (de
+> `enemy_maps`, SDD 61) o 🌫 niebla si no lo mapeaste. · **Pedido:** usuario, 2026-07-02.
 > **Relacionado:** [SDD 61 satélites](sdd-satellites-recon.md) (mapeo → `enemy_maps` con bases+unidades),
 > [SDD 35 espionaje](sdd-espionage.md) (intel puntual), [SDD 60 paneles por planeta](sdd-collapsible-planet-panels.md),
 > [SDD 43 pictográfico](sdd-play-without-reading.md), `web/index.html` (`renderMap`/`openPlanet`).
