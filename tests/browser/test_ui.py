@@ -43,10 +43,11 @@ def test_full_play_through_ui(page: Page, live_server, shots):
     expect(page.locator("#minerals")).to_contain_text("iron")
     _shot(page, shots / "03-game.png")
 
-    # 5) Build a mine (shows in the bases panel, building, with a countdown)
+    # 5) Build a mine (shows in the bases panel, building, with a countdown). El panel muestra el
+    # nombre LOCALIZADO del edificio (ES: "Mina"), no la clave "mine".
     page.select_option("#building", "mine")
     page.click("button:has-text('Construir')")
-    expect(page.locator("#bases")).to_contain_text("mine")
+    expect(page.locator("#bases")).to_contain_text("Mina")
 
     # 6) Create an alliance and see its benefits explained
     page.locator("#aname").fill("Halcones UI")
@@ -305,12 +306,12 @@ def test_language_toggle_en_es(page: Page, live_server, shots):
     page.click("button:has-text('Comenzar')")
     expect(page.locator("#game")).to_be_visible()
 
-    # starts in Spanish
-    expect(page.locator(".card[data-panel='mundo'] > h2")).to_have_text("🌍 Eventos del mundo")
+    # starts in Spanish (contain, no exact: injectPanelPictoButtons agrega un botón 🔤/🖼 al h2)
+    expect(page.locator(".card[data-panel='mundo'] > h2")).to_contain_text("Eventos del mundo")
 
     page.click("#langtoggle")  # -> EN
     expect(page.locator("#langtoggle")).to_have_text("🌐 EN")
-    expect(page.locator(".card[data-panel='mundo'] > h2")).to_have_text("🌍 World events")
+    expect(page.locator(".card[data-panel='mundo'] > h2")).to_contain_text("World events")
     # catalog content switched too: the build select now has English option labels
     expect(page.locator("#building")).to_contain_text("Mine")
     _shot(page, shots / "13-lang-en.png")
@@ -318,10 +319,10 @@ def test_language_toggle_en_es(page: Page, live_server, shots):
     page.reload()  # persists across reload
     expect(page.locator("#game")).to_be_visible()
     expect(page.locator("#langtoggle")).to_have_text("🌐 EN")
-    expect(page.locator(".card[data-panel='mundo'] > h2")).to_have_text("🌍 World events")
+    expect(page.locator(".card[data-panel='mundo'] > h2")).to_contain_text("World events")
 
     page.click("#langtoggle")  # back to ES
-    expect(page.locator(".card[data-panel='mundo'] > h2")).to_have_text("🌍 Eventos del mundo")
+    expect(page.locator(".card[data-panel='mundo'] > h2")).to_contain_text("Eventos del mundo")
 
 
 def test_panels_collapse_persist_and_expand(page: Page, live_server, shots):

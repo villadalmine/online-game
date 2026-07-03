@@ -54,3 +54,11 @@ env:
   # SDD 63: salto espacial (jumpers) — aditivo, gateado por el capstone `space_jump` (requiere TODO el
   # árbol endgame). Nadie lo tiene hasta investigarlo. Reversible. Ver docs/sdd-space-jump-jumpers.md.
   SPACE_JUMP_ENABLED: "true"
+  # SDD 69 Fase 1: expansión subterránea (⛏ excavar) — gateado por tech underground_construction.
+  BUNKER_EXPANSION_ENABLED: "true"
+  # SDD 69 Fase 4: vida artificial — subir niveles de IA (gateado por tech artificial_life + electrónica)
+  # y AUTOPILOTO de robots (staffing→minas→comercio→colonización→ATAQUE). Arranca suave: recién actúa
+  # cuando cada jugador desarrolla la IA (ataque solo a nivel 5); tiene botón de parada por jugador.
+  # Elección del usuario 2026-07-03: autonomía plena incluido ataque. Reversible. docs/sdd-bunker-reserve-civilization.md.
+  ARTIFICIAL_LIFE_ENABLED: "true"
+  BUNKER_AUTONOMY_ENABLED: "true"
