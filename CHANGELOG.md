@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 70 v3: el globo muestra MÁS cuanto más escaneaste (continentes + niebla + nitidez)
+- El globo del planeta ahora escala el detalle con la **cobertura satelital**: tu planeta = 100% (lo
+  ves todo); un enemigo = máx % descubierto entre sus rivales. Más cobertura → **aparecen continentes**
+  (blobs estilizados que giran, alpha ∝ cov), se **despeja la niebla** (overlay oscuro ∝ 1−cov) y las
+  **bases enemigas se nitidizan** (alpha ∝ cov). La leyenda muestra "📡 X% escaneado" / "🌍 tu planeta".
+- Solo front (`drawGlobe`); reusa `enemy_maps` (SDD 61). i18n 423/423.
+
 ## [1.153.0] - 2026-07-03
 
 ### 2026-07-03 — Fix gate e2e-chrome: `_token` tolerante al rate-limit (dejó de flakear el CD)
