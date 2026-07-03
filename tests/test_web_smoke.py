@@ -107,10 +107,22 @@ def _has_token(pg):
 
 
 def _token(username):
-    st, d = _req("/api/v1/auth/register", "POST", {"username": username, "password": "pw12345"})
-    if st != 201:
-        st, d = _req("/api/v1/auth/login", "POST", {"username": username, "password": "pw12345"})
-    tok = d["access_token"]
+    # Tolerante al rate-limit (429 → _req devuelve un STRING, no un dict): reintentar con backoff y
+    # username único por intento; nunca hacer d["access_token"] sobre un string/error.
+    import time as _time
+    tok = None
+    last = None
+    for attempt in range(6):
+        u = username if attempt == 0 else f"{username}{attempt}"
+        st, d = _req("/api/v1/auth/register", "POST", {"username": u, "password": "pw12345"})
+        if st != 201:
+            st, d = _req("/api/v1/auth/login", "POST", {"username": u, "password": "pw12345"})
+        if isinstance(d, dict) and d.get("access_token"):
+            tok = d["access_token"]
+            break
+        last = (st, d)
+        _time.sleep(0.6)   # backoff ante rate-limit / respuesta transitoria
+    assert tok, f"no se obtuvo access_token tras reintentos: {last}"
     me = _req("/api/v1/players/me", token=tok)[1]
     if not me.get("race_key"):
         _req("/api/v1/players/onboard", "POST",

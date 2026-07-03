@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Fix gate e2e-chrome: `_token` tolerante al rate-limit (dejó de flakear el CD)
+- `tests/test_web_smoke.py::_token` ahora reintenta con backoff + username único por intento y NUNCA
+  hace `d["access_token"]` sobre un string/error (429 rate-limit → `_req` devuelve string → TypeError).
+  Era la causa recurrente de que el gate `e2e-chrome` fallara y bloqueara el promote (incidente 1.110.0
+  y 1.152.0). Incluye la feature de 1.152.0 (origen en reporte) que no había llegado a prod.
+
 ## [1.152.0] - 2026-07-03
 
 ### 2026-07-03 — Reporte de combate: "de dónde me atacó" (origen) + defensa por-base más clara
