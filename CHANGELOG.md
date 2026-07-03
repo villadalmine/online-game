@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 69 Fase 4 (sub-fase 1): vida artificial — research por niveles + auto-staffing
+- **Vida artificial del búnker**: research `artificial_life` + niveles L1..L5 data-driven
+  (`content/artificial_life.yaml`; `autonomy_scope` workers→mines→trade→colonize→attack, con
+  `speed_efficiency`/`quality`). `Player.ai_level` (migr `fcc50f369d86`). `POST /bunker/evolve-ai`
+  sube 1 nivel gastando electrónica del búnker + minerales (`app/services/ai_life.py`). Snapshot `ai`;
+  panel "🤖 Vida artificial nivel X" con costo del próximo nivel + 🧬 desarrollar.
+- **Autopiloto de robots** (`run_ai_autopilot` en el tick): sub-fase 1 = auto-**staffing** — entrena
+  obreros para mantener las minas staffeadas ("minería siempre al día"), acotado por
+  `ai_autopilot_worker_cap`. Flags `artificial_life_enabled` / `bunker_autonomy_enabled` (default OFF).
+- Tests: `tests/test_ai_life.py` (evolve + autopiloto) + e2e `test_ai_life_evolve_e2e`.
+
 ## [1.144.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 69 Fase 3: naves de carga + evacuación (fundar colonia sembrada desde la bóveda)

@@ -82,7 +82,17 @@ Hoy el búnker solo tiene salas de vida (comida/agua/gente) + electrónica. Suma
   usuario). El front lo ofrece en el panel del búnker (select de planeta + 🛸 evacuar). Tests:
   `test_evacuate_founds_colony_and_seeds_from_vault` + e2e `test_bunker_evacuate_e2e`.
 
-### Fase 4 — Vida artificial: IA con robots autónomos (super-proyecto)  ⟵ el corazón del pedido
+### Fase 4 — Vida artificial: IA con robots autónomos (super-proyecto)  ⟵ EN CURSO
+> **Sub-fase 1 HECHA (1.145.0):** research por niveles + primer autopiloto. Niveles data-driven en
+> `content/artificial_life.yaml` (L1..L5 con `autonomy_scope` workers→mines→trade→colonize→attack +
+> `speed_efficiency`/`quality`); `Player.ai_level` (migr `fcc50f369d86`); tech `artificial_life`;
+> `POST /bunker/evolve-ai` (gasta electrónica del búnker + minerales, servicio `app/services/ai_life.py`);
+> snapshot `ai`; panel del búnker "🤖 Vida artificial nivel X". **Autopiloto** `run_ai_autopilot` en el
+> tick: sub-fase 1 = auto-**staffing** (entrena obreros para mantener las minas staffeadas, acotado por
+> `ai_autopilot_worker_cap`). Flags `artificial_life_enabled` (subir nivel) / `bunker_autonomy_enabled`
+> (autopiloto actúa), ambos **OFF**. Tests `tests/test_ai_life.py` + e2e. **Pendiente:** sub-fase 2
+> (mines/trade/colonize autónomos), sub-fase 3 (attack autónomo + `artificial_life_npc_ceiling`).
+
 El **super-proyecto** del búnker. Se **investiga por niveles** (`artificial_life` L1..Ln en YAML). Cada
 nivel cuesta electrónica + minerales avanzados + tiempo, y **desbloquea automatización**:
 - **Robots autónomos que trabajan solos.** A partir de cierto nivel, tareas del jugador **se ejecutan

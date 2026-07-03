@@ -101,6 +101,21 @@ async def do_withdraw(
     return result
 
 
+@router.post("/evolve-ai", status_code=status.HTTP_201_CREATED)
+async def do_evolve_ai(
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 69 Fase 4: subir 1 nivel la vida artificial (gasta electrónica + minerales)."""
+    from app.services.ai_life import AiLifeError, evolve_ai
+    try:
+        result = await evolve_ai(session, player)
+    except AiLifeError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
+
+
 @router.post("/evacuate", status_code=status.HTTP_201_CREATED)
 async def do_evacuate(
     body: BunkerEvacuateRequest,

@@ -3041,6 +3041,38 @@ async def test_bunker_evacuate_e2e(client, monkeypatch):
     assert "mars" in planets
 
 
+async def test_ai_life_evolve_e2e(client, monkeypatch):
+    """SDD 69 Fase 4: desarrollar la vida artificial (subir de nivel) por la API."""
+    from sqlalchemy import select
+
+    from app.content.registry import get_content
+    from app.core.config import get_settings
+    from app.models import Bunker, PlayerTech
+    from app.services.economy import get_or_create_stock
+    s = get_settings()
+    monkeypatch.setattr(s, "artificial_life_enabled", True)
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    h = await _register(client.http, "ailife_e2e")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    base = st["bases"][0]["id"]
+    # el snapshot expone el estado de IA (nivel 0)
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["ai"]["level"] == 0 and me["ai"]["next"]["level"] == 1
+    async with client.session_maker() as ses:
+        p = (await ses.execute(select(Player).where(Player.username == "ailife_e2e"))).scalar_one()
+        ses.add(PlayerTech(player_id=p.id, tech_key="artificial_life"))
+        ses.add(Bunker(player_id=p.id, base_id=base, food_health=100, water_health=100,
+                       people_health=100, electronics=1000))
+        adv = get_content().resolve_role("martian", "advanced")
+        (await get_or_create_stock(ses, p.id, adv, "mars")).amount = 100000
+        await ses.commit()
+    r = await client.http.post("/api/v1/bunker/evolve-ai", headers=h, json={})
+    assert r.status_code == 201, r.text
+    assert r.json()["level"] == 1 and "workers" in r.json()["scope"]
+    me2 = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me2["ai"]["level"] == 1 and "workers" in me2["ai"]["scope"]
+
+
 async def test_bunker_raid_e2e(client, monkeypatch):
     """SDD 64: sabotear el búnker de un rival mapeado por la API (happy) + 400 sin intel."""
     from datetime import UTC, datetime

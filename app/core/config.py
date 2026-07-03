@@ -223,6 +223,13 @@ class Settings(BaseSettings):
     bunker_grid_max: int = 8               # lado máximo de la grilla (tope de excavaciones)
     bunker_dig_energy_cost: float = 60.0   # energía por excavación
     bunker_dig_cost_structural: float = 400.0  # estructural base por excavación (escala ×nivel)
+    # SDD 69 Fase 4 — VIDA ARTIFICIAL: research por niveles + autopiloto de robots. Dos flags:
+    #  - artificial_life_enabled: podés SUBIR de nivel (research en el búnker). Default OFF.
+    #  - bunker_autonomy_enabled: el autopiloto ACTÚA solo en el tick (auto-staffing). Default OFF.
+    artificial_life_enabled: bool = False
+    bunker_autonomy_enabled: bool = False
+    ai_autopilot_worker_cap: int = 3       # tope de obreros que el autopiloto entrena por tick
+    artificial_life_npc_ceiling: int = 0   # techo de IA que habilita a los NPC (admin, Fase 4)
 
     # SDD 67: diplomacia nuclear — una salva con nuclear tarda 24 h (ventana para negociar) y el
     # defensor con `diplomacy` (tech) + `government` (edificio activo) puede ofrecer TRIBUTO

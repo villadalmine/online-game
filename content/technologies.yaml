@@ -336,6 +336,18 @@ technologies:
     research_seconds: 1200
     cost: { structural: 400, energetic: 200, advanced: 200 }
     magnitude: 1.0
+  - key: artificial_life
+    name: "Vida artificial"
+    category: underground
+    name_en: "Artificial life"
+    description: "Cría IA con robots autónomos en el búnker; después subís sus niveles de inteligencia."
+    description_en: "Grow AI with autonomous robots in the bunker; then level up its intelligence."
+    requires: research_lab
+    requires_tech: bunker_engineering
+    energy_cost: 90
+    research_seconds: 2200
+    cost: { structural: 400, energetic: 500, advanced: 600 }
+    magnitude: 1.0
   - key: underground_construction
     name: "Construcción subterránea"
     category: underground

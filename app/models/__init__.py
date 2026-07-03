@@ -60,6 +60,9 @@ class Player(Base):
         DateTime(timezone=True), nullable=True
     )
 
+    # SDD 69 Fase 4: nivel de VIDA ARTIFICIAL desarrollado en el búnker (0 = sin IA autónoma).
+    ai_level: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+
     # Personal AI assistant: emergency "hack" budget, reset lazily once a day (SDD 2).
     assistant_hacks_used: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     assistant_hacks_reset_at: Mapped[datetime | None] = mapped_column(

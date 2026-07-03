@@ -54,6 +54,8 @@ def build_catalog() -> dict:
             "satellites": s.satellites_enabled, "garrison": s.garrison_enabled,
             "bunkers": s.bunkers_enabled,
             "bunker_expansion": s.bunker_expansion_enabled,   # SDD 69 Fase 1
+            "artificial_life": s.artificial_life_enabled,     # SDD 69 Fase 4
+            "bunker_autonomy": s.bunker_autonomy_enabled,     # SDD 69 Fase 4
         },
     }
 

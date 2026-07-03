@@ -674,6 +674,8 @@ class PlayerStateOut(BaseModel):
     bunkers: list[dict] = []
     # SDD 72: tormenta solar activa → no se fabrica nada (solo construir), energía infinita.
     solar_storm: bool = False
+    # SDD 69 Fase 4: vida artificial (nivel + autonomía de robots + próximo nivel).
+    ai: dict = {}
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

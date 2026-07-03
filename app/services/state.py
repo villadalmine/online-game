@@ -447,6 +447,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         enemy_maps=enemy_maps,
         bunkers=bunkers_out,
         solar_storm=await _solar_storm(session),   # SDD 72
+        ai=_ai_out(player),                        # SDD 69 Fase 4: vida artificial
     )
 
 
@@ -454,6 +455,12 @@ async def _solar_storm(session) -> bool:
     """SDD 72: bandera para el front (deshabilitar Entrenar + mostrar energía ∞)."""
     from app.services.events import solar_storm_active
     return await solar_storm_active(session)
+
+
+def _ai_out(player) -> dict:
+    """SDD 69 Fase 4: estado de la vida artificial (nivel + autonomía + próximo nivel)."""
+    from app.services.ai_life import ai_state
+    return ai_state(player)
 
 
 async def _galaxy_instance_out(session, player):

@@ -1,0 +1,68 @@
+# SDD 69 Fase 4: niveles de VIDA ARTIFICIAL del búnker. Data-driven — el motor solo lee estos
+# números. Vos "desarrollás la inteligencia" subiendo de nivel (gastás electrónica del búnker +
+# minerales avanzados + tiempo). Cada nivel:
+#   - autonomy_scope: qué puede hacer SOLO el autopiloto de robots (se habilita por sub-fases):
+#       workers  → mantener las minas staffeadas (sub-fase 1, HECHO)
+#       mines    → construir/mejorar minas de los minerales que faltan (sub-fase 1/2)
+#       trade    → comerciar excedente/faltante (sub-fase 2)
+#       colonize → mandar naves a colonizar minerales de otros planetas y traerlos (sub-fase 2)
+#       attack   → atacar/defender solo como un NPC (sub-fase 3)
+#   - speed_efficiency: qué tan rápido hace cada tarea (menos tiempo). quality: tasa de éxito/calidad.
+#   - mining_skill: bonus de rinde por explotar cada tipo de mineral (0-1 por mineral; {} = neutro).
+# Subir un nivel activa MÁS inteligencia también a los NPC (techo `artificial_life_npc_ceiling`, admin).
+levels:
+  - level: 1
+    name: "IA embrionaria"
+    name_en: "Embryonic AI"
+    description: "Robots básicos: mantienen las minas con obreros."
+    description_en: "Basic robots: keep the mines staffed with workers."
+    electronics: 200
+    cost: { advanced: 300 }
+    research_seconds: 600
+    autonomy_scope: [workers]
+    speed_efficiency: 1.0
+    quality: 0.5
+  - level: 2
+    name: "IA operativa"
+    name_en: "Operational AI"
+    description: "Además levantan minas de los minerales que te faltan."
+    description_en: "They also build mines for the minerals you lack."
+    electronics: 450
+    cost: { advanced: 600, energetic: 400 }
+    research_seconds: 1200
+    autonomy_scope: [workers, mines]
+    speed_efficiency: 1.15
+    quality: 0.7
+  - level: 3
+    name: "IA mercante"
+    name_en: "Merchant AI"
+    description: "Suman comercio autónomo del excedente/faltante."
+    description_en: "Add autonomous trading of surplus/shortfall."
+    electronics: 800
+    cost: { advanced: 1000, energetic: 700 }
+    research_seconds: 2000
+    autonomy_scope: [workers, mines, trade]
+    speed_efficiency: 1.25
+    quality: 0.8
+  - level: 4
+    name: "IA colonizadora"
+    name_en: "Colonizer AI"
+    description: "Mandan naves a colonizar minerales de otros planetas y traerlos."
+    description_en: "Send ships to colonize minerals on other planets and bring them back."
+    electronics: 1400
+    cost: { advanced: 1600, energetic: 1200, structural: 800 }
+    research_seconds: 3000
+    autonomy_scope: [workers, mines, trade, colonize]
+    speed_efficiency: 1.4
+    quality: 0.9
+  - level: 5
+    name: "IA soberana"
+    name_en: "Sovereign AI"
+    description: "Autonomía total: también atacan y defienden solos como una civilización propia."
+    description_en: "Full autonomy: they also attack and defend on their own like a civilization."
+    electronics: 2500
+    cost: { advanced: 2600, energetic: 2000, structural: 1500 }
+    research_seconds: 4200
+    autonomy_scope: [workers, mines, trade, colonize, attack]
+    speed_efficiency: 1.6
+    quality: 1.0
