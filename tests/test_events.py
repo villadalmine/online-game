@@ -9,9 +9,11 @@ from app.services.events import (
     event_multiplier,
     grant_due_free_units,
     maybe_start_event,
+    solar_storm_active,
     start_event,
 )
 from app.services.onboarding import onboard_player
+from app.services.training import TrainingError, start_training
 
 
 async def test_event_multiplier_active_then_expires(session):
@@ -27,6 +29,20 @@ async def test_build_cost_event_halves(session):
     await start_event(session, "happy_hour_build")   # build_cost ×0.5
     await session.commit()
     assert await build_cost_multiplier(session) == 0.5
+
+
+async def test_solar_storm_blocks_all_manufacturing(session):
+    # SDD 72: con la tormenta activa, start_training falla para toda unidad (electrónica frita).
+    import pytest
+    p = Player(username="stormy", password_hash="x")
+    session.add(p)
+    await session.flush()
+    base = await onboard_player(session, p, "milky_way", "mars", "martian")
+    await start_event(session, "solar_storm")
+    await session.commit()
+    assert await solar_storm_active(session) is True
+    with pytest.raises(TrainingError):
+        await start_training(session, p, base, "soldier", 1)
 
 
 async def test_free_units_granted_once(session):

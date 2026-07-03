@@ -660,6 +660,8 @@ class PlayerStateOut(BaseModel):
     enemy_maps: dict = {}
     # SDD 64: búnkeres subterráneos (medidores comida/agua/gente + mapa de salas).
     bunkers: list[dict] = []
+    # SDD 72: tormenta solar activa → no se fabrica nada (solo construir), energía infinita.
+    solar_storm: bool = False
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

@@ -921,6 +921,30 @@ async def test_events_admin_start_and_active_e2e(client):
     assert any(e["key"] == "happy_hour_build" for e in cat)
 
 
+async def test_solar_storm_blocks_training_allows_building_e2e(client):
+    # SDD 72: tormenta solar → no se fabrica nada (unidades/drones/misiles/sats), solo construir;
+    # y la energía es infinita (construir no cuesta energía).
+    h = await _register(client.http, "stormrider")
+    await _onboard(client.http, h, planet="earth", race="terran")
+    r = await client.http.post("/api/v1/events/start/solar_storm", headers=h)
+    assert r.status_code == 201, r.text
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["solar_storm"] is True
+    # entrenar cualquier unidad → 400 (electrónica frita)
+    t = await client.http.post("/api/v1/bases/1/train", headers=h,
+                               json={"unit_key": "soldier", "quantity": 1})
+    assert t.status_code == 400
+    assert "solar" in t.text.lower() or "tormenta" in t.text.lower()
+    # drenar la energía a 0 y construir igual → funciona (energía infinita durante la tormenta)
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "stormrider"))).scalar_one()
+        p.energy = 0.0
+        await s.commit()
+    b = await client.http.post("/api/v1/bases/1/build", headers=h,
+                               json={"building_key": "power_plant"})
+    assert b.status_code == 201, b.text   # energía 0 pero la tormenta la hace infinita → construye
+
+
 async def test_journal_records_and_exports_e2e(client):
     # SDD 38: las acciones quedan en el journal; /journal (propio) + /journal/export (YAML).
     import yaml

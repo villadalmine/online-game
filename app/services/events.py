@@ -43,6 +43,12 @@ async def build_cost_multiplier(session: AsyncSession, now: datetime | None = No
     return await event_multiplier(session, "build_cost", now)
 
 
+async def solar_storm_active(session: AsyncSession, now: datetime | None = None) -> bool:
+    """SDD 72: ¿hay una tormenta solar activa? Si sí: NO se fabrica nada (unidades/drones/misiles/
+    satélites) — solo construir edificios — y la energía es infinita (construir no cuesta)."""
+    return any(e.effect == "solar_storm" for e in await active_events(session, now))
+
+
 # --------------------------------------------------------------------------- #
 # Scheduling (en el tick): arranca un evento nuevo en horas aleatorias
 # --------------------------------------------------------------------------- #

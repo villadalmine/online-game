@@ -446,7 +446,14 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         satellites=satellites_out,
         enemy_maps=enemy_maps,
         bunkers=bunkers_out,
+        solar_storm=await _solar_storm(session),   # SDD 72
     )
+
+
+async def _solar_storm(session) -> bool:
+    """SDD 72: bandera para el front (deshabilitar Entrenar + mostrar energía ∞)."""
+    from app.services.events import solar_storm_active
+    return await solar_storm_active(session)
 
 
 async def _galaxy_instance_out(session, player):

@@ -142,6 +142,14 @@ async def start_training(
         raise TrainingError("La base no pertenece al jugador.")
     if quantity < 1:
         raise TrainingError("La cantidad debe ser >= 1.")
+    # SDD 72: tormenta solar — la electrónica está estropiada: no se fabrica NADA (unidades, drones,
+    # misiles, satélites). Solo construir edificios (con energía infinita).
+    from app.services.events import solar_storm_active
+    if await solar_storm_active(session, now):
+        raise TrainingError(
+            "☀️ Tormenta solar: la electrónica está estropiada; no podés fabricar unidades, drones, "
+            "misiles ni satélites hasta que pase. Solo construir edificios (energía infinita)."
+        )
 
     required = spec.get("requires")
     if required and not await _building_active(session, base.id, required):

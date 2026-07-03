@@ -66,9 +66,12 @@ async def start_build(
     await finalize_due_builds(session, player, now)
     await collect_mines(session, player, now)
 
-    # Charge energy (also applies regen).
+    # Charge energy (also applies regen). SDD 72: en una tormenta solar la energía es INFINITA →
+    # construir no cuesta energía (es lo único posible mientras la electrónica está frita).
+    from app.services.events import solar_storm_active
+    storm = await solar_storm_active(session, now)
     regen = effective_energy_regen(player, settings)
-    need_e = spec.get("energy_cost", 0)
+    need_e = 0 if storm else spec.get("energy_cost", 0)
     if not spend_energy(player, need_e, now, regen, effective_energy_max(player, settings)):
         # spend_energy ya aplicó regen, así que player.energy es el valor actual.
         raise BuildError(energy_shortfall_msg(need_e, player.energy, regen))

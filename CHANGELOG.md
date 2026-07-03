@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 72: evento "Tormenta solar" (2 h sin fabricar, solo construir, energía ∞)
+- Nuevo evento del mundo **☀️ Tormenta solar** (SDD 36): scope global, dura 2 h. La sobrecarga fríe
+  tu electrónica → **no podés fabricar nada** (unidades, drones, misiles, satélites); **solo construir
+  edificios**. Y en esas 2 h **tu energía es infinita** (construir no cuesta energía).
+- Gate en `start_training` (único camino de fabricación) + `need_e=0` en `start_build` durante la
+  tormenta. Snapshot expone `solar_storm`; el front muestra ☀️⚡∞ y avisa en el form de Entrenar.
+- Tests: `test_solar_storm_blocks_all_manufacturing` + e2e (entrenar 400, construir con energía 0 → OK).
+
 ## [1.138.0] - 2026-07-02
 
 ### 2026-07-02 — SDD 71: gráficos in-app de ataques/defensas + tu uso de IA (en 📈 Tu historia)
