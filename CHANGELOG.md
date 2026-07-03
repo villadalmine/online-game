@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.151.0] - 2026-07-03
+
 ### 2026-07-03 — Reporte de misiles con daño + los NPC te NEGOCIAN un nuclear entrante
 - **Reporte de strike más detallado** (pedido): muestra el **⚔ daño** aunque no destruya nada
   (con condición ON los misiles bajan la condición en vez de destruir) → "🩹 dañó edificios" /
