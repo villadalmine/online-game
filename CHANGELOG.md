@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 70: el globo del planeta se gira con el mouse/dedo (+ auto-rotación más rápida)
+- El globo 3D ahora se **arrastra para girar** (pointer = mouse + touch; `touch-action:none`); mientras
+  arrastrás se pausa la auto-rotación y retoma tras 1.5 s. **Auto-rotación más rápida** (~16 s/vuelta
+  vs ~56 s). Cursor grab/grabbing + hint "🖐 arrastrá para girar" en la leyenda. Solo front.
+
 ## [1.142.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 69 Fase 1 (parte): bóveda de acopio del búnker (minerales a salvo del saqueo)
