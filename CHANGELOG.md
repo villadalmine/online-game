@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Arsenal (misiles/drones): planeta claro, origen→destino y 🛡 auto de tu intel
+- El panel dice **desde qué planeta** lanzás y que **solo pega bases de ese planeta** (misiles/drones no
+  salen del planeta). Si tenés lanzadoras/fábricas en **varios planetas**, un selector 🗼 elige la base de
+  origen (define el planeta objetivo). Antes no se aclaraba el planeta y el enemigo era ambiguo.
+- El input **🛡 torretas del rival** ahora **se autocompleta con tu intel de espionaje** (antes tenías que
+  ponerlo a mano sin saber para qué): sirve para **estimar la interceptación** antes de lanzar; podés
+  ajustarlo. Se refresca al cambiar de enemigo y no se pierde en el auto-refresh.
+- Los misiles/drones en vuelo ahora muestran **origen → enemigo** (nombre + base) en el panel 🚀 Flotas en
+  tránsito y en el propio Arsenal (antes decía sólo "base #N"). Solo front. Pedido del usuario.
+
 ## [1.160.0] - 2026-07-03
 
 ### 2026-07-03 — Búnker: se auto-acomoda al construir + panel "🤖 Tus robots" (cómo labura la IA)
