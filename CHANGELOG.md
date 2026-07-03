@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Selector de objetivo (planeta → enemigo) sin aliados y sin resetearse
+- Reemplacé el input manual de "base id" (que se reseteaba en cada refresh) por un **selector
+  auto-calculado**: en Atacar, primero elegís **planeta** y después el **enemigo** de una lista;
+  en Misiles/Drones (intra-planeta) el enemigo se lista del planeta del lanzador/fábrica. **Excluye a
+  tu propia alianza** (no podés atacar a un aliado). Value-preserving por firma → no se resetea.
+- Aplica a TODO lo de atacar y elegir enemigo (flota, misiles, drones; `prefill`/`usePlan` fijan
+  planeta+enemigo). Helpers `_attackable`/`_enemyPlanets`/`renderAttackTarget`. Solo front. Pedido del
+  usuario.
+
 ## [1.157.0] - 2026-07-03
 
 ### 2026-07-03 — Panel de alertas "¿de qué te falta?" + fix del preview de plazas + métrica autopiloto
