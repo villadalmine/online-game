@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.155.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 67 v5: la diplomacia del NPC es LEGÍTIMA y medible (nada de bypass)
 - El NPC **ya no ofrece tributo "gratis"**: ahora requiere `government` activo + tech `diplomacy`
   (igual que el jugador). Antes bypasseaba el edificio — el usuario lo marcó como inconsistente.
