@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.149.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 70 v2: vista del búnker más linda (corte lateral en Canvas 2D)
 - El panel del búnker ahora dibuja un **corte lateral** (Canvas 2D, sin dependencias, `drawBunkers`):
   superficie con la ciudad 🏙 arriba, tierra, y las salas excavadas en la grilla con su **icono** y
