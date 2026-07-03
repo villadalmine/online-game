@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.144.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 69 Fase 3: naves de carga + evacuación (fundar colonia sembrada desde la bóveda)
 - Nueva unidad **🛸 Nave colonizadora** (`colony_ship`, requiere Cosmódromo + Antigravedad, cargo 3000):
   gran arca de escape que coloniza + carga mucho material. Aparece en Entrenar.
