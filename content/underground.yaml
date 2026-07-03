@@ -75,6 +75,16 @@ rooms:
     energy_cost: 60
     build_seconds: 600
     cost: { structural: 600, energetic: 300, advanced: 400 }
+  # SDD 76: puerta cuántica — mientras esté activa, este búnker puede ENVIAR electrónica a otro búnker.
+  - key: quantum_gate
+    icon: "⚛"
+    name: "Puerta cuántica"
+    name_en: "Quantum gate"
+    requires_tech: quantum_jump
+    teleporter: true     # SDD 76: habilita el teletransporte de electrónica desde este búnker
+    energy_cost: 80
+    build_seconds: 700
+    cost: { structural: 500, energetic: 700, advanced: 700 }
   # SDD 64 §3.5: defensas (requieren bunker_defense).
   - key: ventilation
     icon: "🌀"

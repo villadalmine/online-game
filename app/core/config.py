@@ -226,6 +226,11 @@ class Settings(BaseSettings):
     # SDD 75 — TERRAFORMACIÓN: la tech `terraforming` habilita la sala "terraformer" que agranda el
     # búnker (+grid_bonus al lado, data-driven en el YAML de la sala). Detrás de flag.
     terraforming_enabled: bool = False
+    # SDD 76 — SALTO CUÁNTICO: la tech `quantum_jump` habilita la sala "quantum_gate" (Puerta
+    # cuántica) que teletransporta ELECTRÓNICA de un búnker a otro (instantáneo). El origen necesita
+    # una puerta activa. Sirve para consolidar y recuperarte. Detrás de flag.
+    quantum_teleport_enabled: bool = False
+    quantum_teleport_fee: float = 0.1     # SDD 76: merma por teletransporte (0.1 = 10% se pierde)
     # SDD 69 Fase 4 — VIDA ARTIFICIAL: research por niveles + autopiloto de robots. Dos flags:
     #  - artificial_life_enabled: podés SUBIR de nivel (research en el búnker). Default OFF.
     #  - bunker_autonomy_enabled: el autopiloto ACTÚA solo en el tick (auto-staffing). Default OFF.

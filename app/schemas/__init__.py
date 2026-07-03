@@ -218,6 +218,12 @@ class BunkerEvacuateRequest(BaseModel):   # SDD 69 Fase 3: evacuar → fundar co
     minerals: dict[str, float] = {}
 
 
+class QuantumTeleportRequest(BaseModel):   # SDD 76: teletransportar electrónica entre búnkeres
+    from_base_id: int
+    to_base_id: int
+    amount: float
+
+
 class TributeRequest(BaseModel):
     minerals: dict[str, float] = {}
     energy: float = 0.0

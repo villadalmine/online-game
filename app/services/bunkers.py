@@ -469,6 +469,50 @@ async def repopulate(
     return {"set": set_key, "built": built, "electronics_left": round(total - need, 1)}
 
 
+async def _has_teleporter(session: AsyncSession, bunker_id: int) -> bool:
+    """SDD 76: ¿este búnker tiene una Puerta cuántica ACTIVA (sala con `teleporter`)?"""
+    content = get_content()
+    rooms = (await session.execute(
+        select(BunkerRoom).where(BunkerRoom.bunker_id == bunker_id, BunkerRoom.status == "active")
+    )).scalars()
+    return any(content.rooms.get(r.room_key, {}).get("teleporter") for r in rooms)
+
+
+async def quantum_teleport(
+    session: AsyncSession, player: Player, from_base_id: int, to_base_id: int, amount: float
+) -> dict:
+    """SDD 76: teletransporta ELECTRÓNICA de un búnker a otro (instantáneo). El origen necesita una
+    Puerta cuántica activa; una merma (`quantum_teleport_fee`) se pierde en el salto. Sirve para
+    consolidar la moneda de reserva y recuperarte tras un ataque."""
+    settings = get_settings()
+    if not settings.bunkers_enabled or not settings.quantum_teleport_enabled:
+        raise BunkerError("El teletransporte cuántico está desactivado.")
+    if from_base_id == to_base_id:
+        raise BunkerError("Elegí dos búnkeres distintos.")
+    if amount <= 0:
+        raise BunkerError("La cantidad debe ser positiva.")
+    await advance_bunker(session, player)   # electrónica al día (lazy) antes de mover
+    src = await _bunker_for_base(session, from_base_id)
+    dst = await _bunker_for_base(session, to_base_id)
+    if src is None or src.player_id != player.id or dst is None or dst.player_id != player.id:
+        raise BunkerError("Búnker inválido.")
+    if not await _has_teleporter(session, src.id):
+        raise BunkerError("El origen necesita una Puerta cuántica activa (tech Salto cuántico).")
+    if src.electronics < amount:
+        raise BunkerError(f"Electrónica insuficiente ({src.electronics:.0f}/{amount:.0f}).")
+    fee = max(0.0, min(0.9, settings.quantum_teleport_fee))
+    received = amount * (1.0 - fee)
+    src.electronics -= amount
+    dst.electronics += received
+    from app.services.journal import record
+    await record(session, "quantum_teleport", player.id, from_base_id=from_base_id,
+                 to_base_id=to_base_id, amount=amount, received=received)
+    await session.flush()
+    return {"from_base_id": from_base_id, "to_base_id": to_base_id, "sent": amount,
+            "received": round(received, 2), "from_electronics": round(src.electronics, 2),
+            "to_electronics": round(dst.electronics, 2)}
+
+
 async def bunker_state(session: AsyncSession, player: Player) -> list[dict]:
     """Snapshot de los búnkeres propios (medidores + mapa de salas) para el front."""
     if not get_settings().bunkers_enabled:

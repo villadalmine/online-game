@@ -64,3 +64,6 @@ env:
   BUNKER_AUTONOMY_ENABLED: "true"
   # SDD 75: terraformación — la sala Terraformador (tech terraforming) agranda el búnker +3 de lado.
   TERRAFORMING_ENABLED: "true"
+  # SDD 76: salto cuántico — la Puerta cuántica (tech quantum_jump) teletransporta electrónica de un
+  # búnker a otro (merma 10%). Para consolidar la reserva y recuperarte. Reversible.
+  QUANTUM_TELEPORT_ENABLED: "true"

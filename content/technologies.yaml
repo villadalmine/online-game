@@ -373,6 +373,19 @@ technologies:
     research_seconds: 2600
     cost: { structural: 700, energetic: 400, advanced: 500 }
     magnitude: 1.0
+  # SDD 76: salto cuántico — habilita la Puerta cuántica (teletransporta electrónica entre búnkeres).
+  - key: quantum_jump
+    name: "Salto cuántico"
+    category: underground
+    name_en: "Quantum jump"
+    description: "Entrelazamiento cuántico: habilita la Puerta cuántica para teletransportar electrónica de un búnker a otro."
+    description_en: "Quantum entanglement: unlocks the Quantum gate to teleport electronics between bunkers."
+    requires: research_lab
+    requires_tech: artificial_life
+    energy_cost: 150
+    research_seconds: 3000
+    cost: { structural: 500, energetic: 700, advanced: 800 }
+    magnitude: 1.0
   # SDD 63: salto espacial — capstone del árbol endgame (requiere TODO). Habilita la nave "jumper".
   - key: space_jump
     name: "Salto espacial"

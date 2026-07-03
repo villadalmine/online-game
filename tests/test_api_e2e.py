@@ -922,6 +922,47 @@ async def test_terraformer_enlarges_bunker_e2e(client, monkeypatch):
     assert side1 == side0 + 3   # el terraformador agrandó el búnker
 
 
+async def test_quantum_teleport_e2e(client, monkeypatch):
+    # SDD 76: con Puerta cuántica activa, teletransporta electrónica de un búnker a otro (por HTTP).
+    from app.core.config import get_settings
+    from app.models import Base_, Bunker, BunkerRoom, Player, PlayerTech
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "quantum_teleport_enabled", True)
+    monkeypatch.setattr(s, "quantum_teleport_fee", 0.1)
+    h = await _register(client.http, "qteleport")
+    await _onboard(client.http, h)   # martian/mars
+    async with client.session_maker() as db:
+        p = (await db.execute(select(Player).where(Player.username == "qteleport"))).scalar_one()
+        db.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+        base = (await db.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
+        base2 = Base_(player_id=p.id, planet_key=base.planet_key, name="col", base_type="surface")
+        db.add(base2)
+        await db.flush()
+        now = datetime.now(UTC)
+        b1 = Bunker(player_id=p.id, base_id=base.id, food_health=100.0, water_health=100.0,
+                    people_health=100.0, electronics=1000.0, updated_at=now, created_at=now)
+        b2 = Bunker(player_id=p.id, base_id=base2.id, food_health=100.0, water_health=100.0,
+                    people_health=100.0, updated_at=now, created_at=now)
+        db.add_all([b1, b2])
+        await db.flush()
+        db.add(BunkerRoom(bunker_id=b1.id, room_key="quantum_gate", cell=0, status="active",
+                          created_at=now))
+        base_id, base2_id = base.id, base2.id
+        await db.commit()
+
+    r = await client.http.post("/api/v1/bunker/teleport", headers=h,
+                               json={"from_base_id": base_id, "to_base_id": base2_id, "amount": 400})
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["received"] == 360.0 and round(body["from_electronics"]) == 600   # merma 10%
+    # sin electrónica suficiente → 400
+    broke = await client.http.post("/api/v1/bunker/teleport", headers=h,
+                                   json={"from_base_id": base_id, "to_base_id": base2_id,
+                                         "amount": 999999})
+    assert broke.status_code == 400
+
+
 async def test_announcements_public_localized_and_filtered(client):
     # SDD 27: anuncios públicos (sin auth), bilingües y filtrables por category/status.
     r = await client.http.get("/api/v1/announcements")

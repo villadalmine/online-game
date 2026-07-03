@@ -11,6 +11,7 @@ from app.schemas import (
     BunkerEvacuateRequest,
     BunkerRaidRequest,
     BunkerVaultRequest,
+    QuantumTeleportRequest,
     RepopulateRequest,
 )
 from app.services.bunkers import (
@@ -19,6 +20,7 @@ from app.services.bunkers import (
     dig,
     dig_deeper,
     evacuate,
+    quantum_teleport,
     raid,
     repopulate,
     stash,
@@ -95,6 +97,23 @@ async def do_withdraw(
     """SDD 69: sacar mineral de la bóveda a la superficie."""
     try:
         result = await withdraw(session, player, body.base_id, body.mineral, body.amount)
+    except BunkerError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
+
+
+@router.post("/teleport", status_code=status.HTTP_201_CREATED)
+async def do_teleport(
+    body: QuantumTeleportRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 76: teletransportar electrónica de un búnker a otro (necesita Puerta cuántica activa)."""
+    try:
+        result = await quantum_teleport(
+            session, player, body.from_base_id, body.to_base_id, body.amount
+        )
     except BunkerError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()

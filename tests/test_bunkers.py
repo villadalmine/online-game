@@ -85,6 +85,43 @@ async def test_terraformer_room_enlarges_bunker(session, monkeypatch):
     assert await grid_bonus(session, b.id, s) == 0
 
 
+async def test_quantum_teleport_moves_electronics(session, monkeypatch):
+    # SDD 76: con Puerta cuántica activa en el origen, teletransporta electrónica a otro búnker (−merma).
+    from app.services.bunkers import quantum_teleport
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "quantum_teleport_enabled", True)
+    monkeypatch.setattr(s, "quantum_teleport_fee", 0.1)
+    p, base = await _player(session)
+    b1 = await dig(session, p, base.id)
+    # segundo búnker en otra base del jugador (colonia): creamos una base extra simple
+    from app.models import Base_
+    b2base = Base_(player_id=p.id, planet_key=base.planet_key, name="col", base_type="surface")
+    session.add(b2base)
+    await session.flush()
+    b2 = await dig(session, p, b2base.id)
+    b1.electronics = 1000.0
+    # sin puerta activa → falla
+    try:
+        await quantum_teleport(session, p, base.id, b2base.id, 500)
+        raise AssertionError("sin puerta no teletransporta")
+    except BunkerError:
+        pass
+    # puerta cuántica activa en el origen
+    session.add(BunkerRoom(bunker_id=b1.id, room_key="quantum_gate", cell=0, status="active",
+                           created_at=datetime.now(UTC)))
+    await session.commit()
+    r = await quantum_teleport(session, p, base.id, b2base.id, 500)
+    assert r["sent"] == 500 and r["received"] == 450.0    # merma 10%
+    assert round(b1.electronics) == 500 and round(b2.electronics) == 450
+    # dos búnkeres iguales → error
+    try:
+        await quantum_teleport(session, p, base.id, base.id, 10)
+        raise AssertionError("mismo búnker")
+    except BunkerError:
+        pass
+
+
 async def test_dig_deeper_expands_grid(session, monkeypatch):
     # SDD 69 Fase 1: con underground_construction + flag, excavar agranda la grilla (+1 lado) y
     # habilita celdas que antes estaban fuera del mapa.

@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 76 Salto cuántico: teletransporte de electrónica entre búnkeres
+- Nueva tech **`quantum_jump`** (rama subterránea, requiere Vida artificial) que habilita la sala **⚛
+  Puerta cuántica**. Con una puerta activa en el búnker de origen podés **teletransportar electrónica de
+  un búnker a otro** (instantáneo, merma 10%) para consolidar tu reserva y recuperarte tras un ataque.
+- `POST /bunker/teleport` + control en el panel Búnker (origen→destino + cantidad). Data-driven (sala/
+  tech del catálogo); flag `QUANTUM_TELEPORT_ENABLED` ON en prod. Tests de servicio + e2e.
+  `docs/sdd-quantum-teleport-bunkers.md`.
+
 ## [1.162.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 75 Terraformación + fixes (historia legible, búnker no se va de pantalla)
