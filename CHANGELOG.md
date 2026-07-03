@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.154.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 70 v3: el globo muestra MÁS cuanto más escaneaste (continentes + niebla + nitidez)
 - El globo del planeta ahora escala el detalle con la **cobertura satelital**: tu planeta = 100% (lo
   ves todo); un enemigo = máx % descubierto entre sus rivales. Más cobertura → **aparecen continentes**
