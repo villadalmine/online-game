@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.158.0] - 2026-07-03
+
 ### 2026-07-03 — Selector de objetivo (planeta → enemigo) sin aliados y sin resetearse
 - Reemplacé el input manual de "base id" (que se reseteaba en cada refresh) por un **selector
   auto-calculado**: en Atacar, primero elegís **planeta** y después el **enemigo** de una lista;
