@@ -1018,12 +1018,9 @@ function renderBunker(){
       _capBar(`🍲`,Math.round(b.food_health),100,b.food_health<30)+
       _capBar(`💧`,Math.round(b.water_health),100,b.water_health<30)+
       _capBar(`👥`,Math.round(b.people_health),100,b.people_health<30);
-    const by={}; (b.rooms||[]).forEach(r=>by[r.cell]=r); const cells=[];
-    for(let i=0;i<SD*SD;i++){ const r=by[i];
-      const rc=r?((catalog.rooms||[]).find(x=>x.key===r.room_key)||{}):null;
-      cells.push(`<span title="${r?esc(r.room_key+' ('+r.status+')'):('celda '+i)}" style="display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;background:${r?(r.status==='active'?'#1d2b46':'#3a3320'):'#0a0e1f'};border:1px solid #33406e;border-radius:4px">${r?(rc.icon||'🧱'):''}</span>`);
-    }
-    s+=`<div style="display:grid;grid-template-columns:repeat(${SD},28px);gap:2px;margin-top:4px">${cells.join("")}</div>`;
+    // SDD 70 v2: corte lateral del búnker (Canvas 2D) — superficie + túneles + salas con su icono.
+    s+=`<canvas class="bkx" data-b="${b.base_id}" data-side="${SD}" width="${SD*34+16}" height="${SD*34+44}" style="max-width:100%;margin-top:4px;border-radius:6px;display:block;cursor:default"></canvas>`+
+       `<div class="muted bkxcap" data-b="${b.base_id}" style="font-size:11px;min-height:13px"></div>`;
     // SDD 69: bóveda de acopio (a salvo del saqueo) — guardar/sacar mineral + contenido.
     if((b.vault_cap||0)>0){
       const vused=Object.values(b.vault||{}).reduce((a,x)=>a+x,0);
@@ -1069,7 +1066,53 @@ function renderBunker(){
     }
   }
   $("bk_stat").innerHTML=s||`<span class="muted">—</span>`;
+  drawBunkers();   // SDD 70 v2: dibujar los cortes laterales
 }
+// SDD 70 v2 — corte lateral del búnker (Canvas 2D, estilizado). Superficie con la base arriba, tierra,
+// y las salas excavadas en la grilla (icono + estado). Hover nombra la sala. Sin dependencias.
+function drawBunkers(){
+  document.querySelectorAll('canvas.bkx').forEach(cv=>{
+    if(!cv.getContext) return; const ctx=cv.getContext('2d'); if(!ctx) return;
+    const baseId=+cv.dataset.b, SD=+cv.dataset.side;
+    const b=(state.bunkers||[]).find(x=>x.base_id===baseId); if(!b) return;
+    const by={}; (b.rooms||[]).forEach(r=>by[r.cell]=r);
+    const W=cv.width, H=cv.height, cell=34, ox=8, surf=40;
+    ctx.clearRect(0,0,W,H);
+    // cielo + superficie con la base (HQ) arriba
+    const sky=ctx.createLinearGradient(0,0,0,surf); sky.addColorStop(0,'#0a1330'); sky.addColorStop(1,'#182a1a');
+    ctx.fillStyle=sky; ctx.fillRect(0,0,W,surf);
+    ctx.font='18px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('🏙',W/2,surf/2);
+    ctx.strokeStyle='#3a4d2a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,surf); ctx.lineTo(W,surf); ctx.stroke();
+    // tierra
+    const soil=ctx.createLinearGradient(0,surf,0,H); soil.addColorStop(0,'#241a12'); soil.addColorStop(1,'#160f0a');
+    ctx.fillStyle=soil; ctx.fillRect(0,surf,W,H-surf);
+    const rects=[];
+    for(let i=0;i<SD*SD;i++){ const r=by[i]; const col=i%SD, row=(i/SD|0);
+      const x=ox+col*cell, y=surf+4+row*cell, w=cell-3, h=cell-3;
+      if(r){
+        const rc=(catalog.rooms||[]).find(z=>z.key===r.room_key)||{};
+        const act=r.status==='active';
+        ctx.fillStyle=act?'#26456e':'#4a3a1e';           // sala activa / en obra
+        _rr(ctx,x,y,w,h,5); ctx.fill();
+        ctx.strokeStyle=act?'#4a72b0':'#7a5a2a'; ctx.lineWidth=1; _rr(ctx,x,y,w,h,5); ctx.stroke();
+        ctx.font='16px serif'; ctx.fillStyle='#fff'; ctx.globalAlpha=act?1:0.7;
+        ctx.fillText(rc.icon||'🧱',x+w/2,y+h/2); ctx.globalAlpha=1;
+        if(!act){ ctx.font='10px serif'; ctx.fillText('⏳',x+w-6,y+7); }
+        rects.push({x,y,w,h,name:(rc.name||r.room_key)+(act?'':' (⏳)')});
+      } else {                                            // celda sin excavar (hueco tenue)
+        ctx.fillStyle='rgba(255,255,255,0.04)'; _rr(ctx,x,y,w,h,5); ctx.fill();
+      }
+    }
+    cv._rects=rects;
+    cv.onmousemove=e=>{ const rc=cv.getBoundingClientRect(), sx=cv.width/rc.width, sy=cv.height/rc.height;
+      const mx=(e.clientX-rc.left)*sx, my=(e.clientY-rc.top)*sy;
+      const hit=(cv._rects||[]).find(R=>mx>=R.x&&mx<=R.x+R.w&&my>=R.y&&my<=R.y+R.h);
+      const cap=document.querySelector(`.bkxcap[data-b="${baseId}"]`); if(cap) cap.textContent=hit?hit.name:''; };
+  });
+}
+function _rr(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function _bkCost(){ const el=$("bk_cost"); if(!el) return; const r=(catalog.rooms||[]).find(x=>x.key===($("bk_room")||{}).value);
   if(!r){ el.innerHTML=""; return; } const mc=resolveCost(r.cost||{});
   el.innerHTML=`${costStr(mc,'bunker')} · ⚡${r.energy_cost||0}${affordText(mc,r.energy_cost,state.planet_key,'bunker')}`; }

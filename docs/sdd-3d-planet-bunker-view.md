@@ -4,9 +4,12 @@
 > dependencias, estilizado SDD 43) dentro del modal `openPlanet` — gira solo, muestra **tus bases
 > siempre** y las **enemigas solo si las escaneaste** (`enemy_maps`, SDD 61/68), con hover que nombra
 > la base. Motor elegido: **Canvas 2D** (el usuario prefirió no sumar dependencias; three.js sería un
-> "v3" para detalle fotográfico). **Pendiente v2:** vista del búnker más linda (corte lateral) +
-> click-en-marcador → panel de la base + arrastrar para rotar manual. · **Pedido:** usuario, 2026-07-02.
-> **Diseño original:** 2026-07-02.
+> "v3" para detalle fotográfico). **v1.1 (1.143.0):** el globo se **arrastra para girar** (pointer) +
+> auto-rotación más rápida. **v2 búnker (1.149.0):** el panel del búnker dibuja un **corte lateral** en
+> Canvas 2D (`drawBunkers`): superficie con la ciudad arriba, tierra, y las salas excavadas en la grilla
+> (icono + estado activo/en obra ⏳); hover nombra la sala; crece con las excavaciones (SDD 69).
+> Reemplaza la grilla CSS plana. **Pendiente v3:** click-en-marcador del globo → panel de la base. ·
+> **Pedido:** usuario, 2026-07-02.
 > Capa **visual** sobre datos que YA existen. Hoy la vista de planeta (SDD 68) es un **modal plano**:
 > tus bases + las enemigas solo si las escaneaste (satélites, `enemy_maps`) o 🌫 niebla. El usuario
 > quiere subirla a un **globo 3D que gira**: click en el planeta → se abre una esfera rotando donde se

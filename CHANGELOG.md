@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 70 v2: vista del búnker más linda (corte lateral en Canvas 2D)
+- El panel del búnker ahora dibuja un **corte lateral** (Canvas 2D, sin dependencias, `drawBunkers`):
+  superficie con la ciudad 🏙 arriba, tierra, y las salas excavadas en la grilla con su **icono** y
+  **estado** (activa vs en obra ⏳); las celdas sin excavar quedan como hueco tenue. Hover nombra la
+  sala. Crece con las excavaciones (SDD 69). Reemplaza la grilla CSS plana. Solo front.
+
 ## [1.148.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 67 v3: hacer VOLVER misiles/drones (recall) con Diplomacia + Gobierno + verlos en vuelo
