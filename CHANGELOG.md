@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.160.0] - 2026-07-03
+
 ### 2026-07-03 — Búnker: se auto-acomoda al construir + panel "🤖 Tus robots" (cómo labura la IA)
 - Al construir una sala del búnker ya **no tenés que elegir la celda a mano**: se acomoda sola en la
   primera celda libre (`cell` opcional en `build-room`; si está lleno avisa que excaves). La posición no
