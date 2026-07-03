@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.142.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 69 Fase 1 (parte): bóveda de acopio del búnker (minerales a salvo del saqueo)
 - Nueva sala **🗄 Bóveda de materiales** (`vault`, `vault_storage` 5000 c/u): acopia minerales bajo
   tierra **a salvo del saqueo** (el loot de combate solo toca la superficie). `POST /bunker/stash`
