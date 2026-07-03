@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 69 Fase 3: naves de carga + evacuación (fundar colonia sembrada desde la bóveda)
+- Nueva unidad **🛸 Nave colonizadora** (`colony_ship`, requiere Cosmódromo + Antigravedad, cargo 3000):
+  gran arca de escape que coloniza + carga mucho material. Aparece en Entrenar.
+- **Evacuación** (`POST /bunker/evacuate`): funda una colonia en el planeta objetivo (consume la
+  colony_ship, reusa `found_colony` con parámetro `vehicle`) y la **siembra con material de la bóveda**
+  (topeado por la carga). Es el "volver a salir": tu reserva a salvo se muda a un mundo habitable.
+  Panel del búnker con select de planeta + 🛸 evacuar. v1 conservador (funda colonia + muda acopio).
+- Tests: `test_evacuate_founds_colony_and_seeds_from_vault` + e2e `test_bunker_evacuate_e2e`.
+
 ## [1.143.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 70: el globo del planeta se gira con el mouse/dedo (+ auto-rotación más rápida)

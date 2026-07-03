@@ -137,13 +137,15 @@ def options(race_key: str, galaxy_key: str | None, techs=()) -> list[dict]:
 
 
 async def found_colony(
-    session: AsyncSession, player: Player, planet_key: str, mode: str = "surface"
+    session: AsyncSession, player: Player, planet_key: str, mode: str = "surface",
+    vehicle: str = "shuttle",
 ) -> Base_:
     """Funda una colonia en `planet_key` (SDD 37). `mode`:
     - "surface": base terrestre, requiere que el mundo sea colonizable (compat, con tus techs).
     - "orbital": estación con robots (SDD 37 v2), requiere `orbital_robotics`; sirve en CUALQUIER
       mundo (los robots no viven ahí) pero rinde menos y cuesta más.
-    Consume 1 transbordador + energía (escala con nº de colonias). Instantáneo en v1 (sin viaje)."""
+    `vehicle` = nave que consume (shuttle por default; `colony_ship` en la evacuación SDD 69 F3).
+    Consume 1 nave + energía (escala con nº de colonias). Instantáneo en v1 (sin viaje)."""
     from datetime import UTC, datetime
 
     from app.core.config import get_settings
@@ -202,8 +204,9 @@ async def found_colony(
     if colonies >= s.max_colonies:
         raise ColonizeError(f"Llegaste al máximo de colonias ({s.max_colonies}).")
 
-    if (await player_units(session, player.id)).get("shuttle", 0) < 1:
-        raise ColonizeError("Necesitás un transbordador para colonizar.")
+    if (await player_units(session, player.id)).get(vehicle, 0) < 1:
+        veh_name = c.units.get(vehicle, {}).get("name", vehicle)
+        raise ColonizeError(f"Necesitás un {veh_name} para colonizar.")
 
     energy_cost = s.colonize_energy_cost * (1 + colonies)   # expansión decreciente
     if mode in ("orbital", "lunar"):
@@ -216,8 +219,8 @@ async def found_colony(
             )
         )
 
-    stock = await get_or_create_unit_stock(session, player.id, "shuttle")
-    stock.quantity -= 1   # el transbordador se usa en el viaje de colonización
+    stock = await get_or_create_unit_stock(session, player.id, vehicle)
+    stock.quantity -= 1   # la nave se consume en el viaje de colonización
 
     if mode == "lunar":
         name = f"Base lunar {c.moons[planet_key].get('name', planet_key)}"

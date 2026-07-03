@@ -263,6 +263,53 @@ async def withdraw(
     return {"withdrawn": round(move, 2), "mineral": mineral, "vault_left": round(vs.amount, 2)}
 
 
+async def evacuate(
+    session: AsyncSession, player: Player, base_id: int, target_planet: str,
+    minerals: dict[str, float] | None = None,
+) -> dict:
+    """SDD 69 Fase 3: EVACUACIÓN — usás una `colony_ship` para fundar una colonia en `target_planet`
+    y sembrarla con material de tu BÓVEDA (la reserva que sobrevivió). Es el "volver a salir": tu
+    civilización de reserva se muda a un mundo habitable. Reusa la colonización (SDD 37). Topeado
+    por la carga de la nave (`cargo`) y por lo que haya en la bóveda."""
+    settings = get_settings()
+    if not settings.bunkers_enabled:
+        raise BunkerError("Los búnkeres están desactivados.")
+    bunker = await _bunker_for_base(session, base_id)
+    if bunker is None or bunker.player_id != player.id:
+        raise BunkerError("Primero cavá el búnker en esta base.")
+    content = get_content()
+    cargo = float(content.units.get("colony_ship", {}).get("stats", {}).get("cargo", 0))
+    # 1) fundar la colonia con la colony_ship (valida habitabilidad/energía/tope de colonias).
+    from app.services.colonization import ColonizeError, found_colony
+    try:
+        colony = await found_colony(session, player, target_planet, mode="surface",
+                                    vehicle="colony_ship")
+    except ColonizeError as exc:
+        raise BunkerError(str(exc)) from exc
+    # 2) sembrar la colonia con material de la bóveda (topeado por la carga de la nave).
+    want = {k: float(v) for k, v in (minerals or {}).items() if v and float(v) > 0}
+    vstocks = {s.mineral_key: s for s in await _vault_stocks(session, bunker.id)}
+    moved: dict[str, float] = {}
+    budget = cargo
+    for mineral, amt in want.items():
+        vs = vstocks.get(mineral)
+        if vs is None or vs.amount <= 0 or budget <= 0:
+            continue
+        take = min(amt, vs.amount, budget)
+        if take <= 0:
+            continue
+        vs.amount -= take
+        (await get_or_create_stock(session, player.id, mineral, target_planet)).amount += take
+        moved[mineral] = round(take, 2)
+        budget -= take
+    from app.services.journal import record
+    await record(session, "bunker_evacuate", player.id, base_id=base_id,
+                 target_planet=target_planet, colony_base_id=colony.id, seeded=moved)
+    await session.flush()
+    return {"colony_base_id": colony.id, "planet": target_planet, "seeded": moved,
+            "cargo": cargo}
+
+
 async def raid(
     session: AsyncSession, attacker: Player, target_id: int, action: str
 ) -> dict:

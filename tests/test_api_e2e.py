@@ -2997,6 +2997,50 @@ async def test_bunker_vault_stash_withdraw_e2e(client, monkeypatch):
     assert w.status_code == 201 and w.json()["withdrawn"] == 400
 
 
+async def test_bunker_evacuate_e2e(client, monkeypatch):
+    """SDD 69 Fase 3: evacuar → fundar colonia (colony_ship) + sembrar desde la bóveda (API)."""
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import Base_, Bunker, BunkerRoom, PlayerTech, UnitStock
+    from app.services.economy import get_or_create_stock
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    h = await _register(client.http, "evac_e2e")
+    st = await _onboard(client.http, h, planet="earth", race="terran")
+    base = st["bases"][0]["id"]
+    async with client.session_maker() as ses:
+        p = (await ses.execute(select(Player).where(Player.username == "evac_e2e"))).scalar_one()
+        p.energy = 100000.0   # colonizar cuesta energía
+        for t in ("bunker_engineering", "antigravity", "thermal_shielding"):
+            ses.add(PlayerTech(player_id=p.id, tech_key=t))
+        ses.add(UnitStock(player_id=p.id, unit_key="colony_ship", quantity=1))
+        await ses.commit()
+    assert (await client.http.post("/api/v1/bunker/dig", headers=h,
+                                   json={"base_id": base})).status_code == 201
+    assert (await client.http.post("/api/v1/bunker/build-room", headers=h,
+            json={"base_id": base, "room_key": "vault", "cell": 0})).status_code == 201
+    async with client.session_maker() as ses:
+        p = (await ses.execute(select(Player).where(Player.username == "evac_e2e"))).scalar_one()
+        b = (await ses.execute(select(Bunker).where(Bunker.base_id == base))).scalar_one()
+        room = (await ses.execute(
+            select(BunkerRoom).where(BunkerRoom.bunker_id == b.id))).scalars().first()
+        room.status = "active"
+        (await get_or_create_stock(ses, p.id, "iron", "earth")).amount = 100000
+        await ses.commit()
+    assert (await client.http.post("/api/v1/bunker/stash", headers=h,
+            json={"base_id": base, "mineral": "iron", "amount": 2000})).status_code == 201
+    r = await client.http.post("/api/v1/bunker/evacuate", headers=h,
+                               json={"base_id": base, "target_planet": "mars",
+                                     "minerals": {"iron": 2000}})
+    assert r.status_code == 201, r.text
+    assert r.json()["planet"] == "mars" and r.json()["seeded"].get("iron") == 2000
+    async with client.session_maker() as ses:
+        p = (await ses.execute(select(Player).where(Player.username == "evac_e2e"))).scalar_one()
+        planets = {b.planet_key for b in (await ses.execute(
+            select(Base_).where(Base_.player_id == p.id))).scalars()}
+    assert "mars" in planets
+
+
 async def test_bunker_raid_e2e(client, monkeypatch):
     """SDD 64: sabotear el búnker de un rival mapeado por la API (happy) + 400 sin intel."""
     from datetime import UTC, datetime

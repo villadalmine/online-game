@@ -160,6 +160,22 @@ heavy:
     cost: { structural: 150, energetic: 90, advanced: 40 }
     # cargo = capacidad de minerales por nave (SDD 42 Fase 2)
     stats: { attack: 5, defense: 10, hp: 90, cargo: 500 }
+  - key: colony_ship
+    icon: "🛸"
+    name: "Nave colonizadora"
+    name_en: "Colony ship"
+    real: "Arca interplanetaria: lleva colonos y provisiones para fundar un asentamiento nuevo."
+    real_en: "Interplanetary ark: carries colonists and supplies to found a new settlement."
+    sources: ["Wikipedia: Colonization of space"]
+    requires: cosmodrome
+    requires_tech: antigravity
+    domain: space           # SDD 46: se aloja en el hangar
+    housing_size: 5
+    energy_cost: 40
+    train_seconds: 420
+    # SDD 69 Fase 3: gran arca de escape — coloniza + carga mucho material (semilla de tu reserva).
+    cost: { structural: 300, energetic: 260, advanced: 200 }
+    stats: { attack: 5, defense: 30, hp: 200, cargo: 3000 }
   - key: dreadnought
     icon: "🛰"
     name: "Acorazado estelar"

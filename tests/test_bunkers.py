@@ -121,6 +121,40 @@ async def test_vault_stash_withdraw_safe_from_loot(session, monkeypatch):
     assert (await planet_stocks(session, p.id, "mars")).get("iron") == 95500
 
 
+async def test_evacuate_founds_colony_and_seeds_from_vault(session, monkeypatch):
+    # SDD 69 Fase 3: evacuar → funda una colonia con colony_ship y la siembra con la bóveda (topeado
+    # por la carga de la nave). La reserva a salvo se muda a un mundo habitable.
+    from app.models import Base_, UnitStock
+    from app.services.bunkers import build_room, dig, evacuate, stash
+    from app.services.economy import get_or_create_stock, planet_stocks
+    from app.services.training import player_units
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    p = Player(username="evacuee", password_hash=hash_password("secret123"))
+    session.add(p)
+    await session.flush()
+    base = await onboard_player(session, p, "milky_way", "earth", "terran")
+    p.energy = 100000
+    for t in ("bunker_engineering", "antigravity", "thermal_shielding"):  # mars ok p/terran
+        session.add(PlayerTech(player_id=p.id, tech_key=t))
+    session.add(UnitStock(player_id=p.id, unit_key="colony_ship", quantity=1))
+    await session.commit()
+    await dig(session, p, base.id)
+    room = await build_room(session, p, base.id, "vault", 0)
+    room.status = "active"
+    (await get_or_create_stock(session, p.id, "iron", "earth")).amount = 100000
+    await session.commit()
+    await stash(session, p, base.id, "iron", 3000)
+    await session.commit()
+    r = await evacuate(session, p, base.id, "mars", {"iron": 3000})
+    await session.commit()
+    assert r["planet"] == "mars"
+    bases = (await session.execute(select(Base_).where(Base_.player_id == p.id))).scalars().all()
+    assert "mars" in {b.planet_key for b in bases}
+    assert (await planet_stocks(session, p.id, "mars")).get("iron") == 3000   # sembrado
+    assert (await player_units(session, p.id)).get("colony_ship", 0) == 0     # nave consumida
+
+
 async def test_dig_deeper_needs_tech_and_flag(session, monkeypatch):
     from app.services.bunkers import dig_deeper
     s = get_settings()

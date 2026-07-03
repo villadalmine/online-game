@@ -71,13 +71,16 @@ Hoy el búnker solo tiene salas de vida (comida/agua/gente) + electrónica. Suma
   Migración `a0c34235e05b`. Tests: `test_dig_deeper_expands_grid`/`_needs_tech_and_flag` + e2e
   `test_bunker_dig_deeper_e2e`. Es el "explorar subterránea" del pedido.
 
-### Fase 3 — Naves de carga y escape/colonización desde el búnker
-- **Unidad `colony_ship` (nave de carga/colonización)** — se fabrica en el cosmódromo o en una sala del
-  búnker (`launch_bay`). Sirve para **salir a otro planeta** llevando material/gente cuando el tuyo ya
-  no es habitable. Reusa el sistema de **colonización (SDD 37/42)** y **viaje/hiperespacio (SDD 57)**.
-- **Escape:** si tu planeta natal queda inhabitable (fallout severo/repetido), la nave de carga permite
-  **trasladar la sede** (o fundar la colonia que se vuelve tu nueva base fuerte). v1: fundar colonia +
-  mover acopio del búnker; "mudar el HQ" es v2 (evaluar balance).
+### Fase 3 — Naves de carga y escape/colonización desde el búnker  ✅ HECHO (1.144.0)
+- **Unidad `colony_ship` (nave colonizadora)** — se fabrica en el **cosmódromo** (`requires: cosmodrome`,
+  `requires_tech: antigravity`, `cargo: 3000`, sección `heavy` → aparece en Entrenar). Gran arca de
+  escape: coloniza + carga mucho material.
+- **Evacuación** (`POST /bunker/evacuate`): funda una colonia en el planeta objetivo consumiendo la
+  `colony_ship` (reusa `found_colony`, ahora con parámetro `vehicle`) y la **siembra con material de la
+  BÓVEDA** (Fase 1), topeado por la carga de la nave. Es el "volver a salir": tu reserva a salvo se muda
+  a un mundo habitable. v1 conservador (**fundar colonia + mudar acopio**, NO mudar HQ, decisión del
+  usuario). El front lo ofrece en el panel del búnker (select de planeta + 🛸 evacuar). Tests:
+  `test_evacuate_founds_colony_and_seeds_from_vault` + e2e `test_bunker_evacuate_e2e`.
 
 ### Fase 4 — Vida artificial: IA con robots autónomos (super-proyecto)  ⟵ el corazón del pedido
 El **super-proyecto** del búnker. Se **investiga por niveles** (`artificial_life` L1..Ln en YAML). Cada

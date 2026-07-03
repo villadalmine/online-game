@@ -8,6 +8,7 @@ from app.models import Player
 from app.schemas import (
     BunkerBuildRequest,
     BunkerDigRequest,
+    BunkerEvacuateRequest,
     BunkerRaidRequest,
     BunkerVaultRequest,
     RepopulateRequest,
@@ -17,6 +18,7 @@ from app.services.bunkers import (
     build_room,
     dig,
     dig_deeper,
+    evacuate,
     raid,
     repopulate,
     stash,
@@ -93,6 +95,21 @@ async def do_withdraw(
     """SDD 69: sacar mineral de la bóveda a la superficie."""
     try:
         result = await withdraw(session, player, body.base_id, body.mineral, body.amount)
+    except BunkerError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
+
+
+@router.post("/evacuate", status_code=status.HTTP_201_CREATED)
+async def do_evacuate(
+    body: BunkerEvacuateRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 69 Fase 3: evacuar → fundar una colonia (colony_ship) y sembrarla desde la bóveda."""
+    try:
+        result = await evacuate(session, player, body.base_id, body.target_planet, body.minerals)
     except BunkerError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()

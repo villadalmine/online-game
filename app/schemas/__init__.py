@@ -212,6 +212,12 @@ class BunkerVaultRequest(BaseModel):   # SDD 69: guardar/sacar mineral de la bó
     amount: float
 
 
+class BunkerEvacuateRequest(BaseModel):   # SDD 69 Fase 3: evacuar → fundar colonia + sembrar bóveda
+    base_id: int
+    target_planet: str
+    minerals: dict[str, float] = {}
+
+
 class TributeRequest(BaseModel):
     minerals: dict[str, float] = {}
     energy: float = 0.0
