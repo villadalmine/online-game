@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.159.0] - 2026-07-03
+
 ### 2026-07-03 — Reporte de combate legible: quién ganó y de quién son los números
 - El header ahora dice **quién ganó explícito** ("✓ ganaste vos" / "✗ ganó el rival") en vez de
   "ganaste/perdiste" (que se pisaba con las bajas).
