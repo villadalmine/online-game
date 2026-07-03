@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.163.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 76 Salto cuántico: teletransporte de electrónica entre búnkeres
 - Nueva tech **`quantum_jump`** (rama subterránea, requiere Vida artificial) que habilita la sala **⚛
   Puerta cuántica**. Con una puerta activa en el búnker de origen podés **teletransportar electrónica de
