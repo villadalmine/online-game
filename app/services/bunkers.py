@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import get_content
 from app.core.config import get_settings
-from app.models import Base_, Bunker, BunkerRoom, Player
+from app.models import Base_, Bunker, BunkerRoom, BunkerStock, Player
 from app.services.economy import get_or_create_stock, planet_stocks
 from app.services.energy import spend_energy
 from app.services.physics import effective_energy_max, effective_energy_regen
@@ -181,6 +181,88 @@ async def advance_bunker(
         b.updated_at = now
 
 
+async def _vault_capacity(session: AsyncSession, bunker_id: int) -> float:
+    """SDD 69: capacidad total de la bóveda = Σ vault_storage de las salas `vault` ACTIVAS."""
+    content = get_content()
+    rooms = (await session.execute(
+        select(BunkerRoom).where(BunkerRoom.bunker_id == bunker_id, BunkerRoom.status == "active")
+    )).scalars().all()
+    return float(sum(content.rooms.get(r.room_key, {}).get("vault_storage", 0) for r in rooms))
+
+
+async def _vault_stocks(session: AsyncSession, bunker_id: int) -> list[BunkerStock]:
+    return list((await session.execute(
+        select(BunkerStock).where(BunkerStock.bunker_id == bunker_id)
+    )).scalars())
+
+
+async def stash(
+    session: AsyncSession, player: Player, base_id: int, mineral: str, amount: float
+) -> dict:
+    """SDD 69: mover mineral de la SUPERFICIE (planeta de la base) a la BÓVEDA del búnker (a salvo
+    del saqueo). Topeado por la capacidad total de las salas `vault`. amount>0."""
+    settings = get_settings()
+    if not settings.bunkers_enabled:
+        raise BunkerError("Los búnkeres están desactivados.")
+    amount = float(amount or 0)
+    if amount <= 0:
+        raise BunkerError("Cantidad inválida.")
+    content = get_content()
+    if mineral not in content.minerals:
+        raise BunkerError(f"Mineral desconocido: {mineral}")
+    bunker = await _bunker_for_base(session, base_id)
+    if bunker is None or bunker.player_id != player.id:
+        raise BunkerError("Primero cavá el búnker en esta base.")
+    base = await session.get(Base_, base_id)
+    cap = await _vault_capacity(session, bunker.id)
+    if cap <= 0:
+        raise BunkerError("Construí una Bóveda de materiales primero.")
+    stocks = await _vault_stocks(session, bunker.id)
+    used = sum(s.amount for s in stocks)
+    free = cap - used
+    if free <= 0:
+        raise BunkerError(f"Bóveda llena ({used:.0f}/{cap:.0f}).")
+    move = min(amount, free)
+    here = await planet_stocks(session, player.id, base.planet_key)
+    move = min(move, here.get(mineral, 0.0))
+    if move <= 0:
+        raise BunkerError(f"No tenés {mineral} en {base.planet_key}.")
+    (await get_or_create_stock(session, player.id, mineral, base.planet_key)).amount -= move
+    vs = next((s for s in stocks if s.mineral_key == mineral), None)
+    if vs is None:
+        vs = BunkerStock(bunker_id=bunker.id, mineral_key=mineral, amount=0.0)
+        session.add(vs)
+    vs.amount += move
+    await session.flush()
+    return {"stashed": round(move, 2), "mineral": mineral,
+            "vault_used": round(used + move, 2), "vault_cap": round(cap, 2)}
+
+
+async def withdraw(
+    session: AsyncSession, player: Player, base_id: int, mineral: str, amount: float
+) -> dict:
+    """SDD 69: sacar mineral de la BÓVEDA a la superficie (planeta de la base). amount>0."""
+    settings = get_settings()
+    if not settings.bunkers_enabled:
+        raise BunkerError("Los búnkeres están desactivados.")
+    amount = float(amount or 0)
+    if amount <= 0:
+        raise BunkerError("Cantidad inválida.")
+    bunker = await _bunker_for_base(session, base_id)
+    if bunker is None or bunker.player_id != player.id:
+        raise BunkerError("Primero cavá el búnker en esta base.")
+    base = await session.get(Base_, base_id)
+    vstocks = await _vault_stocks(session, bunker.id)
+    vs = next((s for s in vstocks if s.mineral_key == mineral), None)
+    if vs is None or vs.amount <= 0:
+        raise BunkerError(f"No hay {mineral} en la bóveda.")
+    move = min(amount, vs.amount)
+    vs.amount -= move
+    (await get_or_create_stock(session, player.id, mineral, base.planet_key)).amount += move
+    await session.flush()
+    return {"withdrawn": round(move, 2), "mineral": mineral, "vault_left": round(vs.amount, 2)}
+
+
 async def raid(
     session: AsyncSession, attacker: Player, target_id: int, action: str
 ) -> dict:
@@ -338,6 +420,9 @@ async def bunker_state(session: AsyncSession, player: Player) -> list[dict]:
             "electronics": round(b.electronics, 1),   # SDD 64 v2: moneda de repoblación
             "grid_level": int(b.grid_level or 0),     # SDD 69: excavaciones hechas
             "side": grid_side(b, get_settings()),     # SDD 69: lado efectivo de la grilla
+            "vault_cap": await _vault_capacity(session, b.id),   # SDD 69: bóveda de acopio
+            "vault": {s.mineral_key: round(s.amount, 2)
+                      for s in await _vault_stocks(session, b.id) if s.amount > 0},
             "rooms": [{"cell": r.cell, "room_key": r.room_key, "status": r.status,
                        "completes_at": r.completes_at.isoformat()} for r in rooms],
         })

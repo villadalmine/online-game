@@ -56,6 +56,15 @@ rooms:
     energy_cost: 40
     build_seconds: 400
     cost: { structural: 200, energetic: 400, advanced: 400 }
+  - key: vault
+    icon: "🗄"
+    name: "Bóveda de materiales"
+    name_en: "Materials vault"
+    requires_tech: bunker_engineering
+    vault_storage: 5000   # SDD 69: capacidad de acopio subterráneo (a salvo del saqueo)
+    energy_cost: 15
+    build_seconds: 240
+    cost: { structural: 180, energetic: 40 }
   # SDD 64 §3.5: defensas (requieren bunker_defense).
   - key: ventilation
     icon: "🌀"

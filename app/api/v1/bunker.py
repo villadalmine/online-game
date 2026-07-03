@@ -9,6 +9,7 @@ from app.schemas import (
     BunkerBuildRequest,
     BunkerDigRequest,
     BunkerRaidRequest,
+    BunkerVaultRequest,
     RepopulateRequest,
 )
 from app.services.bunkers import (
@@ -18,6 +19,8 @@ from app.services.bunkers import (
     dig_deeper,
     raid,
     repopulate,
+    stash,
+    withdraw,
 )
 
 router = APIRouter()
@@ -64,6 +67,36 @@ async def do_build_room(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()
     return {"id": r.id, "room_key": r.room_key, "cell": r.cell, "status": r.status}
+
+
+@router.post("/stash", status_code=status.HTTP_201_CREATED)
+async def do_stash(
+    body: BunkerVaultRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 69: guardar mineral de la superficie en la bóveda (a salvo del saqueo)."""
+    try:
+        result = await stash(session, player, body.base_id, body.mineral, body.amount)
+    except BunkerError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
+
+
+@router.post("/withdraw", status_code=status.HTTP_201_CREATED)
+async def do_withdraw(
+    body: BunkerVaultRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 69: sacar mineral de la bóveda a la superficie."""
+    try:
+        result = await withdraw(session, player, body.base_id, body.mineral, body.amount)
+    except BunkerError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
 
 
 @router.post("/repopulate", status_code=status.HTTP_201_CREATED)

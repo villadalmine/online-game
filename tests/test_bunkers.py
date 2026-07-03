@@ -88,6 +88,39 @@ async def test_dig_deeper_expands_grid(session, monkeypatch):
     assert room.cell == side0 * side0
 
 
+async def test_vault_stash_withdraw_safe_from_loot(session, monkeypatch):
+    # SDD 69 Fase 1: la bóveda guarda mineral a salvo del saqueo (sale de la superficie → el loot,
+    # que solo toca ResourceStock, no lo alcanza). Topeado por la capacidad de las salas `vault`.
+    from app.services.bunkers import build_room, bunker_state, dig, stash, withdraw
+    from app.services.economy import get_or_create_stock, planet_stocks
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    p, base = await _player(session)
+    await dig(session, p, base.id)
+    # fondear para construir la bóveda; activarla; RECIÉN AHÍ fijar 100000 (el build cuesta mineral)
+    (await get_or_create_stock(session, p.id, "iron", "mars")).amount = 100000
+    room = await build_room(session, p, base.id, "vault", 0)
+    room.status = "active"
+    (await get_or_create_stock(session, p.id, "iron", "mars")).amount = 100000   # neto post-build
+    await session.commit()
+    # sin bóveda no habría capacidad; con una vault activa hay 5000
+    r = await stash(session, p, base.id, "iron", 1000)
+    await session.commit()
+    assert r["stashed"] == 1000 and r["vault_cap"] == 5000
+    surf = await planet_stocks(session, p.id, "mars")
+    assert surf.get("iron", 0) == 99000                 # salió de la superficie (a salvo del loot)
+    me = await bunker_state(session, p)
+    assert me[0]["vault"].get("iron") == 1000
+    # tope de capacidad: no entra más de lo que cabe
+    r2 = await stash(session, p, base.id, "iron", 999999)
+    assert r2["stashed"] == 4000                         # 5000 cap − 1000 ya guardado
+    # sacar vuelve a la superficie
+    w = await withdraw(session, p, base.id, "iron", 500)
+    await session.commit()
+    assert w["withdrawn"] == 500
+    assert (await planet_stocks(session, p.id, "mars")).get("iron") == 95500
+
+
 async def test_dig_deeper_needs_tech_and_flag(session, monkeypatch):
     from app.services.bunkers import dig_deeper
     s = get_settings()

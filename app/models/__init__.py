@@ -365,6 +365,20 @@ class BunkerRoom(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class BunkerStock(Base):
+    """SDD 69 Fase 1: mineral guardado en la BÓVEDA de un búnker. Vive bajo tierra → el saqueo de
+    combate (que solo toca ResourceStock de superficie) NO lo alcanza: reserva para reconstruir y
+    volver a conquistar tras una guerra. Capacidad = Σ storage de las salas `vault` activas."""
+
+    __tablename__ = "bunker_stocks"
+    __table_args__ = (UniqueConstraint("bunker_id", "mineral_key", name="uq_bunker_stock"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    bunker_id: Mapped[int] = mapped_column(ForeignKey("bunkers.id", ondelete="CASCADE"), index=True)
+    mineral_key: Mapped[str] = mapped_column(String(50))
+    amount: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+
+
 class BunkerRaid(Base):
     """SDD 64: una incursión de sabotaje sobre el búnker de un rival (gas/ratas/agua). Log para el
     tope diario e historial."""

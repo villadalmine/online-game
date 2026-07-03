@@ -2958,6 +2958,45 @@ async def test_bunker_dig_deeper_e2e(client, monkeypatch):
     assert me2["bunkers"][0]["grid_level"] == 1
 
 
+async def test_bunker_vault_stash_withdraw_e2e(client, monkeypatch):
+    """SDD 69 Fase 1: guardar mineral en la bóveda (a salvo del saqueo) y sacarlo, por la API."""
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import Bunker, BunkerRoom, PlayerTech
+    from app.services.economy import get_or_create_stock
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    h = await _register(client.http, "vault_e2e")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    base = st["bases"][0]["id"]
+    async with client.session_maker() as ses:
+        p = (await ses.execute(select(Player).where(Player.username == "vault_e2e"))).scalar_one()
+        ses.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+        await ses.commit()
+    assert (await client.http.post("/api/v1/bunker/dig", headers=h,
+                                   json={"base_id": base})).status_code == 201
+    # construir la bóveda y activarla + fondear iron
+    assert (await client.http.post("/api/v1/bunker/build-room", headers=h,
+            json={"base_id": base, "room_key": "vault", "cell": 0})).status_code == 201
+    async with client.session_maker() as ses:
+        p = (await ses.execute(select(Player).where(Player.username == "vault_e2e"))).scalar_one()
+        b = (await ses.execute(select(Bunker).where(Bunker.base_id == base))).scalar_one()
+        room = (await ses.execute(
+            select(BunkerRoom).where(BunkerRoom.bunker_id == b.id))).scalars().first()
+        room.status = "active"
+        (await get_or_create_stock(ses, p.id, "iron", "mars")).amount = 100000
+        await ses.commit()
+    r = await client.http.post("/api/v1/bunker/stash", headers=h,
+                               json={"base_id": base, "mineral": "iron", "amount": 1000})
+    assert r.status_code == 201, r.text
+    assert r.json()["stashed"] == 1000
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["bunkers"][0]["vault"].get("iron") == 1000
+    w = await client.http.post("/api/v1/bunker/withdraw", headers=h,
+                               json={"base_id": base, "mineral": "iron", "amount": 400})
+    assert w.status_code == 201 and w.json()["withdrawn"] == 400
+
+
 async def test_bunker_raid_e2e(client, monkeypatch):
     """SDD 64: sabotear el búnker de un rival mapeado por la API (happy) + 400 sin intel."""
     from datetime import UTC, datetime

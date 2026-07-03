@@ -206,6 +206,12 @@ class BunkerRaidRequest(BaseModel):
     action: str   # gas | rats | water
 
 
+class BunkerVaultRequest(BaseModel):   # SDD 69: guardar/sacar mineral de la bóveda
+    base_id: int
+    mineral: str
+    amount: float
+
+
 class TributeRequest(BaseModel):
     minerals: dict[str, float] = {}
     energy: float = 0.0

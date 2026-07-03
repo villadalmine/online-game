@@ -40,11 +40,16 @@ nuevo.
 
 ## 3. Fases
 
-### Fase 1 — Búnker = mini-base subterránea (defensa/ataque/acopio/research)  ⟵ empezar acá
+### Fase 1 — Búnker = mini-base subterránea (defensa/ataque/acopio/research)  ⟵ en curso
 Hoy el búnker solo tiene salas de vida (comida/agua/gente) + electrónica. Sumar salas que lo hagan una
 **base completa en miniatura**, todas `requires_tech` (árbol subterráneo) y con costo por rol (SDD 53):
-- **`vault` (bóveda de materiales)** — acopia los minerales **más importantes** a salvo del nuclear
-  (la superficie se puede arrasar; lo de la bóveda no). Aporta `storage` subterráneo por mineral.
+- **`vault` (bóveda de materiales)** ✅ **HECHO (1.142.0):** acopia minerales a salvo del saqueo/
+  guerra (la superficie se puede arrasar; la bóveda no — el loot solo toca `ResourceStock` de
+  superficie, así que lo guardado queda intacto). Sala `vault` (`vault_storage` 5000 c/u) da capacidad;
+  `POST /bunker/stash` (superficie→bóveda, topeado) y `/bunker/withdraw` (bóveda→superficie); modelo
+  `BunkerStock` (migración `343867d85a30`); snapshot `vault`/`vault_cap`; panel con guardar/sacar. Es
+  tu reserva para **reconstruir y volver a conquistar**. Tests: `test_vault_stash_withdraw_safe_from_loot`
+  + e2e `test_bunker_vault_stash_withdraw_e2e`.
 - **`bunker_turret` (defensa subterránea)** — `defense_power`/`intercept_power` **bajos** (el búnker
   no es un fuerte; es refugio). Defiende contra la invasión física (Fase 4 del SDD 64 / abajo).
 - **`bunker_armory` (arsenal subterráneo)** — permite **fabricar/almacenar** un ataque **mínimo**
