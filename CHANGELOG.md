@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.148.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 67 v3: hacer VOLVER misiles/drones (recall) con Diplomacia + Gobierno + verlos en vuelo
 - **Recall de misiles** (`POST /combat/strike/{id}/recall`): el atacante ordena el regreso de su salva
   → los misiles vuelven al hangar. **Requiere `government` activo + tech `diplomacy`**
