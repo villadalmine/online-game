@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.143.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 70: el globo del planeta se gira con el mouse/dedo (+ auto-rotación más rápida)
 - El globo 3D ahora se **arrastra para girar** (pointer = mouse + touch; `touch-action:none`); mientras
   arrastrás se pausa la auto-rotación y retoma tras 1.5 s. **Auto-rotación más rápida** (~16 s/vuelta
