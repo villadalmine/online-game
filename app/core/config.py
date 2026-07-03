@@ -234,6 +234,10 @@ class Settings(BaseSettings):
     # tope de venta por tick. mines/colonize construyen/colonizan 1 por tick (acotado).
     ai_trade_surplus_threshold: float = 10000.0
     ai_trade_sell_qty: int = 500
+    # Sub-fase 3 (autopiloto ataque): solo ataca si supera claramente la defensa estimada (×margin),
+    # dejando RESERVA defensiva en casa. Respeta topes anti-farmeo (SDD 55) y el botón STOP.
+    ai_attack_margin: float = 1.5      # tu poder de ataque debe superar la defensa × este factor
+    ai_attack_reserve: float = 0.4     # fracción de tropas que el autopiloto NUNCA manda (defensa)
 
     # SDD 67: diplomacia nuclear — una salva con nuclear tarda 24 h (ventana para negociar) y el
     # defensor con `diplomacy` (tech) + `government` (edificio activo) puede ofrecer TRIBUTO

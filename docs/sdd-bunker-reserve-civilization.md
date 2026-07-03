@@ -96,8 +96,14 @@ Hoy el búnker solo tiene salas de vida (comida/agua/gente) + electrónica. Suma
 > minar), `trade` (vende EXCEDENTE por energía si hay mercado, conservador: solo sobre
 > `ai_trade_surplus_threshold`), `colonize` (con `colony_ship` funda 1 colonia habitable/tick). **Botón
 > de parada de emergencia** (pedido del usuario): `Player.ai_autopilot_on` (migr `c7d410ab31e2`) +
-> `POST /bunker/ai-autopilot {on}` + ⏸/▶ en el panel; el autopiloto lo respeta. **Pendiente:** sub-fase 3
-> (attack autónomo + `artificial_life_npc_ceiling`).
+> `POST /bunker/ai-autopilot {on}` + ⏸/▶ en el panel; el autopiloto lo respeta.
+> **Sub-fase 3 HECHA (1.147.0) — Fase 4 COMPLETA:** `_auto_attack` (nivel 5): ataca a un rival que
+> supera claramente (poder > defensa × `ai_attack_margin`), dejando RESERVA defensiva
+> (`ai_attack_reserve`); reusa `_base_defense_estimate`/`_force_attack_power`/`start_attack` (topes SDD
+> 55 + protección + energía se aplican; respeta el botón STOP). **Techo IA de los NPC**:
+> `npc_effective_epsilon()` sube la exploración de estrategias de los NPC según
+> `artificial_life_npc_ceiling` (knob admin, default 0 = sin cambio, acotado 0.6). Tests en
+> `tests/test_ai_life.py`. **La vida artificial queda completa** (workers→mines→trade→colonize→attack).
 
 El **super-proyecto** del búnker. Se **investiga por niveles** (`artificial_life` L1..Ln en YAML). Cada
 nivel cuesta electrónica + minerales avanzados + tiempo, y **desbloquea automatización**:

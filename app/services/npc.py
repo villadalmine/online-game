@@ -889,6 +889,13 @@ def _posture_stats(player: Player) -> dict:
         return {}
 
 
+def npc_effective_epsilon() -> float:
+    """SDD 69 Fase 4: el TECHO de vida artificial (`artificial_life_npc_ceiling`, admin) le da más
+    'inteligencia' a los NPC = exploran más estrategias. Default 0 → epsilon base. Acotado."""
+    s = get_settings()
+    return min(0.6, s.npc_explore_epsilon + 0.08 * max(0, s.artificial_life_npc_ceiling))
+
+
 def bandit_posture(player: Player, picked: str, rng=None) -> str:
     """SDD 65 F3 — auto-evaluación (epsilon-greedy): si `picked` viene PERDIENDO en el historial
     propio (win-rate < 30% con ≥4 batallas), cambiá a la postura con mejor win-rate (≥2 batallas,
@@ -898,7 +905,7 @@ def bandit_posture(player: Player, picked: str, rng=None) -> str:
     n = entry.get("w", 0) + entry.get("l", 0)
     if n < 4 or (entry.get("w", 0) / n) >= 0.3:
         return picked                       # sin evidencia en contra → respetar la elección
-    if (rng or random.random)() < get_settings().npc_explore_epsilon:
+    if (rng or random.random)() < npc_effective_epsilon():
         return picked                       # explorar: a veces insistir igual
     best, best_wr = picked, -1.0
     for posture, st in stats.items():

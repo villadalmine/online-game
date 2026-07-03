@@ -125,3 +125,36 @@ async def test_auto_colonize_with_colony_ship(session, monkeypatch):
     planets = {b.planet_key for b in (await session.execute(
         select(Base_).where(Base_.player_id == p.id))).scalars()}
     assert len(planets) >= 2   # colonizó al menos un planeta nuevo
+
+
+async def test_auto_attack_hits_a_beatable_enemy(session, monkeypatch):
+    # SDD 69 F4 sub-fase 3: nivel 5 (attack) → ataca a un rival que supera claramente.
+    from app.models import AttackMission, UnitStock
+    s = get_settings()
+    monkeypatch.setattr(s, "bunker_autonomy_enabled", True)
+    monkeypatch.setattr(s, "garrison_enabled", False)   # usar el ejército global (simple)
+    atk, abase = await _player(session, name="ai_atk")
+    atk.ai_level = 5
+    dfn, dbase = await _player(session, name="ai_vic")
+    dfn.protected_until = None                          # sin protección de novato
+    session.add(UnitStock(player_id=atk.id, unit_key="soldier", quantity=100))
+    await session.commit()
+    n = await run_ai_autopilot(session, atk)
+    await session.commit()
+    assert n >= 1   # el nivel 5 puede hacer varias acciones; nos importa que atacó
+    missions = (await session.execute(
+        select(AttackMission).where(AttackMission.attacker_id == atk.id))).scalars().all()
+    assert missions and missions[0].target_base_id == dbase.id
+
+
+async def test_npc_effective_epsilon_scales_with_ceiling(monkeypatch):
+    # SDD 69 F4: el techo (admin) da más exploración a los NPC. Default 0 → base; sube y se topea.
+    from app.services.npc import npc_effective_epsilon
+    s = get_settings()
+    monkeypatch.setattr(s, "npc_explore_epsilon", 0.2)
+    monkeypatch.setattr(s, "artificial_life_npc_ceiling", 0)
+    assert npc_effective_epsilon() == 0.2
+    monkeypatch.setattr(s, "artificial_life_npc_ceiling", 2)
+    assert abs(npc_effective_epsilon() - 0.36) < 1e-9
+    monkeypatch.setattr(s, "artificial_life_npc_ceiling", 100)
+    assert npc_effective_epsilon() == 0.6   # topeado

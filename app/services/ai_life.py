@@ -127,6 +127,8 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
         total += await _auto_trade(session, player, settings)
     if "colonize" in scope:
         total += await _auto_colonize(session, player)
+    if "attack" in scope:
+        total += await _auto_attack(session, player, settings)
     return total
 
 
@@ -222,6 +224,51 @@ async def _auto_trade(session: AsyncSession, player: Player, settings) -> int:
         return 0
     except Exception:
         return 0
+
+
+async def _auto_attack(session: AsyncSession, player: Player, settings) -> int:
+    """Sub-fase 3: ataque autónomo. Solo ataca a un rival que SUPERA claramente (poder de ataque >
+    defensa estimada × `ai_attack_margin`), dejando RESERVA defensiva en casa (`ai_attack_reserve`).
+    Reusa los estimadores de la NPC + `start_attack` (que aplica topes SDD 55, protección, energía →
+    si no se puede, corta). 1 ataque por tick. El botón STOP ya se chequeó arriba."""
+    try:
+        from app.services.combat import start_attack
+        from app.services.npc import _base_defense_estimate, _force_attack_power
+        from app.services.training import player_units, units_at_base
+        home = await _home_base(session, player)
+        if home is None:
+            return 0
+        combat_keys = ("soldier", "tank", "aircraft")
+        mine = (await units_at_base(session, player.id, home.id)) if settings.garrison_enabled \
+            else (await player_units(session, player.id))
+        reserve = settings.ai_attack_reserve
+        # fuerza a enviar = (1-reserva) de cada unidad de combate; deja el resto para defender.
+        force = {k: int(mine.get(k, 0) * (1.0 - reserve)) for k in combat_keys}
+        force = {k: v for k, v in force.items() if v > 0}
+        if not force:
+            return 0
+        my_power = _force_attack_power(force)
+        # candidatos: bases de otros jugadores (start_attack filtra aliado/novato/galaxia/etc).
+        rows = (await session.execute(
+            select(Base_).join(Player, Base_.player_id == Player.id).where(
+                Base_.player_id != player.id)
+        )).scalars().all()
+        best = None
+        best_def = 0.0
+        for b in rows:
+            defense = await _base_defense_estimate(session, b)
+            beatable = my_power > defense * settings.ai_attack_margin
+            if beatable and (best is None or defense > best_def):
+                best, best_def = b, defense   # el más fuerte que igual superás (mejor botín)
+        if best is None:
+            return 0
+        await start_attack(session, player, best.id, force, source_base_id=home.id)
+        from app.services.journal import record
+        await record(session, "ai_autopilot", player.id, action="attack",
+                     target_base_id=best.id, force=force)
+        return 1
+    except Exception:
+        return 0   # CombatError (topes/protección/energía) u otro → no ataca este tick
 
 
 async def _auto_colonize(session: AsyncSession, player: Player) -> int:

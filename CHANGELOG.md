@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 69 Fase 4 (sub-fase 3, COMPLETA): ataque autónomo + techo de IA de los NPC
+- **`_auto_attack`** (nivel 5): el autopiloto ataca a un rival que supera claramente (poder de ataque
+  > defensa estimada × `ai_attack_margin`), dejando una RESERVA defensiva en casa (`ai_attack_reserve`).
+  Reusa los estimadores de la NPC + `start_attack` (topes anti-farmeo SDD 55, protección de novato y
+  energía se aplican; respeta el botón STOP). 1 ataque por tick.
+- **Techo de IA de los NPC**: `npc_effective_epsilon()` sube la exploración de estrategias de los NPC
+  según `artificial_life_npc_ceiling` (knob admin; default 0 = sin cambio; acotado a 0.6).
+- Con esto la **vida artificial (SDD 69 Fase 4) queda COMPLETA**: workers→mines→trade→colonize→attack.
+  Tests en `tests/test_ai_life.py`. Todo detrás de flags (default OFF).
+
 ## [1.146.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 69 Fase 4 (sub-fase 2): autopiloto economía (minas/comercio/colonización) + STOP
