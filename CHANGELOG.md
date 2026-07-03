@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.147.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 69 Fase 4 (sub-fase 3, COMPLETA): ataque autónomo + techo de IA de los NPC
 - **`_auto_attack`** (nivel 5): el autopiloto ataca a un rival que supera claramente (poder de ataque
   > defensa estimada × `ai_attack_margin`), dejando una RESERVA defensiva en casa (`ai_attack_reserve`).
