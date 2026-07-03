@@ -7,6 +7,10 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Transporte: muestra cuántas naves de carga necesitás (pre-cálculo)
+- El form de transporte entre planetas ahora avisa **"🚢 necesitás N naves de carga (tenés M) ✓/❌"**
+  (ceil(cantidad / capacidad 500), como valida el server). Pedido del usuario. Solo front (`trAvail`).
+
 ## [1.155.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 67 v5: la diplomacia del NPC es LEGÍTIMA y medible (nada de bypass)
