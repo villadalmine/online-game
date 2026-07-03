@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.162.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 75 Terraformación + fixes (historia legible, búnker no se va de pantalla)
 - **Terraformación**: nueva tech `terraforming` (rama subterránea) que habilita la sala **🌎
   Terraformador**; mientras está activa **agranda el búnker +3 de lado** de una (p.ej. 4×4 → 7×7) y sube

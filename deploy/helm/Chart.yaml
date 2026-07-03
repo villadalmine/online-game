@@ -3,4 +3,4 @@ name: online-game
 description: API-first turn-based space strategy game
 type: application
 version: 0.1.0
-appVersion: "1.161.0"
+appVersion: "1.162.0"
