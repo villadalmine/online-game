@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.153.0] - 2026-07-03
+
 ### 2026-07-03 — Fix gate e2e-chrome: `_token` tolerante al rate-limit (dejó de flakear el CD)
 - `tests/test_web_smoke.py::_token` ahora reintenta con backoff + username único por intento y NUNCA
   hace `d["access_token"]` sobre un string/error (429 rate-limit → `_req` devuelve string → TypeError).
