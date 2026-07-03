@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.139.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 72: evento "Tormenta solar" (2 h sin fabricar, solo construir, energía ∞)
 - Nuevo evento del mundo **☀️ Tormenta solar** (SDD 36): scope global, dura 2 h. La sobrecarga fríe
   tu electrónica → **no podés fabricar nada** (unidades, drones, misiles, satélites); **solo construir
