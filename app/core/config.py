@@ -230,6 +230,10 @@ class Settings(BaseSettings):
     bunker_autonomy_enabled: bool = False
     ai_autopilot_worker_cap: int = 3       # tope de obreros que el autopiloto entrena por tick
     artificial_life_npc_ceiling: int = 0   # techo de IA que habilita a los NPC (admin, Fase 4)
+    # Sub-fase 2 (autopiloto economía): comercio conservador (vende EXCEDENTE sobre el umbral) +
+    # tope de venta por tick. mines/colonize construyen/colonizan 1 por tick (acotado).
+    ai_trade_surplus_threshold: float = 10000.0
+    ai_trade_sell_qty: int = 500
 
     # SDD 67: diplomacia nuclear — una salva con nuclear tarda 24 h (ventana para negociar) y el
     # defensor con `diplomacy` (tech) + `government` (edificio activo) puede ofrecer TRIBUTO

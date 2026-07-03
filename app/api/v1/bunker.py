@@ -116,6 +116,18 @@ async def do_evolve_ai(
     return result
 
 
+@router.post("/ai-autopilot")
+async def do_ai_autopilot(
+    body: dict,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 69 Fase 4: prender/parar el autopiloto (botón de emergencia). body: {on: bool}."""
+    player.ai_autopilot_on = bool(body.get("on", True))
+    await session.commit()
+    return {"autopilot_on": player.ai_autopilot_on}
+
+
 @router.post("/evacuate", status_code=status.HTTP_201_CREATED)
 async def do_evacuate(
     body: BunkerEvacuateRequest,

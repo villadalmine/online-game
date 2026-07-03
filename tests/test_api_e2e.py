@@ -3071,6 +3071,12 @@ async def test_ai_life_evolve_e2e(client, monkeypatch):
     assert r.json()["level"] == 1 and "workers" in r.json()["scope"]
     me2 = (await client.http.get("/api/v1/players/me", headers=h)).json()
     assert me2["ai"]["level"] == 1 and "workers" in me2["ai"]["scope"]
+    # botón de parada de emergencia del autopiloto
+    assert me2["ai"]["autopilot_on"] is True
+    off = await client.http.post("/api/v1/bunker/ai-autopilot", headers=h, json={"on": False})
+    assert off.status_code == 200 and off.json()["autopilot_on"] is False
+    me3 = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me3["ai"]["autopilot_on"] is False
 
 
 async def test_bunker_raid_e2e(client, monkeypatch):

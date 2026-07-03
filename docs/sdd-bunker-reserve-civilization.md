@@ -90,8 +90,14 @@ Hoy el búnker solo tiene salas de vida (comida/agua/gente) + electrónica. Suma
 > snapshot `ai`; panel del búnker "🤖 Vida artificial nivel X". **Autopiloto** `run_ai_autopilot` en el
 > tick: sub-fase 1 = auto-**staffing** (entrena obreros para mantener las minas staffeadas, acotado por
 > `ai_autopilot_worker_cap`). Flags `artificial_life_enabled` (subir nivel) / `bunker_autonomy_enabled`
-> (autopiloto actúa), ambos **OFF**. Tests `tests/test_ai_life.py` + e2e. **Pendiente:** sub-fase 2
-> (mines/trade/colonize autónomos), sub-fase 3 (attack autónomo + `artificial_life_npc_ceiling`).
+> (autopiloto actúa), ambos **OFF**. Tests `tests/test_ai_life.py` + e2e.
+> **Sub-fase 2 HECHA (1.146.0):** el autopiloto (`run_ai_autopilot`) ahora despacha por `autonomy_scope`
+> con un helper acotado por cada uno: `mines` (auto-construye 1 mina/tick de un mineral de rol sin
+> minar), `trade` (vende EXCEDENTE por energía si hay mercado, conservador: solo sobre
+> `ai_trade_surplus_threshold`), `colonize` (con `colony_ship` funda 1 colonia habitable/tick). **Botón
+> de parada de emergencia** (pedido del usuario): `Player.ai_autopilot_on` (migr `c7d410ab31e2`) +
+> `POST /bunker/ai-autopilot {on}` + ⏸/▶ en el panel; el autopiloto lo respeta. **Pendiente:** sub-fase 3
+> (attack autónomo + `artificial_life_npc_ceiling`).
 
 El **super-proyecto** del búnker. Se **investiga por niveles** (`artificial_life` L1..Ln en YAML). Cada
 nivel cuesta electrónica + minerales avanzados + tiempo, y **desbloquea automatización**:

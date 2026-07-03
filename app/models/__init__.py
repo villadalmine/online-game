@@ -62,6 +62,8 @@ class Player(Base):
 
     # SDD 69 Fase 4: nivel de VIDA ARTIFICIAL desarrollado en el búnker (0 = sin IA autónoma).
     ai_level: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # SDD 69 Fase 4: interruptor del autopiloto (el jugador lo apaga si la IA hace algo malo).
+    ai_autopilot_on: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
 
     # Personal AI assistant: emergency "hack" budget, reset lazily once a day (SDD 2).
     assistant_hacks_used: Mapped[int] = mapped_column(Integer, default=0, server_default="0")

@@ -9,11 +9,11 @@ from app.services.economy import get_or_create_stock
 from app.services.onboarding import onboard_player
 
 
-async def _player(session, name="ai_dev"):
+async def _player(session, name="ai_dev", planet="mars", race="martian"):
     p = Player(username=name, password_hash=hash_password("secret123"))
     session.add(p)
     await session.flush()
-    base = await onboard_player(session, p, "milky_way", "mars", "martian")
+    base = await onboard_player(session, p, "milky_way", planet, race)
     p.energy = 100000
     await session.commit()
     return p, base
@@ -76,3 +76,52 @@ async def test_autopilot_off_without_flag(session, monkeypatch):
     p.ai_level = 5
     await session.commit()
     assert await run_ai_autopilot(session, p) == 0
+
+
+async def test_autopilot_paused_by_switch(session, monkeypatch):
+    # SDD 69 F4: botón de parada — con ai_autopilot_on=False el autopiloto no actúa pese al déficit.
+    from app.content.registry import get_content
+    monkeypatch.setattr(get_settings(), "bunker_autonomy_enabled", True)
+    p, base = await _player(session)
+    p.ai_level = 1
+    p.ai_autopilot_on = False
+    struct = get_content().resolve_role("martian", "structural")
+    session.add(Building(base_id=base.id, building_key="mine", status="active",
+                         production_mineral=struct))
+    await session.commit()
+    assert await run_ai_autopilot(session, p) == 0   # parado por el jugador
+
+
+async def test_auto_mines_builds_a_missing_role_mine(session, monkeypatch):
+    # SDD 69 F4 sub-fase 2: nivel 2 (scope mines) → levanta una mina de un mineral sin minar.
+    monkeypatch.setattr(get_settings(), "bunker_autonomy_enabled", True)
+    p, base = await _player(session)
+    p.ai_level = 2   # scope incluye mines
+    for m in ("iron", "sulfur", "magnesium"):   # fondear para poder construir
+        (await get_or_create_stock(session, p.id, m, "mars")).amount = 100000
+    await session.commit()
+    n = await run_ai_autopilot(session, p)
+    await session.commit()
+    assert n >= 1
+    mines = (await session.execute(
+        select(Building).where(Building.base_id == base.id, Building.building_key == "mine")
+    )).scalars().all()
+    assert len(mines) >= 1 and mines[0].production_mineral in ("iron", "sulfur", "magnesium")
+
+
+async def test_auto_colonize_with_colony_ship(session, monkeypatch):
+    # SDD 69 F4 sub-fase 2: nivel 4 (colonize) + colony_ship + techs → coloniza un planeta.
+    from app.models import UnitStock
+    monkeypatch.setattr(get_settings(), "bunker_autonomy_enabled", True)
+    p, base = await _player(session, name="ai_col", planet="earth", race="terran")
+    p.ai_level = 4   # scope incluye colonize
+    for t in ("antigravity", "thermal_shielding"):   # mars colonizable p/ terran
+        session.add(PlayerTech(player_id=p.id, tech_key=t))
+    session.add(UnitStock(player_id=p.id, unit_key="colony_ship", quantity=1))
+    await session.commit()
+    n = await run_ai_autopilot(session, p)
+    await session.commit()
+    assert n >= 1
+    planets = {b.planet_key for b in (await session.execute(
+        select(Base_).where(Base_.player_id == p.id))).scalars()}
+    assert len(planets) >= 2   # colonizó al menos un planeta nuevo

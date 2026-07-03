@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 69 Fase 4 (sub-fase 2): autopiloto economía (minas/comercio/colonización) + STOP
+- El autopiloto (`run_ai_autopilot`) despacha por `autonomy_scope`, cada tarea acotada y con su
+  try/except: **mines** (auto-construye 1 mina/tick de un mineral de rol sin minar), **trade** (vende
+  EXCEDENTE por energía si hay mercado; conservador, solo sobre `ai_trade_surplus_threshold`),
+  **colonize** (con una `colony_ship` funda 1 colonia habitable/tick).
+- **Botón de parada de la IA** (pedido del usuario): `Player.ai_autopilot_on` (migr `c7d410ab31e2`) +
+  `POST /bunker/ai-autopilot {on}` + ⏸ parar / ▶ reanudar en el panel; el autopiloto lo respeta.
+- Tests: `tests/test_ai_life.py` (pausa, auto_mines, auto_colonize) + e2e del botón. Detrás de flags OFF.
+
 ## [1.145.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 69 Fase 4 (sub-fase 1): vida artificial — research por niveles + auto-staffing
