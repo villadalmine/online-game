@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import get_content
+from app.core import metrics
 from app.core.config import get_settings
 from app.models import Base_, Bunker, Player
 
@@ -169,6 +170,7 @@ async def _auto_workers(session: AsyncSession, player: Player, settings) -> int:
             return 0
         await start_training(session, player, home, "worker", to_train)
         from app.services.journal import record
+        metrics.AI_AUTOPILOT.inc(action="staff_workers")
         await record(session, "ai_autopilot", player.id, action="staff_workers", qty=to_train)
         return to_train
     except Exception:
@@ -193,6 +195,7 @@ async def _auto_mines(session: AsyncSession, player: Player) -> int:
         for mineral in want:
             await start_build(session, player, home, "mine", mineral)   # falla si no alcanza
             from app.services.journal import record
+            metrics.AI_AUTOPILOT.inc(action="build_mine")
             await record(session, "ai_autopilot", player.id, action="build_mine", mineral=mineral)
             return 1
         return 0
@@ -218,6 +221,7 @@ async def _auto_trade(session: AsyncSession, player: Player, settings) -> int:
                 if qty > 0:
                     await sell(session, player, planet, top[0], qty)
                     from app.services.journal import record
+                    metrics.AI_AUTOPILOT.inc(action="sell_surplus")
                     await record(session, "ai_autopilot", player.id, action="sell_surplus",
                                  mineral=top[0], qty=qty)
                     return 1
@@ -264,6 +268,7 @@ async def _auto_attack(session: AsyncSession, player: Player, settings) -> int:
             return 0
         await start_attack(session, player, best.id, force, source_base_id=home.id)
         from app.services.journal import record
+        metrics.AI_AUTOPILOT.inc(action="attack")
         await record(session, "ai_autopilot", player.id, action="attack",
                      target_base_id=best.id, force=force)
         return 1
@@ -293,6 +298,7 @@ async def _auto_colonize(session: AsyncSession, player: Player) -> int:
                 continue
             await found_colony(session, player, pk, mode="surface", vehicle="colony_ship")
             from app.services.journal import record
+            metrics.AI_AUTOPILOT.inc(action="colonize")
             await record(session, "ai_autopilot", player.id, action="colonize", planet=pk)
             return 1
         return 0

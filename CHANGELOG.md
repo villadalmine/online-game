@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Panel de alertas "¿de qué te falta?" + fix del preview de plazas + métrica autopiloto
+- **🚨 Panel de alertas** (pedido): en UN solo lugar, todo lo que te estás quedando corto —
+  🏠 plazas sin lugar por tipo de unidad, ⛏ minas sin obreros, 📦 almacén desbordando, 🛡 bases sin
+  defensa, ⚡ energía baja. Sin revisar mil paneles; "✓ todo en orden" si no hay nada. Solo front.
+- **Fix preview de plazas al entrenar**: con guarnición ON el alojamiento se valida POR BASE, pero el
+  preview usaba el global → no coincidía. Ahora el snapshot expone `housing_by_base` y el form muestra
+  **cuántas plazas te FALTAN** ("🏠 te faltan N plazas 🚀 Munición — Lanzadera") en vez de capar la
+  cantidad en silencio. + etiquetas de dominio para misiles/drones/satélites (faltaban).
+- **Métrica del autopiloto**: `game_ai_autopilot_total{action}` (staff_workers/build_mine/sell_surplus/
+  colonize/attack) → vigilar el balance de la vida artificial en Grafana.
+
 ## [1.156.0] - 2026-07-03
 
 ### 2026-07-03 — Transporte: muestra cuántas naves de carga necesitás (pre-cálculo)

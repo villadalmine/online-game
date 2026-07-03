@@ -190,6 +190,10 @@ LLM_LAST_OK = Gauge("game_llm_last_ok_timestamp", "Unix ts de la última respues
 # `brain` = rules|llm. `outcome` = llm (el LLM decidió) | fallback (falló y cayó a reglas) →
 # más 'llm' y menos 'fallback' = la IA está razonando, no adivinando.
 NPC_ACTIONS = Counter("game_npc_actions_total", "Acciones de NPC por tipo", ("action", "brain"))
+# SDD 69 Fase 4: qué hace el AUTOPILOTO de vida artificial (robots del jugador) por tipo de acción
+# (staff_workers|build_mine|sell_surplus|colonize|attack) → vigilar el balance cuando está prendido.
+AI_AUTOPILOT = Counter("game_ai_autopilot_total", "Acciones del autopiloto de vida artificial",
+                       ("action",))
 NPC_DECISIONS = Counter("game_npc_decisions_total",
                         "Decisiones de NPC: el LLM decidió vs cayó a reglas, por backend gpu/cloud",
                         ("outcome", "backend"))

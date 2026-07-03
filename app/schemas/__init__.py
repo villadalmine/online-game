@@ -657,6 +657,7 @@ class PlayerStateOut(BaseModel):
     # SDD 62: con guarnición ON, capacidad por planeta ({planet: {...}}). Vacío en modo global.
     mining_by_planet: dict = {}
     housing_by_planet: dict = {}
+    housing_by_base: dict = {}   # SDD 46/62: alojamiento por base ({base_id: {domain: {...}}})
     troop_moves: list[TroopMoveOut] = []   # SDD 62: traslados de tropas en curso
     storage: dict = {}
     # SDD 46: alojamiento. housing = {dominio: {capacity, occupancy, free}}.

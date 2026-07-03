@@ -165,6 +165,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
     # de cada planeta) → la "capacidad por planeta" del front. Con OFF quedan vacíos.
     mining_by_planet: dict[str, dict] = {}
     housing_by_planet: dict[str, dict] = {}
+    housing_by_base: dict[str, dict] = {}   # SDD 46/62: alojamiento por base (preview de Entrenar)
     troop_moves_out: list = []
     if settings.garrison_enabled:
         from app.schemas import TroopMoveOut
@@ -219,6 +220,18 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
                     "free": cap.get(d, 0) - occ.get(d, 0)}
                 for d in sorted(set(cap) | set(occ)) if cap.get(d, 0) or occ.get(d, 0)
             }
+        # SDD 46/62: alojamiento POR BASE → el preview de Entrenar coincide con la validación
+        # (con guarnición ON es por-base). queued + unidades + edificios de la base.
+        queued_pb: dict[int, dict[str, int]] = {}
+        for o in training_out:
+            queued_pb.setdefault(o.base_id, {})[o.unit_key] = (
+                queued_pb.setdefault(o.base_id, {}).get(o.unit_key, 0) + o.quantity
+            )
+        for bid in base_info:
+            akeys = [b.building_key for b in all_buildings
+                     if b.base_id == bid and b.status == "active"]
+            housing_by_base[str(bid)] = housing_report(
+                akeys, units_per_base.get(bid, {}), queued_pb.get(bid, {}))
 
     storage_block: dict = {}
     if settings.storage_caps_enabled:
@@ -436,6 +449,7 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         mining=mining_block,
         mining_by_planet=mining_by_planet,
         housing_by_planet=housing_by_planet,
+        housing_by_base=housing_by_base,
         troop_moves=troop_moves_out,
         storage=storage_block,
         housing=housing_block,
