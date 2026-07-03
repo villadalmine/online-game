@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.145.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 69 Fase 4 (sub-fase 1): vida artificial — research por niveles + auto-staffing
 - **Vida artificial del búnker**: research `artificial_life` + niveles L1..L5 data-driven
   (`content/artificial_life.yaml`; `autonomy_scope` workers→mines→trade→colonize→attack, con
