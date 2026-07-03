@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Jumper visible: "Mover tropas" muestra si el salto es instantáneo (y cómo habilitarlo)
+- El salto espacial (SDD 63) era **invisible**: el jumper hacía el traslado instantáneo pero nada en la
+  UI lo decía. Ahora el panel **🚚 Mover tropas** muestra un hint en vivo: "⚡ salto instantáneo (jumper)
+  — llega YA" con nº de jumpers y capacidad y "salto entre planetas ✓" cuando el destino está en otro
+  planeta; si tenés la tech pero no un jumper en la base de origen, te lo dice; y si no tenés nada,
+  explica cómo habilitarlo (investigar 🔬 Salto espacial + fabricar un 🛸 jumper en la base de origen).
+- Nuevo flag de feature `space_jump` en `/catalog` para que el front sepa que está prendido. Solo front
+  + un campo de catálogo. Pedido del usuario ("no veo la forma de usar el jumper").
+
 ## [1.163.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 76 Salto cuántico: teletransporte de electrónica entre búnkeres
