@@ -54,6 +54,55 @@ async def test_dig_and_build_room(session, monkeypatch):
         pass
 
 
+async def test_dig_deeper_expands_grid(session, monkeypatch):
+    # SDD 69 Fase 1: con underground_construction + flag, excavar agranda la grilla (+1 lado) y
+    # habilita celdas que antes estaban fuera del mapa.
+    from app.content.registry import get_content
+    from app.services.bunkers import dig_deeper, grid_side
+    from app.services.economy import get_or_create_stock
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "bunker_expansion_enabled", True)
+    p, base = await _player(session)
+    session.add(PlayerTech(player_id=p.id, tech_key="underground_construction"))
+    await dig(session, p, base.id)
+    await session.commit()
+    b = (await session.execute(select(Bunker).where(Bunker.base_id == base.id))).scalar_one()
+    side0 = grid_side(b, s)
+    # una celda fuera del mapa base falla…
+    try:
+        await build_room(session, p, base.id, "farm", side0 * side0)
+        raise AssertionError("celda fuera del mapa base")
+    except BunkerError:
+        pass
+    # fondear estructural y excavar
+    struct = get_content().resolve_role(p.race_key, "structural")
+    (await get_or_create_stock(session, p.id, struct, base.planet_key)).amount = 100000
+    await dig_deeper(session, p, base.id)
+    await session.commit()
+    b = (await session.execute(select(Bunker).where(Bunker.base_id == base.id))).scalar_one()
+    assert b.grid_level == 1 and grid_side(b, s) == side0 + 1
+    # ahora esa celda entra
+    room = await build_room(session, p, base.id, "farm", side0 * side0)
+    await session.commit()
+    assert room.cell == side0 * side0
+
+
+async def test_dig_deeper_needs_tech_and_flag(session, monkeypatch):
+    from app.services.bunkers import dig_deeper
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "bunker_expansion_enabled", True)
+    p, base = await _player(session)   # sin underground_construction
+    await dig(session, p, base.id)
+    await session.commit()
+    try:
+        await dig_deeper(session, p, base.id)
+        raise AssertionError("sin la tech no se excava")
+    except BunkerError:
+        pass
+
+
 async def test_meters_decay_without_rooms(session, monkeypatch):
     # SDD 64: sin salas que produzcan, los medidores decaen con el tiempo (base del sabotaje).
     monkeypatch.setattr(get_settings(), "bunkers_enabled", True)

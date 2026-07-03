@@ -2922,6 +2922,42 @@ async def test_bunker_dig_and_build_room_e2e(client, monkeypatch):
     assert me["bunkers"] and me["bunkers"][0]["food_health"] == 100.0
 
 
+async def test_bunker_dig_deeper_e2e(client, monkeypatch):
+    """SDD 69 Fase 1: excavar agranda la grilla del búnker (+1 lado) por la API."""
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import PlayerTech
+    from app.services.economy import get_or_create_stock
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "bunker_expansion_enabled", True)
+    h = await _register(client.http, "digdeep_e2e")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    base = st["bases"][0]["id"]
+    async with client.session_maker() as ses:
+        p = (await ses.execute(select(Player).where(Player.username == "digdeep_e2e"))).scalar_one()
+        ses.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+        ses.add(PlayerTech(player_id=p.id, tech_key="underground_construction"))
+        await ses.commit()
+    assert (await client.http.post("/api/v1/bunker/dig", headers=h,
+                                   json={"base_id": base})).status_code == 201
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    side0 = me["bunkers"][0]["side"]
+    # fondear estructural para pagar la excavación
+    from app.content.registry import get_content
+    struct = get_content().resolve_role("martian", "structural")
+    async with client.session_maker() as ses:
+        p = (await ses.execute(select(Player).where(Player.username == "digdeep_e2e"))).scalar_one()
+        (await get_or_create_stock(ses, p.id, struct, "mars")).amount = 100000
+        await ses.commit()
+    r = await client.http.post("/api/v1/bunker/dig-deeper", headers=h, json={"base_id": base})
+    assert r.status_code == 201, r.text
+    me2 = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me2["bunkers"][0]["side"] == side0 + 1
+    assert me2["bunkers"][0]["grid_level"] == 1
+
+
 async def test_bunker_raid_e2e(client, monkeypatch):
     """SDD 64: sabotear el búnker de un rival mapeado por la API (happy) + 400 sin intel."""
     from datetime import UTC, datetime

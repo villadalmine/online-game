@@ -216,6 +216,13 @@ class Settings(BaseSettings):
     bunker_raid_min_map_pct: float = 50.0  # % descubierto (satélites) mínimo para poder sabotear
     bunker_raids_per_target_per_day: int = 3  # tope de sabotajes por (atacante,objetivo)/día
     bunker_raid_energy_cost: float = 20.0  # energía por incursión de sabotaje
+    # SDD 69 Fase 1 — expansión subterránea ("me quedo sin espacio"): con la tech
+    # `underground_construction` podés EXCAVAR y agrandar la grilla del búnker. Lado efectivo =
+    # bunker_grid + grid_level (cada excavación +1 lado, hasta el tope). Detrás de flag.
+    bunker_expansion_enabled: bool = False
+    bunker_grid_max: int = 8               # lado máximo de la grilla (tope de excavaciones)
+    bunker_dig_energy_cost: float = 60.0   # energía por excavación
+    bunker_dig_cost_structural: float = 400.0  # estructural base por excavación (escala ×nivel)
 
     # SDD 67: diplomacia nuclear — una salva con nuclear tarda 24 h (ventana para negociar) y el
     # defensor con `diplomacy` (tech) + `government` (edificio activo) puede ofrecer TRIBUTO

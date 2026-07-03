@@ -11,7 +11,14 @@ from app.schemas import (
     BunkerRaidRequest,
     RepopulateRequest,
 )
-from app.services.bunkers import BunkerError, build_room, dig, raid, repopulate
+from app.services.bunkers import (
+    BunkerError,
+    build_room,
+    dig,
+    dig_deeper,
+    raid,
+    repopulate,
+)
 
 router = APIRouter()
 
@@ -28,6 +35,21 @@ async def do_dig(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()
     return {"id": b.id, "base_id": b.base_id}
+
+
+@router.post("/dig-deeper", status_code=status.HTTP_201_CREATED)
+async def do_dig_deeper(
+    body: BunkerDigRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 69 Fase 1: excavar para agrandar la grilla del búnker (+1 lado)."""
+    try:
+        b = await dig_deeper(session, player, body.base_id)
+    except BunkerError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return {"id": b.id, "base_id": b.base_id, "grid_level": b.grid_level}
 
 
 @router.post("/build-room", status_code=status.HTTP_201_CREATED)

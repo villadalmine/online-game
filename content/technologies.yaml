@@ -336,6 +336,18 @@ technologies:
     research_seconds: 1200
     cost: { structural: 400, energetic: 200, advanced: 200 }
     magnitude: 1.0
+  - key: underground_construction
+    name: "Construcción subterránea"
+    category: underground
+    name_en: "Underground construction"
+    description: "Excavá más hondo para agrandar tu búnker cuando te quedás sin espacio."
+    description_en: "Dig deeper to expand your bunker when you run out of space."
+    requires: research_lab
+    requires_tech: bunker_engineering
+    energy_cost: 60
+    research_seconds: 1400
+    cost: { structural: 450, energetic: 250, advanced: 200 }
+    magnitude: 1.0
   # SDD 63: salto espacial — capstone del árbol endgame (requiere TODO). Habilita la nave "jumper".
   - key: space_jump
     name: "Salto espacial"

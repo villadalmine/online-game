@@ -55,11 +55,16 @@ Hoy el búnker solo tiene salas de vida (comida/agua/gente) + electrónica. Suma
   mecanismo de "volver a salir": gastás la electrónica acumulada → reconstruís edificios de superficie
   de una. Enlazar narrativamente: el búnker es lo que te deja **volver a conquistar**.
 
-### Fase 2 — Expansión subterránea (quedarse sin espacio)
-- **Tech `underground_construction`** ("Construcción subterránea") — habilita **agrandar el búnker**.
-- **Acción "excavar / explorar subterránea"** (`dig_deeper`): expande la **grilla NxN** del búnker
-  (más celdas para más salas), con costo creciente por nivel + tiempo. Data-driven: `bunker_grid_base`,
-  `bunker_grid_per_level`, costo por nivel en config/YAML. Es el "explorar subterránea" del pedido.
+### Fase 2 — Expansión subterránea (quedarse sin espacio)  ✅ HECHO (1.141.0)
+- **Tech `underground_construction`** ("Construcción subterránea", cat underground) — habilita
+  **agrandar el búnker**.
+- **Acción "excavar"** (`dig_deeper`, `POST /bunker/dig-deeper`): expande la **grilla** del búnker
+  (+1 lado, `Bunker.grid_level`; lado efectivo = `bunker_grid` + nivel, tope `bunker_grid_max=8`),
+  con **costo estructural creciente por nivel** (`bunker_dig_cost_structural × (nivel+1)`) + energía
+  (`bunker_dig_energy_cost`). Detrás de `bunker_expansion_enabled` (default OFF). `build_room` usa el
+  lado por-búnker; el snapshot expone `side`/`grid_level`; el front muestra "⛏ excavar (N×N)".
+  Migración `a0c34235e05b`. Tests: `test_dig_deeper_expands_grid`/`_needs_tech_and_flag` + e2e
+  `test_bunker_dig_deeper_e2e`. Es el "explorar subterránea" del pedido.
 
 ### Fase 3 — Naves de carga y escape/colonización desde el búnker
 - **Unidad `colony_ship` (nave de carga/colonización)** — se fabrica en el cosmódromo o en una sala del

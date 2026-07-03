@@ -31,6 +31,11 @@ async def _bunker_for_base(session: AsyncSession, base_id: int) -> Bunker | None
     )).scalar_one_or_none()
 
 
+def grid_side(bunker: Bunker, settings) -> int:
+    """SDD 69: lado efectivo de la grilla = base + excavaciones (grid_level), topeado."""
+    return min(settings.bunker_grid_max, settings.bunker_grid + int(bunker.grid_level or 0))
+
+
 async def dig(session: AsyncSession, player: Player, base_id: int) -> Bunker:
     settings = get_settings()
     if not settings.bunkers_enabled:
@@ -50,6 +55,41 @@ async def dig(session: AsyncSession, player: Player, base_id: int) -> Bunker:
     return b
 
 
+async def dig_deeper(session: AsyncSession, player: Player, base_id: int) -> Bunker:
+    """SDD 69 Fase 1: excavar para AGRANDAR el búnker (+1 lado de grilla) cuando falta espacio.
+    Requiere la tech `underground_construction`; cuesta energía + estructural (escala ×nivel)."""
+    settings = get_settings()
+    if not settings.bunkers_enabled or not settings.bunker_expansion_enabled:
+        raise BunkerError("La expansión de búnkeres está desactivada.")
+    if "underground_construction" not in await researched_techs(session, player.id):
+        raise BunkerError("Requiere investigar: underground_construction.")
+    bunker = await _bunker_for_base(session, base_id)
+    if bunker is None or bunker.player_id != player.id:
+        raise BunkerError("Primero cavá el búnker en esta base.")
+    if grid_side(bunker, settings) >= settings.bunker_grid_max:
+        raise BunkerError("El búnker ya está en su tamaño máximo.")
+    base = await session.get(Base_, base_id)
+    now = datetime.now(UTC)
+    if not spend_energy(player, settings.bunker_dig_energy_cost, now,
+                        effective_energy_regen(player, settings),
+                        effective_energy_max(player, settings)):
+        raise BunkerError("Energía insuficiente para excavar.")
+    # costo estructural escala con el nivel actual (cada vez más profundo = más caro).
+    content = get_content()
+    struct = content.resolve_role(player.race_key, "structural")
+    need = settings.bunker_dig_cost_structural * (int(bunker.grid_level or 0) + 1)
+    here = await planet_stocks(session, player.id, base.planet_key)
+    if here.get(struct, 0.0) < need:
+        raise BunkerError(f"Falta {struct} en {base.planet_key} (necesita {need:g}).")
+    (await get_or_create_stock(session, player.id, struct, base.planet_key)).amount -= need
+    bunker.grid_level = int(bunker.grid_level or 0) + 1
+    from app.services.journal import record
+    await record(session, "bunker_dig_deeper", player.id, base_id=base_id,
+                 grid_level=bunker.grid_level, side=grid_side(bunker, settings))
+    await session.flush()
+    return bunker
+
+
 async def build_room(
     session: AsyncSession, player: Player, base_id: int, room_key: str, cell: int
 ) -> BunkerRoom:
@@ -66,7 +106,8 @@ async def build_room(
     rt = spec.get("requires_tech")
     if rt and rt not in await researched_techs(session, player.id):
         raise BunkerError(f"Requiere investigar: {rt}")
-    if not (0 <= cell < settings.bunker_grid * settings.bunker_grid):
+    side = grid_side(bunker, settings)   # SDD 69: la grilla crece con las excavaciones
+    if not (0 <= cell < side * side):
         raise BunkerError("Celda fuera del mapa subterráneo.")
     taken = (await session.execute(
         select(BunkerRoom).where(BunkerRoom.bunker_id == bunker.id, BunkerRoom.cell == cell)
@@ -295,6 +336,8 @@ async def bunker_state(session: AsyncSession, player: Player) -> list[dict]:
             "food_health": round(b.food_health, 1), "water_health": round(b.water_health, 1),
             "people_health": round(b.people_health, 1),
             "electronics": round(b.electronics, 1),   # SDD 64 v2: moneda de repoblación
+            "grid_level": int(b.grid_level or 0),     # SDD 69: excavaciones hechas
+            "side": grid_side(b, get_settings()),     # SDD 69: lado efectivo de la grilla
             "rooms": [{"cell": r.cell, "room_key": r.room_key, "status": r.status,
                        "completes_at": r.completes_at.isoformat()} for r in rooms],
         })

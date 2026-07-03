@@ -53,6 +53,7 @@ def build_catalog() -> dict:
             "strike": s.strike_enabled, "drones": s.drones_enabled,
             "satellites": s.satellites_enabled, "garrison": s.garrison_enabled,
             "bunkers": s.bunkers_enabled,
+            "bunker_expansion": s.bunker_expansion_enabled,   # SDD 69 Fase 1
         },
     }
 

@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 69 Fase 1 (parte): expansión subterránea del búnker (excavar cuando falta espacio)
+- Nueva tech **Construcción subterránea** (`underground_construction`, cat underground) + acción
+  **⛏ excavar** (`POST /bunker/dig-deeper`): agranda la grilla del búnker **+1 lado** por excavación
+  (`Bunker.grid_level`; lado efectivo = `bunker_grid` + nivel, tope 8), con costo estructural creciente
+  por nivel + energía. `build_room` usa el lado por-búnker; el snapshot expone `side`/`grid_level`; el
+  panel muestra "⛏ excavar (N×N)". Detrás de `bunker_expansion_enabled` (default OFF).
+- Migración `a0c34235e05b` (Bunker.grid_level). Tests: `test_dig_deeper_expands_grid`/
+  `_needs_tech_and_flag` + e2e `test_bunker_dig_deeper_e2e`.
+
 ## [1.140.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 70 v1: globo 3D del planeta que gira (bases escaneadas)

@@ -345,6 +345,8 @@ class Bunker(Base):
     people_health: Mapped[float] = mapped_column(Float, default=100.0, server_default="100")
     # SDD 64 v2: electrónica (research_room/atomic_lab) → moneda de repoblación.
     electronics: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
+    # SDD 69 Fase 1: excavaciones hechas → lado efectivo de la grilla = bunker_grid + grid_level.
+    grid_level: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
