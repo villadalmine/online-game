@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.156.0] - 2026-07-03
+
 ### 2026-07-03 — Transporte: muestra cuántas naves de carga necesitás (pre-cálculo)
 - El form de transporte entre planetas ahora avisa **"🚢 necesitás N naves de carga (tenés M) ✓/❌"**
   (ceil(cantidad / capacidad 500), como valida el server). Pedido del usuario. Solo front (`trAvail`).
