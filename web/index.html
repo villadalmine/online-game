@@ -2411,7 +2411,12 @@ function openPlanet(key){
     return `<div class="item"><div class="top"><span>${icon} ${esc(c.username)}${c.home_base_id?` <span class="muted">#${c.home_base_id}</span>`:''}</span>${acts}</div>`+
       sat+(enemy?`<div style="margin-top:6px">${intelHtml(c.id)}</div><div id="plan_${c.home_base_id}" class="muted"></div>`:'')+`</div>`;
   }).join("")||`<span class="muted">${esc(tr('nocols'))}</span>`;
-  $("pbody").innerHTML=`<div class="head" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">`+
+  // SDD 70: globo 3D (canvas 2D) que gira — tus bases siempre, las enemigas solo si las escaneaste.
+  const glbLeg=`⭐ HQ · 🏭 ${esc(tr('youtag')).trim()||'vos'} · ⚔ ${esc(tr('pv_scanned'))} · 🌫 ${esc(tr('pv_fog')).split('—')[0].trim()}`;
+  $("pbody").innerHTML=
+    `<div style="display:flex;justify-content:center"><canvas id="pglobe" width="320" height="320" style="max-width:100%;cursor:grab"></canvas></div>`+
+    `<div class="muted" id="pglobecap" style="text-align:center;font-size:11px;margin:-2px 0 8px;min-height:14px">${glbLeg}</div>`+
+    `<div class="head" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">`+
     `<div class="orb ${ORB.has(p.key)?p.key:'def'}"></div><h2 style="margin:0;font-size:16px">${esc(p.name)}</h2></div>`+
     `<p class="muted">${esc(p.description||"")}</p>`+
     (p.system?`<p class="muted">✨ ${esc(p.system)}${p.canon&&p.canon!=="real"?` · <span class="warn">${esc(p.canon)}</span>`:""}${p.confidence?` · <span class="muted">confianza: ${esc(p.confidence)}</span>`:""}</p>`:"")+
@@ -2422,8 +2427,72 @@ function openPlanet(key){
     `<h2 style="margin-top:12px">${esc(tr('moons'))}</h2><div class="row">${moons}</div>`+
     `<h2 style="margin-top:12px">${esc(tr('colonies'))} (${colonies.length})</h2>${cols}`;
   $("pmodal").classList.remove("hidden");
+  drawGlobe(p.key);   // SDD 70
 }
-function closePlanet(){ $("pmodal").classList.add("hidden"); }
+function closePlanet(){ $("pmodal").classList.add("hidden"); if(_globeRAF){cancelAnimationFrame(_globeRAF);_globeRAF=null;} }
+
+// SDD 70 — globo del planeta (Canvas 2D "fake-3D", sin dependencias). Estilizado (SDD 43): color por
+// planeta + rejilla que gira. Marcadores de base proyectados sobre la esfera (solo hemisferio visible):
+// tus bases SIEMPRE; las enemigas SOLO si las escaneaste (enemy_maps, SDD 61/68), si no 🌫 niebla.
+let _globeRAF=null;
+const GLOBE_PAL={earth:['#8fc0f0','#183f7a'],mars:['#f08a5a','#601c05'],venus:['#f6e0a0','#7e5210'],
+  mercury:['#e0d8c8','#655d50'],vega_prime:['#9ff0f8','#12525f'],nyx:['#c9a0f0','#2c1854'],
+  def:['#aab8e0','#243056']};
+function _ghash(s){ let h=0; for(const c of String(s)) h=(h*31+c.charCodeAt(0))>>>0; return h; }
+function _globeDots(key){
+  const dots=[];
+  (state&&state.bases||[]).filter(b=>b.planet_key===key).forEach(b=>{
+    const lbl=b.base_type==='orbital'?'🛰':(b.base_type==='lunar'?'🌙':(b.id===state.home_base_id?'⭐':'🏭'));
+    dots.push({id:'m'+b.id, mine:true, lbl, name:'#'+b.id}); });
+  (players||[]).filter(pl=>pl.planet_key===key && pl.id!==(state&&state.id)).forEach(c=>{
+    const em=((state&&state.enemy_maps)||{})[String(c.id)];
+    if(em && em.pct>0){ (em.bases||[]).map(b=>b.base_id).forEach(bid=>
+      dots.push({id:'e'+bid, mine:false, lbl:'⚔', name:esc(c.username)+' #'+bid, pct:em.pct})); }
+  });
+  dots.forEach(d=>{ const h=_ghash(d.id); d.lon=(h%360)*Math.PI/180; d.lat=(((h>>9)%120)-60)*Math.PI/180; });
+  return dots;
+}
+function drawGlobe(key){
+  const cv=$("pglobe"); if(!cv||!cv.getContext) return;   // fallback: sin canvas, queda el modal plano
+  const ctx=cv.getContext('2d'); if(!ctx) return;
+  const dots=_globeDots(key), pal=GLOBE_PAL[key]||GLOBE_PAL.def;
+  const W=cv.width, H=cv.height, cx=W/2, cy=H/2, R=Math.min(W,H)/2-16;
+  let vis=[];   // marcadores proyectados este frame (para hover)
+  function frame(now){
+    if(!document.getElementById('pglobe')||$("pmodal").classList.contains('hidden')||document.hidden){ _globeRAF=null; return; }
+    const rot=(now/9000)%(Math.PI*2);   // giro suave (~56s por vuelta)
+    ctx.clearRect(0,0,W,H);
+    const g=ctx.createRadialGradient(cx-R*0.35,cy-R*0.35,R*0.15,cx,cy,R);
+    g.addColorStop(0,pal[0]); g.addColorStop(1,pal[1]);
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fillStyle=g; ctx.fill();
+    // rejilla: paralelos (elipses) + meridianos que giran → sensación de rotación.
+    ctx.strokeStyle='rgba(255,255,255,0.10)'; ctx.lineWidth=1;
+    for(let lat=-60;lat<=60;lat+=30){ const rr=Math.cos(lat*Math.PI/180); const yy=cy-Math.sin(lat*Math.PI/180)*R;
+      ctx.beginPath(); ctx.ellipse(cx,yy,R*rr,R*rr*0.28,0,0,7); ctx.stroke(); }
+    for(let m=0;m<6;m++){ const lon=rot+m*Math.PI/6; const sx=Math.sin(lon);
+      ctx.beginPath(); ctx.ellipse(cx,cy,Math.abs(R*sx),R,0,0,7); ctx.stroke(); }
+    // terminador (sombra del lado nocturno) para dar volumen.
+    const sh=ctx.createLinearGradient(cx-R,0,cx+R,0); sh.addColorStop(0,'rgba(0,0,0,0)');
+    sh.addColorStop(0.7,'rgba(0,0,0,0)'); sh.addColorStop(1,'rgba(0,0,0,0.45)');
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fillStyle=sh; ctx.fill();
+    // marcadores (solo hemisferio frontal z>0).
+    vis=[];
+    dots.forEach(d=>{ const lon=d.lon+rot, cl=Math.cos(d.lat);
+      const x3=cl*Math.sin(lon), z3=cl*Math.cos(lon), y3=Math.sin(d.lat);
+      if(z3<=0) return; const px=cx+x3*R, py=cy-y3*R, sc=0.65+0.35*z3;
+      ctx.globalAlpha=0.55+0.45*z3; ctx.font=`${Math.round(15*sc)}px serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(d.lbl,px,py);
+      ctx.globalAlpha=1; vis.push({px,py,name:d.name,mine:d.mine}); });
+    cv._vis=vis;
+    _globeRAF=requestAnimationFrame(frame);
+  }
+  cv.onmousemove=e=>{ const r=cv.getBoundingClientRect(), sx=cv.width/r.width, sy=cv.height/r.height;
+    const mx=(e.clientX-r.left)*sx, my=(e.clientY-r.top)*sy; let best=null,bd=18*18;
+    (cv._vis||[]).forEach(v=>{ const dx=v.px-mx,dy=v.py-my,d2=dx*dx+dy*dy; if(d2<bd){bd=d2;best=v;} });
+    const cap=$("pglobecap"); if(cap&&best) cap.textContent=(best.mine?'⭐ ':'⚔ ')+best.name; };
+  if(_globeRAF) cancelAnimationFrame(_globeRAF);
+  _globeRAF=requestAnimationFrame(frame);
+}
 
 // 🌳 Árbol tecnológico + tabla de unidades en una ventana (como el modal de planeta). Los datos vienen
 // del ENDPOINT CALCULADO /catalog/tree (costos ya resueltos por raza + dependencias) → la misma verdad

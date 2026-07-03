@@ -139,6 +139,11 @@ def test_planet_detail_modal(page: Page, live_server, shots):
     expect(modal).to_contain_text("Lunas")
     expect(modal).to_contain_text("Luna")       # Earth's moon
     expect(modal).to_contain_text("Colonias")
+    # SDD 70: el modal abre con el globo 3D (canvas) que gira; debe existir y tener tamaño.
+    globe = page.locator("#pglobe")
+    expect(globe).to_be_visible()
+    box = globe.bounding_box()
+    assert box and box["width"] > 0 and box["height"] > 0
     _shot(page, shots / "07-planet.png")
 
     # Close with the ✕ button.

@@ -1,6 +1,12 @@
 # SDD 70 — Vista 3D: el planeta que gira (bases escaneadas) + búnker bonito
 
-> **Estado:** **DISEÑO** 2026-07-02 · **Pedido:** usuario, 2026-07-02.
+> **Estado:** **v1 IMPLEMENTADO** 2026-07-03 (1.140.0): globo del planeta (Canvas 2D "fake-3D", sin
+> dependencias, estilizado SDD 43) dentro del modal `openPlanet` — gira solo, muestra **tus bases
+> siempre** y las **enemigas solo si las escaneaste** (`enemy_maps`, SDD 61/68), con hover que nombra
+> la base. Motor elegido: **Canvas 2D** (el usuario prefirió no sumar dependencias; three.js sería un
+> "v3" para detalle fotográfico). **Pendiente v2:** vista del búnker más linda (corte lateral) +
+> click-en-marcador → panel de la base + arrastrar para rotar manual. · **Pedido:** usuario, 2026-07-02.
+> **Diseño original:** 2026-07-02.
 > Capa **visual** sobre datos que YA existen. Hoy la vista de planeta (SDD 68) es un **modal plano**:
 > tus bases + las enemigas solo si las escaneaste (satélites, `enemy_maps`) o 🌫 niebla. El usuario
 > quiere subirla a un **globo 3D que gira**: click en el planeta → se abre una esfera rotando donde se
