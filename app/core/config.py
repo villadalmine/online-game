@@ -223,6 +223,9 @@ class Settings(BaseSettings):
     bunker_grid_max: int = 8               # lado máximo de la grilla (tope de excavaciones)
     bunker_dig_energy_cost: float = 60.0   # energía por excavación
     bunker_dig_cost_structural: float = 400.0  # estructural base por excavación (escala ×nivel)
+    # SDD 75 — TERRAFORMACIÓN: la tech `terraforming` habilita la sala "terraformer" que agranda el
+    # búnker (+grid_bonus al lado, data-driven en el YAML de la sala). Detrás de flag.
+    terraforming_enabled: bool = False
     # SDD 69 Fase 4 — VIDA ARTIFICIAL: research por niveles + autopiloto de robots. Dos flags:
     #  - artificial_life_enabled: podés SUBIR de nivel (research en el búnker). Default OFF.
     #  - bunker_autonomy_enabled: el autopiloto ACTÚA solo en el tick (auto-staffing). Default OFF.

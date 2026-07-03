@@ -31,9 +31,23 @@ async def _bunker_for_base(session: AsyncSession, base_id: int) -> Bunker | None
     )).scalar_one_or_none()
 
 
-def grid_side(bunker: Bunker, settings) -> int:
-    """SDD 69: lado efectivo de la grilla = base + excavaciones (grid_level), topeado."""
-    return min(settings.bunker_grid_max, settings.bunker_grid + int(bunker.grid_level or 0))
+def grid_side(bunker: Bunker, settings, bonus: int = 0) -> int:
+    """SDD 69/75: lado efectivo de la grilla = base + excavaciones (grid_level) + terraformación
+    (`bonus`), topeado (el tope también sube con la terraformación para poder seguir excavando)."""
+    return min(settings.bunker_grid_max + bonus,
+               settings.bunker_grid + int(bunker.grid_level or 0) + bonus)
+
+
+async def grid_bonus(session: AsyncSession, bunker_id: int, settings) -> int:
+    """SDD 75: bonus de lado por salas `terraformer` ACTIVAS (data-driven `grid_bonus` del YAML).
+    0 si la terraformación está apagada o no hay terraformador activo."""
+    if not settings.terraforming_enabled:
+        return 0
+    rooms = (await session.execute(
+        select(BunkerRoom).where(BunkerRoom.bunker_id == bunker_id, BunkerRoom.status == "active")
+    )).scalars()
+    content = get_content()
+    return int(sum(content.rooms.get(r.room_key, {}).get("grid_bonus", 0) for r in rooms))
 
 
 async def dig(session: AsyncSession, player: Player, base_id: int) -> Bunker:
@@ -66,7 +80,8 @@ async def dig_deeper(session: AsyncSession, player: Player, base_id: int) -> Bun
     bunker = await _bunker_for_base(session, base_id)
     if bunker is None or bunker.player_id != player.id:
         raise BunkerError("Primero cavá el búnker en esta base.")
-    if grid_side(bunker, settings) >= settings.bunker_grid_max:
+    bonus = await grid_bonus(session, bunker.id, settings)   # SDD 75: terraformación sube el tope
+    if grid_side(bunker, settings, bonus) >= settings.bunker_grid_max + bonus:
         raise BunkerError("El búnker ya está en su tamaño máximo.")
     base = await session.get(Base_, base_id)
     now = datetime.now(UTC)
@@ -85,7 +100,7 @@ async def dig_deeper(session: AsyncSession, player: Player, base_id: int) -> Bun
     bunker.grid_level = int(bunker.grid_level or 0) + 1
     from app.services.journal import record
     await record(session, "bunker_dig_deeper", player.id, base_id=base_id,
-                 grid_level=bunker.grid_level, side=grid_side(bunker, settings))
+                 grid_level=bunker.grid_level, side=grid_side(bunker, settings, bonus))
     await session.flush()
     return bunker
 
@@ -106,7 +121,8 @@ async def build_room(
     rt = spec.get("requires_tech")
     if rt and rt not in await researched_techs(session, player.id):
         raise BunkerError(f"Requiere investigar: {rt}")
-    side = grid_side(bunker, settings)   # SDD 69: la grilla crece con las excavaciones
+    # SDD 69/75: la grilla crece con las excavaciones y con la terraformación (salas terraformer).
+    side = grid_side(bunker, settings, await grid_bonus(session, bunker.id, settings))
     occupied = {r.cell for r in (await session.execute(
         select(BunkerRoom).where(BunkerRoom.bunker_id == bunker.id)
     )).scalars()}
@@ -461,17 +477,22 @@ async def bunker_state(session: AsyncSession, player: Player) -> list[dict]:
     bunkers = (await session.execute(
         select(Bunker).where(Bunker.player_id == player.id)
     )).scalars().all()
+    settings = get_settings()
+    content = get_content()
     for b in bunkers:
         rooms = (await session.execute(
             select(BunkerRoom).where(BunkerRoom.bunker_id == b.id)
         )).scalars().all()
+        # SDD 75: bonus de terraformación (salas terraformer activas) sumado al lado de la grilla.
+        bonus = int(sum(content.rooms.get(r.room_key, {}).get("grid_bonus", 0)
+                    for r in rooms if r.status == "active")) if settings.terraforming_enabled else 0
         out.append({
             "id": b.id, "base_id": b.base_id,
             "food_health": round(b.food_health, 1), "water_health": round(b.water_health, 1),
             "people_health": round(b.people_health, 1),
             "electronics": round(b.electronics, 1),   # SDD 64 v2: moneda de repoblación
             "grid_level": int(b.grid_level or 0),     # SDD 69: excavaciones hechas
-            "side": grid_side(b, get_settings()),     # SDD 69: lado efectivo de la grilla
+            "side": grid_side(b, settings, bonus),    # SDD 69/75: lado efectivo (con terraform.)
             "vault_cap": await _vault_capacity(session, b.id),   # SDD 69: bóveda de acopio
             "vault": {s.mineral_key: round(s.amount, 2)
                       for s in await _vault_stocks(session, b.id) if s.amount > 0},

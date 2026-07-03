@@ -1,0 +1,39 @@
+# SDD 75 — Terraformación (búnker más grande)
+
+## Problema
+La expansión subterránea (SDD 69, `dig_deeper`) agranda el búnker de a **+1 lado por excavación**,
+cara y lenta. El usuario pidió una vía de **salto grande** de tamaño, gateada por research y con un
+edificio propio.
+
+## Diseño (data-driven, sin migración)
+- **Tech `terraforming`** (`content/technologies.yaml`, categoría `underground`, requiere
+  `underground_construction`). Nadie la tiene hasta investigarla.
+- **Sala `terraformer`** (`content/underground.yaml`, `requires_tech: terraforming`) con un campo
+  nuevo **`grid_bonus: 3`**. Mientras esté **activa**, suma su bonus al **lado de la grilla** de ese
+  búnker (y sube también el tope, para poder seguir excavando).
+- **Flag** `terraforming_enabled` (default OFF; ON en `values-prod.yaml`).
+
+## Implementación
+- `bunkers.grid_side(bunker, settings, bonus=0)` — el lado efectivo ahora acepta el bonus de
+  terraformación (`min(bunker_grid_max + bonus, bunker_grid + grid_level + bonus)`).
+- `bunkers.grid_bonus(session, bunker_id, settings)` — suma `grid_bonus` de las salas `terraformer`
+  ACTIVAS (0 si el flag está OFF). Data-driven: el bonus vive en el YAML de la sala.
+- `dig_deeper` / `build_room` / `bunker_state` computan el bonus y lo pasan a `grid_side` → el mapa
+  subterráneo crece y habilita más celdas.
+- **Front**: cero cambios (la sala sale sola en el selector del búnker y la tech en Investigación; el
+  `side` del snapshot ya dibuja la grilla más grande).
+
+## Balance
+`grid_bonus=3` lleva un búnker de 4×4 (16 celdas) a 7×7 (49) de una. Costo alto de la sala
+(`structural 600 / energetic 300 / advanced 400`) + energía + tiempo de obra + el costo de la tech.
+Ocupa 1 celda (neto muy positivo). Reversible por flag.
+
+## Tests
+- `tests/test_bunkers.py::test_terraformer_room_enlarges_bunker` (servicio: +3 lado con sala activa;
+  0 con el flag OFF).
+- `tests/test_api_e2e.py::test_terraformer_enlarges_bunker_e2e` (happy path por HTTP + error de sala
+  desconocida).
+
+## Follow-ups
+- Salto cuántico / teletransportador entre búnkeres (SDD 76): mover electrónica de un búnker a otro.
+- IA conversacional que actúa (SDD 77).

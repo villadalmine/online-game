@@ -877,6 +877,51 @@ async def test_colonize_with_tech_e2e(client):
     assert any(b["planet_key"] == "earth" for b in me["bases"])
 
 
+async def test_terraformer_enlarges_bunker_e2e(client, monkeypatch):
+    # SDD 75: con la tech terraforming, construir la sala terraformer agranda el búnker (+lado).
+    from app.content.registry import get_content
+    from app.core.config import get_settings
+    from app.models import Base_, BunkerRoom, Player, PlayerTech
+    from app.services.economy import get_or_create_stock
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "terraforming_enabled", True)
+    h = await _register(client.http, "terra")
+    await _onboard(client.http, h)   # martian/mars
+    async with client.session_maker() as db:
+        p = (await db.execute(select(Player).where(Player.username == "terra"))).scalar_one()
+        db.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+        db.add(PlayerTech(player_id=p.id, tech_key="terraforming"))
+        p.energy = 999999.0
+        base = (await db.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
+        for role in ("structural", "energetic", "advanced"):
+            mk = get_content().resolve_role(p.race_key, role)
+            (await get_or_create_stock(db, p.id, mk, base.planet_key)).amount = 200000
+        base_id = base.id
+        await db.commit()
+
+    assert (await client.http.post("/api/v1/bunker/dig", headers=h,
+                                   json={"base_id": base_id})).status_code == 201
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    side0 = next(b["side"] for b in me["bunkers"] if b["base_id"] == base_id)
+    # sin celda → auto-acomoda; error path: sala desconocida
+    bad = await client.http.post("/api/v1/bunker/build-room", headers=h,
+                                 json={"base_id": base_id, "room_key": "nope"})
+    assert bad.status_code == 400
+    ok = await client.http.post("/api/v1/bunker/build-room", headers=h,
+                                json={"base_id": base_id, "room_key": "terraformer"})
+    assert ok.status_code == 201, ok.text
+    async with client.session_maker() as db:   # saltar el tiempo de obra → sala activa
+        room = (await db.execute(
+            select(BunkerRoom).where(BunkerRoom.room_key == "terraformer")
+        )).scalar_one()
+        room.status = "active"
+        await db.commit()
+    me2 = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    side1 = next(b["side"] for b in me2["bunkers"] if b["base_id"] == base_id)
+    assert side1 == side0 + 3   # el terraformador agrandó el búnker
+
+
 async def test_announcements_public_localized_and_filtered(client):
     # SDD 27: anuncios públicos (sin auth), bilingües y filtrables por category/status.
     r = await client.http.get("/api/v1/announcements")

@@ -58,6 +58,33 @@ async def test_dig_and_build_room(session, monkeypatch):
     assert auto.cell != 0 and auto.status == "building"
 
 
+async def test_terraformer_room_enlarges_bunker(session, monkeypatch):
+    # SDD 75: una sala terraformer ACTIVA agranda el lado de la grilla (+grid_bonus) con el flag ON.
+    from app.content.registry import get_content
+    from app.services.bunkers import grid_bonus, grid_side
+    from app.services.economy import get_or_create_stock
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "terraforming_enabled", True)
+    p, base = await _player(session)
+    session.add(PlayerTech(player_id=p.id, tech_key="terraforming"))
+    b = await dig(session, p, base.id)
+    for role in ("structural", "energetic", "advanced"):   # material para pagar el terraformador
+        mineral = get_content().resolve_role(p.race_key, role)
+        (await get_or_create_stock(session, p.id, mineral, base.planet_key)).amount = 100000
+    await session.commit()
+    side0 = grid_side(b, s)
+    assert await grid_bonus(session, b.id, s) == 0     # todavía sin terraformador
+    room = await build_room(session, p, base.id, "terraformer", 0)
+    room.status = "active"                              # simulamos que terminó de construirse
+    await session.commit()
+    bonus = await grid_bonus(session, b.id, s)
+    assert bonus == 3 and grid_side(b, s, bonus) == side0 + 3
+    # con el flag OFF, el mismo terraformador no agranda nada
+    monkeypatch.setattr(s, "terraforming_enabled", False)
+    assert await grid_bonus(session, b.id, s) == 0
+
+
 async def test_dig_deeper_expands_grid(session, monkeypatch):
     # SDD 69 Fase 1: con underground_construction + flag, excavar agranda la grilla (+1 lado) y
     # habilita celdas que antes estaban fuera del mapa.

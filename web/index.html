@@ -1055,11 +1055,9 @@ function renderBunker(){
         // el selector muestra el PLANETA de cada búnker (con 5 búnkeres, "#6" no alcanzaba — pedido).
         const bopts=bks.map(b=>{ const bb=(state.bases||[]).find(x=>x.id===b.base_id);
           return `<option value="${b.base_id}">${bb?esc(popBaseLabel(bb)):('#'+b.base_id)}</option>`; }).join("");
-        // muestra el costo resuelto de cada sala en el propio option (pedido: "no dice cuánto sale").
-        const ropts=(catalog.rooms||[]).map(r=>{
-          const c=resolveCost(r.cost||{}); const cs=Object.entries(c).map(([k,v])=>k+":"+Math.round(v)).join(" ");
-          return `<option value="${r.key}">${esc((r.icon||'')+' '+r.name)} — ${cs} ⚡${r.energy_cost||0}</option>`;
-        }).join("");
+        // solo nombre en el option (el costo completo se muestra en #bk_cost abajo → no se va de pantalla).
+        const ropts=(catalog.rooms||[]).map(r=>
+          `<option value="${r.key}">${esc((r.icon||'')+' '+r.name)}</option>`).join("");
         h+=`<div class="row" style="gap:6px;margin-top:4px"><select id="bk_room" onchange="_bkCost()">${ropts}</select>`+
           `<select id="bk_base" onchange="_bkCost()">${bopts}</select>`+
           `<button class="sm" onclick="bunkerBuild()" title="${esc(tr('bk_auto_t'))}">🧱 ${esc(tr('bk_build'))}</button></div>`+
@@ -2888,11 +2886,20 @@ async function openHistory(){
       `<p class="muted" style="font-size:12px;margin:2px 0">${esc(tr('hist_ai_help'))}</p>`+rows+
       `<div class="muted" style="font-size:12px;margin-top:2px">${esc(tr('hist_ai_total'))}: <b>${AI.total}</b></div>`;
   }
-  const ev=Object.entries(d.events||{}).sort((a,b)=>b[1]-a[1]);
+  // acciones del journal con nombre legible; ai_autopilot/advisor_ask NO acá (tienen su sección arriba).
+  const EVL={build:['🏗 construcciones','🏗 builds'],train:['👷 entrenamientos','👷 training'],
+    research:['🔬 investigaciones','🔬 research'],expedition:['🌙 expediciones','🌙 expeditions'],
+    attack:['⚔ ataques','⚔ attacks'],colonize:['🪐 colonizaciones','🪐 colonizations'],
+    market_buy:['💱 compras','💱 buys'],market_sell:['💱 ventas','💱 sells'],trade:['💱 comercio','💱 trade'],
+    transport:['📦 transportes','📦 transports'],strike:['🚀 misiles','🚀 missiles'],
+    drone_launch:['🛸 drones','🛸 drones'],move_troops:['🚚 mover tropas','🚚 troop moves'],
+    bunker_build:['🧱 salas de búnker','🧱 bunker rooms'],satellite:['🛰 satélites','🛰 satellites']};
+  const HIDEK=new Set(['ai_autopilot','advisor_ask']);
+  const ev=Object.entries(d.events||{}).filter(([k])=>!HIDEK.has(k)).sort((a,b)=>b[1]-a[1]);
   if(ev.length){ const mx=Math.max(...ev.map(e=>e[1]));
     body+=`<h2 style="margin-top:10px">${esc(tr('hist_actions'))}</h2>`+
       ev.map(([k,v])=>`<div class="row" style="gap:6px;align-items:center;margin:2px 0">`+
-        `<span class="muted" style="width:150px;font-size:12px">${esc(k)}</span>`+
+        `<span class="muted" style="width:150px;font-size:12px">${esc((EVL[k]||[k])[lang==='en'?1:0]||k)}</span>`+
         `<div class="bar" style="flex:1"><div style="width:${Math.round(100*v/mx)}%"></div></div>`+
         `<span class="muted" style="width:34px;text-align:right">${v}</span></div>`).join("");
   }

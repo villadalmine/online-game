@@ -62,3 +62,5 @@ env:
   # Elección del usuario 2026-07-03: autonomía plena incluido ataque. Reversible. docs/sdd-bunker-reserve-civilization.md.
   ARTIFICIAL_LIFE_ENABLED: "true"
   BUNKER_AUTONOMY_ENABLED: "true"
+  # SDD 75: terraformación — la sala Terraformador (tech terraforming) agranda el búnker +3 de lado.
+  TERRAFORMING_ENABLED: "true"

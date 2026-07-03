@@ -360,6 +360,19 @@ technologies:
     research_seconds: 1400
     cost: { structural: 450, energetic: 250, advanced: 200 }
     magnitude: 1.0
+  # SDD 75: terraformación — habilita la sala "terraformador" que agranda mucho el búnker de una.
+  - key: terraforming
+    name: "Terraformación"
+    category: underground
+    name_en: "Terraforming"
+    description: "Remodelás la roca madre: habilita el Terraformador, que agranda el búnker de golpe."
+    description_en: "Reshape the bedrock: unlocks the Terraformer, which enlarges the bunker at once."
+    requires: research_lab
+    requires_tech: underground_construction
+    energy_cost: 120
+    research_seconds: 2600
+    cost: { structural: 700, energetic: 400, advanced: 500 }
+    magnitude: 1.0
   # SDD 63: salto espacial — capstone del árbol endgame (requiere TODO). Habilita la nave "jumper".
   - key: space_jump
     name: "Salto espacial"

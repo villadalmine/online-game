@@ -65,6 +65,16 @@ rooms:
     energy_cost: 15
     build_seconds: 240
     cost: { structural: 180, energetic: 40 }
+  # SDD 75: terraformador — mientras esté activo agranda el búnker (+grid_bonus al lado de la grilla).
+  - key: terraformer
+    icon: "🌎"
+    name: "Terraformador"
+    name_en: "Terraformer"
+    requires_tech: terraforming
+    grid_bonus: 3        # SDD 75: agranda el lado de la grilla de este búnker mientras esté activo
+    energy_cost: 60
+    build_seconds: 600
+    cost: { structural: 600, energetic: 300, advanced: 400 }
   # SDD 64 §3.5: defensas (requieren bunker_defense).
   - key: ventilation
     icon: "🌀"

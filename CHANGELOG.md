@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 75 Terraformación + fixes (historia legible, búnker no se va de pantalla)
+- **Terraformación**: nueva tech `terraforming` (rama subterránea) que habilita la sala **🌎
+  Terraformador**; mientras está activa **agranda el búnker +3 de lado** de una (p.ej. 4×4 → 7×7) y sube
+  el tope de excavación. Data-driven (`grid_bonus` en el YAML de la sala); flag `TERRAFORMING_ENABLED`
+  ON en prod. Sin cambios de front (la sala/tech salen solas del catálogo). `docs/sdd-terraforming-bunker-expansion.md`.
+- **📈 Tu historia legible**: las acciones ya no muestran nombres crudos del journal ("ai_autopilot",
+  "advisor_ask"…); ahora son legibles (🏗 construcciones, 👷 entrenamientos, ⚔ ataques…) y `ai_autopilot`/
+  `advisor_ask` **no se repiten** en la lista (ya tienen su sección 🤖 Tus robots / 🖥️ uso de IA).
+- **Búnker no se va de pantalla**: el desplegable de salas muestra **solo el nombre** (el costo completo
+  ya se ve abajo en su línea, con planeta y afford) → dejó de desbordar. Pedidos del usuario.
+
 ## [1.161.0] - 2026-07-03
 
 ### 2026-07-03 — Arsenal (misiles/drones): planeta claro, origen→destino y 🛡 auto de tu intel
