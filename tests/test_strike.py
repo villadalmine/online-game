@@ -106,6 +106,33 @@ async def test_nuclear_travels_24h_and_tribute_cancels(session):
     assert res["returned"] == {"nuclear_missile": 1}
 
 
+async def test_recall_strike_requires_diplomacy_then_returns_to_hangar(session):
+    # SDD 67 v3: recall de misiles → vuelven al hangar; requiere government + diplomacy.
+    from app.models import UnitStock
+    from app.services.strike import recall_strike
+    from app.services.training import player_units
+    atk, abase = await _p(session, "recaller", "mars", "martian")
+    dfn, dbase = await _p(session, "recalled", "mars", "martian")
+    dfn.protected_until = None
+    session.add(Building(base_id=abase.id, building_key="launcher", status="active"))
+    session.add(PlayerTech(player_id=atk.id, tech_key="rocketry"))
+    session.add(UnitStock(player_id=atk.id, unit_key="sonic_missile", quantity=3))
+    await session.commit()
+    m = await start_strike(session, atk, abase.id, dbase.id, {"sonic_missile": 2})
+    await session.commit()
+    # sin government+diplomacy → no puede hacerlos volver
+    with pytest.raises(StrikeError):
+        await recall_strike(session, atk, m.id)
+    # con government + diplomacy → vuelven al hangar
+    session.add(Building(base_id=abase.id, building_key="government", status="active"))
+    session.add(PlayerTech(player_id=atk.id, tech_key="diplomacy"))
+    await session.commit()
+    res = await recall_strike(session, atk, m.id)
+    await session.commit()
+    assert res["recalled"] and res["returned"] == {"sonic_missile": 2}
+    assert (await player_units(session, atk.id)).get("sonic_missile") == 3   # 1 + 2 devueltos
+
+
 async def test_tribute_requires_government_and_diplomacy(session):
     from app.models import UnitStock
     atk, abase = await _p(session, "nuker2", "mars", "martian")

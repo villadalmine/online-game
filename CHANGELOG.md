@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 67 v3: hacer VOLVER misiles/drones (recall) con Diplomacia + Gobierno + verlos en vuelo
+- **Recall de misiles** (`POST /combat/strike/{id}/recall`): el atacante ordena el regreso de su salva
+  → los misiles vuelven al hangar. **Requiere `government` activo + tech `diplomacy`**
+  (`require_recall_diplomacy`). Pedido del usuario.
+- **El recall de drones ahora también requiere Diplomacia + Gobierno** (antes era libre); mismo gate,
+  flag `recall_requires_diplomacy` (default True; ponelo False para recall libre).
+- **Visibilidad**: el panel Arsenal muestra los misiles como "🚀→ #base · en vuelo → a atacar" con
+  countdown + botón **↩ recall**; los drones muestran "🛸→ #base" + ↩. (Ya aparecían en Tránsito.)
+- Tests: `test_recall_strike_requires_diplomacy_then_returns_to_hangar` + e2e `test_strike_recall_e2e`;
+  el e2e de drones ahora otorga government+diplomacy para el recall.
+
 ## [1.147.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 69 Fase 4 (sub-fase 3, COMPLETA): ataque autónomo + techo de IA de los NPC

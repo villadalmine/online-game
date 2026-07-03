@@ -243,6 +243,10 @@ class Settings(BaseSettings):
     # defensor con `diplomacy` (tech) + `government` (edificio activo) puede ofrecer TRIBUTO
     # (minerales+energía) para que el atacante la cancele. Sin recall unilateral.
     nuclear_travel_seconds: int = 86400
+    # SDD 67 v3: para HACER VOLVER (recall) misiles o drones en vuelo necesitás la infraestructura
+    # diplomática: tech `diplomacy` + edificio `government` activo. Pedido del usuario. Flag
+    # reversible (False = recall libre, comportamiento histórico de drones).
+    recall_requires_diplomacy: bool = True
     # SDD 49/67: si un misil NO se intercepta del todo pero había ALGO de capacidad antimisil,
     # impacta a esta fracción (intercepción PARCIAL). Nuclear (intercept_cost 100 = 10 torretas): 10
     # torretas lo bloquean; menos → impacta al 50%. 1.0 = sin parcial (todo o nada, histórico).

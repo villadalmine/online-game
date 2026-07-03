@@ -110,6 +110,40 @@ def _aware(dt: datetime) -> datetime:
     return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
+async def require_recall_diplomacy(session: AsyncSession, player: Player) -> None:
+    """SDD 67 v3: para hacer VOLVER algo en vuelo necesitás `government` activo + tech `diplomacy`
+    (salvo `recall_requires_diplomacy=False`). Lo usan el recall de misiles y de drones."""
+    if not get_settings().recall_requires_diplomacy:
+        return
+    if not await _has_active(session, None, "government", player_id=player.id):
+        raise StrikeError("Para hacer volver algo en vuelo necesitás un Edificio de gobierno.")
+    from app.services.research import researched_techs
+    if "diplomacy" not in await researched_techs(session, player.id):
+        raise StrikeError("Requiere investigar: diplomacy (para ordenar el regreso).")
+
+
+async def recall_strike(session: AsyncSession, attacker: Player, mission_id: int) -> dict:
+    """SDD 67 v3: el ATACANTE ordena el regreso de su salva → los misiles vuelven al hangar.
+    Requiere infraestructura diplomática (government + diplomacy). Solo si sigue `outbound`."""
+    mission = await session.get(StrikeMission, mission_id)
+    if mission is None or mission.attacker_id != attacker.id or mission.status != "outbound":
+        raise StrikeError("Salva no encontrada o ya resuelta.")
+    await require_recall_diplomacy(session, attacker)
+    from app.services.training import get_or_create_unit_stock
+    returned = json.loads(mission.force)
+    for key, qty in returned.items():
+        (await get_or_create_unit_stock(session, attacker.id, key)).quantity += int(qty)
+    mission.status = "recalled"
+    mission.details = json.dumps({"recalled": returned})
+    await notify(session, attacker.id, "strike_recalled",
+                 "Ordenaste el regreso: tus misiles volvieron al hangar", {"returned": returned})
+    from app.services.journal import record
+    await record(session, "strike_recalled", attacker.id,
+                 defender_id=mission.defender_id, returned=returned)
+    await session.flush()
+    return {"recalled": True, "returned": returned}
+
+
 @dataclass
 class StrikeResult:
     impacted: dict[str, int] = field(default_factory=dict)

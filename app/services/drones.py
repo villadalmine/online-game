@@ -328,6 +328,12 @@ async def recall_drones(session: AsyncSession, player: Player, squad_id: int) ->
         raise DroneError("Escuadrón no encontrado.")
     if squad.status != "orbiting":
         raise DroneError("Ese escuadrón ya no está orbitando.")
+    # SDD 67 v3: hacer volver requiere infraestructura diplomática (government + diplomacy).
+    from app.services.strike import StrikeError, require_recall_diplomacy
+    try:
+        await require_recall_diplomacy(session, player)
+    except StrikeError as exc:
+        raise DroneError(str(exc)) from exc
     from app.services.training import get_or_create_unit_stock
     survivors = json.loads(squad.force)
     for key, qty in survivors.items():

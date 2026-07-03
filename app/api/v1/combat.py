@@ -30,6 +30,7 @@ from app.services.strike import (
     StrikeError,
     accept_tribute,
     offer_tribute,
+    recall_strike,
     simulate_strike,
     start_strike,
 )
@@ -163,6 +164,21 @@ async def do_strike(
         target_base_id=mission.target_base_id, force=json.loads(mission.force),
         status=mission.status, arrives_at=mission.arrives_at,
     )
+
+
+@router.post("/strike/{mission_id}/recall")
+async def strike_recall(
+    mission_id: int,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 67 v3: el atacante ordena el regreso de su salva (requiere government + diplomacy)."""
+    try:
+        result = await recall_strike(session, player, mission_id)
+    except StrikeError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
 
 
 @router.post("/strike/{mission_id}/tribute")

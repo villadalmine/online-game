@@ -2592,6 +2592,35 @@ async def test_missile_strike_e2e(client, monkeypatch):
     assert "turret" in reports[0]["details"]["destroyed"]
 
 
+async def test_strike_recall_e2e(client):
+    """SDD 67 v3: recall de misiles → 400 sin government+diplomacy; con ambos, vuelven al hangar."""
+    ha = await _register(client.http, "recaller_e2e")
+    astate = await _onboard(client.http, ha, planet="earth", race="terran")
+    launcher_base = astate["bases"][0]["id"]
+    hd = await _register(client.http, "recall_target")
+    dstate = await _onboard(client.http, hd, planet="earth", race="terran")
+    target_base = dstate["bases"][0]["id"]
+    await _clear_protection(client.session_maker, "recaller_e2e", "recall_target")
+    await _grant_tech(client.session_maker, "recaller_e2e", "rocketry")
+    await _add_active_building(client.session_maker, "recaller_e2e", "launcher")
+    await _grant_units(client.session_maker, "recaller_e2e", {"sonic_missile": 3})
+    await _set_energy(client.session_maker, "recaller_e2e", 1_000_000)
+    r = await client.http.post("/api/v1/combat/strike", headers=ha, json={
+        "launcher_base_id": launcher_base, "target_base_id": target_base,
+        "force": {"sonic_missile": 2}})
+    assert r.status_code == 201, r.text
+    mid = (await client.http.get("/api/v1/players/me", headers=ha)).json()["strikes"][0]["id"]
+    # sin government+diplomacy → 400
+    bad = await client.http.post(f"/api/v1/combat/strike/{mid}/recall", headers=ha)
+    assert bad.status_code == 400
+    # con government + diplomacia → vuelven al hangar
+    await _grant_tech(client.session_maker, "recaller_e2e", "diplomacy")
+    await _add_active_building(client.session_maker, "recaller_e2e", "government")
+    ok = await client.http.post(f"/api/v1/combat/strike/{mid}/recall", headers=ha)
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["recalled"] and ok.json()["returned"] == {"sonic_missile": 2}
+
+
 async def test_strike_blocked_without_tech_e2e(client, monkeypatch):
     from app.core.config import get_settings
     monkeypatch.setattr(get_settings(), "strike_enabled", True)
@@ -2624,8 +2653,9 @@ async def test_drone_squadron_e2e(client, monkeypatch):
     target_base = tstate["bases"][0]["id"]
     await _clear_protection(client.session_maker, "pilot", "watched")
 
-    await _grant_tech(client.session_maker, "pilot", "dronework")
+    await _grant_tech(client.session_maker, "pilot", "dronework", "diplomacy")  # SDD 67 v3: recall
     await _add_active_building(client.session_maker, "pilot", "drone_factory")
+    await _add_active_building(client.session_maker, "pilot", "government")      # SDD 67 v3: recall
     await _grant_units(client.session_maker, "pilot", {"recon_drone": 3})
     await _set_energy(client.session_maker, "pilot", 1_000_000)
 

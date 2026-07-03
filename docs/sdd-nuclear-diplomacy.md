@@ -6,8 +6,12 @@
 > (`StrikeMission.tribute`). Sin recall unilateral. **v2 balance (1.137.0):** el nuclear necesita **10
 > torretas** para bloqueo total (`intercept_cost` 100) y con menos **impacta PARCIAL al 50%**
 > (`strike_partial_impact_factor`, intercepción parcial en `simulate_strike`); al **aceptar el tributo
-> el misil VUELVE al hangar** del atacante (no se pierde). **Pendiente menor:** gobierno "y más cosas"
-> (tratados) en v3. · **Pedido:** usuario.
+> el misil VUELVE al hangar** del atacante (no se pierde). **v3 recall (1.148.0):** el atacante puede
+> **hacer VOLVER** misiles Y drones en vuelo (`POST /combat/strike/{id}/recall` + gate en
+> `recall_drones`) — vuelven al hangar — pero **requiere `government` + `diplomacy`**
+> (`require_recall_diplomacy`, flag `recall_requires_diplomacy` default True; el recall de drones antes
+> era libre). El panel Arsenal muestra los misiles "🚀→ en vuelo → a atacar" + botón ↩. **Pedido:**
+> usuario.
 > **Relacionado:** [SDD 49 misiles](sdd-missile-launcher.md) (salvas + intercepción), [SDD 53 balance
 > por rol](sdd-resource-balance.md), `app/services/strike.py`, `content/{technologies,buildings}.yaml`.
 
