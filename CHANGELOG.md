@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.140.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 70 v1: globo 3D del planeta que gira (bases escaneadas)
 - El modal de planeta (🌌 Galaxias → click en un planeta) ahora abre con un **globo que gira**
   (Canvas 2D "fake-3D", **sin dependencias**, estilizado): color por planeta + rejilla en rotación +
