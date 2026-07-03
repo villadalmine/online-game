@@ -3,7 +3,7 @@ import json
 
 from app.core.security import hash_password
 from app.models import CombatLog, GameEvent, Player
-from app.services.analytics import combat_summary, llm_usage
+from app.services.analytics import ai_activity, combat_summary, llm_usage
 
 
 async def _p(session, name):
@@ -48,3 +48,20 @@ async def test_llm_usage_breaks_down_by_mode(session):
     assert u["total"] == 4
     assert u["by_mode"]["gpu"] == 2 and u["by_mode"]["cloud"] == 1 and u["by_mode"]["hack"] == 1
     assert sum(u["series"]) == 4
+
+
+async def test_ai_activity_groups_autopilot_by_action(session):
+    # SDD 69: qué hicieron los robots (journal ai_autopilot), agrupado por acción + suma de qty.
+    me = await _p(session, "robotico")
+    for action, qty in (("staff_workers", 5), ("staff_workers", 3), ("build_mine", 0),
+                        ("attack", 0)):
+        session.add(GameEvent(type="ai_autopilot", player_id=me.id,
+                              payload=json.dumps({"action": action, "qty": qty})))
+    session.add(GameEvent(type="build", player_id=me.id, payload="{}"))  # ruido: no cuenta
+    await session.flush()
+
+    a = await ai_activity(session, me.id, hours=24)
+    assert a["total"] == 4
+    assert a["by_action"]["staff_workers"] == {"count": 2, "qty": 8}
+    assert a["by_action"]["build_mine"]["count"] == 1
+    assert a["by_action"]["attack"]["count"] == 1

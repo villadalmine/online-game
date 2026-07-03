@@ -40,7 +40,13 @@ async def my_history(
     session: AsyncSession = Depends(get_session),
 ):
     """SDD 51/71: tu historia (estado + acciones + combate + uso de IA) para los gráficos in-app."""
-    from app.services.analytics import combat_summary, event_counts, history, llm_usage
+    from app.services.analytics import (
+        ai_activity,
+        combat_summary,
+        event_counts,
+        history,
+        llm_usage,
+    )
     hours = min(max(hours, 1.0), 24 * 60)   # 1h … 60 días
     return {
         "hours": hours,
@@ -48,6 +54,7 @@ async def my_history(
         "events": await event_counts(session, player.id, hours),
         "combat": await combat_summary(session, player.id, hours),   # SDD 71: ataques/defensas
         "llm": await llm_usage(session, player.id, hours),           # SDD 71: tu uso de IA/GPU
+        "ai": await ai_activity(session, player.id, hours),          # SDD 69: qué hacen tus robots
     }
 
 

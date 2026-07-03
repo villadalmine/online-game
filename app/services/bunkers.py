@@ -91,7 +91,7 @@ async def dig_deeper(session: AsyncSession, player: Player, base_id: int) -> Bun
 
 
 async def build_room(
-    session: AsyncSession, player: Player, base_id: int, room_key: str, cell: int
+    session: AsyncSession, player: Player, base_id: int, room_key: str, cell: int | None = None
 ) -> BunkerRoom:
     settings = get_settings()
     if not settings.bunkers_enabled:
@@ -107,12 +107,17 @@ async def build_room(
     if rt and rt not in await researched_techs(session, player.id):
         raise BunkerError(f"Requiere investigar: {rt}")
     side = grid_side(bunker, settings)   # SDD 69: la grilla crece con las excavaciones
-    if not (0 <= cell < side * side):
+    occupied = {r.cell for r in (await session.execute(
+        select(BunkerRoom).where(BunkerRoom.bunker_id == bunker.id)
+    )).scalars()}
+    if cell is None or cell < 0:
+        # auto-acomodar: la primera celda libre (evita el error "celda ocupada" y elegir a mano).
+        cell = next((c for c in range(side * side) if c not in occupied), None)
+        if cell is None:
+            raise BunkerError("El búnker está lleno — excavá para agrandarlo antes de construir.")
+    elif not (0 <= cell < side * side):
         raise BunkerError("Celda fuera del mapa subterráneo.")
-    taken = (await session.execute(
-        select(BunkerRoom).where(BunkerRoom.bunker_id == bunker.id, BunkerRoom.cell == cell)
-    )).scalar_one_or_none()
-    if taken is not None:
+    elif cell in occupied:
         raise BunkerError("Esa celda ya está ocupada.")
 
     base = await session.get(Base_, base_id)

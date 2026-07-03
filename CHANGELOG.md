@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Búnker: se auto-acomoda al construir + panel "🤖 Tus robots" (cómo labura la IA)
+- Al construir una sala del búnker ya **no tenés que elegir la celda a mano**: se acomoda sola en la
+  primera celda libre (`cell` opcional en `build-room`; si está lleno avisa que excaves). La posición no
+  daba ningún bonus, así que auto-acomodar no te quita nada. Pedido del usuario.
+- El panel **📈 Tu historia** ahora muestra **🤖 Tus robots (autopiloto)**: qué hizo la vida artificial
+  sola en 24 h desglosado por acción (entrenó obreros / levantó minas / vendió excedente / colonizó /
+  atacó) con nº de jugadas y unidades. Sale del journal `ai_autopilot` (per-jugador) — antes solo se veía
+  en Grafana. Nuevo `analytics.ai_activity` + campo `ai` en `/me/history`. Pedido del usuario.
+
 ### 2026-07-03 — Panel de Alertas: cada aviso dice en qué planeta/base pasa
 - Minas sin obreros, plazas sin lugar y bases sin defensa ahora nombran **dónde** ocurre: "minas sin
   obreros **en Marte**", "sin plazas para 🚀 Munición **en Tierra**", "base #9 **(Venus)** sin defensas".

@@ -198,7 +198,7 @@ class BunkerDigRequest(BaseModel):
 class BunkerBuildRequest(BaseModel):
     base_id: int
     room_key: str
-    cell: int
+    cell: int | None = None   # None = auto-acomodar en la primera celda libre
 
 
 class BunkerRaidRequest(BaseModel):

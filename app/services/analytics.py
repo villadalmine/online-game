@@ -135,6 +135,36 @@ async def combat_summary(
     return out
 
 
+async def ai_activity(
+    session: AsyncSession, player_id: int, hours: float = 24.0
+) -> dict:
+    """SDD 69: qué hicieron TUS robots (autopiloto de vida artificial) en la ventana, del journal
+    (`ai_autopilot`, payload `action`/`qty`). Desglose por acción → 'cómo labura tu IA' in-app,
+    sin depender de Grafana (per-jugador, del mismo journal que ya alimenta la métrica global)."""
+    now = datetime.now(UTC)
+    since = now - timedelta(hours=hours)
+    rows = list((await session.execute(
+        select(GameEvent.payload).where(
+            GameEvent.player_id == player_id, GameEvent.type == "ai_autopilot",
+            GameEvent.created_at >= since,
+        )
+    )).all())
+    by_action: dict[str, dict] = {}
+    for (payload,) in rows:
+        try:
+            p = json.loads(payload or "{}")
+        except (ValueError, TypeError):
+            p = {}
+        a = str(p.get("action") or "otro")
+        d = by_action.setdefault(a, {"count": 0, "qty": 0})
+        d["count"] += 1
+        try:
+            d["qty"] += int(p.get("qty") or 0)
+        except (ValueError, TypeError):
+            pass
+    return {"total": len(rows), "by_action": by_action}
+
+
 async def llm_usage(
     session: AsyncSession, player_id: int, hours: float = 24.0
 ) -> dict:

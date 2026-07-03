@@ -52,6 +52,10 @@ async def test_dig_and_build_room(session, monkeypatch):
         raise AssertionError("celda ocupada")
     except BunkerError:
         pass
+    # SDD 69: sin celda (cell=None) se auto-acomoda en la primera libre (no la 0, ya tomada)
+    auto = await build_room(session, p, base.id, "canteen", None)
+    await session.commit()
+    assert auto.cell != 0 and auto.status == "building"
 
 
 async def test_dig_deeper_expands_grid(session, monkeypatch):
