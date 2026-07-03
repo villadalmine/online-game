@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.152.0] - 2026-07-03
+
 ### 2026-07-03 — Reporte de combate: "de dónde me atacó" (origen) + defensa por-base más clara
 - El reporte de combate ahora muestra **desde qué base salió el ataque** (SDD 62: origen + planeta):
   "🛡 npc_martian te atacó #9 **desde #X (Marte)**". `CombatLog.details` guarda `source_base_id`/
