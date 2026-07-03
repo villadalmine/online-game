@@ -441,6 +441,12 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
         await _bump(session, attacker.id, battles_lost=1)
         await _bump(session, defender.id, battles_won=1)
 
+    # SDD 62: planeta de origen del ataque (para el reporte "de dónde me atacó").
+    src_planet = None
+    if mission.source_base_id:
+        _sb = await session.get(Base_, mission.source_base_id)
+        src_planet = _sb.planet_key if _sb else None
+
     session.add(
         CombatLog(
             attacker_id=attacker.id,
@@ -455,6 +461,9 @@ async def _resolve_arrival(session: AsyncSession, mission: AttackMission, now: d
                     "defender_losses": result.defender_losses,
                     "loot": loot,
                     "razed": razed,
+                    # SDD 62: desde qué base salió el ataque (para el reporte "de dónde me atacó").
+                    "source_base_id": mission.source_base_id,
+                    "source_planet": src_planet,
                 }
             ),
         )

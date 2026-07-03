@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Reporte de combate: "de dónde me atacó" (origen) + defensa por-base más clara
+- El reporte de combate ahora muestra **desde qué base salió el ataque** (SDD 62: origen + planeta):
+  "🛡 npc_martian te atacó #9 **desde #X (Marte)**". `CombatLog.details` guarda `source_base_id`/
+  `source_planet`. Pedido del usuario ("no dice de dónde me atacó").
+- Mensaje de defensa 0 más claro: **"las torretas defienden SOLO su base"** (aclaración: 31 torretas
+  en una base no cubren las otras).
+
 ## [1.151.0] - 2026-07-03
 
 ### 2026-07-03 — Reporte de misiles con daño + los NPC te NEGOCIAN un nuclear entrante
