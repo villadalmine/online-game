@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Reporte de combate legible: quién ganó y de quién son los números
+- El header ahora dice **quién ganó explícito** ("✓ ganaste vos" / "✗ ganó el rival") en vez de
+  "ganaste/perdiste" (que se pisaba con las bajas).
+- Las **bajas** se etiquetan con el nombre de cada lado — **💀 vos** vs **💀 {rival}** — en lugar de
+  "perdiste" / "perdió" (dos palabras casi idénticas, imposibles de distinguir de un vistazo).
+- Los **scores** se muestran según tu perspectiva: si **atacás**, "tu ataque vs **su** defensa"; si
+  **defendés**, "su ataque vs **tu** defensa". Antes decía siempre "tu defensa" aunque el número fuera la
+  defensa del rival (mentía cuando vos atacabas). Solo front. Pedido del usuario ("no entiendo quién ganó").
+
 ## [1.158.0] - 2026-07-03
 
 ### 2026-07-03 — Selector de objetivo (planeta → enemigo) sin aliados y sin resetearse
