@@ -404,12 +404,51 @@ async def _resolve_strike(session: AsyncSession, mission: StrikeMission, now: da
     mission.details = json.dumps(details)
 
 
-async def npc_offer_tributes(session: AsyncSession, now: datetime | None = None) -> int:
-    """SDD 67: un NPC con un NUCLEAR entrante OFRECE tributo para sobrevivir (sin requerir gobierno/
-    diplomacia — está desesperado). Así el atacante humano ve 'te están negociando' y puede aceptar.
-    Una oferta por misión (si ya ofreció, no repite). Corre en el tick."""
+async def npc_seek_diplomacy(session: AsyncSession, now: datetime | None = None) -> int:
+    """SDD 67 v5: un NPC con un NUCLEAR entrante que NO tiene diplomacia la CONSIGUE DE VERDAD
+    (legítimo, con costo/tiempo, como el jugador): construye `government` y luego investiga
+    `diplomacy`. En las 24 h del nuclear "aprende diplomacia" (visible en métricas build/research) y
+    recién ahí puede ofrecer tributo. No hay bypass. Devuelve cuántos NPC actuaron."""
     now = now or datetime.now(UTC)
+    from app.services.build import start_build
+    from app.services.research import researched_techs, start_research
+    from app.services.training import natal_base_id
+    res = await session.execute(select(StrikeMission).where(StrikeMission.status == "outbound"))
+    under_nuke = {m.defender_id for m in res.scalars()
+                  if "nuclear_missile" in json.loads(m.force)}
+    acted = 0
+    for did in under_nuke:
+        dfn = await session.get(Player, did)
+        if dfn is None or not dfn.is_npc:
+            continue
+        if "diplomacy" in await researched_techs(session, dfn.id):
+            continue   # ya la aprendió
+        try:
+            if not await _has_active(session, None, "government", player_id=dfn.id):
+                bid = await natal_base_id(session, dfn.id)
+                base = await session.get(Base_, bid) if bid else None
+                if base:
+                    await start_build(session, dfn, base, "government")  # requiere research_lab
+                    acted += 1
+            else:
+                await start_research(session, dfn, "diplomacy")          # requiere government
+                acted += 1
+        except Exception:
+            pass   # sin research_lab / sin recursos / ya en cola → lo intenta en el próximo tick
+    if acted:
+        await session.flush()
+    return acted
+
+
+async def npc_offer_tributes(session: AsyncSession, now: datetime | None = None) -> int:
+    """SDD 67: un NPC con un NUCLEAR entrante ofrece tributo — PERO solo si tiene la infraestructura
+    legítima (`government` activo + tech `diplomacy`), igual que el jugador (lo consigue vía
+    `npc_seek_diplomacy`). Se cuenta en `game_npc_actions_total{action=tribute}` para validar la
+    diplomacia de la IA. Una oferta por misión. Corre en el tick."""
+    now = now or datetime.now(UTC)
+    from app.core import metrics
     from app.services.economy import planet_stocks
+    from app.services.research import researched_techs
     res = await session.execute(
         select(StrikeMission).where(StrikeMission.status == "outbound")
     )
@@ -420,6 +459,11 @@ async def npc_offer_tributes(session: AsyncSession, now: datetime | None = None)
         defender = await session.get(Player, m.defender_id)
         if defender is None or not defender.is_npc:
             continue
+        # LEGÍTIMO: necesita gobierno activo + diplomacia investigada (sin bypass).
+        if "diplomacy" not in await researched_techs(session, defender.id):
+            continue
+        if not await _has_active(session, None, "government", player_id=defender.id):
+            continue
         here = await planet_stocks(session, defender.id, defender.planet_key)
         rich = sorted(((k, v) for k, v in here.items() if v > 50), key=lambda kv: -kv[1])[:3]
         minerals = {k: round(v * 0.15, 1) for k, v in rich}
@@ -429,6 +473,10 @@ async def npc_offer_tributes(session: AsyncSession, now: datetime | None = None)
         await notify(session, m.attacker_id, "tribute_offered",
                      f"{defender.username} te ofrece tributo para cancelar tu misil nuclear",
                      {"mission_id": m.id, "minerals": minerals, "energy": 0.0})
+        metrics.NPC_ACTIONS.inc(action="tribute", brain="rules")  # validar diplomacia NPC (SDD 67)
+        from app.services.journal import record
+        await record(session, "npc_tribute", defender.id,
+                     attacker_id=m.attacker_id, tribute=minerals)
         offered += 1
     if offered:
         await session.flush()

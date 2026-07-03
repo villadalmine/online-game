@@ -1,4 +1,6 @@
 """SDD 49 — pruebas puras de la intercepción de misiles (simulate_strike, sin DB)."""
+from sqlalchemy import select
+
 from app.services.strike import simulate_strike
 
 
@@ -133,10 +135,9 @@ async def test_recall_strike_requires_diplomacy_then_returns_to_hangar(session):
     assert (await player_units(session, atk.id)).get("sonic_missile") == 3   # 1 + 2 devueltos
 
 
-async def test_npc_offers_tribute_for_incoming_nuclear(session):
-    # SDD 67: un NPC bajo un nuclear entrante ofrece tributo solo (sin gov/diplomacia) → el atacante
-    # ve "te negocian" y puede aceptar.
-    from app.models import Building, UnitStock
+async def test_npc_offers_tribute_only_with_government_and_diplomacy(session):
+    # SDD 67 v5: un NPC ofrece tributo SOLO con infra legítima (government + diplomacy). Sin bypass.
+    from app.models import Building, StrikeMission, UnitStock
     from app.services.economy import get_or_create_stock
     from app.services.strike import npc_offer_tributes
     atk, abase = await _p(session, "nuker3", "mars", "martian")
@@ -151,16 +152,48 @@ async def test_npc_offers_tribute_for_incoming_nuclear(session):
     await session.commit()
     m = await start_strike(session, atk, abase.id, dbase.id, {"nuclear_missile": 1})
     await session.commit()
-    n = await npc_offer_tributes(session)
+    # sin gobierno/diplomacia → NO ofrece
+    assert await npc_offer_tributes(session) == 0
+    # con gobierno activo + diplomacia investigada → ofrece
+    session.add(Building(base_id=dbase.id, building_key="government", status="active"))
+    session.add(PlayerTech(player_id=dfn.id, tech_key="diplomacy"))
     await session.commit()
-    assert n == 1
-    from app.models import StrikeMission
+    assert await npc_offer_tributes(session) == 1
     m = await session.get(StrikeMission, m.id)
-    assert m.tribute is not None   # el NPC ofreció
-    # el atacante puede aceptar y cancelar
+    assert m.tribute is not None
     res = await accept_tribute(session, atk, m.id)
     await session.commit()
     assert res["cancelled"]
+
+
+async def test_npc_seek_diplomacy_builds_government_under_nuclear(session):
+    # SDD 67 v5: un NPC sin diplomacia, bajo un nuclear entrante, la CONSIGUE de verdad: primero
+    # construye government (si tiene research_lab), luego investiga diplomacy. Legítimo + medible.
+    from app.models import Building, UnitStock
+    from app.services.economy import get_or_create_stock
+    from app.services.strike import npc_seek_diplomacy
+    atk, abase = await _p(session, "nuker4", "mars", "martian")
+    dfn, dbase = await _p(session, "npc_learner", "mars", "martian")
+    dfn.is_npc = True
+    dfn.protected_until = None
+    dfn.energy = 100000
+    session.add(Building(base_id=abase.id, building_key="launcher", status="active"))
+    session.add(Building(base_id=dbase.id, building_key="research_lab", status="active"))  # prereq
+    for t in ("rocketry", "ballistics", "nuclear_fission"):
+        session.add(PlayerTech(player_id=atk.id, tech_key=t))
+    session.add(UnitStock(player_id=atk.id, unit_key="nuclear_missile", quantity=1))
+    for m2 in ("iron", "sulfur", "magnesium"):
+        (await get_or_create_stock(session, dfn.id, m2, "mars")).amount = 100000
+    await session.commit()
+    await start_strike(session, atk, abase.id, dbase.id, {"nuclear_missile": 1})
+    await session.commit()
+    n = await npc_seek_diplomacy(session)   # 1er paso: construye government
+    await session.commit()
+    assert n == 1
+    gov = (await session.execute(
+        select(Building).where(Building.base_id == dbase.id,
+                               Building.building_key == "government"))).scalars().first()
+    assert gov is not None   # el NPC empezó a construir el gobierno (aprendiendo diplomacia)
 
 
 async def test_tribute_requires_government_and_diplomacy(session):

@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — SDD 67 v5: la diplomacia del NPC es LEGÍTIMA y medible (nada de bypass)
+- El NPC **ya no ofrece tributo "gratis"**: ahora requiere `government` activo + tech `diplomacy`
+  (igual que el jugador). Antes bypasseaba el edificio — el usuario lo marcó como inconsistente.
+- **El NPC APRENDE diplomacia bajo amenaza** (`npc_seek_diplomacy` en el tick): con un nuclear entrante
+  y sin diplomacia, construye Gobierno y luego investiga Diplomacia (con costo/tiempo real; dentro de
+  la ventana de 24 h). Queda registrado en `game_npc_actions_total` (build/research) → validable.
+- **Métrica de tributo NPC**: `game_npc_actions_total{action="tribute"}` + journal `npc_tribute` →
+  así se valida en Grafana que la IA hace diplomacia. Tests: NPC solo ofrece con infra + busca la infra.
+
 ## [1.154.0] - 2026-07-03
 
 ### 2026-07-03 — SDD 70 v3: el globo muestra MÁS cuanto más escaneaste (continentes + niebla + nitidez)

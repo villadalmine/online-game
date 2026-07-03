@@ -97,7 +97,10 @@ async def run_tick(session: AsyncSession) -> dict:
     # Se ve por GET /events/active (el front pollea) y queda en el journal/world feed.
     from app.services.events import maybe_start_event
     await maybe_start_event(session)
-    from app.services.strike import npc_offer_tributes  # SDD 67: NPC negocia un nuclear entrante
+    # SDD 67: el NPC APRENDE diplomacia (build government → research diplomacy) bajo un nuclear, y
+    # recién con esa infra ofrece tributo (legítimo + medible en game_npc_actions_total).
+    from app.services.strike import npc_offer_tributes, npc_seek_diplomacy
+    await npc_seek_diplomacy(session)
     await npc_offer_tributes(session)
     await session.commit()
     from app.services.market import (  # SDD 42
