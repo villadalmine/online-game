@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.161.0] - 2026-07-03
+
 ### 2026-07-03 — Arsenal (misiles/drones): planeta claro, origen→destino y 🛡 auto de tu intel
 - El panel dice **desde qué planeta** lanzás y que **solo pega bases de ese planeta** (misiles/drones no
   salen del planeta). Si tenés lanzadoras/fábricas en **varios planetas**, un selector 🗼 elige la base de
