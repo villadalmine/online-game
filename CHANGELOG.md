@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.141.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 69 Fase 1 (parte): expansión subterránea del búnker (excavar cuando falta espacio)
 - Nueva tech **Construcción subterránea** (`underground_construction`, cat underground) + acción
   **⛏ excavar** (`POST /bunker/dig-deeper`): agranda la grilla del búnker **+1 lado** por excavación
