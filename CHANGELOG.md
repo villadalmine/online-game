@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.150.0] - 2026-07-03
+
 ### 2026-07-03 — Flags prod (búnker/IA) + i18n es/en 417/417 + reporte de combate más claro
 - **Prendidos en prod** (elección del usuario): `BUNKER_EXPANSION_ENABLED`, `ARTIFICIAL_LIFE_ENABLED`,
   `BUNKER_AUTONOMY_ENABLED` (autopiloto de robots con autonomía **plena, incluido ataque**). Arranca
