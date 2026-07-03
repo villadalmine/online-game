@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.146.0] - 2026-07-03
+
 ### 2026-07-03 — SDD 69 Fase 4 (sub-fase 2): autopiloto economía (minas/comercio/colonización) + STOP
 - El autopiloto (`run_ai_autopilot`) despacha por `autonomy_scope`, cada tarea acotada y con su
   try/except: **mines** (auto-construye 1 mina/tick de un mineral de rol sin minar), **trade** (vende
