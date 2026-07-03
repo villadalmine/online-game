@@ -97,6 +97,9 @@ async def run_tick(session: AsyncSession) -> dict:
     # Se ve por GET /events/active (el front pollea) y queda en el journal/world feed.
     from app.services.events import maybe_start_event
     await maybe_start_event(session)
+    from app.services.strike import npc_offer_tributes  # SDD 67: NPC negocia un nuclear entrante
+    await npc_offer_tributes(session)
+    await session.commit()
     from app.services.market import (  # SDD 42
         process_transport_missions,
         raid_convoys,

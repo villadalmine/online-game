@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Reporte de misiles con daño + los NPC te NEGOCIAN un nuclear entrante
+- **Reporte de strike más detallado** (pedido): muestra el **⚔ daño** aunque no destruya nada
+  (con condición ON los misiles bajan la condición en vez de destruir) → "🩹 dañó edificios" /
+  "🏚 destruyó: ..." / "sin daño (interceptado o sin blanco)". Ya no queda "marca algo pero sin detalle".
+- **Los NPC ofrecen TRIBUTO** ante un nuclear entrante (`npc_offer_tributes` en el tick; sin requerir
+  gobierno/diplomacia — están desesperados). Así al tirar un nuclear a un NPC **te negocian**: llega la
+  notificación "te ofrece tributo" y podés aceptarla en Arsenal para cancelar y quedarte con el botín.
+- Tests: `test_npc_offers_tribute_for_incoming_nuclear`.
+
 ## [1.150.0] - 2026-07-03
 
 ### 2026-07-03 — Flags prod (búnker/IA) + i18n es/en 417/417 + reporte de combate más claro

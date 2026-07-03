@@ -404,6 +404,37 @@ async def _resolve_strike(session: AsyncSession, mission: StrikeMission, now: da
     mission.details = json.dumps(details)
 
 
+async def npc_offer_tributes(session: AsyncSession, now: datetime | None = None) -> int:
+    """SDD 67: un NPC con un NUCLEAR entrante OFRECE tributo para sobrevivir (sin requerir gobierno/
+    diplomacia — está desesperado). Así el atacante humano ve 'te están negociando' y puede aceptar.
+    Una oferta por misión (si ya ofreció, no repite). Corre en el tick."""
+    now = now or datetime.now(UTC)
+    from app.services.economy import planet_stocks
+    res = await session.execute(
+        select(StrikeMission).where(StrikeMission.status == "outbound")
+    )
+    offered = 0
+    for m in res.scalars():
+        if m.tribute or "nuclear_missile" not in json.loads(m.force):
+            continue
+        defender = await session.get(Player, m.defender_id)
+        if defender is None or not defender.is_npc:
+            continue
+        here = await planet_stocks(session, defender.id, defender.planet_key)
+        rich = sorted(((k, v) for k, v in here.items() if v > 50), key=lambda kv: -kv[1])[:3]
+        minerals = {k: round(v * 0.15, 1) for k, v in rich}
+        if not minerals:
+            continue
+        m.tribute = json.dumps({"minerals": minerals, "energy": 0.0})
+        await notify(session, m.attacker_id, "tribute_offered",
+                     f"{defender.username} te ofrece tributo para cancelar tu misil nuclear",
+                     {"mission_id": m.id, "minerals": minerals, "energy": 0.0})
+        offered += 1
+    if offered:
+        await session.flush()
+    return offered
+
+
 async def process_strikes(
     session: AsyncSession, now: datetime | None = None, player_id: int | None = None
 ) -> dict:

@@ -11,7 +11,9 @@
 > `recall_drones`) — vuelven al hangar — pero **requiere `government` + `diplomacy`**
 > (`require_recall_diplomacy`, flag `recall_requires_diplomacy` default True; el recall de drones antes
 > era libre). El panel Arsenal muestra los misiles "🚀→ en vuelo → a atacar" + botón ↩. **Pedido:**
-> usuario.
+> usuario. **v4 (1.151.0):** los **NPC ofrecen tributo** ante un nuclear entrante (`npc_offer_tributes`
+> en el tick, sin requerir gov/diplomacia — supervivencia) → al nukear a un NPC el humano recibe la
+> oferta y puede aceptarla. Reporte de strike muestra el **daño** aunque no destruya (condición).
 > **Relacionado:** [SDD 49 misiles](sdd-missile-launcher.md) (salvas + intercepción), [SDD 53 balance
 > por rol](sdd-resource-balance.md), `app/services/strike.py`, `content/{technologies,buildings}.yaml`.
 

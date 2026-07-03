@@ -133,6 +133,36 @@ async def test_recall_strike_requires_diplomacy_then_returns_to_hangar(session):
     assert (await player_units(session, atk.id)).get("sonic_missile") == 3   # 1 + 2 devueltos
 
 
+async def test_npc_offers_tribute_for_incoming_nuclear(session):
+    # SDD 67: un NPC bajo un nuclear entrante ofrece tributo solo (sin gov/diplomacia) → el atacante
+    # ve "te negocian" y puede aceptar.
+    from app.models import Building, UnitStock
+    from app.services.economy import get_or_create_stock
+    from app.services.strike import npc_offer_tributes
+    atk, abase = await _p(session, "nuker3", "mars", "martian")
+    dfn, dbase = await _p(session, "npc_victim", "mars", "martian")
+    dfn.is_npc = True
+    dfn.protected_until = None
+    session.add(Building(base_id=abase.id, building_key="launcher", status="active"))
+    for t in ("rocketry", "ballistics", "nuclear_fission"):
+        session.add(PlayerTech(player_id=atk.id, tech_key=t))
+    session.add(UnitStock(player_id=atk.id, unit_key="nuclear_missile", quantity=1))
+    (await get_or_create_stock(session, dfn.id, "iron", "mars")).amount = 2000
+    await session.commit()
+    m = await start_strike(session, atk, abase.id, dbase.id, {"nuclear_missile": 1})
+    await session.commit()
+    n = await npc_offer_tributes(session)
+    await session.commit()
+    assert n == 1
+    from app.models import StrikeMission
+    m = await session.get(StrikeMission, m.id)
+    assert m.tribute is not None   # el NPC ofreció
+    # el atacante puede aceptar y cancelar
+    res = await accept_tribute(session, atk, m.id)
+    await session.commit()
+    assert res["cancelled"]
+
+
 async def test_tribute_requires_government_and_diplomacy(session):
     from app.models import UnitStock
     atk, abase = await _p(session, "nuker2", "mars", "martian")
