@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.157.0] - 2026-07-03
+
 ### 2026-07-03 — Panel de alertas "¿de qué te falta?" + fix del preview de plazas + métrica autopiloto
 - **🚨 Panel de alertas** (pedido): en UN solo lugar, todo lo que te estás quedando corto —
   🏠 plazas sin lugar por tipo de unidad, ⛏ minas sin obreros, 📦 almacén desbordando, 🛡 bases sin
