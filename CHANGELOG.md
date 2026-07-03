@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-03 — Panel de Alertas: cada aviso dice en qué planeta/base pasa
+- Minas sin obreros, plazas sin lugar y bases sin defensa ahora nombran **dónde** ocurre: "minas sin
+  obreros **en Marte**", "sin plazas para 🚀 Munición **en Tierra**", "base #9 **(Venus)** sin defensas".
+  Antes eran genéricas y había que adivinar el planeta. El aviso de minas se emite **por planeta** (antes
+  era un único booleano global). Solo front. Pedido del usuario.
+
 ## [1.159.0] - 2026-07-03
 
 ### 2026-07-03 — Reporte de combate legible: quién ganó y de quién son los números
