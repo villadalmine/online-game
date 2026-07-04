@@ -9,6 +9,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.188.0] - 2026-07-04
 
+## [1.188.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 81 v4: impacto + presupuesto del cerebro LLM + más gates de research
 Los follow-ups de IA que quedaban (todo menos Telegram):
 - **La calidad del cerebro PESA el impacto:** el crédito de un acierto ahora es proporcional a cuántas
