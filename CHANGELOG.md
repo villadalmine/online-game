@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.166.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 77: los mensajes proactivos de la IA también llegan al 🔔 feed + más disparadores
 - El mensaje proactivo de la IA ahora **también deja una notificación** (🧠 en el feed 🔔) → lo ves
   aunque tengas el chat cerrado, no solo en el hilo del asistente.
