@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.165.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 77 IA conversacional: chat con memoria + la IA te escribe sola
 - El panel **🧠 Asistente** ahora es un **chat con hilo** (burbujas usuario/IA), scrollable, con la
   **memoria visible** — el asistente ya recordaba la charla (usa el historial como contexto del LLM),
