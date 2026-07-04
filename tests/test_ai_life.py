@@ -127,6 +127,51 @@ async def test_auto_colonize_with_colony_ship(session, monkeypatch):
     assert len(planets) >= 2   # colonizó al menos un planeta nuevo
 
 
+async def test_brain_auto_prefers_better_route(session, monkeypatch):
+    # SDD 81 v2: 'auto' es un bandit — prueba primero la ruta con mejor tasa de aplicadas y
+    # registra el resultado per-jugador (para el readout in-game).
+    import json
+
+    from app.services import ai_life
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_autopilot_brain_enabled", True)
+    monkeypatch.setattr(s, "ai_brain_min_level", 1)
+    monkeypatch.setattr(s, "ai_brain_explore", 0.0)   # exploit puro: elige el mejor, sin explorar
+    p, _ = await _player(session, name="ai_brainer")
+    p.ai_level = 3
+    p.ai_brain_mode = "auto"
+    p.ai_brain_stats = json.dumps({"gpu": {"llm": 0, "fallback": 10},   # gpu venía mal
+                                   "cloud": {"llm": 10, "fallback": 0}})  # cloud venía bien
+    await session.commit()
+    tried = []
+
+    async def fake_pick(session, player, scope, route):
+        tried.append(route)
+        return "workers" if route == "cloud" else None
+    monkeypatch.setattr(ai_life, "_llm_pick_skill", fake_pick)
+    pick = await ai_life._resolve_brain(session, p, ["workers"])
+    assert pick == "workers"
+    assert tried[0] == "cloud"        # probó primero la ruta de mejor tasa (no gpu)
+    rep = ai_life.brain_stats_report(p)
+    assert rep["cloud"]["applied"] == 11 and rep["cloud"]["ratio"] == 1.0   # registró la muestra
+
+
+async def test_brain_rules_mode_never_calls_llm(session, monkeypatch):
+    # cerebro determinista (default): no piensa con el LLM, devuelve None (juega por reglas).
+    from app.services import ai_life
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_autopilot_brain_enabled", True)
+    p, _ = await _player(session, name="ai_ruler")
+    p.ai_level = 5
+    p.ai_brain_mode = "rules"
+    await session.commit()
+
+    async def boom(*a, **k):
+        raise AssertionError("no debería llamar al LLM en modo rules")
+    monkeypatch.setattr(ai_life, "_llm_pick_skill", boom)
+    assert await ai_life._resolve_brain(session, p, ["workers"]) is None
+
+
 async def test_auto_bunker_digs_then_builds_room(session, monkeypatch):
     # SDD 78 v8: la IA cava el búnker y después construye una sala (electrónica).
     from app.content.registry import get_content

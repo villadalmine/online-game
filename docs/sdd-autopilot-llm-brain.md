@@ -35,7 +35,21 @@ hasta que lo elija). `ai_brain_min_level=3` (recién la IA "desarrollada" razona
 `tests/test_ai_life.py::test_ai_brain_llm_mode_picks_skill` (LLM stubbeado: modo gpu elige skill; rules
 y flag off → determinista).
 
+## v2 (HECHO) — `auto` que se auto-optimiza + readout in-game
+Pedido del usuario: *"quiero leer cómo va la ai si elijo gpu/cloud/determinista para saber qué anda
+mejor, y para que ella sepa qué va mejor si usa auto"*.
+- **`auto` es un BANDIT por jugador:** ya no prueba gpu→cloud en orden fijo. Ordena las rutas por su
+  **tasa de aplicadas** (`llm/(llm+fallback)`, suavizada Laplace) y prueba primero la mejor; con
+  probabilidad `ai_brain_explore` (0.15) explora la otra para seguir midiendo. Ante todo fallo → reglas.
+- **Rendimiento per-jugador:** `Player.ai_brain_stats` (Text JSON `{route:{llm,fallback}}`, migración
+  `d7ff71187c52`) se actualiza en CADA decisión del cerebro (también en modo gpu/cloud manual), además
+  de la métrica global. `brain_stats_report(player)` lo resume (aplicadas/fallback/tasa/muestras).
+- **Readout in-game:** el snapshot `ai.brain_stats` alimenta el panel 🤖 → línea `📊 rinde: 🖥️ GPU 82%
+  (41/50) · ☁️ nube 61% (11/18)` y, en modo `auto`, `— auto prefiere 🖥️`. Se lee sin Grafana.
+- Tests: `test_brain_auto_prefers_better_route` (bandit prueba primero la mejor ruta + registra) y
+  `test_brain_rules_mode_never_calls_llm`; e2e verifica `brain_stats` en el snapshot.
+
 ## Follow-ups
-- `auto` que elija por CALIDAD (win-rate/decisión) además de disponibilidad.
+- Que la tasa pese CALIDAD del resultado (win-rate/crecimiento), no solo "la jugada se aplicó".
 - Presupuesto diario del cerebro LLM por jugador (hoy sin tope explícito; el mín-nivel + opt-in lo acota).
-- Mostrar el conteo llm/fallback también in-app (hoy en Grafana).
+- Decaimiento temporal de `ai_brain_stats` (hoy acumula desde siempre; una media móvil se adaptaría más rápido).

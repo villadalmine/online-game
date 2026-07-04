@@ -41,6 +41,7 @@ def ai_state(player: Player) -> dict:
         "level": player.ai_level or 0,
         "autopilot_on": bool(getattr(player, "ai_autopilot_on", True)),   # botón de parada
         "brain_mode": (getattr(player, "ai_brain_mode", "rules") or "rules"),   # SDD 81
+        "brain_stats": brain_stats_report(player),   # SDD 81 v2: rendimiento por ruta (readout)
         "scope": (cur or {}).get("autonomy_scope", []),
         "speed": (cur or {}).get("speed_efficiency", 1.0),
         "quality": (cur or {}).get("quality", 0.0),
@@ -211,22 +212,74 @@ async def _llm_pick_skill(
         return None
 
 
+def _brain_ratio(stats: dict, route: str) -> float:
+    """SDD 81 v2: tasa de decisiones APLICADAS (llm) de una ruta, suavizada (Laplace) para no
+    quedar pegada a la primera muestra. Sin datos → 0.5 (neutro, invita a probar)."""
+    s = (stats or {}).get(route) or {}
+    llm, fb = float(s.get("llm", 0)), float(s.get("fallback", 0))
+    return (llm + 1.0) / (llm + fb + 2.0)
+
+
+def brain_stats_report(player: Player) -> dict:
+    """Rendimiento del cerebro por ruta para el snapshot/UI: aplicadas, fallback, tasa, muestras."""
+    import json
+    try:
+        stats = json.loads(getattr(player, "ai_brain_stats", "") or "{}")
+    except Exception:
+        stats = {}
+    out = {}
+    for route in ("gpu", "cloud"):
+        s = stats.get(route) or {}
+        llm, fb = int(s.get("llm", 0)), int(s.get("fallback", 0))
+        n = llm + fb
+        if n:
+            out[route] = {"applied": llm, "fallback": fb, "n": n, "ratio": round(llm / n, 2)}
+    return out
+
+
+def _record_brain(player: Player, route: str, outcome: str) -> None:
+    """Suma una muestra al rendimiento per-jugador (readout + auto-switch) + la métrica global."""
+    import json
+    metrics.AI_AUTOPILOT_BRAIN.inc(outcome=outcome, route=route)
+    try:
+        stats = json.loads(getattr(player, "ai_brain_stats", "") or "{}")
+    except Exception:
+        stats = {}
+    s = stats.setdefault(route, {"llm": 0, "fallback": 0})
+    s[outcome] = int(s.get(outcome, 0)) + 1
+    player.ai_brain_stats = json.dumps(stats)   # reasignar → SQLAlchemy detecta el cambio (Text)
+
+
 async def _resolve_brain(session: AsyncSession, player: Player, scope: list) -> str | None:
     """SDD 81: según `Player.ai_brain_mode` (rules|gpu|cloud|auto) la IA piensa con el LLM o reglas.
-    'auto' prueba gpu→cloud→reglas. Registra la métrica llm/fallback por ruta. Solo desde
-    `ai_brain_min_level` y con el flag; ante cualquier fallo → reglas."""
+    v2: 'auto' es un BANDIT — prefiere la ruta con mejor tasa de aplicadas (por jugador), con
+    exploración `ai_brain_explore` para seguir midiendo la otra. Registra llm/fallback por ruta
+    (global + per-jugador, para el readout in-game). Solo desde `ai_brain_min_level` con el flag."""
+    import random
     settings = get_settings()
     mode = (getattr(player, "ai_brain_mode", "rules") or "rules").lower()
     if (not settings.ai_autopilot_brain_enabled or mode == "rules"
             or (player.ai_level or 0) < settings.ai_brain_min_level):
         return None
-    routes = ["gpu", "cloud"] if mode == "auto" else [mode]
+    if mode == "auto":
+        stats = {}
+        try:
+            import json
+            stats = json.loads(getattr(player, "ai_brain_stats", "") or "{}")
+        except Exception:
+            stats = {}
+        if random.random() < settings.ai_brain_explore:
+            routes = ["gpu", "cloud"]
+            random.shuffle(routes)                                   # explorar: probá cualquiera
+        else:
+            routes = sorted(["gpu", "cloud"], key=lambda r: _brain_ratio(stats, r), reverse=True)
+    else:
+        routes = [mode]
     for route in routes:
         pick = await _llm_pick_skill(session, player, scope, route)
+        _record_brain(player, route, "llm" if pick else "fallback")
         if pick:
-            metrics.AI_AUTOPILOT_BRAIN.inc(outcome="llm", route=route)
             return pick
-    metrics.AI_AUTOPILOT_BRAIN.inc(outcome="fallback", route=routes[-1])
     return None
 
 

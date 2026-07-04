@@ -3296,6 +3296,7 @@ async def test_ai_life_evolve_e2e(client, monkeypatch):
     # el snapshot expone el estado de IA (nivel 0)
     me = (await client.http.get("/api/v1/players/me", headers=h)).json()
     assert me["ai"]["level"] == 0 and me["ai"]["next"]["level"] == 1
+    assert "brain_stats" in me["ai"]   # SDD 81 v2: readout del rendimiento por ruta
     async with client.session_maker() as ses:
         p = (await ses.execute(select(Player).where(Player.username == "ailife_e2e"))).scalar_one()
         ses.add(PlayerTech(player_id=p.id, tech_key="artificial_life"))

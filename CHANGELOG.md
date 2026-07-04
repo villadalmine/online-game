@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.186.0] - 2026-07-04
+
+### 2026-07-04 — SDD 81 v2: el cerebro `auto` se auto-optimiza + readout in-game
+- Pedido: *"quiero leer cómo va la IA si elijo gpu/cloud/determinista, y que ella sepa qué anda mejor
+  si usa auto"*.
+- **`auto` ahora es un bandit por jugador:** en vez de probar gpu→nube en orden fijo, ordena las rutas
+  por su **tasa de decisiones aplicadas** (`llm/(llm+fallback)`) y prueba primero la mejor; con
+  probabilidad `ai_brain_explore` (0.15) explora la otra para seguir midiendo. Ante fallo → reglas.
+- **Readout in-game (sin Grafana):** el panel 🤖 muestra `📊 rinde: 🖥️ GPU 82% (41/50) · ☁️ nube 61%
+  (11/18)` y, en `auto`, `— auto prefiere 🖥️`. Sale del nuevo `ai.brain_stats` en el snapshot.
+- Se guarda el rendimiento per-jugador en `Player.ai_brain_stats` (migración `d7ff71187c52`), se
+  actualiza en cada decisión (también en gpu/nube manual) además de la métrica global. Tests unit del
+  bandit + modo rules + e2e del snapshot. `docs/sdd-autopilot-llm-brain.md` (v2).
+
 ## [1.185.0] - 2026-07-04
 
 ## [1.185.0] - 2026-07-04

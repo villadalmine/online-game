@@ -66,6 +66,9 @@ class Player(Base):
     ai_autopilot_on: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     # SDD 81: cerebro del autopiloto — rules (determinista) | gpu | cloud | auto (gpu→cloud→reglas).
     ai_brain_mode: Mapped[str] = mapped_column(String(10), default="rules", server_default="rules")
+    # SDD 81 v2: rendimiento del cerebro por ruta, JSON {route:{"llm":n,"fallback":m}} → readout
+    # in-game + 'auto' prefiere la ruta con mejor tasa de aplicadas (bandit con exploración).
+    ai_brain_stats: Mapped[str] = mapped_column(Text, default="{}", server_default="{}")
 
     # Personal AI assistant: emergency "hack" budget, reset lazily once a day (SDD 2).
     assistant_hacks_used: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
