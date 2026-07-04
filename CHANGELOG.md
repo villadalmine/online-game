@@ -9,6 +9,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.187.0] - 2026-07-04
 
+## [1.187.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 81 v2.1/v3: la IA aprende mejor su cerebro + research se destraba sola
 Los tres follow-ups menores de IA que quedaban:
 - **La tasa del cerebro mide CALIDAD, no solo "respondió":** el registro se hace tras ejecutar la skill
