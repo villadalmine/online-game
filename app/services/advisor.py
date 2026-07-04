@@ -173,6 +173,42 @@ def _energy_intent(message: str) -> bool:
     return any(w in m for w in ("nivel", "energ", "level up", "level-up"))
 
 
+def _fortify_intent(message: str) -> bool:
+    """SDD 77 v3: ¿el jugador pide defender/fortificar una base?"""
+    m = message.lower()
+    return any(w in m for w in ("defend", "defens", "fortific", "torret", "proteg", "turret"))
+
+
+async def _undefended_bases(session, player: Player) -> list:
+    """SDD 77 v3: bases del jugador SIN edificio defensivo activo (defense_power>0)."""
+    bases = (await session.execute(
+        select(Base_).where(Base_.player_id == player.id)
+    )).scalars().all()
+    if not bases:
+        return []
+    content = get_content()
+    active = (await session.execute(
+        select(Building.base_id, Building.building_key).where(
+            Building.base_id.in_([b.id for b in bases]), Building.status == "active")
+    )).all()
+    def_bases = {bid for bid, bk in active
+                 if content.buildings.get(bk, {}).get("defense_power", 0) > 0}
+    return [b for b in bases if b.id not in def_bases]
+
+
+async def _fortify_suggestion(session, player: Player, message: str) -> Suggestion | None:
+    """SDD 77 v3: si pedís defender/fortificar y hay una base sin defensa, la IA propone una torreta
+    EN ESA base (pasa el base_id → no la construye en la base equivocada)."""
+    if not _fortify_intent(message):
+        return None
+    undef = await _undefended_bases(session, player)
+    if not undef:
+        return None
+    b = undef[0]
+    return Suggestion(action="build", label=f"🔫 Torreta en #{b.id} ({b.planet_key})",
+                      params={"building": "turret", "base_id": b.id})
+
+
 async def _teleport_suggestion(session, player: Player, message: str) -> Suggestion | None:
     """SDD 77 v2: si pedís mandar electrónica y tenés la capacidad (2+ búnkeres y una Puerta
     cuántica activa), la IA propone un teletransporte LISTO (defaults sensatos) para confirmar."""
@@ -294,18 +330,11 @@ async def _proactive_note(session: AsyncSession, player: Player) -> str | None:
         return ("⚠ Ojo: tenés " + " y ".join(parts) + " en camino hacia vos. Reforzá con torretas/"
                 "tropas en la base atacada o preparate para el golpe.")
     # 🛡 alguna colonia SIN defensa activa (si tenés más de una base)
-    bases = (await session.execute(
-        select(Base_).where(Base_.player_id == player.id)
-    )).scalars().all()
-    if len(bases) >= 2:
-        content = get_content()
-        active = (await session.execute(
-            select(Building.base_id, Building.building_key).where(
-                Building.base_id.in_([b.id for b in bases]), Building.status == "active")
-        )).all()
-        def_bases = {bid for bid, bk in active
-                     if content.buildings.get(bk, {}).get("defense_power", 0) > 0}
-        undef = [b for b in bases if b.id not in def_bases]
+    bases_ct = (await session.execute(
+        select(func.count()).select_from(Base_).where(Base_.player_id == player.id)
+    )).scalar() or 0
+    if bases_ct >= 2:
+        undef = await _undefended_bases(session, player)
         if undef:
             b = undef[0]
             return (f"🛡 Tu base #{b.id} ({b.planet_key}) no tiene defensa activa. Construí una "
@@ -436,6 +465,9 @@ async def ask(
         suggestions = [tp, *suggestions]
     if _energy_intent(message) and assist_energy_left(player) > 0:   # SDD 77 v3: nivelar energía
         suggestions = [Suggestion(action="assist_energy", label="⚡ Nivelar energía"), *suggestions]
+    ft = await _fortify_suggestion(session, player, message)   # SDD 77 v3: torreta en base indef.
+    if ft:
+        suggestions = [ft, *suggestions]
     left = hacks_left(player)
     # SDD 2: con hacks disponibles, el jugador puede CREAR GRATIS cualquier cosa que preguntó
     # (tenga o no materiales). Si nombró objetos, esos; si no, los de las sugerencias.

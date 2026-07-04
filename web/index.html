@@ -1432,11 +1432,13 @@ async function askAdvisor(){
 async function doSuggestion(s){
   try{
     if(s.action==="build"){ const b={building_key:s.params.building};
-      // sync the build form so what you see matches what gets built (no stale mineral)
-      if($("building")){ $("building").value=s.params.building; renderCost(); }
-      if(s.params.mineral){ b.target_mineral=s.params.mineral; if($("mineral"))$("mineral").value=s.params.mineral; }
-      await api(`/api/v1/bases/${baseId()}/build`,"POST",b);
-      msg("Construyendo "+gameName(s.params.building)+(s.params.mineral?` (${gameName(s.params.mineral)})`:"")); }
+      // SDD 77 v3: si la sugerencia trae base_id (ej. fortificar #9), construir AHÍ; si no, la actual.
+      const bid=s.params.base_id||baseId();
+      // sync the build form solo si es la base actual (para no confundir si es otra base)
+      if(!s.params.base_id && $("building")){ $("building").value=s.params.building; renderCost(); }
+      if(s.params.mineral){ b.target_mineral=s.params.mineral; if(!s.params.base_id&&$("mineral"))$("mineral").value=s.params.mineral; }
+      await api(`/api/v1/bases/${bid}/build`,"POST",b);
+      msg("Construyendo "+gameName(s.params.building)+(s.params.base_id?` en #${s.params.base_id}`:"")+(s.params.mineral?` (${gameName(s.params.mineral)})`:"")); }
     else if(s.action==="train"){ await api(`/api/v1/bases/${baseId()}/train`,"POST",{unit_key:s.params.unit,quantity:s.params.quantity||1}); msg("Entrenando "+gameName(s.params.unit)); }
     else if(s.action==="research"){ await api("/api/v1/research","POST",{tech_key:s.params.tech}); msg("Investigando "+gameName(s.params.tech)); }
     else if(s.action==="teleport"){ const r=await api("/api/v1/bunker/teleport","POST",s.params); msg("⚛ "+tr('bk_tp_ok')+" "+Math.round(r.received)); }   // SDD 77 v2

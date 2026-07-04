@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 77 v3b: acción "fortificar" desde el chat (torreta en la base indefensa)
+- Nueva acción: pedile a la IA "defendé/fortificá mi base" y te propone construir una 🔫 torreta EN
+  la base que NO tiene defensa (pasa el base_id → no la construye en la equivocada). Justo lo que resuelve
+  perder colonias indefensas. Tests de servicio.
+
 ### 2026-07-04 — Reporte de combate: por qué perdiste con poca defensa
 - Cuando perdés defendiendo y tu defensa fue **muy baja frente al ataque** (goleada), el reporte ahora
   lo aclara: "tu defensa (3) fue muy baja frente al ataque (411) — te superó por goleada; reforzá esa

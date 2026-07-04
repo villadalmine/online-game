@@ -86,6 +86,17 @@ def test_intent_helpers():
     assert adv._first_amount("mandá electrónica") is None
 
 
+async def test_fortify_suggestion_targets_undefended_base(session, monkeypatch):
+    # SDD 77 v3: "defendé mi base" → torreta en la base indefensa, con su base_id.
+    from app.models import Base_
+    p = await _player(session)
+    base = (await session.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
+    sug = await adv._fortify_suggestion(session, p, "fortificá mi base con torretas")
+    assert sug is not None and sug.action == "build"
+    assert sug.params["building"] == "turret" and sug.params["base_id"] == base.id
+    assert await adv._fortify_suggestion(session, p, "qué mina conviene") is None  # sin intención
+
+
 async def test_proactive_warns_undefended_colony(session, monkeypatch):
     # SDD 77: con 2+ bases y alguna sin defensa activa, la IA te avisa.
     from app.core.config import get_settings
