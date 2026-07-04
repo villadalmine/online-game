@@ -79,6 +79,13 @@ Todo data-driven (catálogo `ai_skills`/`ai_levels`), front sin lógica hardcode
   sus batallas. La IA robot queda COMPLETA: 12 skills + aprendizaje por experiencia, por batallas propias
   y por meta global.
 
-## Follow-ups (post-v6)
-- Elegir postura/objetivo con la meta aprendida (SDD 41) y `bandit_posture`.
-- `quality_eff` en más decisiones (reserva de ataque, umbral de comercio, selección de objetivo).
+## v7 (HECHO) — postura aprendida (tipo bandit)
+- **`ai_posture(session, player)`**: la IA elige POSTURA con el win-rate de sus últimos ataques —
+  **agresiva** (≥60%), **defensiva** (<40%), **balanceada** (sin evidencia). En `_auto_attack` la
+  postura modula el **margen** (agresiva −0.2, defensiva +0.5) y la **reserva** (agresiva ×0.7,
+  defensiva ×1.5): confiada pelea más ajustado comprometiendo tropa; cauta solo golea y guarda en casa.
+  Se registra en el journal del ataque y se **muestra en el panel 🤖** (postura + calidad + experiencia).
+
+## Follow-ups
+- `quality_eff` en más decisiones (umbral de comercio, selección de objetivo).
+- Explore epsilon-greedy real en la postura (hoy es exploit puro del win-rate).

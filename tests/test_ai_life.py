@@ -225,6 +225,20 @@ async def test_meta_best_unit_reads_learned_meta(session):
     assert await _meta_best_unit(session) == "tank"
 
 
+async def test_ai_posture_from_winrate(session):
+    # SDD 78 v7: la IA elige postura con lo aprendido (gana→agresiva, pierde→defensiva).
+    from app.models import CombatLog
+    from app.services.ai_life import ai_posture
+    p, base = await _player(session, name="ai_posturer")
+    foe, fbase = await _player(session, name="ai_rival")
+    assert await ai_posture(session, p) == "balanced"        # sin datos
+    for _ in range(5):
+        session.add(CombatLog(attacker_id=p.id, defender_id=foe.id, target_base_id=fbase.id,
+                              outcome="attacker"))
+    await session.commit()
+    assert await ai_posture(session, p) == "aggressive"      # viene ganando → agresiva
+
+
 async def test_own_attack_winrate_from_combat_log(session):
     # SDD 78 v3: la IA lee su win-rate de ataque (para atacar más cauta si viene perdiendo).
     from app.models import CombatLog

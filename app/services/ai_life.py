@@ -66,7 +66,8 @@ async def ai_learning(session: AsyncSession, player: Player) -> dict:
     base_q = float((_level_spec(player.ai_level or 0) or {}).get("quality", 0.0))
     bonus = min(0.5, 0.06 * math.log10(1 + int(xp)))   # hasta +0.5 de calidad por experiencia
     return {"xp": int(xp), "quality_base": round(base_q, 2),
-            "quality_eff": round(min(1.6, base_q + bonus), 2)}
+            "quality_eff": round(min(1.6, base_q + bonus), 2),
+            "posture": await ai_posture(session, player)}   # SDD 78 v7: postura aprendida
 
 
 async def _total_electronics(session: AsyncSession, player_id: int) -> tuple[float, list[Bunker]]:
@@ -427,6 +428,19 @@ async def _own_attack_winrate(session: AsyncSession, player: Player) -> tuple[in
     return len(rows), wins / len(rows)
 
 
+async def ai_posture(session: AsyncSession, player: Player) -> str:
+    """SDD 78 v7: la IA elige POSTURA con lo aprendido de sus batallas (tipo bandit): agresiva si
+    viene ganando, defensiva si perdiendo, balanceada sin evidencia. Modula margen + reserva."""
+    n, wr = await _own_attack_winrate(session, player)
+    if n < 4:
+        return "balanced"
+    if wr >= 0.6:
+        return "aggressive"
+    if wr < 0.4:
+        return "defensive"
+    return "balanced"
+
+
 async def _auto_research(session: AsyncSession, player: Player) -> int:
     """SDD 78: investigar la próxima tecnología asequible de economía/defensa (la más barata)."""
     try:
@@ -497,9 +511,18 @@ async def _auto_attack(
         combat_keys = ("soldier", "tank", "aircraft")
         mine = (await units_at_base(session, player.id, home.id)) if settings.garrison_enabled \
             else (await player_units(session, player.id))
+        # SDD 78 v7: POSTURA aprendida (bandit) modula margen + reserva (v2: experiencia afina más).
+        posture = await ai_posture(session, player)
         reserve = settings.ai_attack_reserve
-        # SDD 78 v6: con la skill `learn`, prioriza la composición que GANA según la meta aprendida
-        # (manda full de esa unidad, menos de las otras → las guarda para defender).
+        margin = settings.ai_attack_margin - (quality - 0.5) * 0.6
+        if posture == "aggressive":
+            margin -= 0.2                                   # confiada: pelea más ajustado…
+            reserve *= 0.7                                  # …y compromete más tropa
+        elif posture == "defensive":
+            margin += 0.5                                   # cauta: solo goleadas…
+            reserve = min(0.9, reserve * 1.5)              # …y guarda tropa en casa
+        margin = max(1.05, margin)
+        # SDD 78 v6: con la skill `learn`, prioriza la composición que GANA según la meta aprendida.
         best_unit = await _meta_best_unit(session) if use_meta else None
         force = {}
         for k in combat_keys:
@@ -516,10 +539,6 @@ async def _auto_attack(
         )).scalars().all()
         best = None
         best_def = 0.0
-        margin = max(1.05, settings.ai_attack_margin - (quality - 0.5) * 0.6)   # SDD 78: aprende
-        n, wr = await _own_attack_winrate(session, player)   # SDD 78 v3: aprende de sus batallas
-        if n >= 4 and wr < 0.4:
-            margin += 0.5                                    # viene perdiendo → ataca más cauta
         for b in rows:
             defense = await _base_defense_estimate(session, b)
             beatable = my_power > defense * margin
@@ -531,7 +550,7 @@ async def _auto_attack(
         from app.services.journal import record
         metrics.AI_AUTOPILOT.inc(action="attack")
         await record(session, "ai_autopilot", player.id, action="attack",
-                     target_base_id=best.id, force=force)
+                     target_base_id=best.id, force=force, posture=posture)
         return 1
     except Exception:
         return 0   # CombatError (topes/protección/energía) u otro → no ataca este tick

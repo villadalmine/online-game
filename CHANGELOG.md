@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 78 v7: la IA robot elige POSTURA con lo aprendido
+- La IA elige postura según el win-rate de sus últimos ataques: **agresiva** (viene ganando → pelea más
+  ajustado y compromete más tropa), **defensiva** (perdiendo → solo golea y guarda tropa en casa),
+  **balanceada** (sin datos). Modula margen + reserva de ataque. Se ve en el panel 🤖 (postura). Test.
+
 ### 2026-07-04 — SDD 79 v3: fortificar defiende TODA base (soldados de fallback) + auto-weapons
 - "Fortificar todas" ahora defiende **cualquier** base: si no puede la torreta (falta la tech weapons),
   garrisona **soldados** (solo requieren HQ → siempre defendible) y **arranca a investigar weapons** sola
