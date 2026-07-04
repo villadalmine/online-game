@@ -58,7 +58,14 @@ Todo data-driven (catálogo `ai_skills`/`ai_levels`), front sin lógica hardcode
   `CombatLog`); si viene perdiendo (≥4 batallas, win-rate <40%) el `_auto_attack` sube el margen +0.5 →
   ataca más cauto. Sumado a la modulación por experiencia (v2).
 
-## Follow-ups (v4)
-- Más skills: expediciones a lunas (bonus de dioses), repoblación tras ataque (gastar electrónica).
+## v4 (HECHO) — expediciones autónomas
+- **Skill `expedition`** (L6+): `_auto_expedition` manda 1 expedición a una luna de tu galaxia que no
+  tengas ya en viaje (bonus de dioses/recursos); `start_expedition` valida la unidad requerida (shuttle)
+  + energía. Skills totales de la IA: 11 (workers/mines/trade/colonize/defend/research/spy/expedition/
+  attack/diplomacy/learn).
+
+## Follow-ups (v5)
+- **Repoblación autónoma**: hoy `repopulate` reconstruye TODO el set (duplicaría edificios) → primero
+  hacerlo idempotente (saltear los ya presentes), después un `_auto_repopulate` que dispare tras un ataque.
 - Elegir postura/objetivo con la meta aprendida (SDD 41) y `bandit_posture`.
 - `quality_eff` en más decisiones (reserva de ataque, umbral de comercio).

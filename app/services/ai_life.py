@@ -154,6 +154,8 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
         total += await _auto_diplomacy(session, player)
     if "spy" in scope:                          # SDD 78 v3: espía rivales antes de atacar
         total += await _auto_spy(session, player)
+    if "expedition" in scope:                   # SDD 78 v4: expediciones a lunas
+        total += await _auto_expedition(session, player)
     if "attack" in scope:
         total += await _auto_attack(session, player, settings, q)
     return total
@@ -320,6 +322,32 @@ async def _auto_spy(session: AsyncSession, player: Player) -> int:
             from app.services.journal import record
             await record(session, "ai_autopilot", player.id, action="spy", target_id=foe.id)
             return 1
+        return 0
+    except Exception:
+        return 0
+
+
+async def _auto_expedition(session: AsyncSession, player: Player) -> int:
+    """SDD 78 v4: mandar 1 expedición a una luna de tu galaxia que no tengas ya en viaje (bonus de
+    dioses). start_expedition valida unidad requerida + energía → si no puede, prueba otra luna."""
+    try:
+        from app.models import ExpeditionOrder
+        from app.services.expedition import start_expedition
+        content = get_content()
+        active = {e.moon_key for e in (await session.execute(
+            select(ExpeditionOrder).where(ExpeditionOrder.player_id == player.id,
+                                          ExpeditionOrder.status == "traveling"))).scalars()}
+        for mk in content.moons:
+            if mk in active or content.moon_galaxy(mk) != player.galaxy_key:
+                continue
+            try:
+                await start_expedition(session, player, mk)
+                metrics.AI_AUTOPILOT.inc(action="expedition")
+                from app.services.journal import record
+                await record(session, "ai_autopilot", player.id, action="expedition", moon=mk)
+                return 1
+            except Exception:
+                continue
         return 0
     except Exception:
         return 0
