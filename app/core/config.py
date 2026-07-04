@@ -151,6 +151,10 @@ class Settings(BaseSettings):
     # Presupuesto del asesor por jugador/día (anti-quema de créditos): pasado el cupo NO se llama al
     # LLM (cero tokens) y se cae a los tips deterministas. = patrón DAILY_CAP del repo shooter.
     advisor_llm_calls_per_day: int = 40
+    # SDD 77: la IA te ESCRIBE sola (mensaje proactivo) ante una situación notable (ataque entrante,
+    # energía crítica), con cooldown por jugador. Determinista (no gasta LLM). Detrás de flag.
+    advisor_proactive_enabled: bool = False
+    advisor_proactive_cooldown_hours: float = 6.0
     # Selector de modelo del asistente (SDD 9): gpu (local) | cloud (pago barato) | byok (key del
     # jugador). El modo cloud usa este alias; byok apunta a este base_url por defecto.
     assistant_cloud_model: str = "gemma4-paid"

@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 77 IA conversacional: chat con memoria + la IA te escribe sola
+- El panel **🧠 Asistente** ahora es un **chat con hilo** (burbujas usuario/IA), scrollable, con la
+  **memoria visible** — el asistente ya recordaba la charla (usa el historial como contexto del LLM),
+  pero antes solo veías la última respuesta. Podés pedirle qué construir/qué te falta/qué estrategia y
+  crear gratis lo que pidas (hack), como siempre.
+- **La IA te escribe sola** (mensaje 🔔 proactivo) ante algo urgente: **ataque de flota o misiles
+  entrante** o **energía crítica**, con cooldown por jugador. Determinista (no gasta LLM), corre en el
+  tick. Rol `proactive` en el hilo + toast "la IA te escribió". Flag `ADVISOR_PROACTIVE_ENABLED` ON en
+  prod. Tests de servicio. `docs/sdd-conversational-ai-advisor.md`.
+
 ## [1.164.0] - 2026-07-04
 
 ### 2026-07-03 — Jumper visible: "Mover tropas" muestra si el salto es instantáneo (y cómo habilitarlo)

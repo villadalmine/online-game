@@ -25,6 +25,25 @@ async def _strip_minerals(session, player_id) -> None:
         st.amount = 0.0
 
 
+async def test_proactive_writes_on_incoming_attack_with_cooldown(session, monkeypatch):
+    # SDD 77: la IA escribe sola ante un ataque entrante; respeta el cooldown y el flag.
+    from app.core.config import get_settings
+    from app.models import AttackMission, Base_
+    monkeypatch.setattr(get_settings(), "advisor_proactive_enabled", True)
+    p = await _player(session)
+    foe = await _player(session, "foe", "earth", "terran")
+    p.energy = 999999.0                       # energía alta → descarta el aviso de energía baja
+    await session.commit()
+    assert await adv.proactive_check(session, p) is False   # sin amenaza → no escribe
+    base = (await session.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
+    session.add(AttackMission(attacker_id=foe.id, defender_id=p.id, target_base_id=base.id))
+    await session.commit()
+    assert await adv.proactive_check(session, p) is True     # ataque entrante → escribe
+    msgs = await adv.list_messages(session, p)
+    assert any(m.role == "proactive" for m in msgs)
+    assert await adv.proactive_check(session, p) is False    # cooldown → no reescribe
+
+
 async def test_ask_uses_llm_and_returns_blockers_and_suggestions(session, monkeypatch):
     p = await _player(session)
     await _strip_minerals(session, p.id)

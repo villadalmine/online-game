@@ -77,6 +77,7 @@ async def run_tick(session: AsyncSession) -> dict:
     from app.services.research import finalize_due_research
 
     researched = 0
+    from app.services.advisor import proactive_check  # SDD 77: mensajes proactivos de la IA
     from app.services.ai_life import run_ai_autopilot  # SDD 69 Fase 4
     from app.services.bunkers import advance_bunker  # SDD 64
     from app.services.drones import advance_drones  # SDD 50
@@ -91,6 +92,11 @@ async def run_tick(session: AsyncSession) -> dict:
         await advance_satellites(session, player)
         await advance_bunker(session, player)
         await run_ai_autopilot(session, player)   # SDD 69 Fase 4: robots autónomos (auto-staffing)
+        if not player.is_npc:      # SDD 77: la IA le escribe al humano si hay urgencia
+            try:
+                await proactive_check(session, player)
+            except Exception:
+                pass
     await session.commit()
 
     # Eventos dinámicos "happy hour" (SDD 36): quizás arrancar uno en horas aleatorias.

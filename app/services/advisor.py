@@ -9,7 +9,7 @@ docs/sdd-ai-assistant.md.
 import json
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import get_content
@@ -197,6 +197,70 @@ async def list_messages(
 
 async def _save(session: AsyncSession, player: Player, role: str, body: str) -> None:
     session.add(AdvisorMessage(player_id=player.id, role=role, body=body[:2000]))
+
+
+# --------------------------------------------------------------------------- #
+# SDD 77: la IA te ESCRIBE sola (mensaje proactivo) ante una situación notable.
+# --------------------------------------------------------------------------- #
+PROACTIVE_ROLE = "proactive"
+
+
+async def _last_proactive_at(session: AsyncSession, player_id: int):
+    return (await session.execute(
+        select(AdvisorMessage.created_at)
+        .where(AdvisorMessage.player_id == player_id, AdvisorMessage.role == PROACTIVE_ROLE)
+        .order_by(AdvisorMessage.id.desc()).limit(1)
+    )).scalar_one_or_none()
+
+
+async def _proactive_note(session: AsyncSession, player: Player) -> str | None:
+    """Situación notable → texto determinista que la IA te 'escribe'. None si no hay urgencias."""
+    from app.models import AttackMission, StrikeMission
+    atk = (await session.execute(
+        select(func.count()).select_from(AttackMission).where(
+            AttackMission.defender_id == player.id, AttackMission.status == "outbound")
+    )).scalar() or 0
+    strike = (await session.execute(
+        select(func.count()).select_from(StrikeMission).where(
+            StrikeMission.defender_id == player.id, StrikeMission.status == "outbound")
+    )).scalar() or 0
+    if atk or strike:
+        parts = []
+        if atk:
+            parts.append(f"{atk} flota(s)")
+        if strike:
+            parts.append(f"{strike} salva(s) de misiles")
+        return ("⚠ Ojo: tenés " + " y ".join(parts) + " en camino hacia vos. Reforzá con torretas/"
+                "tropas en la base atacada o preparate para el golpe.")
+    s = get_settings()
+    emax = effective_energy_max(player, s)
+    if emax and player.energy < emax * 0.08:
+        return ("⚡ Estás casi sin energía. Antes de gastar en construir/entrenar, dejá regenerar "
+                "o sumá una planta de energía; si no, se te traban las colas.")
+    return None
+
+
+async def proactive_check(
+    session: AsyncSession, player: Player, now: datetime | None = None
+) -> bool:
+    """SDD 77: la IA te escribe sola ante una situación notable, con cooldown por jugador. Devuelve
+    True si escribió. Barato (2 counts + 1 lookup), gateado por flag + cooldown; no gasta LLM."""
+    s = get_settings()
+    if not s.advisor_proactive_enabled or not player.race_key:
+        return False
+    now = now or datetime.now(UTC)
+    last = await _last_proactive_at(session, player.id)
+    if last is not None:
+        last = last if last.tzinfo else last.replace(tzinfo=UTC)
+        if (now - last).total_seconds() < s.advisor_proactive_cooldown_hours * 3600:
+            return False
+    note = await _proactive_note(session, player)
+    if not note:
+        return False
+    await _save(session, player, PROACTIVE_ROLE, note)
+    from app.services.journal import record
+    await record(session, "advisor_proactive", player.id)
+    return True
 
 
 # --------------------------------------------------------------------------- #
@@ -416,7 +480,9 @@ async def _llm_or_fallback(
         )
         msgs = [{"role": "system", "content": system}]
         for m in history:
-            msgs.append({"role": m.role, "content": m.body})
+            # SDD 77: los mensajes proactivos van como 'assistant' para la API del LLM.
+            role = m.role if m.role in ("user", "assistant") else "assistant"
+            msgs.append({"role": role, "content": m.body})
         msgs.append({"role": "user", "content": f"{message}\n\nCONTEXTO:\n{json.dumps(context)}"})
         reply = await llm_chat(
             msgs, max_tokens=400, user=f"player:{player.username}", kind="advisor",   # SDD 28
