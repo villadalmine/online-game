@@ -63,7 +63,7 @@ spec:
         args:
           - "--dockerfile=/workspace/source/deploy/Dockerfile"
           - "--context=dir:///workspace/source"
-          - "--destination=registry.registry:5000/online-game:1.163.0"
+          - "--destination=registry.registry:5000/online-game:1.164.0"
           - "--insecure"
           - "--skip-tls-verify"
           - "--snapshot-mode=redo"

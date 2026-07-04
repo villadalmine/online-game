@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.164.0] - 2026-07-04
+
 ### 2026-07-03 — Jumper visible: "Mover tropas" muestra si el salto es instantáneo (y cómo habilitarlo)
 - El salto espacial (SDD 63) era **invisible**: el jumper hacía el traslado instantáneo pero nada en la
   UI lo decía. Ahora el panel **🚚 Mover tropas** muestra un hint en vivo: "⚡ salto instantáneo (jumper)
