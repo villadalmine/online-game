@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.181.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 81: el autopiloto puede PENSAR con el LLM (determinista/GPU/nube/auto)
 - Aclaración: el autopiloto de vida artificial era **determinista** (reglas — rápido, gratis, sin GPU);
   su inteligencia (aprende por experiencia/batallas/meta, 12 skills, posturas) es real, no LLM. Ahora
