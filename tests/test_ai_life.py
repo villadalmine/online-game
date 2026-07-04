@@ -225,6 +225,30 @@ async def test_meta_best_unit_reads_learned_meta(session):
     assert await _meta_best_unit(session) == "tank"
 
 
+async def test_ai_brain_llm_mode_picks_skill(session, monkeypatch):
+    # SDD 81: en modo gpu/cloud el cerebro pide al LLM qué priorizar; rules/flag off → determinista.
+    import app.services.llm as llm_mod
+    from app.services.ai_life import _resolve_brain
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_autopilot_brain_enabled", True)
+    monkeypatch.setattr(s, "ai_brain_min_level", 1)
+
+    async def fake_chat(messages, **kw):
+        return "mines"
+    monkeypatch.setattr(llm_mod, "llm_chat", fake_chat)
+    p, base = await _player(session, name="ai_brainy")
+    p.ai_level = 2
+    p.ai_brain_mode = "gpu"
+    await session.commit()
+    scope = ["workers", "mines", "trade"]
+    assert await _resolve_brain(session, p, scope) == "mines"     # el LLM eligió
+    p.ai_brain_mode = "rules"
+    assert await _resolve_brain(session, p, scope) is None        # determinista
+    p.ai_brain_mode = "gpu"
+    monkeypatch.setattr(s, "ai_autopilot_brain_enabled", False)
+    assert await _resolve_brain(session, p, scope) is None        # flag off → determinista
+
+
 async def test_ai_posture_from_winrate(session):
     # SDD 78 v7: la IA elige postura con lo aprendido (gana→agresiva, pierde→defensiva).
     from app.models import CombatLog

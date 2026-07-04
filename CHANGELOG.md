@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 81: el autopiloto puede PENSAR con el LLM (determinista/GPU/nube/auto)
+- Aclaración: el autopiloto de vida artificial era **determinista** (reglas — rápido, gratis, sin GPU);
+  su inteligencia (aprende por experiencia/batallas/meta, 12 skills, posturas) es real, no LLM. Ahora
+  podés **elegir el cerebro por jugador**: ⚙ determinista · 🖥️ GPU · ☁️ nube · 🔀 auto (auto prueba
+  gpu, después nube, después reglas). Selector en el panel 🤖.
+- En modo LLM la IA "desarrollada" (nivel ≥3) le pregunta al LLM qué priorizar; cae a reglas ante
+  cualquier fallo. Nueva métrica `game_ai_autopilot_brain_total{outcome,route}` para comparar en Grafana
+  cuál anda mejor (GPU vs nube). Flag `AI_AUTOPILOT_BRAIN_ENABLED` ON (default por-jugador = determinista).
+  Migración + test. `docs/sdd-autopilot-llm-brain.md`.
+
 ### 2026-07-04 — Fix mapa (enemigos por planeta real) + batallas de todos colapsables por tiempo
 - **Mapa/globo**: dibujaba las bases enemigas escaneadas en el planeta NATAL del rival, no donde
   están → si espiabas a alguien con base en el planeta que mirás pero HQ en otro, no aparecía. Ahora

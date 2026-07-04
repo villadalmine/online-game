@@ -210,3 +210,8 @@ NPC_ATTACK_TARGETS = Counter("game_npc_attack_targets_total",
 # tribute_accepted|recall. >0 = la diplomacia SÍ está pasando (validable en Grafana/API).
 DIPLOMACY_ACTIONS = Counter("game_diplomacy_actions_total",
                             "Acciones diplomáticas (tributo/recall)", ("action", "actor"))
+# SDD 81: el AUTOPILOTO puede PENSAR con el LLM (gpu/cloud) qué priorizar, con fallback a reglas.
+# outcome=llm|fallback; route=gpu|cloud. En Grafana comparás cuál decide más (llm) por ruta →
+# "¿anda mejor la GPU o la nube?". Si llm sube y fallback baja, tu IA razona de verdad.
+AI_AUTOPILOT_BRAIN = Counter("game_ai_autopilot_brain_total",
+                             "Decisiones del autopiloto: LLM vs fallback", ("outcome", "route"))

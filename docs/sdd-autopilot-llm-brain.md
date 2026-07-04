@@ -1,0 +1,41 @@
+# SDD 81 — Cerebro del autopiloto: determinista / GPU / nube / auto
+
+## Idea (del usuario)
+"La IA que desarrollo (el autopiloto de vida artificial) es determinista, ¿no usa GPU/nube?" — sí, era
+100% reglas. El usuario quiere poder ELEGIR: determinista o GPU/cloud, **medir con métricas cuál anda
+mejor**, y que **auto-switchee** si está en modo full-auto; si no, que el usuario defina cuál usar.
+
+## Aclaración importante
+- El **autopiloto** (`run_ai_autopilot`, corre en el tick para todos) era **determinista** por diseño:
+  rápido, gratis, sin tope, sin latencia — por eso escala a todos los jugadores. Su "inteligencia" es
+  REAL (aprende por experiencia, batallas propias, meta global; 12 skills; posturas), solo que no LLM.
+- El **cerebro NPC** (rivales) sí puede usar LLM (gpu/cloud). SDD 81 le da al AUTOPILOTO la MISMA opción.
+
+## Diseño
+- **`Player.ai_brain_mode`** (migración `81577f5a3965`): `rules` | `gpu` | `cloud` | `auto`. Default
+  `rules` (determinista). Endpoint `POST /bunker/ai-brain {mode}`; selector 🧠 en el panel 🤖.
+- **`_resolve_brain(session, player, scope)`**: si el flag `ai_autopilot_brain_enabled` está ON, el
+  modo no es `rules` y `ai_level ≥ ai_brain_min_level`, consulta el LLM (`_llm_pick_skill`, prompt chico
+  con estado + habilidades) por la ruta elegida. `auto` = prueba **gpu, después cloud, después reglas**
+  (usa la que responda). Registra `game_ai_autopilot_brain_total{outcome=llm|fallback, route}`.
+- **`run_ai_autopilot`**: la skill que eligió el LLM corre PRIMERO (prioridad); si no (o falla) → orden
+  determinista de siempre. Nunca rompe: cualquier fallo del LLM → reglas.
+
+## Métricas (comparar "cuál anda mejor")
+- `game_ai_autopilot_brain_total{outcome, route}` — cuántas decisiones tomó el LLM vs fallback, por
+  ruta. Más `llm` y menos `fallback` en una ruta = ese backend anda. + las de SDD 65
+  (`game_llm_route_total`, `game_llm_tokens_total`, `game_llm_last_ok_timestamp{route}`).
+- El tooltip del selector apunta a esa métrica en Grafana para elegir gpu vs nube.
+
+## Flags / balance
+`AI_AUTOPILOT_BRAIN_ENABLED=true` en prod (default por-jugador sigue siendo `rules` → nadie gasta LLM
+hasta que lo elija). `ai_brain_min_level=3` (recién la IA "desarrollada" razona con el LLM).
+
+## Tests
+`tests/test_ai_life.py::test_ai_brain_llm_mode_picks_skill` (LLM stubbeado: modo gpu elige skill; rules
+y flag off → determinista).
+
+## Follow-ups
+- `auto` que elija por CALIDAD (win-rate/decisión) además de disponibilidad.
+- Presupuesto diario del cerebro LLM por jugador (hoy sin tope explícito; el mín-nivel + opt-in lo acota).
+- Mostrar el conteo llm/fallback también in-app (hoy en Grafana).

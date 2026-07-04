@@ -40,6 +40,7 @@ def ai_state(player: Player) -> dict:
     return {
         "level": player.ai_level or 0,
         "autopilot_on": bool(getattr(player, "ai_autopilot_on", True)),   # botón de parada
+        "brain_mode": (getattr(player, "ai_brain_mode", "rules") or "rules"),   # SDD 81
         "scope": (cur or {}).get("autonomy_scope", []),
         "speed": (cur or {}).get("speed_efficiency", 1.0),
         "quality": (cur or {}).get("quality", 0.0),
@@ -138,30 +139,91 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
     scope = (_level_spec(player.ai_level) or {}).get("autonomy_scope", [])
     # SDD 78: el APRENDIZAJE modula qué tan "afilada" juega la IA (calidad efectiva x experiencia).
     q = float((await ai_learning(session, player)).get("quality_eff", 0.5))
+    # SDD 81: la IA "desarrollada" puede PENSAR con el LLM (gpu/cloud/auto) qué priorizar.
+    priority = await _resolve_brain(session, player, scope)
+    order = ["workers", "mines", "trade", "colonize", "defend", "research", "diplomacy", "spy",
+             "expedition", "repopulate", "attack"]
+    if priority in order:                       # el LLM eligió → esa skill corre PRIMERO
+        order = [priority] + [k for k in order if k != priority]
     total = 0
-    if "workers" in scope:
-        total += await _auto_workers(session, player, settings, q)
-    if "mines" in scope:
-        total += await _auto_mines(session, player)
-    if "trade" in scope:
-        total += await _auto_trade(session, player, settings)
-    if "colonize" in scope:
-        total += await _auto_colonize(session, player)
-    if "defend" in scope:                       # SDD 78: fortifica bases sin defensa
-        total += await _auto_defend(session, player)
-    if "research" in scope:                     # SDD 78: investiga tecnología útil
-        total += await _auto_research(session, player)
-    if "diplomacy" in scope:                    # SDD 78: negocia nucleares entrantes
-        total += await _auto_diplomacy(session, player)
-    if "spy" in scope:                          # SDD 78 v3: espía rivales antes de atacar
-        total += await _auto_spy(session, player)
-    if "expedition" in scope:                   # SDD 78 v4: expediciones a lunas
-        total += await _auto_expedition(session, player)
-    if "repopulate" in scope:                   # SDD 78 v5: reconstruye tras un ataque
-        total += await _auto_repopulate(session, player)
-    if "attack" in scope:
-        total += await _auto_attack(session, player, settings, q, use_meta="learn" in scope)
+    for key in order:
+        if key not in scope:
+            continue
+        if key == "workers":
+            total += await _auto_workers(session, player, settings, q)
+        elif key == "mines":
+            total += await _auto_mines(session, player)
+        elif key == "trade":
+            total += await _auto_trade(session, player, settings)
+        elif key == "colonize":
+            total += await _auto_colonize(session, player)
+        elif key == "defend":
+            total += await _auto_defend(session, player)
+        elif key == "research":
+            total += await _auto_research(session, player)
+        elif key == "diplomacy":
+            total += await _auto_diplomacy(session, player)
+        elif key == "spy":
+            total += await _auto_spy(session, player)
+        elif key == "expedition":
+            total += await _auto_expedition(session, player)
+        elif key == "repopulate":
+            total += await _auto_repopulate(session, player)
+        elif key == "attack":
+            total += await _auto_attack(session, player, settings, q, use_meta="learn" in scope)
     return total
+
+
+async def _llm_pick_skill(
+    session: AsyncSession, player: Player, scope: list, route: str
+) -> str | None:
+    """SDD 81: preguntale al LLM (por `route`) qué habilidad priorizar este turno. Devuelve una key
+    del scope o None (→ reglas). Prompt chico, best-effort (cualquier fallo → None)."""
+    try:
+        import json
+
+        from app.services.economy import player_stocks
+        from app.services.llm import llm_chat
+        content = get_content()
+        skills = {s["key"]: (s.get("description") or "")[:70]
+                  for s in content.ai_skills if s["key"] in scope}
+        if not skills:
+            return None
+        st = await player_stocks(session, player.id)
+        bases = len((await session.execute(
+            select(Base_).where(Base_.player_id == player.id))).scalars().all())
+        brief = {"minerales": {k: round(v) for k, v in list(st.items())[:6]},
+                 "energia": round(player.energy), "bases": bases}
+        sys = ("Sos el cerebro de una civilización autónoma en un juego de estrategia por turnos. "
+               "Elegí UNA habilidad para priorizar ESTE turno. Respondé SOLO la key exacta "
+               "(una palabra), nada más.")
+        um = f"Habilidades: {json.dumps(skills, ensure_ascii=False)}\nEstado: {json.dumps(brief)}"
+        reply = await llm_chat(
+            [{"role": "system", "content": sys}, {"role": "user", "content": um}],
+            max_tokens=12, route=route, kind="npc", user=f"autopilot:{player.username}")
+        pick = (reply or "").strip().strip('".,\n ').split()[0].lower() if reply else ""
+        return pick if pick in scope else None
+    except Exception:
+        return None
+
+
+async def _resolve_brain(session: AsyncSession, player: Player, scope: list) -> str | None:
+    """SDD 81: según `Player.ai_brain_mode` (rules|gpu|cloud|auto) la IA piensa con el LLM o reglas.
+    'auto' prueba gpu→cloud→reglas. Registra la métrica llm/fallback por ruta. Solo desde
+    `ai_brain_min_level` y con el flag; ante cualquier fallo → reglas."""
+    settings = get_settings()
+    mode = (getattr(player, "ai_brain_mode", "rules") or "rules").lower()
+    if (not settings.ai_autopilot_brain_enabled or mode == "rules"
+            or (player.ai_level or 0) < settings.ai_brain_min_level):
+        return None
+    routes = ["gpu", "cloud"] if mode == "auto" else [mode]
+    for route in routes:
+        pick = await _llm_pick_skill(session, player, scope, route)
+        if pick:
+            metrics.AI_AUTOPILOT_BRAIN.inc(outcome="llm", route=route)
+            return pick
+    metrics.AI_AUTOPILOT_BRAIN.inc(outcome="fallback", route=routes[-1])
+    return None
 
 
 async def _home_base(session: AsyncSession, player: Player) -> Base_ | None:

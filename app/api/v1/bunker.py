@@ -147,6 +147,21 @@ async def do_ai_autopilot(
     return {"autopilot_on": player.ai_autopilot_on}
 
 
+@router.post("/ai-brain")
+async def do_ai_brain(
+    body: dict,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 81: elegir el CEREBRO del autopiloto: rules (determinista) | gpu | cloud | auto."""
+    mode = str(body.get("mode", "rules")).lower()
+    if mode not in ("rules", "gpu", "cloud", "auto"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Modo inválido (rules|gpu|cloud|auto).")
+    player.ai_brain_mode = mode
+    await session.commit()
+    return {"ai_brain_mode": player.ai_brain_mode}
+
+
 @router.post("/evacuate", status_code=status.HTTP_201_CREATED)
 async def do_evacuate(
     body: BunkerEvacuateRequest,

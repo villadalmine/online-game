@@ -245,6 +245,11 @@ class Settings(BaseSettings):
     bunker_autonomy_enabled: bool = False
     ai_autopilot_worker_cap: int = 3       # tope de obreros que el autopiloto entrena por tick
     artificial_life_npc_ceiling: int = 0   # techo de IA que habilita a los NPC (admin, Fase 4)
+    # SDD 81: el autopiloto puede PENSAR con el LLM (gpu/cloud). El modo es por jugador
+    # (Player.ai_brain_mode: rules|gpu|cloud|auto; auto prueba gpu, cloud, reglas). Este flag lo
+    # habilita (default OFF = siempre reglas). Cae a reglas ante cualquier fallo.
+    ai_autopilot_brain_enabled: bool = False
+    ai_brain_min_level: int = 3            # ai_level mínimo para que el cerebro LLM piense
     # Sub-fase 2 (autopiloto economía): comercio conservador (vende EXCEDENTE sobre el umbral) +
     # tope de venta por tick. mines/colonize construyen/colonizan 1 por tick (acotado).
     ai_trade_surplus_threshold: float = 10000.0
