@@ -14,11 +14,14 @@ suman defensa contra todo) y por qué #9 (orbital) tiene 🛡3 (porque no tiene 
   🚨 Alertas (aparece cuando hay ≥1 base indefensa). El toast dice cuántas fortificó y cuáles no (motivo).
 - Aclarado en el reporte de combate (SDD, ya vivo): torretas por base + aviso de goleada.
 
-## Follow-ups (v2) — decisión de balance del usuario
-- **Accesibilidad de la torreta**: hoy la torreta pide `research_lab` activo EN la base + tech `weapons`.
-  Eso hace difícil defender bases chicas/orbitales (#9). Propuesta: que la torreta pida solo el HQ +
-  `weapons` (una tech global) → podés fortificar cualquier base. Es cambio de balance (data-driven, 1
-  línea) → confirmar con el usuario.
-- **Defensa mínima por base**: un piso chico de defensa por base no frena un ataque grande (411 vs 3+piso)
-  → poco útil; mejor la accesibilidad de la torreta.
-- **Fortify que complete la cadena** (como el hack): si a la base le falta el lab, construirlo también.
+## v2 (HECHO) — el fortify ARMA LA CADENA (decisión del usuario)
+- El usuario eligió: mantener el requisito de la torreta pero que "fortificar todas" **construya el lab
+  que falte y después la torreta**, como el hack. `fortify_undefended` ahora, por cada base indefensa:
+  arma `_requires_chain("turret")` (= `[research_lab]`), construye los prereqs que falten y los deja
+  **ACTIVOS al instante**, y después la torreta. Si falta la tech `weapons` o material → va a `skipped`
+  con el motivo (la tech es una decisión deliberada, no se auto-investiga). Así defendés cualquier base
+  (incluida #9 orbital) de un clic, pagando el material.
+
+## Follow-ups
+- Auto-investigar `weapons` desde el fortify (hoy no; se reporta como skip).
+- Defensa por soldados (garrison) para bases donde no conviene lab+torreta.

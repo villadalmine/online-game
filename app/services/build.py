@@ -215,27 +215,53 @@ async def upgrade_building(
     return b
 
 
+def _requires_chain(building_key: str) -> list[str]:
+    """Cadena de EDIFICIOS requeridos (transitiva, raíz primero); ignora el HQ (siempre está)."""
+    content = get_content()
+    out: list[str] = []
+    seen: set[str] = set()
+    cur = content.buildings.get(building_key, {}).get("requires")
+    while cur and cur != "headquarters" and cur not in seen:
+        seen.add(cur)
+        out.insert(0, cur)
+        cur = content.buildings.get(cur, {}).get("requires")
+    return out
+
+
 async def fortify_undefended(session: AsyncSession, player: Player) -> dict:
-    """SDD 79: construir una torreta en CADA base sin defensa activa, en UNA acción. Devuelve las
-    fortificadas y las que no pudo (con el motivo: falta lab/tech/material)."""
+    """SDD 79: torreta en CADA base sin defensa, en UNA acción. Arma la CADENA: si falta el edificio
+    requerido (research_lab) lo construye ACTIVO al instante y después la torreta (como el hack).
+    Devuelve las fortificadas y las que no pudo (falta tech/material)."""
     content = get_content()
     bases = (await session.execute(
         select(Base_).where(Base_.player_id == player.id).order_by(Base_.id)
     )).scalars().all()
     if not bases:
         return {"fortified": [], "skipped": []}
-    active = (await session.execute(
+    rows = (await session.execute(
         select(Building.base_id, Building.building_key).where(
             Building.base_id.in_([b.id for b in bases]), Building.status == "active")
     )).all()
-    defended = {bid for bid, bk in active
+    active_by_base: dict[int, set] = {}
+    for bid, bk in rows:
+        active_by_base.setdefault(bid, set()).add(bk)
+    defended = {bid for bid, bk in rows
                 if content.buildings.get(bk, {}).get("defense_power", 0) > 0}
+    chain = _requires_chain("turret")   # p.ej. ["research_lab"]
+    now = datetime.now(UTC)
     fortified: list[int] = []
     skipped: list[dict] = []
     for b in bases:
         if b.id in defended:
             continue
         try:
+            have = active_by_base.get(b.id, set())
+            for pre in chain:                        # construir los prereqs que falten, activos ya
+                if pre not in have:
+                    bld = await start_build(session, player, b, pre)
+                    bld.status = "active"
+                    bld.completes_at = now
+                    await session.flush()
             await start_build(session, player, b, "turret")
             fortified.append(b.id)
         except BuildError as exc:

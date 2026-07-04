@@ -1010,11 +1010,11 @@ async def test_fortify_all_builds_turrets_on_undefended_bases_e2e(client):
     await _onboard(client.http, h)   # martian/mars
     async with client.session_maker() as db:
         p = (await db.execute(select(Player).where(Player.username == "defender_all"))).scalar_one()
-        db.add(PlayerTech(player_id=p.id, tech_key="weapons"))   # la torreta requiere weapons + lab
+        db.add(PlayerTech(player_id=p.id, tech_key="weapons"))   # tech global; el LAB lo arma el fortify
         base = (await db.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
-        db.add(Building(base_id=base.id, building_key="research_lab", status="active"))
-        struct = get_content().resolve_role(p.race_key, "structural")
-        (await get_or_create_stock(db, p.id, struct, base.planet_key)).amount = 100000
+        for role in ("structural", "energetic", "advanced"):     # material p/ lab + torreta
+            mk = get_content().resolve_role(p.race_key, role)
+            (await get_or_create_stock(db, p.id, mk, base.planet_key)).amount = 200000
         p.energy = 999999.0
         base_id = base.id
         await db.commit()
@@ -1023,10 +1023,9 @@ async def test_fortify_all_builds_turrets_on_undefended_bases_e2e(client):
     assert r.status_code == 200, r.text
     assert base_id in r.json()["fortified"]
     async with client.session_maker() as db:
-        turr = (await db.execute(
-            select(Building).where(Building.base_id == base_id, Building.building_key == "turret")
-        )).scalars().all()
-        assert turr   # quedó una torreta en la base
+        keys = {x.building_key for x in (await db.execute(
+            select(Building).where(Building.base_id == base_id))).scalars()}
+        assert "turret" in keys and "research_lab" in keys   # armó la cadena: lab + torreta
 
 
 async def test_announcements_public_localized_and_filtered(client):
