@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.175.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 78 v5: repoblación autónoma + repopulate idempotente
 - **Fix: `repopulate` ya no duplica edificios** — reconstruye solo lo que falta para llegar a los
   conteos del set (respeta 2 minas, etc.) y cobra electrónica proporcional. Mejora también el botón manual.
