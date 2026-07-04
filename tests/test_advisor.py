@@ -44,6 +44,20 @@ async def test_proactive_writes_on_incoming_attack_with_cooldown(session, monkey
     assert await adv.proactive_check(session, p) is False    # cooldown → no reescribe
 
 
+async def test_proactive_warns_undefended_colony(session, monkeypatch):
+    # SDD 77: con 2+ bases y alguna sin defensa activa, la IA te avisa.
+    from app.core.config import get_settings
+    from app.models import Base_
+    monkeypatch.setattr(get_settings(), "advisor_proactive_enabled", True)
+    p = await _player(session)
+    p.energy = 999999.0
+    session.add(Base_(player_id=p.id, planet_key="earth", name="col", base_type="surface"))
+    await session.commit()
+    assert await adv.proactive_check(session, p) is True
+    msgs = await adv.list_messages(session, p)
+    assert any(m.role == "proactive" and "defensa" in m.body for m in msgs)
+
+
 async def test_ask_uses_llm_and_returns_blockers_and_suggestions(session, monkeypatch):
     p = await _player(session)
     await _strip_minerals(session, p.id)

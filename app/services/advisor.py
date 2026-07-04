@@ -232,6 +232,23 @@ async def _proactive_note(session: AsyncSession, player: Player) -> str | None:
             parts.append(f"{strike} salva(s) de misiles")
         return ("⚠ Ojo: tenés " + " y ".join(parts) + " en camino hacia vos. Reforzá con torretas/"
                 "tropas en la base atacada o preparate para el golpe.")
+    # 🛡 alguna colonia SIN defensa activa (si tenés más de una base)
+    bases = (await session.execute(
+        select(Base_).where(Base_.player_id == player.id)
+    )).scalars().all()
+    if len(bases) >= 2:
+        content = get_content()
+        active = (await session.execute(
+            select(Building.base_id, Building.building_key).where(
+                Building.base_id.in_([b.id for b in bases]), Building.status == "active")
+        )).all()
+        def_bases = {bid for bid, bk in active
+                     if content.buildings.get(bk, {}).get("defense_power", 0) > 0}
+        undef = [b for b in bases if b.id not in def_bases]
+        if undef:
+            b = undef[0]
+            return (f"🛡 Tu base #{b.id} ({b.planet_key}) no tiene defensa activa. Construí una "
+                    "torreta ahí antes de que sea un blanco fácil.")
     s = get_settings()
     emax = effective_energy_max(player, s)
     if emax and player.energy < emax * 0.08:
@@ -258,6 +275,8 @@ async def proactive_check(
     if not note:
         return False
     await _save(session, player, PROACTIVE_ROLE, note)
+    # SDD 77: además del chat, dejá una notificación (🔔) para que se vea con el panel cerrado.
+    await notify(session, player.id, "advisor_proactive", note)
     from app.services.journal import record
     await record(session, "advisor_proactive", player.id)
     return True

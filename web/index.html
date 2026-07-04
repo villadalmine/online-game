@@ -1350,6 +1350,7 @@ async function doTick(){ try{ const d=await api("/api/v1/admin/tick","POST"); ms
 async function markRead(){ await api("/api/v1/notifications/read","POST",{}); await loadFeed(); refresh(); }
 // ícono de TIPO de notificación (SDD 43: reconocer "qué es" sin leer; el cuerpo es texto → TTS)
 function notiIcon(type){ const t=(type||"").toLowerCase();
+  if(t.includes("advisor")||t.includes("proactive")) return "🧠";   // SDD 77: la IA te escribió
   if(t.includes("attack")||t.includes("ataque")||t.includes("combat")||t.includes("batalla")) return "⚔";
   if(t.includes("defen")) return "🛡";
   if(t.includes("research")||t.includes("invest")) return "🔬";
