@@ -215,6 +215,27 @@ def _spy_intent(message: str) -> bool:
     return any(w in m for w in ("espi", "spy", "escane", "scout", "reconoc", "intel"))
 
 
+def _capabilities_intent(message: str) -> bool:
+    """SDD 77 v3: ¿el jugador pregunta QUÉ puede hacer la IA? (respuesta determinista, sin LLM)."""
+    m = message.lower()
+    return any(w in m for w in ("qué podés", "que podes", "qué sabés", "que sabes", "qué acciones",
+                                "que acciones", "cuáles tenés", "cuales tenes", "what can you",
+                                "qué comandos", "que comandos"))
+
+
+_CAPABILITIES_TEXT = (
+    "Puedo aconsejarte y también EJECUTAR acciones (te dejo un botón para confirmar):\n"
+    "• 🏗 construir / entrenar / investigar lo que pidas\n"
+    "• 🔓 crear gratis algo (hack, 3/día)\n"
+    "• 🔫 fortificar: torreta en una base sin defensa\n"
+    "• ⚛ teletransportar electrónica entre búnkeres (con Puerta cuántica)\n"
+    "• ⚡ nivelar energía\n"
+    "• 🛰🔍 espiar a un rival (con satélite espía)\n"
+    "Pedímelo en criollo: «fortificá mi base», «espiá a npc_terran», «mandá 300 "
+    "electrónica al otro búnker», «investigá terraformación»."
+)
+
+
 async def _spy_suggestion(session, player: Player, message: str) -> Suggestion | None:
     """SDD 77 v3: si pedís espiar a un rival NOMBRADO y tenés un satélite espía, la IA propone
     lanzarlo a esa base (conocer su defensa antes de atacar). Requiere satélites habilitados."""
@@ -433,6 +454,17 @@ async def ask(
     if mode == "byok" and not (byok_key and byok_model):
         raise AdvisorError("Para 'tu modelo' poné tu API key y el modelo de OpenRouter.", 400)
     await advance(session, player)
+
+    # SDD 77 v3: "¿qué podés hacer?" → lista determinista de capacidades (sin gastar LLM).
+    if _capabilities_intent(message):
+        await _save(session, player, "user", message)
+        await _save(session, player, "assistant", _CAPABILITIES_TEXT)
+        from app.services.journal import record
+        await record(session, "advisor_ask", player.id, mode="caps")
+        await session.commit()
+        return AdvisorReply(reply=_CAPABILITIES_TEXT, blockers=[], suggestions=[],
+                            hack_available=False, hacks_left=hacks_left(player))
+
     snap = await build_snapshot(session, player)
 
     # RAG: recupera objetos Y mecánicas relevantes a la pregunta.

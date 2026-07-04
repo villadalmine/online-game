@@ -86,6 +86,14 @@ def test_intent_helpers():
     assert adv._first_amount("mandá electrónica") is None
 
 
+async def test_capabilities_reply_is_deterministic(session):
+    # SDD 77 v3: "¿qué podés hacer?" responde la lista de acciones sin llamar al LLM.
+    p = await _player(session)
+    r = await adv.ask(session, p, "che, qué podés hacer?")
+    assert "fortificar" in r.reply.lower() and "espiar" in r.reply.lower()
+    assert "teletransportar" in r.reply.lower()
+
+
 async def test_spy_suggestion_targets_named_rival(session, monkeypatch):
     # SDD 77 v3: "espiá a X" + tener satélite espía → acción para lanzarlo a ese rival.
     from app.core.config import get_settings

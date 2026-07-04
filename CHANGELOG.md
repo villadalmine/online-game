@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 77 v3d: la IA lista sus acciones ("qué podés hacer")
+- Preguntale "qué podés hacer / qué acciones tenés" y responde una lista determinista (sin gastar LLM)
+  de lo que sabe ejecutar: construir/entrenar/investigar, crear gratis, fortificar, teletransportar,
+  nivelar energía, espiar. Cierra el "que sepa cuáles tiene". Test de servicio.
+
 ### 2026-07-04 — SDD 77 v3c: acción "espiar" desde el chat
 - Pedíle a la IA "espiá a <rival>" y, si tenés un satélite espía, te propone lanzarlo a esa base
   (conocer su defensa antes de atacar → evita goleadas). Resuelve el rival por nombre en el mensaje.
