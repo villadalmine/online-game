@@ -7,6 +7,11 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — Reporte de combate: por qué perdiste con poca defensa
+- Cuando perdés defendiendo y tu defensa fue **muy baja frente al ataque** (goleada), el reporte ahora
+  lo aclara: "tu defensa (3) fue muy baja frente al ataque (411) — te superó por goleada; reforzá esa
+  base con torretas". Antes solo avisaba con 0 defensa → con 3 no se entendía cómo perdías. Solo front.
+
 ## [1.168.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 77 v3: más acciones desde el chat (nivelar energía + cantidad en teleport)
