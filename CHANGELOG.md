@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.167.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 77 v2: la IA ejecuta acciones desde el chat (teletransporte con un clic)
 - El asistente ya podía construir/entrenar/investigar y "crear gratis" (hack) desde el chat. Ahora, si
   le pedís **mandar/teletransportar electrónica** a otro búnker y tenés la capacidad (2+ búnkeres +
