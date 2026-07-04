@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.170.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 77 v3d: la IA lista sus acciones ("qué podés hacer")
 - Preguntale "qué podés hacer / qué acciones tenés" y responde una lista determinista (sin gastar LLM)
   de lo que sabe ejecutar: construir/entrenar/investigar, crear gratis, fortificar, teletransportar,
