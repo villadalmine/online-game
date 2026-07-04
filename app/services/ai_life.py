@@ -135,9 +135,11 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
     if not getattr(player, "ai_autopilot_on", True):
         return 0   # el jugador lo paró (botón de emergencia)
     scope = (_level_spec(player.ai_level) or {}).get("autonomy_scope", [])
+    # SDD 78: el APRENDIZAJE modula qué tan "afilada" juega la IA (calidad efectiva x experiencia).
+    q = float((await ai_learning(session, player)).get("quality_eff", 0.5))
     total = 0
     if "workers" in scope:
-        total += await _auto_workers(session, player, settings)
+        total += await _auto_workers(session, player, settings, q)
     if "mines" in scope:
         total += await _auto_mines(session, player)
     if "trade" in scope:
@@ -148,8 +150,10 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
         total += await _auto_defend(session, player)
     if "research" in scope:                     # SDD 78: investiga tecnología útil
         total += await _auto_research(session, player)
+    if "diplomacy" in scope:                    # SDD 78: negocia nucleares entrantes
+        total += await _auto_diplomacy(session, player)
     if "attack" in scope:
-        total += await _auto_attack(session, player, settings)
+        total += await _auto_attack(session, player, settings, q)
     return total
 
 
@@ -162,9 +166,11 @@ async def _home_base(session: AsyncSession, player: Player) -> Base_ | None:
     return None
 
 
-async def _auto_workers(session: AsyncSession, player: Player, settings) -> int:
-    """Mantener las minas STAFFEADAS: auto-entrena obreros para cubrir el déficit (acotado por
-    `ai_autopilot_worker_cap` y por lo que ya haya en cola)."""
+async def _auto_workers(
+    session: AsyncSession, player: Player, settings, quality: float = 0.5
+) -> int:
+    """Mantener las minas STAFFEADAS: auto-entrena obreros para cubrir el déficit. El cap por tick
+    ESCALA con la calidad efectiva (SDD 78: una IA más entrenada staffea más rápido)."""
     try:
         from app.models import TrainingOrder
         from app.services.economy import _player_buildings, mining_staffing
@@ -182,7 +188,8 @@ async def _auto_workers(session: AsyncSession, player: Player, settings) -> int:
                 TrainingOrder.status == "training")
         )).scalars().all()
         need = math.ceil(deficit / mining_power) - sum(o.quantity for o in pending)
-        to_train = min(settings.ai_autopilot_worker_cap, max(0, need))
+        cap = max(1, round(settings.ai_autopilot_worker_cap * (0.5 + quality)))   # SDD 78: aprende
+        to_train = min(cap, max(0, need))
         if to_train <= 0:
             return 0
         home = await _home_base(session, player)
@@ -252,6 +259,37 @@ async def _auto_defend(session: AsyncSession, player: Player) -> int:
         return 0
 
 
+async def _auto_diplomacy(session: AsyncSession, player: Player) -> int:
+    """SDD 78: ante un NUCLEAR entrante, si tenés government + diplomacy, ofrecé un tributo modesto
+    (10% de tu estructural, tope 2000) para que lo cancelen — como hace la NPC, pero para tu IA."""
+    try:
+        import json
+
+        from app.models import StrikeMission
+        from app.services.economy import planet_stocks
+        from app.services.strike import offer_tribute
+        rows = (await session.execute(
+            select(StrikeMission).where(
+                StrikeMission.defender_id == player.id, StrikeMission.status == "outbound")
+        )).scalars().all()
+        for m in rows:
+            if m.tribute or "nuclear_missile" not in json.loads(m.force):
+                continue
+            here = await planet_stocks(session, player.id, player.planet_key)
+            struct = get_content().resolve_role(player.race_key, "structural")
+            amt = round(min(here.get(struct, 0.0) * 0.1, 2000.0))
+            if amt < 100:
+                continue
+            await offer_tribute(session, player, m.id, {struct: amt}, 0.0)   # valida gov+diplomacy
+            metrics.AI_AUTOPILOT.inc(action="diplomacy")
+            from app.services.journal import record
+            await record(session, "ai_autopilot", player.id, action="diplomacy", mission_id=m.id)
+            return 1
+        return 0
+    except Exception:
+        return 0
+
+
 async def _auto_research(session: AsyncSession, player: Player) -> int:
     """SDD 78: investigar la próxima tecnología asequible de economía/defensa (la más barata)."""
     try:
@@ -304,9 +342,12 @@ async def _auto_trade(session: AsyncSession, player: Player, settings) -> int:
         return 0
 
 
-async def _auto_attack(session: AsyncSession, player: Player, settings) -> int:
+async def _auto_attack(
+    session: AsyncSession, player: Player, settings, quality: float = 0.5
+) -> int:
     """Sub-fase 3: ataque autónomo. Solo ataca a un rival que SUPERA claramente (poder de ataque >
-    defensa estimada × `ai_attack_margin`), dejando RESERVA defensiva en casa (`ai_attack_reserve`).
+    defensa estimada × margen). El margen se AFILA con la calidad efectiva (SDD 78: una IA entrenada
+    se anima a peleas más ajustadas, como un jugador con experiencia). Deja RESERVA en casa.
     Reusa los estimadores de la NPC + `start_attack` (que aplica topes SDD 55, protección, energía →
     si no se puede, corta). 1 ataque por tick. El botón STOP ya se chequeó arriba."""
     try:
@@ -333,9 +374,10 @@ async def _auto_attack(session: AsyncSession, player: Player, settings) -> int:
         )).scalars().all()
         best = None
         best_def = 0.0
+        margin = max(1.05, settings.ai_attack_margin - (quality - 0.5) * 0.6)   # SDD 78: aprende
         for b in rows:
             defense = await _base_defense_estimate(session, b)
-            beatable = my_power > defense * settings.ai_attack_margin
+            beatable = my_power > defense * margin
             if beatable and (best is None or defense > best_def):
                 best, best_def = b, defense   # el más fuerte que igual superás (mejor botín)
         if best is None:

@@ -148,6 +148,30 @@ async def test_auto_defend_builds_turret_on_undefended_base(session, monkeypatch
     assert turrets   # fortificó sola la base indefensa
 
 
+async def test_auto_diplomacy_offers_tribute_under_nuke(session):
+    # SDD 78: con government + diplomacy, la IA ofrece tributo ante un nuclear entrante.
+    import json
+
+    from app.content.registry import get_content
+    from app.models import PlayerTech, StrikeMission
+    from app.services.ai_life import _auto_diplomacy
+    p, base = await _player(session, name="ai_diplo")
+    foe, fbase = await _player(session, name="ai_nuker")
+    session.add(Building(base_id=base.id, building_key="government", status="active"))
+    session.add(PlayerTech(player_id=p.id, tech_key="diplomacy"))
+    struct = get_content().resolve_role("martian", "structural")
+    (await get_or_create_stock(session, p.id, struct, "mars")).amount = 100000
+    m = StrikeMission(attacker_id=foe.id, defender_id=p.id, launcher_base_id=fbase.id,
+                      target_base_id=base.id, force=json.dumps({"nuclear_missile": 1}),
+                      status="outbound")
+    session.add(m)
+    await session.commit()
+    assert await _auto_diplomacy(session, p) == 1
+    await session.commit()
+    await session.refresh(m)
+    assert m.tribute   # ofreció tributo para cancelar el nuclear
+
+
 async def test_ai_learning_grows_with_experience(session):
     # SDD 78: la calidad EFECTIVA sube con la experiencia (jugadas del journal).
     from app.models import GameEvent
@@ -186,7 +210,8 @@ async def test_auto_attack_hits_a_beatable_enemy(session, monkeypatch):
 
 async def test_npc_effective_epsilon_scales_with_ceiling(monkeypatch):
     # SDD 69 F4: el techo (admin) da más exploración a los NPC. Default 0 → base; sube y se topea.
-    from app.services.npc import npc_effective_epsilon
+    from app.services.npc import npc_effective_epsilon, set_player_ai_ceiling
+    set_player_ai_ceiling(0)                 # SDD 78: reset del global de módulo
     s = get_settings()
     monkeypatch.setattr(s, "npc_explore_epsilon", 0.2)
     monkeypatch.setattr(s, "artificial_life_npc_ceiling", 0)
@@ -195,3 +220,8 @@ async def test_npc_effective_epsilon_scales_with_ceiling(monkeypatch):
     assert abs(npc_effective_epsilon() - 0.36) < 1e-9
     monkeypatch.setattr(s, "artificial_life_npc_ceiling", 100)
     assert npc_effective_epsilon() == 0.6   # topeado
+    # SDD 78: el mayor ai_level de los JUGADORES también sube el techo (entrenás vos → suben las NPC)
+    monkeypatch.setattr(s, "artificial_life_npc_ceiling", 0)
+    set_player_ai_ceiling(3)
+    assert abs(npc_effective_epsilon() - (0.2 + 0.08 * 3)) < 1e-9
+    set_player_ai_ceiling(0)                 # cleanup del global

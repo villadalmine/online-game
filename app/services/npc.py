@@ -889,11 +889,22 @@ def _posture_stats(player: Player) -> dict:
         return {}
 
 
+# SDD 78: techo de IA que aportan los JUGADORES (el mayor ai_level humano). Lo actualiza el tick
+# (`set_player_ai_ceiling`) → entrenar TU IA sube la 'inteligencia' de todas las NPC.
+_player_ai_ceiling = 0
+
+
+def set_player_ai_ceiling(level: int) -> None:
+    global _player_ai_ceiling
+    _player_ai_ceiling = max(0, int(level or 0))
+
+
 def npc_effective_epsilon() -> float:
-    """SDD 69 Fase 4: el TECHO de vida artificial (`artificial_life_npc_ceiling`, admin) le da más
-    'inteligencia' a los NPC = exploran más estrategias. Default 0 → epsilon base. Acotado."""
+    """SDD 69/78: el TECHO de vida artificial le da más 'inteligencia' a los NPC (exploran más). El
+    techo = max(admin `artificial_life_npc_ceiling`, mayor ai_level de los jugadores). Acotado."""
     s = get_settings()
-    return min(0.6, s.npc_explore_epsilon + 0.08 * max(0, s.artificial_life_npc_ceiling))
+    ceiling = max(int(s.artificial_life_npc_ceiling or 0), _player_ai_ceiling)
+    return min(0.6, s.npc_explore_epsilon + 0.08 * max(0, ceiling))
 
 
 def bandit_posture(player: Player, picked: str, rng=None) -> str:

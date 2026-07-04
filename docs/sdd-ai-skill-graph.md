@@ -40,9 +40,18 @@ Todo data-driven (catálogo `ai_skills`/`ai_levels`), front sin lógica hardcode
 `test_ai_life.py`: `test_auto_defend_builds_turret_on_undefended_base`,
 `test_ai_learning_grows_with_experience`, `test_auto_attack_hits_a_beatable_enemy` (ahora L6).
 
-## Follow-ups (iterar)
-- Implementar los behaviors de `diplomacy` (auto ofrecer/aceptar tributo) y `learn` como un efecto real
-  (que `quality_eff` module decisiones: margen de ataque, cap de obreros, etc.).
-- Que la calidad efectiva ALIMENTE al cerebro NPC (techo `artificial_life_npc_ceiling`) → tu IA
-  entrenada sube el nivel de TODAS las NPC.
-- Más skills: espionaje autónomo (satélites), expediciones a lunas, repoblación tras ataque.
+## v2 (HECHO) — la IA juega como vos + sube el techo de las NPC
+- **El aprendizaje MODULA las decisiones**: la calidad efectiva (`quality_eff`) afila el autopiloto —
+  el cap de obreros por tick escala (`* (0.5 + q)`) y el margen de ataque se ajusta
+  (`ai_attack_margin - (q-0.5)*0.6`, piso 1.05): una IA entrenada staffea más rápido y se anima a
+  peleas más ajustadas, como un jugador con experiencia.
+- **Behavior `diplomacy`** (`_auto_diplomacy`): ante un nuclear entrante, si tenés government +
+  diplomacy, ofrece un tributo modesto (10% del estructural, tope 2000) para que lo cancelen.
+- **Tu IA sube el techo de las NPC**: el tick calcula el mayor `ai_level` humano y lo pasa a
+  `npc.set_player_ai_ceiling`; `npc_effective_epsilon` usa `max(admin_ceiling, player_ceiling)` →
+  entrenar TU IA hace que TODAS las NPC exploren más estrategias (más inteligentes).
+
+## Follow-ups (v3)
+- `quality_eff` en más decisiones (reserva de ataque, umbral de comercio, elección de objetivo).
+- Más skills autónomas: espionaje (satélites), expediciones a lunas, repoblación tras ataque.
+- Que la IA APRENDA de sus propias batallas (reusar `bandit_posture`/meta SDD 41) para elegir postura.

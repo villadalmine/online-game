@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 78 v2: la IA robot juega como vos (aprende) y sube el techo de las NPC
+- El **aprendizaje modula las decisiones**: la calidad efectiva (por experiencia) afila el autopiloto
+  — staffea más obreros por tick y ataca con margen más ajustado a medida que aprende (como un jugador
+  con experiencia).
+- Behavior **diplomacia** real: ante un nuclear entrante, si tenés gobierno + diplomacia, tu IA ofrece
+  un tributo modesto para cancelarlo (como la NPC).
+- **Entrenar TU IA sube la inteligencia de TODAS las NPC**: el techo de exploración de las NPC ahora
+  es max(admin, mayor ai_level humano). Tests de servicio.
+
 ## [1.171.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 78: grafo de habilidades de la IA robot (juega como vos + aprende)

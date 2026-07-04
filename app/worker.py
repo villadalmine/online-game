@@ -97,6 +97,9 @@ async def run_tick(session: AsyncSession) -> dict:
                 await proactive_check(session, player)
             except Exception:
                 pass
+    # SDD 78: el mayor ai_level HUMANO sube el techo de inteligencia de las NPC (entrenás → suben).
+    from app.services.npc import set_player_ai_ceiling
+    set_player_ai_ceiling(max((p.ai_level or 0 for p in players if not p.is_npc), default=0))
     await session.commit()
 
     # Eventos dinámicos "happy hour" (SDD 36): quizás arrancar uno en horas aleatorias.
