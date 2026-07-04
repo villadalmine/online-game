@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.178.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 79 v2: fortificar arma la cadena (lab + torreta) automático
 - El botón 🔫 Fortificar todas ahora, en cada base sin defensa, **construye el laboratorio que falte**
   (activo al instante) **y después la torreta** — como el hack. Así defendés cualquier base (incluida una
