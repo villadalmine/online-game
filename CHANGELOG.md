@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.168.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 77 v3: más acciones desde el chat (nivelar energía + cantidad en teleport)
 - El teletransporte por chat **respeta la cantidad** que pedís ("mandá 300 electrónica" → 300, topeado a
   la reserva); sin número usa la mitad. Nueva acción **⚡ Nivelar energía** cuando pedís/necesitás energía.
