@@ -51,7 +51,14 @@ Todo data-driven (catálogo `ai_skills`/`ai_levels`), front sin lógica hardcode
   `npc.set_player_ai_ceiling`; `npc_effective_epsilon` usa `max(admin_ceiling, player_ceiling)` →
   entrenar TU IA hace que TODAS las NPC exploren más estrategias (más inteligentes).
 
-## Follow-ups (v3)
-- `quality_eff` en más decisiones (reserva de ataque, umbral de comercio, elección de objetivo).
-- Más skills autónomas: espionaje (satélites), expediciones a lunas, repoblación tras ataque.
-- Que la IA APRENDA de sus propias batallas (reusar `bandit_posture`/meta SDD 41) para elegir postura.
+## v3 (HECHO) — espionaje autónomo + aprende de sus batallas
+- **Skill `spy`** (L6+): `_auto_spy` lanza un satélite espía a un rival que aún no espía (conocer su
+  defensa antes de atacar; requiere satélites ON + un `spy_satellite`).
+- **Aprende de sus batallas**: `_own_attack_winrate` mira los últimos 10 ataques propios (del
+  `CombatLog`); si viene perdiendo (≥4 batallas, win-rate <40%) el `_auto_attack` sube el margen +0.5 →
+  ataca más cauto. Sumado a la modulación por experiencia (v2).
+
+## Follow-ups (v4)
+- Más skills: expediciones a lunas (bonus de dioses), repoblación tras ataque (gastar electrónica).
+- Elegir postura/objetivo con la meta aprendida (SDD 41) y `bandit_posture`.
+- `quality_eff` en más decisiones (reserva de ataque, umbral de comercio).

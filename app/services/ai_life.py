@@ -152,6 +152,8 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
         total += await _auto_research(session, player)
     if "diplomacy" in scope:                    # SDD 78: negocia nucleares entrantes
         total += await _auto_diplomacy(session, player)
+    if "spy" in scope:                          # SDD 78 v3: espía rivales antes de atacar
+        total += await _auto_spy(session, player)
     if "attack" in scope:
         total += await _auto_attack(session, player, settings, q)
     return total
@@ -290,6 +292,52 @@ async def _auto_diplomacy(session: AsyncSession, player: Player) -> int:
         return 0
 
 
+async def _auto_spy(session: AsyncSession, player: Player) -> int:
+    """SDD 78 v3: lanzar un satélite espía a un rival que AÚN no espiás (conocer su defensa)."""
+    try:
+        if not get_settings().satellites_enabled:
+            return 0
+        from app.services.training import player_units
+        if (await player_units(session, player.id)).get("spy_satellite", 0) < 1:
+            return 0
+        from app.models import SatelliteMission
+        from app.services.satellites import launch
+        already = {m.target_id for m in (await session.execute(
+            select(SatelliteMission).where(SatelliteMission.owner_id == player.id,
+                                           SatelliteMission.kind == "spy"))).scalars()}
+        rows = (await session.execute(
+            select(Player).where(Player.id != player.id, Player.race_key.is_not(None))
+        )).scalars().all()
+        for foe in rows:
+            if foe.id in already:
+                continue
+            if player.alliance_id and foe.alliance_id == player.alliance_id:
+                continue
+            if not foe.is_npc and foe.galaxy_instance_id != player.galaxy_instance_id:
+                continue
+            await launch(session, player, "spy_satellite", foe.id)
+            metrics.AI_AUTOPILOT.inc(action="spy")
+            from app.services.journal import record
+            await record(session, "ai_autopilot", player.id, action="spy", target_id=foe.id)
+            return 1
+        return 0
+    except Exception:
+        return 0
+
+
+async def _own_attack_winrate(session: AsyncSession, player: Player) -> tuple[int, float]:
+    """SDD 78 v3: win-rate de los últimos ataques propios (la IA aprende de sus batallas)."""
+    from app.models import CombatLog
+    rows = (await session.execute(
+        select(CombatLog).where(CombatLog.attacker_id == player.id)
+        .order_by(CombatLog.id.desc()).limit(10)
+    )).scalars().all()
+    if not rows:
+        return 0, 1.0
+    wins = sum(1 for r in rows if r.outcome == "attacker")
+    return len(rows), wins / len(rows)
+
+
 async def _auto_research(session: AsyncSession, player: Player) -> int:
     """SDD 78: investigar la próxima tecnología asequible de economía/defensa (la más barata)."""
     try:
@@ -375,6 +423,9 @@ async def _auto_attack(
         best = None
         best_def = 0.0
         margin = max(1.05, settings.ai_attack_margin - (quality - 0.5) * 0.6)   # SDD 78: aprende
+        n, wr = await _own_attack_winrate(session, player)   # SDD 78 v3: aprende de sus batallas
+        if n >= 4 and wr < 0.4:
+            margin += 0.5                                    # viene perdiendo → ataca más cauta
         for b in rows:
             defense = await _base_defense_estimate(session, b)
             beatable = my_power > defense * margin

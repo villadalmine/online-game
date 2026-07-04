@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 78 v3: la IA robot espía sola y aprende de sus batallas
+- Nueva skill **espionaje** (nivel 6+): la IA lanza satélites espía a los rivales que aún no espió
+  (conocer su defensa antes de atacar).
+- **Aprende de sus propias batallas**: si sus últimos ataques vienen perdiendo (win-rate <40%), ataca
+  más cauta (sube el margen). Sumado a la modulación por experiencia. Tests de servicio.
+
 ## [1.172.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 78 v2: la IA robot juega como vos (aprende) y sube el techo de las NPC

@@ -42,6 +42,12 @@ skills:
     name_en: "Research"
     description: "Investiga sola la próxima tecnología asequible de economía/defensa."
     description_en: "Auto-researches the next affordable economy/defense technology."
+  - key: spy
+    icon: "🛰🔍"
+    name: "Espionaje"
+    name_en: "Espionage"
+    description: "Lanza satélites espía a los rivales para conocer su defensa antes de atacar."
+    description_en: "Launches spy satellites at rivals to learn their defense before attacking."
   - key: attack
     icon: "⚔"
     name: "Guerra"
@@ -127,7 +133,7 @@ levels:
     electronics: 3000
     cost: { advanced: 3000, energetic: 2400, structural: 1800 }
     research_seconds: 4200
-    autonomy_scope: [workers, mines, trade, colonize, defend, research, attack]
+    autonomy_scope: [workers, mines, trade, colonize, defend, research, spy, attack]
     speed_efficiency: 1.6
     quality: 0.95
   - level: 7
@@ -138,6 +144,6 @@ levels:
     electronics: 4500
     cost: { advanced: 4200, energetic: 3400, structural: 2600 }
     research_seconds: 5400
-    autonomy_scope: [workers, mines, trade, colonize, defend, research, attack, diplomacy, learn]
+    autonomy_scope: [workers, mines, trade, colonize, defend, research, spy, attack, diplomacy, learn]
     speed_efficiency: 1.75
     quality: 1.15

@@ -148,6 +148,39 @@ async def test_auto_defend_builds_turret_on_undefended_base(session, monkeypatch
     assert turrets   # fortificó sola la base indefensa
 
 
+async def test_auto_spy_launches_at_a_rival(session, monkeypatch):
+    # SDD 78 v3: con satélites ON y un espía, la IA lo lanza a un rival que aún no espía.
+    from app.models import SatelliteMission, UnitStock
+    from app.services.ai_life import _auto_spy
+    s = get_settings()
+    monkeypatch.setattr(s, "satellites_enabled", True)
+    p, base = await _player(session, name="ai_spy")
+    foe, fbase = await _player(session, name="ai_target")
+    foe.galaxy_instance_id = p.galaxy_instance_id
+    session.add(UnitStock(player_id=p.id, unit_key="spy_satellite", quantity=1))
+    await session.commit()
+    assert await _auto_spy(session, p) == 1
+    await session.commit()
+    sats = (await session.execute(
+        select(SatelliteMission).where(SatelliteMission.owner_id == p.id)
+    )).scalars().all()
+    assert sats and sats[0].target_id == foe.id
+
+
+async def test_own_attack_winrate_from_combat_log(session):
+    # SDD 78 v3: la IA lee su win-rate de ataque (para atacar más cauta si viene perdiendo).
+    from app.models import CombatLog
+    from app.services.ai_life import _own_attack_winrate
+    p, base = await _player(session, name="ai_warrior")
+    foe, fbase = await _player(session, name="ai_foe")
+    for outcome in ("attacker", "attacker", "defender", "defender"):
+        session.add(CombatLog(attacker_id=p.id, defender_id=foe.id, target_base_id=fbase.id,
+                              outcome=outcome))
+    await session.commit()
+    n, wr = await _own_attack_winrate(session, p)
+    assert n == 4 and abs(wr - 0.5) < 1e-9
+
+
 async def test_auto_diplomacy_offers_tribute_under_nuke(session):
     # SDD 78: con government + diplomacy, la IA ofrece tributo ante un nuclear entrante.
     import json
