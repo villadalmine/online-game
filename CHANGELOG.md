@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.171.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 78: grafo de habilidades de la IA robot (juega como vos + aprende)
 - La vida artificial pasa de una lista lineal a un **grafo de habilidades** data-driven
   (`content/artificial_life.yaml`): catálogo de 9 skills (qué hace cada una) + 7 niveles que las
