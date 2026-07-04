@@ -7,6 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 80: negociación nuclear más rica (elegir planeta + dar tiempo + métricas)
+- Cuando le lanzás un nuclear a alguien y te ofrece tributo: podés **elegir a qué planeta tuyo** te lo
+  mandan (si tenés varios) y podés **⏳ dar tiempo** (posterga el impacto 12h, hasta 3 veces) para que
+  el rival desarrolle diplomacia y te pague — en vez de solo aceptar o esperar.
+- El NPC ya desarrolla diplomacia bajo amenaza (construye gobierno → investiga diplomacia); ahora eso +
+  toda la negociación se ve en `game_diplomacy_actions_total{action,actor}` (seek_diplomacy/tribute/
+  grant_time). Nuevo `POST /combat/strike/{id}/grant-time`. Tests. `docs/sdd-nuclear-negotiation.md`.
+
 ## [1.181.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 81: el autopiloto puede PENSAR con el LLM (determinista/GPU/nube/auto)

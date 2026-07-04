@@ -108,6 +108,36 @@ async def test_nuclear_travels_24h_and_tribute_cancels(session):
     assert res["returned"] == {"nuclear_missile": 1}
 
 
+async def test_grant_time_extends_nuclear_and_caps(session, monkeypatch):
+    # SDD 80: el atacante da tiempo (posterga el nuclear), acotado a nuclear_time_grants_max.
+    from app.core.config import get_settings
+    from app.models import StrikeMission, UnitStock
+    from app.services.strike import StrikeError, grant_time
+    s = get_settings()
+    monkeypatch.setattr(s, "nuclear_grant_time_hours", 10.0)
+    monkeypatch.setattr(s, "nuclear_time_grants_max", 2)
+    atk, abase = await _p(session, "gt_nuker", "mars", "martian")
+    dfn, dbase = await _p(session, "gt_nuked", "mars", "martian")
+    dfn.protected_until = None
+    session.add(Building(base_id=abase.id, building_key="launcher", status="active"))
+    for t in ("rocketry", "ballistics", "nuclear_fission"):
+        session.add(PlayerTech(player_id=atk.id, tech_key=t))
+    session.add(UnitStock(player_id=atk.id, unit_key="nuclear_missile", quantity=1))
+    await session.commit()
+    m = await start_strike(session, atk, abase.id, dbase.id, {"nuclear_missile": 1})
+    await session.commit()
+    t0 = m.arrives_at.replace(tzinfo=UTC)
+    r1 = await grant_time(session, atk, m.id)
+    await session.commit()
+    m = await session.get(StrikeMission, m.id)
+    assert (m.arrives_at.replace(tzinfo=UTC) - t0).total_seconds() > 9 * 3600   # +10 h
+    assert r1["grants_left"] == 1
+    await grant_time(session, atk, m.id)          # segunda vez
+    await session.commit()
+    with pytest.raises(StrikeError):              # tercera → tope
+        await grant_time(session, atk, m.id)
+
+
 async def test_launch_frees_launcher_base_housing_with_garrison(session, monkeypatch):
     # SDD 46/62 FIX: con guarnición, lanzar descuenta de la fila de la LANZADERA → libera plazas.
     from app.core.config import get_settings

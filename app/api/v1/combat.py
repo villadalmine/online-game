@@ -200,12 +200,30 @@ async def strike_tribute(
 @router.post("/strike/{mission_id}/accept-tribute")
 async def strike_accept_tribute(
     mission_id: int,
+    body: dict | None = None,
     player: Player = Depends(lock_current_player),
     session: AsyncSession = Depends(get_session),
 ):
-    """SDD 67: el atacante acepta el tributo y cancela su misil nuclear."""
+    """SDD 67/80: el atacante acepta el tributo (a qué planeta con target_planet) y cancela."""
     try:
-        result = await accept_tribute(session, player, mission_id)
+        result = await accept_tribute(session, player, mission_id,
+                                      (body or {}).get("target_planet"))
+    except StrikeError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
+
+
+@router.post("/strike/{mission_id}/grant-time")
+async def strike_grant_time(
+    mission_id: int,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 80: el atacante le da tiempo al defensor (posterga el nuclear) para negociar."""
+    from app.services.strike import grant_time
+    try:
+        result = await grant_time(session, player, mission_id)
     except StrikeError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()

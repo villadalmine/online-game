@@ -62,8 +62,11 @@ async def offer_tribute(
     return mission
 
 
-async def accept_tribute(session: AsyncSession, attacker: Player, mission_id: int) -> dict:
-    """SDD 67: el ATACANTE acepta el tributo → transfiere recursos y CANCELA el misil."""
+async def accept_tribute(
+    session: AsyncSession, attacker: Player, mission_id: int, target_planet: str | None = None
+) -> dict:
+    """SDD 67/80: el ATACANTE acepta el tributo → transfiere recursos y CANCELA el misil. Puede
+    elegir a qué PLANETA propio le mandan el tributo (`target_planet`, base suya); def = natal."""
     mission = await session.get(StrikeMission, mission_id)
     if mission is None or mission.attacker_id != attacker.id or mission.status != "outbound":
         raise StrikeError("Salva no encontrada.")
@@ -77,9 +80,16 @@ async def accept_tribute(session: AsyncSession, attacker: Player, mission_id: in
     for m, v in minerals.items():
         if here.get(m, 0.0) < v:
             raise StrikeError("El defensor ya no tiene los recursos ofrecidos.")
-    for m, v in minerals.items():   # defensor natal → atacante natal
+    dest = attacker.planet_key   # SDD 80: planeta destino (el que elijas, si tenés base ahí)
+    if target_planet and target_planet != attacker.planet_key:
+        owns = (await session.execute(select(Base_.id).where(
+            Base_.player_id == attacker.id, Base_.planet_key == target_planet).limit(1))).first()
+        if owns is None:
+            raise StrikeError("No tenés una base en ese planeta para recibir el tributo.")
+        dest = target_planet
+    for m, v in minerals.items():   # defensor natal → planeta elegido del atacante
         (await get_or_create_stock(session, defender.id, m, defender.planet_key)).amount -= v
-        (await get_or_create_stock(session, attacker.id, m, attacker.planet_key)).amount += v
+        (await get_or_create_stock(session, attacker.id, m, dest)).amount += v
     settings = get_settings()
     now = datetime.now(UTC)
     if offer.get("energy"):
@@ -149,6 +159,36 @@ async def recall_strike(session: AsyncSession, attacker: Player, mission_id: int
     metrics.DIPLOMACY_ACTIONS.inc(action="recall", actor="human")
     await session.flush()
     return {"recalled": True, "returned": returned}
+
+
+async def grant_time(session: AsyncSession, attacker: Player, mission_id: int) -> dict:
+    """SDD 80: el ATACANTE de un nuclear le DA TIEMPO al defensor (posterga el impacto) para que
+    desarrolle diplomacia y pueda pagar tributo. Acotado a `nuclear_time_grants_max` veces."""
+    settings = get_settings()
+    mission = await session.get(StrikeMission, mission_id)
+    if mission is None or mission.attacker_id != attacker.id or mission.status != "outbound":
+        raise StrikeError("Salva no encontrada.")
+    if "nuclear_missile" not in json.loads(mission.force):
+        raise StrikeError("Solo se le da tiempo a un misil nuclear.")
+    det = json.loads(mission.details or "{}")
+    grants = int(det.get("time_grants", 0))
+    if grants >= settings.nuclear_time_grants_max:
+        raise StrikeError(f"Ya le diste tiempo el máximo ({settings.nuclear_time_grants_max}).")
+    hours = settings.nuclear_grant_time_hours
+    mission.arrives_at = _aware(mission.arrives_at) + timedelta(hours=hours)
+    det["time_grants"] = grants + 1
+    mission.details = json.dumps(det)
+    from app.core import metrics
+    metrics.DIPLOMACY_ACTIONS.inc(action="grant_time", actor="human")
+    from app.services.journal import record
+    await record(session, "nuclear_grant_time", attacker.id,
+                 defender_id=mission.defender_id, hours=hours)
+    await notify(session, mission.defender_id, "nuclear_time_granted",
+                 f"Te dieron {hours:g}h más antes del impacto — desarrollá diplomacia y ofrecé "
+                 "tributo", {})
+    await session.flush()
+    return {"mission_id": mission.id, "arrives_at": mission.arrives_at.isoformat(),
+            "grants_left": settings.nuclear_time_grants_max - (grants + 1)}
 
 
 @dataclass
@@ -421,6 +461,7 @@ async def npc_seek_diplomacy(session: AsyncSession, now: datetime | None = None)
     `diplomacy`. En las 24 h del nuclear "aprende diplomacia" (visible en métricas build/research) y
     recién ahí puede ofrecer tributo. No hay bypass. Devuelve cuántos NPC actuaron."""
     now = now or datetime.now(UTC)
+    from app.core import metrics
     from app.services.build import start_build
     from app.services.research import researched_techs, start_research
     from app.services.training import natal_base_id
@@ -440,9 +481,11 @@ async def npc_seek_diplomacy(session: AsyncSession, now: datetime | None = None)
                 base = await session.get(Base_, bid) if bid else None
                 if base:
                     await start_build(session, dfn, base, "government")  # requiere research_lab
+                    metrics.DIPLOMACY_ACTIONS.inc(action="seek_diplomacy", actor="npc")  # SDD 80
                     acted += 1
             else:
                 await start_research(session, dfn, "diplomacy")          # requiere government
+                metrics.DIPLOMACY_ACTIONS.inc(action="seek_diplomacy", actor="npc")      # SDD 80
                 acted += 1
         except Exception:
             pass   # sin research_lab / sin recursos / ya en cola → lo intenta en el próximo tick
