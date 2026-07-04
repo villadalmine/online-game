@@ -963,6 +963,44 @@ async def test_quantum_teleport_e2e(client, monkeypatch):
     assert broke.status_code == 400
 
 
+async def test_advisor_offers_teleport_action_e2e(client, monkeypatch):
+    # SDD 77 v2: pedirle a la IA mandar electrónica → devuelve una acción teleport lista y ejecutable.
+    from app.core.config import get_settings
+    from app.models import Base_, Bunker, BunkerRoom, Player
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "quantum_teleport_enabled", True)
+    monkeypatch.setattr(s, "advisor_llm_calls_per_day", 0)   # sin LLM: respuesta determinista, rápida
+    h = await _register(client.http, "tpadvisor")
+    await _onboard(client.http, h)
+    async with client.session_maker() as db:
+        p = (await db.execute(select(Player).where(Player.username == "tpadvisor"))).scalar_one()
+        base = (await db.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
+        base2 = Base_(player_id=p.id, planet_key=base.planet_key, name="col", base_type="surface")
+        db.add(base2)
+        await db.flush()
+        now = datetime.now(UTC)
+        b1 = Bunker(player_id=p.id, base_id=base.id, food_health=100.0, water_health=100.0,
+                    people_health=100.0, electronics=800.0, updated_at=now, created_at=now)
+        b2 = Bunker(player_id=p.id, base_id=base2.id, food_health=100.0, water_health=100.0,
+                    people_health=100.0, updated_at=now, created_at=now)
+        db.add_all([b1, b2])
+        await db.flush()
+        db.add(BunkerRoom(bunker_id=b1.id, room_key="quantum_gate", cell=0, status="active",
+                          created_at=now))
+        base_id, base2_id = base.id, base2.id
+        await db.commit()
+
+    r = await client.http.post("/api/v1/players/me/advisor/ask", headers=h,
+                               json={"message": "teletransportá electrónica al otro búnker"})
+    assert r.status_code == 200, r.text
+    tp = [x for x in r.json().get("suggestions", []) if x["action"] == "teleport"]
+    assert tp and tp[0]["params"]["from_base_id"] == base_id
+    assert tp[0]["params"]["to_base_id"] == base2_id
+    ex = await client.http.post("/api/v1/bunker/teleport", headers=h, json=tp[0]["params"])
+    assert ex.status_code == 201, ex.text
+
+
 async def test_announcements_public_localized_and_filtered(client):
     # SDD 27: anuncios públicos (sin auth), bilingües y filtrables por category/status.
     r = await client.http.get("/api/v1/announcements")

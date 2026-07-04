@@ -144,6 +144,46 @@ def _mentioned_minerals(message: str) -> list[str]:
     return [k for k in get_content().minerals if k in toks]
 
 
+def _teleport_intent(message: str) -> bool:
+    """SDD 77 v2: ¿el jugador pide teletransportar/mandar electrónica entre búnkeres?"""
+    m = message.lower()
+    if any(w in m for w in ("teletransport", "teleport", "cuántic", "cuantic")):
+        return True
+    verb = any(w in m for w in ("envi", "manda", "mové", "mover", "move", "pasa", "traslad"))
+    obj = any(w in m for w in ("electrón", "electron", "búnker", "bunker", "reserva"))
+    return verb and obj
+
+
+async def _teleport_suggestion(session, player: Player, message: str) -> Suggestion | None:
+    """SDD 77 v2: si pedís mandar electrónica y tenés la capacidad (2+ búnkeres y una Puerta
+    cuántica activa), la IA propone un teletransporte LISTO (defaults sensatos) para confirmar."""
+    s = get_settings()
+    if not (s.bunkers_enabled and s.quantum_teleport_enabled) or not _teleport_intent(message):
+        return None
+    from app.models import Bunker
+    from app.services.bunkers import _has_teleporter
+    bunkers = (await session.execute(
+        select(Bunker).where(Bunker.player_id == player.id)
+    )).scalars().all()
+    if len(bunkers) < 2:
+        return None
+    gated = [b for b in bunkers if await _has_teleporter(session, b.id)]
+    if not gated:
+        return None
+    src = max(gated, key=lambda b: b.electronics)         # origen: puerta activa + más electrónica
+    if src.electronics <= 0:
+        return None
+    dst = min((b for b in bunkers if b.id != src.id), key=lambda b: b.electronics)  # el más pobre
+    amount = round(src.electronics * 0.5, 1)              # default: la mitad de la reserva origen
+    if amount <= 0:
+        return None
+    return Suggestion(
+        action="teleport",
+        label=f"⚛ Enviar {amount:g} electrónica de #{src.base_id} → #{dst.base_id}",
+        params={"from_base_id": src.base_id, "to_base_id": dst.base_id, "amount": amount},
+    )
+
+
 def _suggestions(
     reports: list[BlockerReport], snap: depgraph.PlayerSnapshot, message: str = ""
 ) -> list[Suggestion]:
@@ -370,6 +410,9 @@ async def ask(
         mode=mode, byok_key=byok_key, byok_model=byok_model, byok_base_url=byok_base_url,
     )
     suggestions = _suggestions(reports, snap, message)
+    tp = await _teleport_suggestion(session, player, message)   # SDD 77 v2: acción teletransporte
+    if tp:
+        suggestions = [tp, *suggestions]
     left = hacks_left(player)
     # SDD 2: con hacks disponibles, el jugador puede CREAR GRATIS cualquier cosa que preguntó
     # (tenga o no materiales). Si nombró objetos, esos; si no, los de las sugerencias.
@@ -495,7 +538,11 @@ async def _llm_or_fallback(
             "ataques usá SOLO esos datos, no inventes la defensa del rival; si la intel es vieja o "
             "poco confiable, recomendá espiar de nuevo. "
             "'meta' es lo aprendido de partidas reales (win-rates por composición): usalo para "
-            "recomendar tácticas que funcionan, aclarando si la muestra (n) es chica."
+            "recomendar tácticas que funcionan, aclarando si la muestra (n) es chica. "
+            "PODÉS OFRECER ACCIONES DE UN CLIC (aparecen como botones, el jugador confirma): "
+            "construir/entrenar/investigar, 'crear gratis' (hack) lo que falte, nivelar energía, y "
+            "teletransportar electrónica entre búnkeres (si tenés Puerta cuántica). Si el jugador "
+            "pide una de esas, mencioná que se la dejás lista para confirmar."
         )
         msgs = [{"role": "system", "content": system}]
         for m in history:

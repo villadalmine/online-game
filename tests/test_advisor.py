@@ -44,6 +44,35 @@ async def test_proactive_writes_on_incoming_attack_with_cooldown(session, monkey
     assert await adv.proactive_check(session, p) is False    # cooldown → no reescribe
 
 
+async def test_teleport_suggestion_when_intent_and_capability(session, monkeypatch):
+    # SDD 77 v2: pedir "teletransportá electrónica" + tener Puerta cuántica → sugerencia lista de un clic.
+    from app.core.config import get_settings
+    from app.models import Base_, Bunker, BunkerRoom
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "quantum_teleport_enabled", True)
+    p = await _player(session)
+    base = (await session.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
+    base2 = Base_(player_id=p.id, planet_key=base.planet_key, name="col", base_type="surface")
+    session.add(base2)
+    await session.flush()
+    now = datetime.now(UTC)
+    b1 = Bunker(player_id=p.id, base_id=base.id, food_health=100.0, water_health=100.0,
+                people_health=100.0, electronics=1000.0, updated_at=now, created_at=now)
+    b2 = Bunker(player_id=p.id, base_id=base2.id, food_health=100.0, water_health=100.0,
+                people_health=100.0, updated_at=now, created_at=now)
+    session.add_all([b1, b2])
+    await session.flush()
+    session.add(BunkerRoom(bunker_id=b1.id, room_key="quantum_gate", cell=0, status="active",
+                           created_at=now))
+    await session.commit()
+    sug = await adv._teleport_suggestion(session, p, "teletransportá electrónica al otro búnker")
+    assert sug is not None and sug.action == "teleport"
+    assert sug.params["from_base_id"] == base.id and sug.params["to_base_id"] == base2.id
+    assert sug.params["amount"] == 500.0        # default: la mitad de la reserva del origen
+    assert await adv._teleport_suggestion(session, p, "qué construyo primero") is None  # sin intención
+
+
 async def test_proactive_warns_undefended_colony(session, monkeypatch):
     # SDD 77: con 2+ bases y alguna sin defensa activa, la IA te avisa.
     from app.core.config import get_settings

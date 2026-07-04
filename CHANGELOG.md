@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 77 v2: la IA ejecuta acciones desde el chat (teletransporte con un clic)
+- El asistente ya podía construir/entrenar/investigar y "crear gratis" (hack) desde el chat. Ahora, si
+  le pedís **mandar/teletransportar electrónica** a otro búnker y tenés la capacidad (2+ búnkeres +
+  Puerta cuántica activa), propone un **teletransporte listo** (origen con más reserva → el búnker más
+  pobre, la mitad de la electrónica) que ejecutás con un **botón de confirmación**.
+- El prompt le dice a la IA **qué acciones puede ofrecer** ("que sepa cuáles tiene"): construir/entrenar/
+  investigar, crear-gratis, nivelar energía y teletransportar. Tests de servicio + e2e (cadena
+  chat→sugerencia→ejecutar). `docs/sdd-conversational-ai-advisor.md`.
+
 ## [1.166.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 77: los mensajes proactivos de la IA también llegan al 🔔 feed + más disparadores

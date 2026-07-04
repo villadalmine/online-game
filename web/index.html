@@ -1439,6 +1439,7 @@ async function doSuggestion(s){
       msg("Construyendo "+gameName(s.params.building)+(s.params.mineral?` (${gameName(s.params.mineral)})`:"")); }
     else if(s.action==="train"){ await api(`/api/v1/bases/${baseId()}/train`,"POST",{unit_key:s.params.unit,quantity:s.params.quantity||1}); msg("Entrenando "+gameName(s.params.unit)); }
     else if(s.action==="research"){ await api("/api/v1/research","POST",{tech_key:s.params.tech}); msg("Investigando "+gameName(s.params.tech)); }
+    else if(s.action==="teleport"){ const r=await api("/api/v1/bunker/teleport","POST",s.params); msg("⚛ "+tr('bk_tp_ok')+" "+Math.round(r.received)); }   // SDD 77 v2
     refresh();
   }catch(e){ msg(e.message,false); }
 }
