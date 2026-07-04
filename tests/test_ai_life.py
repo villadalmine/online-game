@@ -212,6 +212,19 @@ async def test_auto_expedition_sends_to_a_moon(session):
     assert exps   # mandó una expedición
 
 
+async def test_meta_best_unit_reads_learned_meta(session):
+    # SDD 78 v6: la IA elige la composición que MÁS gana según la meta (winrate_by_unit, SDD 41).
+    import json
+
+    from app.models import MetaInsight
+    from app.services.ai_life import _meta_best_unit
+    assert await _meta_best_unit(session) is None    # sin datos → no sesga
+    session.add(MetaInsight(key="winrate_by_unit", sample_n=20, payload=json.dumps(
+        {"tank": {"rate": 0.8, "n": 10}, "soldier": {"rate": 0.4, "n": 8}})))
+    await session.commit()
+    assert await _meta_best_unit(session) == "tank"
+
+
 async def test_own_attack_winrate_from_combat_log(session):
     # SDD 78 v3: la IA lee su win-rate de ataque (para atacar más cauta si viene perdiendo).
     from app.models import CombatLog

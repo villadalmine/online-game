@@ -159,7 +159,7 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
     if "repopulate" in scope:                   # SDD 78 v5: reconstruye tras un ataque
         total += await _auto_repopulate(session, player)
     if "attack" in scope:
-        total += await _auto_attack(session, player, settings, q)
+        total += await _auto_attack(session, player, settings, q, use_meta="learn" in scope)
     return total
 
 
@@ -400,6 +400,20 @@ async def _auto_expedition(session: AsyncSession, player: Player) -> int:
         return 0
 
 
+async def _meta_best_unit(session: AsyncSession) -> str | None:
+    """SDD 78 v6: la unidad que MÁS gana según la meta aprendida (SDD 41), con muestra chica."""
+    try:
+        from app.services.insights import get_insights
+        payload = (await get_insights(session)).get("winrate_by_unit", {}).get("payload", {})
+        best, best_rate = None, 0.0
+        for u, d in payload.items():
+            if isinstance(d, dict) and d.get("n", 0) >= 3 and d.get("rate", 0) > best_rate:
+                best, best_rate = u, d["rate"]
+        return best
+    except Exception:
+        return None
+
+
 async def _own_attack_winrate(session: AsyncSession, player: Player) -> tuple[int, float]:
     """SDD 78 v3: win-rate de los últimos ataques propios (la IA aprende de sus batallas)."""
     from app.models import CombatLog
@@ -466,7 +480,7 @@ async def _auto_trade(session: AsyncSession, player: Player, settings) -> int:
 
 
 async def _auto_attack(
-    session: AsyncSession, player: Player, settings, quality: float = 0.5
+    session: AsyncSession, player: Player, settings, quality: float = 0.5, use_meta: bool = False
 ) -> int:
     """Sub-fase 3: ataque autónomo. Solo ataca a un rival que SUPERA claramente (poder de ataque >
     defensa estimada × margen). El margen se AFILA con la calidad efectiva (SDD 78: una IA entrenada
@@ -484,8 +498,13 @@ async def _auto_attack(
         mine = (await units_at_base(session, player.id, home.id)) if settings.garrison_enabled \
             else (await player_units(session, player.id))
         reserve = settings.ai_attack_reserve
-        # fuerza a enviar = (1-reserva) de cada unidad de combate; deja el resto para defender.
-        force = {k: int(mine.get(k, 0) * (1.0 - reserve)) for k in combat_keys}
+        # SDD 78 v6: con la skill `learn`, prioriza la composición que GANA según la meta aprendida
+        # (manda full de esa unidad, menos de las otras → las guarda para defender).
+        best_unit = await _meta_best_unit(session) if use_meta else None
+        force = {}
+        for k in combat_keys:
+            frac = (1.0 - reserve) * (0.6 if (best_unit and k != best_unit) else 1.0)
+            force[k] = int(mine.get(k, 0) * frac)
         force = {k: v for k, v in force.items() if v > 0}
         if not force:
             return 0

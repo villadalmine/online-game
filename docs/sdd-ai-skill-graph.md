@@ -73,6 +73,12 @@ Todo data-driven (catálogo `ai_skills`/`ai_levels`), front sin lógica hardcode
 - La IA robot cubre **12 skills**: workers/mines/trade/colonize/defend/research/repopulate/spy/
   expedition/attack/diplomacy/learn.
 
-## Follow-ups (v6)
+## v6 (HECHO) — composición por meta aprendida
+- Con el skill `learn` (L7), `_auto_attack` usa `_meta_best_unit` (de `insights`/SDD 41): prioriza la
+  unidad con mejor win-rate real (full de esa, 0.6x de las otras). Aprende del meta global, no solo de
+  sus batallas. La IA robot queda COMPLETA: 12 skills + aprendizaje por experiencia, por batallas propias
+  y por meta global.
+
+## Follow-ups (post-v6)
 - Elegir postura/objetivo con la meta aprendida (SDD 41) y `bandit_posture`.
 - `quality_eff` en más decisiones (reserva de ataque, umbral de comercio, selección de objetivo).
