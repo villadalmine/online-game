@@ -1028,6 +1028,38 @@ async def test_fortify_all_builds_turrets_on_undefended_bases_e2e(client):
         assert "turret" in keys and "research_lab" in keys   # armó la cadena: lab + torreta
 
 
+async def test_fortify_all_soldiers_fallback_without_weapons_e2e(client, monkeypatch):
+    # SDD 79 v3: sin la tech weapons, fortificar garrisonea SOLDADOS (defensa universal) y arranca
+    # a investigar weapons.
+    from app.core.config import get_settings
+    from app.content.registry import get_content
+    from app.models import Base_, Player, TrainingOrder
+    from app.services.economy import get_or_create_stock
+    monkeypatch.setattr(get_settings(), "housing_enforced", False)   # sin tope de plazas para el test
+    h = await _register(client.http, "defender_soldier")
+    await _onboard(client.http, h)   # martian/mars, SIN weapons
+    async with client.session_maker() as db:
+        p = (await db.execute(
+            select(Player).where(Player.username == "defender_soldier"))).scalar_one()
+        base = (await db.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
+        struct = get_content().resolve_role(p.race_key, "structural")
+        (await get_or_create_stock(db, p.id, struct, base.planet_key)).amount = 200000
+        p.energy = 999999.0
+        base_id = base.id
+        await db.commit()
+
+    r = await client.http.post("/api/v1/bases/fortify-all", headers=h)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert base_id in body["soldiered"]   # sin weapons → soldados
+    assert body["weapons"]                # arrancó a investigar weapons
+    async with client.session_maker() as db:
+        orders = (await db.execute(
+            select(TrainingOrder).where(TrainingOrder.unit_key == "soldier")
+        )).scalars().all()
+        assert orders   # hay soldados en entrenamiento
+
+
 async def test_announcements_public_localized_and_filtered(client):
     # SDD 27: anuncios públicos (sin auth), bilingües y filtrables por category/status.
     r = await client.http.get("/api/v1/announcements")

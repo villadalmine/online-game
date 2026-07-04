@@ -92,6 +92,9 @@ class Settings(BaseSettings):
     # SDD 54: el combate nunca deja al defensor con menos de N trabajadores → siempre puede seguir
     # juntando material y reconstruir (no quedás trabado sin salida). 0 = sin piso.
     min_surviving_workers: int = 2
+    # SDD 79: "fortificar todas" — cuántos soldados garrisonar en una base sin defensa cuando no se
+    # puede la torreta (falta weapons/lab) → defensa universal (el soldado solo requiere HQ).
+    fortify_soldiers: int = 5
     # SDD 55 §3.2: la IA NO patea al débil — no ataca a un HUMANO cuyo score esté por debajo de esta
     # fracción del suyo (anti-snowball; lo deja crecer). 0 = sin protección (ataca a cualquiera).
     npc_weak_protect_ratio: float = 0.5

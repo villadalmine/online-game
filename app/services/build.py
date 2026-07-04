@@ -247,16 +247,33 @@ async def fortify_undefended(session: AsyncSession, player: Player) -> dict:
         active_by_base.setdefault(bid, set()).add(bk)
     defended = {bid for bid, bk in rows
                 if content.buildings.get(bk, {}).get("defense_power", 0) > 0}
-    chain = _requires_chain("turret")   # p.ej. ["research_lab"]
+    settings = get_settings()
     now = datetime.now(UTC)
-    fortified: list[int] = []
+    # SDD 79 v3: si falta la tech `weapons` (gate de la torreta), arrancá a investigarla (una vez).
+    from app.services.research import in_progress, researched_techs, start_research
+    from app.services.training import TrainingError, start_training
+    weapons_note = None
+    if "weapons" not in await researched_techs(session, player.id):
+        if "weapons" in {o.tech_key for o in await in_progress(session, player.id)}:
+            weapons_note = "weapons en investigación"
+        else:
+            try:
+                await start_research(session, player, "weapons")
+                weapons_note = "empecé a investigar weapons (después vas a poder poner torretas)"
+            except BuildError:
+                weapons_note = "necesitás investigar weapons para torretas"
+            except Exception:
+                weapons_note = "necesitás investigar weapons para torretas"
+    chain = _requires_chain("turret")   # p.ej. ["research_lab"]
+    fortified: list[int] = []            # torreta
+    soldiered: list[int] = []            # fallback: guarnición de soldados (solo HQ)
     skipped: list[dict] = []
     for b in bases:
         if b.id in defended:
             continue
-        try:
-            have = active_by_base.get(b.id, set())
-            for pre in chain:                        # construir los prereqs que falten, activos ya
+        have = active_by_base.get(b.id, set())
+        try:                                          # 1) intentar la torreta (con cadena de lab)
+            for pre in chain:
                 if pre not in have:
                     bld = await start_build(session, player, b, pre)
                     bld.status = "active"
@@ -264,6 +281,13 @@ async def fortify_undefended(session: AsyncSession, player: Player) -> dict:
                     await session.flush()
             await start_build(session, player, b, "turret")
             fortified.append(b.id)
-        except BuildError as exc:
+            continue
+        except BuildError:
+            pass
+        try:                                          # 2) fallback: soldados (siempre defendible)
+            await start_training(session, player, b, "soldier", settings.fortify_soldiers)
+            soldiered.append(b.id)
+        except (BuildError, TrainingError) as exc:
             skipped.append({"base_id": b.id, "planet": b.planet_key, "reason": str(exc)})
-    return {"fortified": fortified, "skipped": skipped}
+    return {"fortified": fortified, "soldiered": soldiered,
+            "skipped": skipped, "weapons": weapons_note}

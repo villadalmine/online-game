@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 79 v3: fortificar defiende TODA base (soldados de fallback) + auto-weapons
+- "Fortificar todas" ahora defiende **cualquier** base: si no puede la torreta (falta la tech weapons),
+  garrisona **soldados** (solo requieren HQ → siempre defendible) y **arranca a investigar weapons** sola
+  para que después podás poner torretas. El toast dice: N con torreta, N con soldados, y el estado de
+  weapons. Ninguna base queda indefensa si tenés material. e2e (torreta + fallback soldados).
+
 ## [1.178.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 79 v2: fortificar arma la cadena (lab + torreta) automático
