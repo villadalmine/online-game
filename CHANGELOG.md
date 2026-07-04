@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 78 v5: repoblación autónoma + repopulate idempotente
+- **Fix: `repopulate` ya no duplica edificios** — reconstruye solo lo que falta para llegar a los
+  conteos del set (respeta 2 minas, etc.) y cobra electrónica proporcional. Mejora también el botón manual.
+- Nueva skill **repoblación** (nivel 5+): si te atacaron en la última hora y a una base le faltan
+  edificios, la IA gasta electrónica para reconstruirlos sola. La IA robot cubre 12 skills. Tests.
+
 ## [1.174.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 78 v4: la IA robot manda expediciones a las lunas sola

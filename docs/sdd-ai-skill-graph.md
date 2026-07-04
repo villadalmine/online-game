@@ -64,8 +64,15 @@ Todo data-driven (catálogo `ai_skills`/`ai_levels`), front sin lógica hardcode
   + energía. Skills totales de la IA: 11 (workers/mines/trade/colonize/defend/research/spy/expedition/
   attack/diplomacy/learn).
 
-## Follow-ups (v5)
-- **Repoblación autónoma**: hoy `repopulate` reconstruye TODO el set (duplicaría edificios) → primero
-  hacerlo idempotente (saltear los ya presentes), después un `_auto_repopulate` que dispare tras un ataque.
+## v5 (HECHO) — repoblación autónoma + repopulate idempotente
+- **`repopulate` ahora es IDEMPOTENTE**: reconstruye solo lo que FALTA para llegar a los conteos del
+  set (respeta multiplicidad, ej. 2 minas) y cobra electrónica proporcional a lo que realmente levanta.
+  Si ya está completo, avisa "nada que reconstruir". Fix útil también para el botón manual.
+- **Skill `repopulate`** (L5+): `_auto_repopulate` — si te ATACARON en la última hora y a una base le
+  faltan edificios de algún set, gasta electrónica para reconstruir lo que falta (1 set/tick).
+- La IA robot cubre **12 skills**: workers/mines/trade/colonize/defend/research/repopulate/spy/
+  expedition/attack/diplomacy/learn.
+
+## Follow-ups (v6)
 - Elegir postura/objetivo con la meta aprendida (SDD 41) y `bandit_posture`.
-- `quality_eff` en más decisiones (reserva de ataque, umbral de comercio).
+- `quality_eff` en más decisiones (reserva de ataque, umbral de comercio, selección de objetivo).

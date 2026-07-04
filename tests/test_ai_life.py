@@ -167,6 +167,36 @@ async def test_auto_spy_launches_at_a_rival(session, monkeypatch):
     assert sats and sats[0].target_id == foe.id
 
 
+async def test_auto_repopulate_after_recent_attack(session, monkeypatch):
+    # SDD 78 v5: si te atacaron hace poco y te faltan edificios, reconstruye con electrónica.
+    from datetime import UTC, datetime
+
+    from app.models import BunkerRoom, CombatLog, PlayerTech
+    from app.services.ai_life import _auto_repopulate
+    from app.services.bunkers import dig
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    p, base = await _player(session, name="ai_rebuilder")
+    foe, fbase = await _player(session, name="ai_attacker")
+    session.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+    await session.flush()
+    b = await dig(session, p, base.id)
+    session.add(BunkerRoom(bunker_id=b.id, room_key="research_room", cell=0, status="active",
+                           completes_at=datetime.now(UTC)))
+    b.electronics = 1000.0
+    session.add(CombatLog(attacker_id=foe.id, defender_id=p.id, target_base_id=base.id,
+                          outcome="attacker"))       # te atacaron y perdiste hace un rato
+    await session.commit()
+    assert await _auto_repopulate(session, p) == 1   # reconstruyó un set
+    # sin ataque reciente NO reconstruye
+    p2, base2 = await _player(session, name="ai_calm")
+    session.add(PlayerTech(player_id=p2.id, tech_key="bunker_engineering"))
+    await session.flush()
+    b2 = await dig(session, p2, base2.id)
+    b2.electronics = 1000.0
+    await session.commit()
+    assert await _auto_repopulate(session, p2) == 0
+
+
 async def test_auto_expedition_sends_to_a_moon(session):
     # SDD 78 v4: con un shuttle, la IA manda una expedición a una luna de su galaxia.
     from app.models import ExpeditionOrder, UnitStock

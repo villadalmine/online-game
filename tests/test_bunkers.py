@@ -368,6 +368,32 @@ async def test_repopulate_spends_electronics_and_rebuilds(session, monkeypatch):
     assert n >= 2
 
 
+async def test_repopulate_is_idempotent(session, monkeypatch):
+    # SDD 78 v5: no duplica — reconstruye solo hasta los conteos del set y cobra proporcional.
+    from datetime import timedelta
+
+    from app.models import Building, BunkerRoom
+    from app.services.bunkers import BunkerError, repopulate
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    p, base = await _player(session)
+    b = await dig(session, p, base.id)
+    session.add(BunkerRoom(bunker_id=b.id, room_key="research_room", cell=0, status="active",
+                           completes_at=datetime.now(UTC) - timedelta(seconds=1)))
+    b.electronics = 500.0
+    # ya tiene 1 mina + 1 planta → el set economic [mine,mine,power_plant] solo debe sumar 1 mina
+    session.add(Building(base_id=base.id, building_key="mine", status="active"))
+    session.add(Building(base_id=base.id, building_key="power_plant", status="active"))
+    await session.commit()
+    res = await repopulate(session, p, base.id, "economic")
+    await session.commit()
+    assert res["built"] == ["mine"]        # solo lo que faltaba
+    try:
+        await repopulate(session, p, base.id, "economic")   # ya está completo
+        raise AssertionError("no debería reconstruir de nuevo")
+    except BunkerError:
+        pass
+
+
 async def test_repopulate_needs_enough_electronics(session, monkeypatch):
     monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
     p, base = await _player(session)

@@ -436,11 +436,30 @@ async def repopulate(
         raise BunkerError("Base inválida.")
     now = datetime.now(UTC)
     await advance_bunker(session, player, now)   # electrónica al día antes de cobrar
+    from app.models import Building
+    # SDD 78 v5: IDEMPOTENTE — reconstruí solo lo que FALTA para llegar a los conteos del set (no
+    # dupliques edificios presentes). Cobra electrónica proporcional a lo que realmente se levanta.
+    active = (await session.execute(
+        select(Building).where(Building.base_id == base_id, Building.status == "active")
+    )).scalars().all()
+    set_bks = [bk for bk in spec.get("buildings", []) if bk != "headquarters"]
+    want: dict[str, int] = {}
+    for bk in set_bks:
+        want[bk] = want.get(bk, 0) + 1
+    have: dict[str, int] = {}
+    for x in active:
+        if x.building_key in want:
+            have[x.building_key] = have.get(x.building_key, 0) + 1
+    to_build: list[str] = []
+    for bk, cnt in want.items():
+        to_build += [bk] * max(0, cnt - have.get(bk, 0))
+    if not to_build:
+        raise BunkerError("Esta base ya tiene esos edificios; nada que reconstruir.")
     bunkers = (await session.execute(
         select(Bunker).where(Bunker.player_id == player.id).order_by(Bunker.id)
     )).scalars().all()
     total = sum(b.electronics for b in bunkers)
-    need = float(spec.get("electronics", 0))
+    need = round(float(spec.get("electronics", 0)) * len(to_build) / max(1, len(set_bks)), 1)
     if total < need:
         raise BunkerError(f"Electrónica insuficiente ({total:.0f}/{need:.0f}). Producila con "
                           "salas de investigación / laboratorio atómico.")
@@ -451,11 +470,8 @@ async def repopulate(
         left -= take
         if left <= 0:
             break
-    from app.models import Building
     built = []
-    for bk in spec.get("buildings", []):
-        if bk == "headquarters":
-            continue
+    for bk in to_build:
         mineral = None
         if content.buildings.get(bk, {}).get("category") in ("mine", "storage"):
             mineral = content.resolve_role(player.race_key, "structural")

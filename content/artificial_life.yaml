@@ -42,6 +42,12 @@ skills:
     name_en: "Research"
     description: "Investiga sola la próxima tecnología asequible de economía/defensa."
     description_en: "Auto-researches the next affordable economy/defense technology."
+  - key: repopulate
+    icon: "🏗"
+    name: "Repoblación"
+    name_en: "Repopulation"
+    description: "Tras un ataque, gasta electrónica del búnker para reconstruir los edificios que faltan."
+    description_en: "After an attack, spends bunker electronics to rebuild the missing buildings."
   - key: spy
     icon: "🛰🔍"
     name: "Espionaje"
@@ -128,7 +134,7 @@ levels:
     electronics: 2000
     cost: { advanced: 2200, energetic: 1600, structural: 1200 }
     research_seconds: 3600
-    autonomy_scope: [workers, mines, trade, colonize, defend, research]
+    autonomy_scope: [workers, mines, trade, colonize, defend, research, repopulate]
     speed_efficiency: 1.5
     quality: 0.85
   - level: 6
@@ -139,7 +145,8 @@ levels:
     electronics: 3000
     cost: { advanced: 3000, energetic: 2400, structural: 1800 }
     research_seconds: 4200
-    autonomy_scope: [workers, mines, trade, colonize, defend, research, spy, expedition, attack]
+    autonomy_scope:
+      [workers, mines, trade, colonize, defend, research, repopulate, spy, expedition, attack]
     speed_efficiency: 1.6
     quality: 0.95
   - level: 7
@@ -151,6 +158,7 @@ levels:
     cost: { advanced: 4200, energetic: 3400, structural: 2600 }
     research_seconds: 5400
     autonomy_scope:
-      [workers, mines, trade, colonize, defend, research, spy, expedition, attack, diplomacy, learn]
+      [workers, mines, trade, colonize, defend, research, repopulate, spy, expedition, attack,
+       diplomacy, learn]
     speed_efficiency: 1.75
     quality: 1.15

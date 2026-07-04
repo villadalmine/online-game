@@ -156,6 +156,8 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
         total += await _auto_spy(session, player)
     if "expedition" in scope:                   # SDD 78 v4: expediciones a lunas
         total += await _auto_expedition(session, player)
+    if "repopulate" in scope:                   # SDD 78 v5: reconstruye tras un ataque
+        total += await _auto_repopulate(session, player)
     if "attack" in scope:
         total += await _auto_attack(session, player, settings, q)
     return total
@@ -322,6 +324,51 @@ async def _auto_spy(session: AsyncSession, player: Player) -> int:
             from app.services.journal import record
             await record(session, "ai_autopilot", player.id, action="spy", target_id=foe.id)
             return 1
+        return 0
+    except Exception:
+        return 0
+
+
+async def _auto_repopulate(session: AsyncSession, player: Player) -> int:
+    """SDD 78 v5: si te ATACARON hace poco (última hora) y te faltan edificios de algún set, gastá
+    electrónica para reconstruir lo que falta (repopulate ya es idempotente). 1 set por tick."""
+    try:
+        if not get_settings().bunkers_enabled:
+            return 0
+        from datetime import UTC, datetime, timedelta
+
+        from app.models import Building, CombatLog
+        from app.services.bunkers import repopulate
+        content = get_content()
+        since = datetime.now(UTC) - timedelta(hours=1)
+        hit = (await session.execute(
+            select(CombatLog).where(
+                CombatLog.defender_id == player.id, CombatLog.outcome == "attacker",
+                CombatLog.created_at >= since).limit(1)
+        )).scalars().first()
+        if hit is None:
+            return 0                              # sin ataque reciente → no reconstruye
+        for b in (await session.execute(
+            select(Base_).where(Base_.player_id == player.id))).scalars().all():
+            active = {x.building_key for x in (await session.execute(
+                select(Building).where(
+                    Building.base_id == b.id, Building.status == "active"))).scalars()}
+            for sk in sorted(content.repop_sets,
+                             key=lambda k: content.repop_sets[k].get("electronics", 0)):
+                spec = content.repop_sets[sk]
+                missing = any(bk != "headquarters" and bk not in active
+                              for bk in spec.get("buildings", []))
+                if not missing:
+                    continue
+                try:
+                    await repopulate(session, player, b.id, sk)   # idempotente: solo lo que falta
+                    metrics.AI_AUTOPILOT.inc(action="repopulate")
+                    from app.services.journal import record
+                    await record(session, "ai_autopilot", player.id, action="repopulate",
+                                 base_id=b.id)
+                    return 1
+                except Exception:
+                    continue
         return 0
     except Exception:
         return 0
