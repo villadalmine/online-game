@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — Diplomacia visible: métrica + qué misil vuelve + en "Tu historia"
+- Bug reportado: cancelar un misil (tributo/recall) no mostraba datos del regreso ni métricas de
+  diplomacia. El backend YA devolvía el misil al hangar; faltaba VERLO. Ahora: el toast dice cuántos
+  misiles volvieron (🏠 N), nueva métrica API `game_diplomacy_actions_total{action,actor}` (tributo
+  aceptado / recall / tributo NPC) para Grafana, y "📈 Tu historia" rotula los eventos de diplomacia
+  (🕊 nucleares cancelados, ↩ misiles recuperados, tributos de NPC). Solo observabilidad.
+
 ## [1.170.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 77 v3d: la IA lista sus acciones ("qué podés hacer")

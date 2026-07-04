@@ -206,3 +206,7 @@ NPC_POSTURE = Gauge("game_npc_posture", "NPCs por perfil/postura vigente", ("pos
 # A quién ataca la NPC: human|npc. Responde "¿también se pelean entre NPCs?" en un gráfico.
 NPC_ATTACK_TARGETS = Counter("game_npc_attack_targets_total",
                              "Ataques lanzados por NPC, por tipo de objetivo", ("target",))
+# SDD 67: DIPLOMACIA — tributos/misiles cancelados/recalls. actor=human|npc; action=tribute_offered|
+# tribute_accepted|recall. >0 = la diplomacia SÍ está pasando (validable en Grafana/API).
+DIPLOMACY_ACTIONS = Counter("game_diplomacy_actions_total",
+                            "Acciones diplomáticas (tributo/recall)", ("action", "actor"))

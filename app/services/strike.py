@@ -102,6 +102,8 @@ async def accept_tribute(session: AsyncSession, attacker: Player, mission_id: in
                  {"tribute": offer, "returned": returned})
     from app.services.journal import record
     await record(session, "nuclear_cancelled", attacker.id, defender_id=defender.id, tribute=offer)
+    from app.core import metrics  # SDD 67: diplomacia HUMANA visible en Grafana/API
+    metrics.DIPLOMACY_ACTIONS.inc(action="tribute_accepted", actor="human")
     await session.flush()
     return {"cancelled": True, "tribute": offer, "returned": returned}
 
@@ -140,6 +142,8 @@ async def recall_strike(session: AsyncSession, attacker: Player, mission_id: int
     from app.services.journal import record
     await record(session, "strike_recalled", attacker.id,
                  defender_id=mission.defender_id, returned=returned)
+    from app.core import metrics  # SDD 67: recall diplomático (government+diplomacy) visible
+    metrics.DIPLOMACY_ACTIONS.inc(action="recall", actor="human")
     await session.flush()
     return {"recalled": True, "returned": returned}
 
@@ -474,6 +478,7 @@ async def npc_offer_tributes(session: AsyncSession, now: datetime | None = None)
                      f"{defender.username} te ofrece tributo para cancelar tu misil nuclear",
                      {"mission_id": m.id, "minerals": minerals, "energy": 0.0})
         metrics.NPC_ACTIONS.inc(action="tribute", brain="rules")  # validar diplomacia NPC (SDD 67)
+        metrics.DIPLOMACY_ACTIONS.inc(action="tribute_offered", actor="npc")
         from app.services.journal import record
         await record(session, "npc_tribute", defender.id,
                      attacker_id=m.attacker_id, tribute=minerals)

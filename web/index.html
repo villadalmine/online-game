@@ -1286,8 +1286,11 @@ async function offerTribute(id){
   const en=+prompt(tr('nk_ask_energy'),"0")||0;
   const minerals={}; (mk||"").split(",").forEach(p=>{ const [k,v]=p.split(":"); if(k&&+v>0) minerals[k.trim()]=+v; });
   try{ await api(`/api/v1/combat/strike/${id}/tribute`,"POST",{minerals,energy:en}); msg(tr('nk_offered'),true); refresh(); }catch(e){ msg(e.message,false);} }
-async function acceptTribute(id){ try{ await api(`/api/v1/combat/strike/${id}/accept-tribute`,"POST"); msg(tr('nk_cancelled'),true); refresh(); }catch(e){ msg(e.message,false);} }
-async function recallStrike(id){ try{ const r=await api(`/api/v1/combat/strike/${id}/recall`,"POST"); msg(tr('recalled_ok'),true); refresh(); }catch(e){ msg(e.message,false);} }
+// muestra cuántos misiles volvieron al hangar (dato del regreso, pedido del usuario)
+function _returnedStr(r){ const e=Object.entries((r&&r.returned)||{}).filter(([,v])=>v>0);
+  return e.length?" · 🏠 "+e.map(([k,v])=>gameName(k)+" "+v).join(", "):""; }
+async function acceptTribute(id){ try{ const r=await api(`/api/v1/combat/strike/${id}/accept-tribute`,"POST"); msg(tr('nk_cancelled')+_returnedStr(r),true); refresh(); }catch(e){ msg(e.message,false);} }
+async function recallStrike(id){ try{ const r=await api(`/api/v1/combat/strike/${id}/recall`,"POST"); msg(tr('recalled_ok')+_returnedStr(r),true); refresh(); }catch(e){ msg(e.message,false);} }
 function _dronePanel(pic){
   const bases=_basesWith('drone_factory'), base=_srcBase('d',bases);
   let h=`<div style="border-top:1px solid var(--line,#333);padding-top:6px;margin-top:6px"><h3 style="margin:0 0 4px">🛸 ${esc(tr('ars_drones'))}</h3>`;
@@ -2961,7 +2964,10 @@ async function openHistory(){
     transport:['📦 transportes','📦 transports'],strike:['🚀 misiles','🚀 missiles'],
     drone_launch:['🛸 drones','🛸 drones'],move_troops:['🚚 mover tropas','🚚 troop moves'],
     bunker_build:['🧱 salas de búnker','🧱 bunker rooms'],satellite:['🛰 satélites','🛰 satellites'],
-    quantum_teleport:['⚛ teletransportes','⚛ teleports'],bunker_dig_deeper:['⛏ excavaciones','⛏ digs']};
+    quantum_teleport:['⚛ teletransportes','⚛ teleports'],bunker_dig_deeper:['⛏ excavaciones','⛏ digs'],
+    nuclear_cancelled:['🕊 nucleares cancelados (diplomacia)','🕊 nukes cancelled (diplomacy)'],
+    strike_recalled:['↩ misiles recuperados','↩ missiles recalled'],
+    npc_tribute:['🕊 tributos de NPC','🕊 NPC tributes']};
   const HIDEK=new Set(['ai_autopilot','advisor_ask']);
   const ev=Object.entries(d.events||{}).filter(([k])=>!HIDEK.has(k)).sort((a,b)=>b[1]-a[1]);
   if(ev.length){ const mx=Math.max(...ev.map(e=>e[1]));
