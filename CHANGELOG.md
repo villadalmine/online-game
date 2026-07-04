@@ -9,6 +9,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.184.0] - 2026-07-04
 
+## [1.184.0] - 2026-07-04
+
 ### 2026-07-04 — Fix: el selector de base de repoblación del búnker "se volvía solo"
 - En el panel Búnker, al elegir una base en Repoblación la selección volvía sola a la primera opción:
   el ciclo de refresco de 4s reconstruye el panel entero (`bk_stat.innerHTML`) y recreaba el `<select>`
