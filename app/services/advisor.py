@@ -149,9 +149,28 @@ def _teleport_intent(message: str) -> bool:
     m = message.lower()
     if any(w in m for w in ("teletransport", "teleport", "cuántic", "cuantic")):
         return True
-    verb = any(w in m for w in ("envi", "manda", "mové", "mover", "move", "pasa", "traslad"))
+    # stems (los imperativos con tilde mandá/enviá/mové no matchean "manda"/"move" exactos)
+    verb = any(w in m for w in ("envi", "mand", "mov", "pas", "traslad"))
     obj = any(w in m for w in ("electrón", "electron", "búnker", "bunker", "reserva"))
     return verb and obj
+
+
+def _first_amount(message: str) -> float | None:
+    """SDD 77 v3: primer número del mensaje (para respetar 'mandá 300 electrónica')."""
+    import re
+    mt = re.search(r"\d+(?:[.,]\d+)?", message)
+    if not mt:
+        return None
+    try:
+        return float(mt.group(0).replace(",", "."))
+    except ValueError:
+        return None
+
+
+def _energy_intent(message: str) -> bool:
+    """SDD 77 v3: ¿el jugador pide nivelar/pide energía?"""
+    m = message.lower()
+    return any(w in m for w in ("nivel", "energ", "level up", "level-up"))
 
 
 async def _teleport_suggestion(session, player: Player, message: str) -> Suggestion | None:
@@ -174,7 +193,9 @@ async def _teleport_suggestion(session, player: Player, message: str) -> Suggest
     if src.electronics <= 0:
         return None
     dst = min((b for b in bunkers if b.id != src.id), key=lambda b: b.electronics)  # el más pobre
-    amount = round(src.electronics * 0.5, 1)              # default: la mitad de la reserva origen
+    asked = _first_amount(message)                        # SDD 77 v3: respetá el número que pediste
+    amount = (round(min(asked, src.electronics), 1) if asked and asked > 0
+              else round(src.electronics * 0.5, 1))       # default: la mitad de la reserva origen
     if amount <= 0:
         return None
     return Suggestion(
@@ -413,6 +434,8 @@ async def ask(
     tp = await _teleport_suggestion(session, player, message)   # SDD 77 v2: acción teletransporte
     if tp:
         suggestions = [tp, *suggestions]
+    if _energy_intent(message) and assist_energy_left(player) > 0:   # SDD 77 v3: nivelar energía
+        suggestions = [Suggestion(action="assist_energy", label="⚡ Nivelar energía"), *suggestions]
     left = hacks_left(player)
     # SDD 2: con hacks disponibles, el jugador puede CREAR GRATIS cualquier cosa que preguntó
     # (tenga o no materiales). Si nombró objetos, esos; si no, los de las sugerencias.

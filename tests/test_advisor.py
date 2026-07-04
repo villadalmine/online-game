@@ -70,7 +70,20 @@ async def test_teleport_suggestion_when_intent_and_capability(session, monkeypat
     assert sug is not None and sug.action == "teleport"
     assert sug.params["from_base_id"] == base.id and sug.params["to_base_id"] == base2.id
     assert sug.params["amount"] == 500.0        # default: la mitad de la reserva del origen
+    # SDD 77 v3: si decís un número, se respeta (topeado a la reserva)
+    sug2 = await adv._teleport_suggestion(session, p, "mandá 300 electrónica al otro búnker")
+    assert sug2.params["amount"] == 300.0
+    sug3 = await adv._teleport_suggestion(session, p, "teletransportá 5000 electrónica")  # topea
+    assert sug3.params["amount"] == 1000.0
     assert await adv._teleport_suggestion(session, p, "qué construyo primero") is None  # sin intención
+
+
+def test_intent_helpers():
+    # SDD 77 v3: detectores de intención (energía / cantidad).
+    assert adv._energy_intent("estoy sin energía, nivelame") is True
+    assert adv._energy_intent("qué construyo") is False
+    assert adv._first_amount("mandá 300 de electrónica") == 300.0
+    assert adv._first_amount("mandá electrónica") is None
 
 
 async def test_proactive_warns_undefended_colony(session, monkeypatch):
