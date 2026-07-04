@@ -9,6 +9,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.183.0] - 2026-07-04
 
+## [1.183.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 78 v8: la IA cuida su búnker y su alojamiento
 - Pedido: *"la IA debería focalizarse también en el búnker, y darse cuenta si no tiene suficiente
   espacio para unidades o si le faltan tecnologías"*. Dos skills nuevos en el grafo de vida artificial,
