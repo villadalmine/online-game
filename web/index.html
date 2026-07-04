@@ -1181,7 +1181,11 @@ function renderBunker(){
         `<button class="sm danger" title="${esc(tr('bk_water'))}" onclick="bunkerRaid(${tid},'water')">🧪</button></span></div></div>`;
     }
   }
+  // preservá los selects ya elegidos: el ciclo de 4s reconstruye el panel y reseteaba tu elección
+  // (p.ej. la base de repoblación "se volvía sola" al primer option). Vale para id o class+data-b.
+  const _bkSel={}; document.querySelectorAll('#bk_stat select').forEach(x=>{ _bkSel[x.id||(x.className+'#'+(x.dataset.b||''))]=x.value; });
   $("bk_stat").innerHTML=s||`<span class="muted">—</span>`;
+  document.querySelectorAll('#bk_stat select').forEach(x=>{ const v=_bkSel[x.id||(x.className+'#'+(x.dataset.b||''))]; if(v!=null && [...x.options].some(o=>o.value===v)) x.value=v; });
   drawBunkers();   // SDD 70 v2: dibujar los cortes laterales
 }
 // SDD 70 v2 — corte lateral del búnker (Canvas 2D, estilizado). Superficie con la base arriba, tierra,

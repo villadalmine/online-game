@@ -7,7 +7,14 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
-## [1.183.0] - 2026-07-04
+## [1.184.0] - 2026-07-04
+
+### 2026-07-04 — Fix: el selector de base de repoblación del búnker "se volvía solo"
+- En el panel Búnker, al elegir una base en Repoblación la selección volvía sola a la primera opción:
+  el ciclo de refresco de 4s reconstruye el panel entero (`bk_stat.innerHTML`) y recreaba el `<select>`
+  desde cero, perdiendo tu elección. Ahora se **preservan los valores de los selects** del panel a
+  través del rebuild (por `id` o por `class+data-b`), así no se resetean. De paso cubre los otros
+  selects del panel (teletransporte origen/destino, mineral de bóveda, planeta de evacuación).
 
 ## [1.183.0] - 2026-07-04
 
