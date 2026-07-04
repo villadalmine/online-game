@@ -9,7 +9,7 @@ docs/sdd-ai-assistant.md.
 import json
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import get_content
@@ -338,6 +338,16 @@ async def list_messages(
         )
     ).scalars()
     return list(reversed(list(rows)))
+
+
+async def clear_messages(session: AsyncSession, player: Player) -> int:
+    """SDD 77 v4: borra TODO el historial del chat del asistente (el hilo se pone enorme).
+    No afecta a la vida artificial (autopiloto): son IAs distintas. Devuelve cuántos borró."""
+    res = await session.execute(
+        delete(AdvisorMessage).where(AdvisorMessage.player_id == player.id)
+    )
+    await session.commit()
+    return res.rowcount or 0
 
 
 async def _save(session: AsyncSession, player: Player, role: str, body: str) -> None:

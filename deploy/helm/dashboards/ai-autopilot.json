@@ -1,0 +1,135 @@
+{
+  "uid": "online-game-ai-autopilot",
+  "title": "Online Galaxy War — Vida artificial (IA del jugador)",
+  "tags": ["online-game", "ai", "autopilot"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "templating": {
+    "list": [
+      { "name": "datasource", "type": "datasource", "query": "prometheus", "current": {}, "hide": 0 }
+    ]
+  },
+  "panels": [
+    {
+      "id": 100, "type": "text", "title": "Qué es esto",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+      "options": { "mode": "markdown", "content": "**La VIDA ARTIFICIAL / autopiloto es la IA que juega SOLA por el jugador** (mina, construye, coloniza, ataca, se defiende, negocia) cuando no está. *No es la NPC* (ver dashboard NPC AI) ni el *asistente* del chat: es la IA que cada jugador **desarrolla** en su búnker y corre en el tick (SDD 69/78/81).\n\n- **`game_ai_autopilot_total{action}`** — qué hizo el autopiloto, por habilidad. Nombres de acción: `staff_workers` (obreros), `build_mine` (minería), `sell_surplus` (comercio), `housing` (alojamiento), `bunker` (búnker), `colonize`, `defend`, `research`, `repopulate`, `spy`, `expedition`, `attack`, `diplomacy`.\n- **`game_ai_autopilot_brain_total{outcome,route}`** (SDD 81) — cuando el jugador elige cerebro GPU/nube: `outcome=llm` = el LLM decidió qué priorizar · `fallback` = cayó a reglas. `route=gpu|cloud`. Con cerebro determinista (default) esta métrica queda vacía (es normal).\n- **`game_diplomacy_actions_total{action,actor}`** (SDD 67/80) — tributos/recalls/dar-tiempo/buscar-diplomacia. `actor=human|npc`." }
+    },
+    {
+      "id": 1, "type": "stat",
+      "title": "Jugadas del autopiloto (24h)",
+      "description": "game_ai_autopilot_total: total de acciones que la IA de los jugadores tomó sola en el último día. 0 = nadie desarrolló su IA o está pausada.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 6 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [
+        { "refId": "A", "legendFormat": "jugadas",
+          "expr": "sum(increase(game_ai_autopilot_total[24h]))" }
+      ]
+    },
+    {
+      "id": 2, "type": "gauge",
+      "title": "% de decisiones que el cerebro LLM aplicó (24h)",
+      "description": "game_ai_autopilot_brain_total: llm / (llm+fallback). Alto = cuando el jugador usa cerebro GPU/nube, el LLM elige prioridades válidas. Vacío = todos usan cerebro determinista (default).",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1,
+        "thresholds": { "steps": [ {"color":"red","value":0}, {"color":"orange","value":0.4}, {"color":"green","value":0.7} ] } }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 8, "x": 8, "y": 6 },
+      "targets": [
+        { "refId": "A", "legendFormat": "aplicadas",
+          "expr": "sum(increase(game_ai_autopilot_brain_total{outcome=\"llm\"}[24h])) / clamp_min(sum(increase(game_ai_autopilot_brain_total[24h])), 1)" }
+      ]
+    },
+    {
+      "id": 3, "type": "stat",
+      "title": "Acciones de diplomacia (24h)",
+      "description": "game_diplomacy_actions_total: tributos ofrecidos/aceptados, misiles recuperados (recall), tiempo otorgado, NPC buscando diplomacia. >0 = la negociación nuclear está ocurriendo.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 6 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [
+        { "refId": "A", "legendFormat": "acciones",
+          "expr": "sum(increase(game_diplomacy_actions_total[24h]))" }
+      ]
+    },
+    {
+      "id": 4, "type": "timeseries",
+      "title": "Qué hacen los robots (jugadas por habilidad, rate 15m)",
+      "description": "game_ai_autopilot_total por acción. Cada serie es una habilidad del grafo (SDD 78): obreros, minería, comercio, alojamiento, búnker, colonización, defensa, investigación, repoblación, espionaje, expediciones, guerra, diplomacia.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 11 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{action}}",
+          "expr": "sum by(action) (rate(game_ai_autopilot_total[15m]))" }
+      ]
+    },
+    {
+      "id": 5, "type": "piechart",
+      "title": "Distribución de jugadas del autopiloto (24h)",
+      "description": "Proporción de cada habilidad en lo que hizo la IA de los jugadores el último día. Ves si se enfoca en economía, defensa, guerra, etc.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{action}}",
+          "expr": "sum by(action) (increase(game_ai_autopilot_total[24h]))" }
+      ]
+    },
+    {
+      "id": 101, "type": "text", "title": "Cerebro del autopiloto (SDD 81)",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 19 },
+      "options": { "mode": "markdown", "content": "El jugador elige cómo **piensa** su autopiloto: **determinista** (reglas, gratis, sin GPU) o **GPU/nube/auto** (el LLM decide qué priorizar). Acá comparás cuál decide más y con cuál acierta (`outcome=llm` aplicado vs `fallback` a reglas), por `route`. Si todos usan el default determinista, estos paneles quedan vacíos (es esperable)." }
+    },
+    {
+      "id": 6, "type": "timeseries",
+      "title": "Cerebro: aplicadas (llm) vs caídas a reglas (fallback), por ruta",
+      "description": "game_ai_autopilot_brain_total{outcome,route}. Querés ver subir 'llm' y bajar 'fallback'. route=gpu|cloud (auto prueba gpu→nube→reglas).",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{route}} · {{outcome}}",
+          "expr": "sum by(route,outcome) (increase(game_ai_autopilot_brain_total[1h]))" }
+      ]
+    },
+    {
+      "id": 7, "type": "piechart",
+      "title": "Cerebro: reparto por ruta y resultado (24h)",
+      "description": "Proporción de decisiones del cerebro por route+outcome en el último día. Compara GPU vs nube: quién decidió más y con cuál se aplicó más.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{route}} · {{outcome}}",
+          "expr": "sum by(route,outcome) (increase(game_ai_autopilot_brain_total[24h]))" }
+      ]
+    },
+    {
+      "id": 102, "type": "text", "title": "Diplomacia (SDD 67/80)",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 30 },
+      "options": { "mode": "markdown", "content": "Negociación de nucleares: ofrecer/aceptar **tributo**, **recuperar** misiles (recall), **dar tiempo** (posterga el impacto para que el rival desarrolle diplomacia), y NPC **buscando diplomacia** bajo amenaza. `actor=human|npc` distingue quién actúa." }
+    },
+    {
+      "id": 8, "type": "timeseries",
+      "title": "Acciones diplomáticas en el tiempo (1h)",
+      "description": "game_diplomacy_actions_total{action,actor}: tribute_offered/tribute_accepted/recall/grant_time/seek_diplomacy, por humano o NPC.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 33 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{action}} · {{actor}}",
+          "expr": "sum by(action,actor) (increase(game_diplomacy_actions_total[1h]))" }
+      ]
+    },
+    {
+      "id": 9, "type": "piechart",
+      "title": "Diplomacia por tipo y actor (24h)",
+      "description": "Reparto de las acciones diplomáticas del último día. Ves si la negociación la mueven los humanos o las NPC.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 33 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{action}} · {{actor}}",
+          "expr": "sum by(action,actor) (increase(game_diplomacy_actions_total[24h]))" }
+      ]
+    }
+  ]
+}

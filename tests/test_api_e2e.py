@@ -1259,6 +1259,23 @@ async def test_advisor_ask_returns_blockers(client):
                                    json={"message": "hola"})).status_code == 401
 
 
+async def test_advisor_clear_history_e2e(client):
+    """SDD 77 v4: borrar el historial del chat (se pone enorme) sin tocar la vida artificial."""
+    h = await _register(client.http, "adv_clearer")
+    await _onboard(client.http, h)
+    await client.http.post("/api/v1/players/me/advisor/ask", headers=h,
+                           json={"message": "qué construyo"})
+    got = await client.http.get("/api/v1/players/me/advisor/messages", headers=h)
+    assert got.status_code == 200 and len(got.json()) >= 1  # el ask dejó rastro
+    d = await client.http.request("DELETE", "/api/v1/players/me/advisor/messages", headers=h)
+    assert d.status_code == 200 and d.json()["deleted"] >= 1
+    empty = await client.http.get("/api/v1/players/me/advisor/messages", headers=h)
+    assert empty.status_code == 200 and empty.json() == []
+    # sin auth -> 401
+    assert (await client.http.request(
+        "DELETE", "/api/v1/players/me/advisor/messages")).status_code == 401
+
+
 async def test_advisor_model_selector_e2e(client):
     # SDD 9: selector de modelo gpu/cloud/byok. (Sin LLM configurado en tests cae al fallback det.)
     h = await _register(client.http, "modelpicker")

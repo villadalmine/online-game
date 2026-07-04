@@ -7,7 +7,21 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
-## [1.184.0] - 2026-07-04
+## [1.185.0] - 2026-07-04
+
+### 2026-07-04 — Observabilidad de la IA + claridad de las dos IAs + borrar chat
+- **Dashboard nuevo "Vida artificial (IA del jugador)"** (`ai-autopilot.json`): grafica 3 métricas que
+  ya existían pero **no estaban en ningún panel** — `game_ai_autopilot_total{action}` (qué hace el
+  autopiloto por habilidad), `game_ai_autopilot_brain_total{outcome,route}` (cerebro SDD 81: GPU vs
+  nube vs reglas, aplicadas vs fallback) y `game_diplomacy_actions_total{action,actor}` (tributos/
+  recalls/dar-tiempo). Ahora se puede **leer cómo le va al autopilot con cada cerebro**.
+- **Salud del mundo** en el dashboard principal: **heartbeat del tick** (`time() - game_tick_last_run_
+  timestamp` → si sube, el mundo dejó de avanzar), **online ahora** y **requests en vuelo**.
+- **Claridad de las dos IAs**: el panel 🧠 Asistente aclara que es el CHAT (le hablás), y el panel 🤖
+  del Búnker aclara que es la IA que **juega sola por vos cuando no estás** (no se le habla, se
+  desarrolla ahí). Corta la confusión de "¿dónde le hablo a la IA del búnker?".
+- **Borrar historial del chat** (se ponía enorme): botón 🗑 + `DELETE /players/me/advisor/messages`.
+  No toca la vida artificial. e2e `test_advisor_clear_history_e2e`.
 
 ## [1.184.0] - 2026-07-04
 

@@ -75,3 +75,13 @@ async def messages(
     session: AsyncSession = Depends(get_session),
 ):
     return await advisor.list_messages(session, player)
+
+
+@router.delete("/messages")
+async def clear_messages(
+    player: Player = Depends(get_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 77 v4: vacía el historial del chat del asistente (no toca la vida artificial)."""
+    deleted = await advisor.clear_messages(session, player)
+    return {"deleted": deleted}
