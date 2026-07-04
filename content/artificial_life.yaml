@@ -1,15 +1,68 @@
-# SDD 69 Fase 4: niveles de VIDA ARTIFICIAL del búnker. Data-driven — el motor solo lee estos
-# números. Vos "desarrollás la inteligencia" subiendo de nivel (gastás electrónica del búnker +
-# minerales avanzados + tiempo). Cada nivel:
-#   - autonomy_scope: qué puede hacer SOLO el autopiloto de robots (se habilita por sub-fases):
-#       workers  → mantener las minas staffeadas (sub-fase 1, HECHO)
-#       mines    → construir/mejorar minas de los minerales que faltan (sub-fase 1/2)
-#       trade    → comerciar excedente/faltante (sub-fase 2)
-#       colonize → mandar naves a colonizar minerales de otros planetas y traerlos (sub-fase 2)
-#       attack   → atacar/defender solo como un NPC (sub-fase 3)
-#   - speed_efficiency: qué tan rápido hace cada tarea (menos tiempo). quality: tasa de éxito/calidad.
-#   - mining_skill: bonus de rinde por explotar cada tipo de mineral (0-1 por mineral; {} = neutro).
-# Subir un nivel activa MÁS inteligencia también a los NPC (techo `artificial_life_npc_ceiling`, admin).
+# SDD 69/78: VIDA ARTIFICIAL del búnker = un GRAFO DE HABILIDADES data-driven. Vos "desarrollás la
+# inteligencia" subiendo de nivel (electrónica + minerales avanzados + tiempo); cada nivel DESBLOQUEA
+# habilidades (`autonomy_scope`) que el autopiloto de robots ejecuta solo en el tick. La meta: que tu
+# IA juegue casi como vos y, al final, iguale o supere a la NPC.
+#
+# `skills`: catálogo de cada habilidad (qué hace, ícono). La KEY coincide con la del `autonomy_scope`
+# y la del despacho del autopiloto (`run_ai_autopilot`). Agregar/entender una habilidad = leer acá.
+skills:
+  - key: workers
+    icon: "👷"
+    name: "Staffing de minas"
+    name_en: "Mine staffing"
+    description: "Entrena obreros para cubrir el déficit y mantener las minas produciendo a full."
+    description_en: "Trains workers to cover the deficit and keep mines at full output."
+  - key: mines
+    icon: "⛏"
+    name: "Expansión minera"
+    name_en: "Mining expansion"
+    description: "Levanta minas de los minerales de tu raza que todavía no explotás."
+    description_en: "Builds mines for your race's minerals you don't yet exploit."
+  - key: trade
+    icon: "💱"
+    name: "Comercio autónomo"
+    name_en: "Autonomous trade"
+    description: "Vende el excedente sobre un umbral en el mercado (moneda para lo que falte)."
+    description_en: "Sells surplus above a threshold on the market (funds what you lack)."
+  - key: colonize
+    icon: "🪐"
+    name: "Colonización"
+    name_en: "Colonization"
+    description: "Manda naves a colonizar mundos habitables y sumar minerales de otros planetas."
+    description_en: "Sends ships to colonize habitable worlds and add minerals from other planets."
+  - key: defend
+    icon: "🔫"
+    name: "Defensa"
+    name_en: "Defense"
+    description: "Construye una torreta en las bases que quedaron sin defensa (no perder colonias)."
+    description_en: "Builds a turret on bases left undefended (so you don't lose colonies)."
+  - key: research
+    icon: "🔬"
+    name: "Investigación"
+    name_en: "Research"
+    description: "Investiga sola la próxima tecnología asequible de economía/defensa."
+    description_en: "Auto-researches the next affordable economy/defense technology."
+  - key: attack
+    icon: "⚔"
+    name: "Guerra"
+    name_en: "Warfare"
+    description: "Ataca a quien supera claro y defiende, como una NPC (respeta los topes del juego)."
+    description_en: "Attacks whoever it clearly outmatches and defends, like an NPC (within caps)."
+  - key: diplomacy
+    icon: "🕊"
+    name: "Diplomacia"
+    name_en: "Diplomacy"
+    description: "Ofrece/acepta tributo para cancelar nucleares (necesita gobierno + diplomacia)."
+    description_en: "Offers/accepts tribute to cancel nukes (needs government + diplomacy)."
+  - key: learn
+    icon: "🧠"
+    name: "Autoaprendizaje"
+    name_en: "Self-learning"
+    description: "Aprende de la experiencia (cada jugada suma): sube su propia calidad de decisión."
+    description_en: "Learns from experience (each move counts): raises its own decision quality."
+
+# `levels`: cada uno desbloquea MÁS habilidades (autonomy_scope acumulativo). speed_efficiency = qué
+# tan rápido; quality = base de acierto (la EFECTIVA sube con la experiencia, ver skill `learn`).
 levels:
   - level: 1
     name: "IA embrionaria"
@@ -21,7 +74,7 @@ levels:
     research_seconds: 600
     autonomy_scope: [workers]
     speed_efficiency: 1.0
-    quality: 0.5
+    quality: 0.4
   - level: 2
     name: "IA operativa"
     name_en: "Operational AI"
@@ -32,37 +85,59 @@ levels:
     research_seconds: 1200
     autonomy_scope: [workers, mines]
     speed_efficiency: 1.15
-    quality: 0.7
+    quality: 0.55
   - level: 3
     name: "IA mercante"
     name_en: "Merchant AI"
-    description: "Suman comercio autónomo del excedente/faltante."
-    description_en: "Add autonomous trading of surplus/shortfall."
+    description: "Suman comercio autónomo del excedente."
+    description_en: "Add autonomous trading of surplus."
     electronics: 800
     cost: { advanced: 1000, energetic: 700 }
     research_seconds: 2000
     autonomy_scope: [workers, mines, trade]
     speed_efficiency: 1.25
-    quality: 0.8
+    quality: 0.65
   - level: 4
-    name: "IA colonizadora"
+    name: "IA colona"
     name_en: "Colonizer AI"
-    description: "Mandan naves a colonizar minerales de otros planetas y traerlos."
-    description_en: "Send ships to colonize minerals on other planets and bring them back."
+    description: "Mandan naves a colonizar minerales de otros planetas."
+    description_en: "Send ships to colonize minerals on other planets."
     electronics: 1400
     cost: { advanced: 1600, energetic: 1200, structural: 800 }
     research_seconds: 3000
     autonomy_scope: [workers, mines, trade, colonize]
     speed_efficiency: 1.4
-    quality: 0.9
+    quality: 0.75
   - level: 5
+    name: "IA guardiana"
+    name_en: "Guardian AI"
+    description: "Se protege sola: fortifica las bases sin defensa e investiga tecnología útil."
+    description_en: "Protects itself: fortifies undefended bases and researches useful tech."
+    electronics: 2000
+    cost: { advanced: 2200, energetic: 1600, structural: 1200 }
+    research_seconds: 3600
+    autonomy_scope: [workers, mines, trade, colonize, defend, research]
+    speed_efficiency: 1.5
+    quality: 0.85
+  - level: 6
     name: "IA soberana"
     name_en: "Sovereign AI"
-    description: "Autonomía total: también atacan y defienden solos como una civilización propia."
-    description_en: "Full autonomy: they also attack and defend on their own like a civilization."
-    electronics: 2500
-    cost: { advanced: 2600, energetic: 2000, structural: 1500 }
+    description: "Autonomía total: también ataca y defiende como una civilización propia (nivel NPC)."
+    description_en: "Full autonomy: also attacks and defends like its own civilization (NPC level)."
+    electronics: 3000
+    cost: { advanced: 3000, energetic: 2400, structural: 1800 }
     research_seconds: 4200
-    autonomy_scope: [workers, mines, trade, colonize, attack]
+    autonomy_scope: [workers, mines, trade, colonize, defend, research, attack]
     speed_efficiency: 1.6
-    quality: 1.0
+    quality: 0.95
+  - level: 7
+    name: "IA trascendente"
+    name_en: "Transcendent AI"
+    description: "Supera a la NPC: negocia diplomacia y aprende de cada jugada (mejora sola)."
+    description_en: "Beyond the NPC: negotiates diplomacy and learns from each move (self-improves)."
+    electronics: 4500
+    cost: { advanced: 4200, energetic: 3400, structural: 2600 }
+    research_seconds: 5400
+    autonomy_scope: [workers, mines, trade, colonize, defend, research, attack, diplomacy, learn]
+    speed_efficiency: 1.75
+    quality: 1.15

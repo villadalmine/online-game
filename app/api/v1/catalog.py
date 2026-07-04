@@ -33,6 +33,8 @@ def build_catalog() -> dict:
         "satellites": list(c.satellites.values()),  # SDD 61: satélites
         "rooms": list(c.rooms.values()),             # SDD 64: habitaciones del búnker
         "repop_sets": list(c.repop_sets.values()),   # SDD 64 v2: sets de repoblación
+        "ai_skills": list(c.ai_skills),              # SDD 78: grafo de habilidades de la IA robot
+        "ai_levels": list(c.ai_levels),              # SDD 78: niveles (qué skill abre cada uno)
         "moons": list(c.moons.values()),
         "technologies": list(c.technologies.values()),
         "alliance_types": list(c.alliance_types.values()),

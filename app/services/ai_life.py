@@ -53,6 +53,22 @@ def ai_state(player: Player) -> dict:
     }
 
 
+async def ai_learning(session: AsyncSession, player: Player) -> dict:
+    """SDD 78: la IA APRENDE con la experiencia. xp = nº de jugadas del autopiloto (del journal); la
+    calidad EFECTIVA sube con la experiencia (log, con tope). Sin migración (deriva del journal)."""
+    from sqlalchemy import func
+
+    from app.models import GameEvent
+    xp = (await session.execute(
+        select(func.count()).select_from(GameEvent).where(
+            GameEvent.player_id == player.id, GameEvent.type == "ai_autopilot")
+    )).scalar() or 0
+    base_q = float((_level_spec(player.ai_level or 0) or {}).get("quality", 0.0))
+    bonus = min(0.5, 0.06 * math.log10(1 + int(xp)))   # hasta +0.5 de calidad por experiencia
+    return {"xp": int(xp), "quality_base": round(base_q, 2),
+            "quality_eff": round(min(1.6, base_q + bonus), 2)}
+
+
 async def _total_electronics(session: AsyncSession, player_id: int) -> tuple[float, list[Bunker]]:
     bunkers = list((await session.execute(
         select(Bunker).where(Bunker.player_id == player_id).order_by(Bunker.id)
@@ -128,6 +144,10 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
         total += await _auto_trade(session, player, settings)
     if "colonize" in scope:
         total += await _auto_colonize(session, player)
+    if "defend" in scope:                       # SDD 78: fortifica bases sin defensa
+        total += await _auto_defend(session, player)
+    if "research" in scope:                     # SDD 78: investiga tecnología útil
+        total += await _auto_research(session, player)
     if "attack" in scope:
         total += await _auto_attack(session, player, settings)
     return total
@@ -198,6 +218,60 @@ async def _auto_mines(session: AsyncSession, player: Player) -> int:
             metrics.AI_AUTOPILOT.inc(action="build_mine")
             await record(session, "ai_autopilot", player.id, action="build_mine", mineral=mineral)
             return 1
+        return 0
+    except Exception:
+        return 0
+
+
+async def _auto_defend(session: AsyncSession, player: Player) -> int:
+    """SDD 78: construir 1 torreta en una base SIN defensa activa (que no se pierdan colonias)."""
+    try:
+        from app.models import Base_, Building
+        from app.services.build import start_build
+        content = get_content()
+        bases = (await session.execute(
+            select(Base_).where(Base_.player_id == player.id)
+        )).scalars().all()
+        if not bases:
+            return 0
+        active = (await session.execute(
+            select(Building.base_id, Building.building_key).where(
+                Building.base_id.in_([b.id for b in bases]), Building.status == "active")
+        )).all()
+        defd = {bid for bid, bk in active
+                if content.buildings.get(bk, {}).get("defense_power", 0) > 0}
+        for b in bases:
+            if b.id not in defd:
+                await start_build(session, player, b, "turret")   # falla si no alcanza el material
+                from app.services.journal import record
+                metrics.AI_AUTOPILOT.inc(action="defend")
+                await record(session, "ai_autopilot", player.id, action="defend", base_id=b.id)
+                return 1
+        return 0
+    except Exception:
+        return 0
+
+
+async def _auto_research(session: AsyncSession, player: Player) -> int:
+    """SDD 78: investigar la próxima tecnología asequible de economía/defensa (la más barata)."""
+    try:
+        from app.services.research import researched_techs, start_research
+        content = get_content()
+        have = await researched_techs(session, player.id)
+        cats = ("economy", "military", "underground", "espionage", "colonization")
+        cands = [t for k, t in content.technologies.items()
+                 if k not in have and t.get("category") in cats
+                 and (not t.get("requires_tech") or t["requires_tech"] in have)]
+        cands.sort(key=lambda t: sum((t.get("cost") or {}).values()))
+        for t in cands[:4]:                     # probá las más baratas; start_research valida
+            try:
+                await start_research(session, player, t["key"])
+                from app.services.journal import record
+                metrics.AI_AUTOPILOT.inc(action="research")
+                await record(session, "ai_autopilot", player.id, action="research", tech=t["key"])
+                return 1
+            except Exception:
+                continue
         return 0
     except Exception:
         return 0

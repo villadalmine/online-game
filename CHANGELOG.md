@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 78: grafo de habilidades de la IA robot (juega como vos + aprende)
+- La vida artificial pasa de una lista lineal a un **grafo de habilidades** data-driven
+  (`content/artificial_life.yaml`): catálogo de 9 skills (qué hace cada una) + 7 niveles que las
+  desbloquean. Nuevos niveles: **L5 guardiana** (defend+research), **L6 soberana** (=NPC),
+  **L7 trascendente** (diplomacia+aprendizaje, supera a la NPC).
+- Autopiloto: nuevos behaviors **defend** (torreta en base sin defensa) y **research** (investiga la
+  tech útil más barata). **Aprende con la experiencia**: la calidad efectiva sube con las jugadas
+  (`ai_learning`, del journal). El panel 🤖 muestra el grafo completo (✓ desbloqueada / 🔒 nivel que
+  la abre + qué hace) y la línea de aprendizaje. `catalog.ai_skills`/`ai_levels`. `docs/sdd-ai-skill-graph.md`.
+
 ### 2026-07-04 — Diplomacia visible: métrica + qué misil vuelve + en "Tu historia"
 - Bug reportado: cancelar un misil (tributo/recall) no mostraba datos del regreso ni métricas de
   diplomacia. El backend YA devolvía el misil al hangar; faltaba VERLO. Ahora: el toast dice cuántos

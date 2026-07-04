@@ -39,10 +39,11 @@ class GameContent:
         self.repop_sets: dict[str, dict] = {
             s["key"]: s for s in _load("repopulation_sets.yaml")["sets"]
         }
-        # SDD 69 Fase 4: niveles de vida artificial (autonomía de robots). Ordenados por level.
-        self.ai_levels: list[dict] = sorted(
-            _load("artificial_life.yaml")["levels"], key=lambda x: x["level"]
-        )
+        # SDD 78: vida artificial = grafo de habilidades. Niveles ordenados + catálogo de skills
+        # (qué hace cada habilidad; la key coincide con el autonomy_scope).
+        _al = _load("artificial_life.yaml")
+        self.ai_levels: list[dict] = sorted(_al["levels"], key=lambda x: x["level"])
+        self.ai_skills: list[dict] = _al.get("skills", [])
 
         units = _load("units.yaml")
         self.personnel: dict[str, dict] = {u["key"]: u for u in units.get("personnel", [])}

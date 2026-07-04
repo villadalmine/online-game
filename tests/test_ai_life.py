@@ -127,14 +127,51 @@ async def test_auto_colonize_with_colony_ship(session, monkeypatch):
     assert len(planets) >= 2   # colonizó al menos un planeta nuevo
 
 
+async def test_auto_defend_builds_turret_on_undefended_base(session, monkeypatch):
+    # SDD 78: nivel 5 (guardiana, skill defend) → torreta en la base sin defensa.
+    from app.content.registry import get_content
+    s = get_settings()
+    monkeypatch.setattr(s, "bunker_autonomy_enabled", True)
+    p, base = await _player(session, name="ai_guard")
+    p.ai_level = 5
+    struct = get_content().resolve_role("martian", "structural")
+    (await get_or_create_stock(session, p.id, struct, "mars")).amount = 100000
+    # la torreta requiere research_lab activo + tech weapons
+    session.add(Building(base_id=base.id, building_key="research_lab", status="active"))
+    session.add(PlayerTech(player_id=p.id, tech_key="weapons"))
+    await session.commit()
+    await run_ai_autopilot(session, p)
+    await session.commit()
+    turrets = (await session.execute(
+        select(Building).where(Building.base_id == base.id, Building.building_key == "turret")
+    )).scalars().all()
+    assert turrets   # fortificó sola la base indefensa
+
+
+async def test_ai_learning_grows_with_experience(session):
+    # SDD 78: la calidad EFECTIVA sube con la experiencia (jugadas del journal).
+    from app.models import GameEvent
+    from app.services.ai_life import ai_learning
+    p, base = await _player(session, name="ai_learner")
+    p.ai_level = 3
+    await session.commit()
+    l0 = await ai_learning(session, p)
+    assert l0["xp"] == 0 and l0["quality_eff"] == l0["quality_base"]
+    for _ in range(50):
+        session.add(GameEvent(type="ai_autopilot", player_id=p.id, payload="{}"))
+    await session.commit()
+    l1 = await ai_learning(session, p)
+    assert l1["xp"] == 50 and l1["quality_eff"] > l1["quality_base"]   # aprendió
+
+
 async def test_auto_attack_hits_a_beatable_enemy(session, monkeypatch):
-    # SDD 69 F4 sub-fase 3: nivel 5 (attack) → ataca a un rival que supera claramente.
+    # SDD 78: nivel 6 (attack) → ataca a un rival que supera claramente.
     from app.models import AttackMission, UnitStock
     s = get_settings()
     monkeypatch.setattr(s, "bunker_autonomy_enabled", True)
     monkeypatch.setattr(s, "garrison_enabled", False)   # usar el ejército global (simple)
     atk, abase = await _player(session, name="ai_atk")
-    atk.ai_level = 5
+    atk.ai_level = 6
     dfn, dbase = await _player(session, name="ai_vic")
     dfn.protected_until = None                          # sin protección de novato
     session.add(UnitStock(player_id=atk.id, unit_key="soldier", quantity=100))
