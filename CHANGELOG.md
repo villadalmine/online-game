@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.176.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 78 v6: la IA elige composición con la meta aprendida (cierra la IA)
 - Con el skill **learn** (nivel 7), al atacar la IA prioriza la unidad que MÁS gana según la meta real
   de las partidas (SDD 41, `winrate_by_unit`): manda full de esa unidad y guarda las otras para defender.
