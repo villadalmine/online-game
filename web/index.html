@@ -2265,11 +2265,22 @@ async function loadAllBattles(){
   let rows; try{ rows=await api("/api/v1/combat/battles"); }catch{ return; }
   const el=$("allbattles"); if(!el) return;
   if(!rows.length){ el.innerHTML=`<span class="muted">${tr('ac_battles_none')}</span>`; return; }
-  const groups={};
-  for(const b of rows){ (groups[b.attacker]=groups[b.attacker]||{npc:b.attacker_is_npc,items:[]}).items.push(b); }
-  el.innerHTML = Object.entries(groups).map(([atk,g])=>
-    `<div style="margin-bottom:8px"><div class="muted" style="font-weight:600;margin-bottom:2px">⚔ ${esc(atk)}${g.npc?' 🤖':''} <span style="font-weight:400">(${g.items.length})</span></div>`+
-    g.items.map(battleRow).join("")+`</div>`).join("");
+  // SDD: colapsable por período (Hoy/Ayer/Semana/mes), como los reportes de combate. Pedido del usuario.
+  const now=new Date(), dk=d=>d.toDateString();
+  const today=dk(now), yest=dk(new Date(now.getTime()-864e5)), weekAgo=now.getTime()-7*864e5;
+  const groups=new Map();
+  for(const b of rows){ const dt=new Date(b.created_at); let key,label,defOpen=false;
+    if(dk(dt)===today){ key="ab:today"; label=`📅 ${tr('rep_today')}`; defOpen=true; }
+    else if(dk(dt)===yest){ key="ab:yest"; label=tr('rep_yesterday'); }
+    else if(dt.getTime()>weekAgo){ key="ab:week"; label=tr('rep_week'); }
+    else { key=`ab:${dt.getFullYear()}-${dt.getMonth()}`;
+      label=dt.toLocaleDateString(lang==='en'?'en':'es',{month:'long',year:'numeric'}); }
+    const g=groups.get(key)||{label,items:[],defOpen}; g.items.push(battleRow(b)); groups.set(key,g);
+  }
+  el.innerHTML=[...groups.entries()].map(([key,g])=>{
+    const title=`<b>${esc(g.label)}</b> <span class="muted" style="font-size:11px">${g.items.length} ⚔</span>`;
+    return (g.defOpen?_collapse:_collapseC)(key,title,g.items.join(""));
+  }).join("");
 }
 function acRender(){
   const q=(($("ac_q")||{}).value||"").toLowerCase();
@@ -2789,11 +2800,12 @@ function _globeDots(key){
   (state&&state.bases||[]).filter(b=>b.planet_key===key).forEach(b=>{
     const lbl=b.base_type==='orbital'?'🛰':(b.base_type==='lunar'?'🌙':(b.id===state.home_base_id?'⭐':'🏭'));
     dots.push({id:'m'+b.id, mine:true, lbl, name:'#'+b.id}); });
-  (players||[]).filter(pl=>pl.planet_key===key && pl.id!==(state&&state.id)).forEach(c=>{
-    const em=((state&&state.enemy_maps)||{})[String(c.id)];
-    if(em && em.pct>0){ (em.bases||[]).map(b=>b.base_id).forEach(bid=>
-      dots.push({id:'e'+bid, mine:false, lbl:'⚔', name:esc(c.username)+' #'+bid, pct:em.pct})); }
-  });
+  // SDD 61/68 FIX: dibujá CADA base enemiga escaneada en el planeta donde ESTÁ (no en el natal del
+  // rival) → si espiaste a alguien, su base en este planeta aparece aunque su HQ esté en otro.
+  Object.entries((state&&state.enemy_maps)||{}).forEach(([tid,em])=>{
+    if(!em || !(em.pct>0)) return; const nm=playerName(+tid);
+    (em.bases||[]).filter(b=>(b.planet||b.planet_key)===key).forEach(b=>
+      dots.push({id:'e'+b.base_id, mine:false, lbl:'⚔', name:esc(nm)+' #'+b.base_id, pct:em.pct})); });
   dots.forEach(d=>{ const h=_ghash(d.id); d.lon=(h%360)*Math.PI/180; d.lat=(((h>>9)%120)-60)*Math.PI/180; });
   return dots;
 }
@@ -2802,10 +2814,9 @@ function _globeDots(key){
 // menos niebla, bases más nítidas.
 function _globeCoverage(key){
   if((state&&state.bases||[]).some(b=>b.planet_key===key)) return {cov:1, own:true};
-  let cov=0;
-  (players||[]).filter(pl=>pl.planet_key===key && pl.id!==(state&&state.id)).forEach(c=>{
-    const em=((state&&state.enemy_maps)||{})[String(c.id)];
-    if(em) cov=Math.max(cov,(em.pct||0)/100);
+  let cov=0;   // SDD 61/68 FIX: cobertura del planeta = mejor % de un rival con una base escaneada acá
+  Object.values((state&&state.enemy_maps)||{}).forEach(em=>{
+    if(em && (em.bases||[]).some(b=>(b.planet||b.planet_key)===key)) cov=Math.max(cov,(em.pct||0)/100);
   });
   return {cov, own:false};
 }

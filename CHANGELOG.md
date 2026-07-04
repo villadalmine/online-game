@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — Fix mapa (enemigos por planeta real) + batallas de todos colapsables por tiempo
+- **Mapa/globo**: dibujaba las bases enemigas escaneadas en el planeta NATAL del rival, no donde
+  están → si espiabas a alguien con base en el planeta que mirás pero HQ en otro, no aparecía. Ahora
+  cada base escaneada se dibuja en SU planeta (y la cobertura del globo lo considera).
+- **Batallas de todos**: agrupadas colapsables por período (Hoy/Ayer/Semana/mes), como los reportes
+  de combate. Solo front. Pedidos del usuario.
+
 ## [1.180.0] - 2026-07-04
 
 ### 2026-07-04 — FIX: las plazas se liberan al lanzar misiles/drones (con guarnición)
