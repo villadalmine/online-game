@@ -173,8 +173,8 @@ async def test_brain_records_fallback_when_route_fails(session, monkeypatch):
     assert ai_life.brain_stats_report(p)["gpu"]["fallback"] >= 1
 
 
-async def test_brain_quality_records_productivity(session, monkeypatch):
-    # SDD 81 v2: la calidad del cerebro = si la skill elegida PRODUJO algo (no solo si respondió).
+async def test_brain_quality_weighs_impact(session, monkeypatch):
+    # SDD 81 v2/v4: la calidad del cerebro PESA cuánto rindió la skill elegida (acciones, con tope).
     from app.services import ai_life
     s = get_settings()
     monkeypatch.setattr(s, "ai_autopilot_brain_enabled", True)
@@ -188,10 +188,32 @@ async def test_brain_quality_records_productivity(session, monkeypatch):
     monkeypatch.setattr(ai_life, "_resolve_brain", pick_workers)
 
     async def workers_did_2(session, player, settings, q=0.5):
-        return 2               # la skill priorizada produjo algo
+        return 2               # la skill priorizada produjo 2 acciones
     monkeypatch.setattr(ai_life, "_auto_workers", workers_did_2)
     await ai_life.run_ai_autopilot(session, p)
-    assert ai_life.brain_stats_report(p)["gpu"]["applied"] >= 1   # productiva → llm
+    assert ai_life.brain_stats_report(p)["gpu"]["applied"] == 2   # crédito = impacto (2), no 1
+
+
+async def test_brain_daily_budget_caps_llm(session, monkeypatch):
+    # SDD 81 v4: tope diario de llamadas LLM del cerebro → agotado cae a reglas (control de costo).
+    from app.services import ai_life
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_autopilot_brain_enabled", True)
+    monkeypatch.setattr(s, "ai_brain_min_level", 1)
+    monkeypatch.setattr(s, "ai_brain_llm_calls_per_day", 1)   # solo 1 llamada por día
+    p, _ = await _player(session, name="ai_budget")
+    p.ai_level = 3
+    p.ai_brain_mode = "gpu"
+    await session.commit()
+    calls = []
+
+    async def fake_pick(session, player, scope, route):
+        calls.append(route)
+        return "workers"
+    monkeypatch.setattr(ai_life, "_llm_pick_skill", fake_pick)
+    assert (await ai_life._resolve_brain(session, p, ["workers"]))[0] == "workers"  # 1ra: usa cupo
+    assert await ai_life._resolve_brain(session, p, ["workers"]) == (None, None)    # 2da: sin cupo
+    assert len(calls) == 1                                    # el LLM se llamó una sola vez
 
 
 async def test_auto_research_prioritizes_blocked_skill_tech(session, monkeypatch):
@@ -212,6 +234,8 @@ async def test_auto_research_prioritizes_blocked_skill_tech(session, monkeypatch
     n = await ai_life._auto_research(session, p, ["research", "bunker"])
     # priorizó ese paso (no una tech barata cualquiera)
     assert n == 1 and picked and picked[0] == expected
+    # y el gate de 'colonize' apunta a la tech de la nave colonizadora (antigravity)
+    assert ai_life._SKILL_GATE_TECH["colonize"] == "antigravity"
 
 
 async def test_brain_rules_mode_never_calls_llm(session, monkeypatch):

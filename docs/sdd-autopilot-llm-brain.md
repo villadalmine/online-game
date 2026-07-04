@@ -63,10 +63,20 @@ Los tres follow-ups menores que quedaban:
   scope está gateado por una tech faltante (`_SKILL_GATE_TECH`: bunker→bunker_engineering,
   defend→weapons, spy→satellite_tech) y, con `_first_researchable_toward`, prioriza el próximo paso
   **researchable** de esa cadena de prereqs por sobre la simple "más barata". Así la IA se destraba sola.
-- Tests: `test_brain_quality_records_productivity`, `test_brain_records_fallback_when_route_fails`,
+- Tests: `test_brain_quality_weighs_impact`, `test_brain_records_fallback_when_route_fails`,
   `test_auto_research_prioritizes_blocked_skill_tech`.
 
+## v4 (HECHO) — impacto + presupuesto diario + más gates
+- **La calidad PESA el impacto (no solo "hizo algo"):** el crédito de un acierto = las acciones que
+  produjo la skill priorizada (`total-before`, con tope 3) → `_record_brain(..., weight=)`. Un fallo suma
+  1. Así `auto` prefiere la ruta cuyas decisiones RINDEN más, no solo la que devuelve una key válida.
+- **Presupuesto diario del cerebro LLM por jugador (control de costo):** `ai_brain_llm_calls_per_day`
+  (200) tope por día/jugador, contado en `ai_brain_stats` bajo `_day`/`_calls` (sin migración; reset
+  diario). Agotado → cae a reglas ese turno. `_brain_budget_ok`. 0 = sin tope.
+- **Más gates skill→tech:** `colonize`/`expedition` → `antigravity` (la tech de la nave colonizadora /
+  transbordador). Sumados a bunker/defend/spy.
+- Tests: `test_brain_quality_weighs_impact`, `test_brain_daily_budget_caps_llm` + gate de colonize.
+
 ## Follow-ups
-- Que la calidad además pese el RESULTADO de juego (win-rate/crecimiento), no solo "la skill hizo algo".
-- Presupuesto diario del cerebro LLM por jugador (hoy sin tope explícito; el mín-nivel + opt-in lo acota).
+- Que la calidad además pese el RESULTADO de juego (win-rate/crecimiento), no solo "cuántas acciones".
 - Más gates skill→tech en `_SKILL_GATE_TECH` a medida que se agreguen habilidades con prerequisito.

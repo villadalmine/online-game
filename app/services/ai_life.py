@@ -177,9 +177,14 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
             total += await _auto_repopulate(session, player)
         elif key == "attack":
             total += await _auto_attack(session, player, settings, q, use_meta="learn" in scope)
-        # SDD 81 v2: CALIDAD del cerebro = si la skill elegida produjo algo (no solo si respondió)
+        # SDD 81 v2/v4: CALIDAD del cerebro = cuánto RINDIÓ la skill elegida (acciones producidas,
+        # con tope), no solo si respondió. Sin producción → fallback.
         if key == priority and prio_route:
-            _record_brain(player, prio_route, "llm" if total > before else "fallback")
+            produced = total - before
+            if produced > 0:
+                _record_brain(player, prio_route, "llm", weight=min(3.0, float(produced)))
+            else:
+                _record_brain(player, prio_route, "fallback")
     return total
 
 
@@ -243,7 +248,32 @@ def brain_stats_report(player: Player) -> dict:
     return out
 
 
-def _record_brain(player: Player, route: str, outcome: str) -> None:
+def _brain_budget_ok(player: Player, settings) -> bool:
+    """SDD 81 v4: tope diario de llamadas LLM del cerebro por jugador (control de costo). Cuenta en
+    `ai_brain_stats` bajo `_day`/`_calls` (sin migración; se resetea al cambiar el día). True = hay
+    presupuesto (y consume 1); False = agotado → la IA cae a reglas ese turno. 0 = sin tope."""
+    import json
+    from datetime import UTC, datetime
+    cap = int(getattr(settings, "ai_brain_llm_calls_per_day", 0) or 0)
+    if cap <= 0:
+        return True
+    try:
+        stats = json.loads(getattr(player, "ai_brain_stats", "") or "{}")
+    except Exception:
+        stats = {}
+    today = datetime.now(UTC).date().isoformat()
+    if stats.get("_day") != today:
+        stats["_day"], stats["_calls"] = today, 0
+    used = int(stats.get("_calls", 0))
+    if used >= cap:
+        player.ai_brain_stats = json.dumps(stats)   # persistí el reset del día aunque no haya cupo
+        return False
+    stats["_calls"] = used + 1
+    player.ai_brain_stats = json.dumps(stats)
+    return True
+
+
+def _record_brain(player: Player, route: str, outcome: str, weight: float = 1.0) -> None:
     """SDD 81 v2: registra el resultado de una decisión del cerebro (readout + auto-switch) + la
     métrica global. `outcome=llm` = la ruta eligió una skill que PRODUJO algo (calidad, no solo
     "respondió"); `fallback` = no eligió o eligió algo inútil. Aplica DECAIMIENTO (media móvil) para
@@ -258,7 +288,9 @@ def _record_brain(player: Player, route: str, outcome: str) -> None:
     s = stats.setdefault(route, {"llm": 0, "fallback": 0})
     s["llm"] = round(float(s.get("llm", 0)) * decay, 4)
     s["fallback"] = round(float(s.get("fallback", 0)) * decay, 4)
-    s[outcome] = round(float(s.get(outcome, 0)) + 1.0, 4)
+    # v4: el crédito de un acierto PESA el impacto (cuántas acciones produjo la skill, con tope);
+    # un fallo suma 1. Así 'auto' prefiere la ruta cuyas decisiones RINDEN más (no solo "hacen").
+    s[outcome] = round(float(s.get(outcome, 0)) + (weight if outcome == "llm" else 1.0), 4)
     player.ai_brain_stats = json.dumps(stats)   # reasignar → SQLAlchemy detecta el cambio (Text)
 
 
@@ -291,6 +323,8 @@ async def _resolve_brain(
     else:
         routes = [mode]
     for route in routes:
+        if not _brain_budget_ok(player, settings):   # SDD 81 v4: sin cupo diario → reglas (costo)
+            break
         pick = await _llm_pick_skill(session, player, scope, route)
         if pick:
             return pick, route          # el caller registra según la PRODUCTIVIDAD de la skill
@@ -633,8 +667,9 @@ async def ai_posture(session: AsyncSession, player: Player) -> str:
     return "balanced"
 
 
-# SDD 81 v3: skills del autopiloto que quedan BLOQUEADAS sin una tech → research las prioriza.
-_SKILL_GATE_TECH = {"bunker": "bunker_engineering", "defend": "weapons", "spy": "satellite_tech"}
+# SDD 81 v3/v4: skills del autopiloto que quedan BLOQUEADAS sin una tech → research las prioriza.
+_SKILL_GATE_TECH = {"bunker": "bunker_engineering", "defend": "weapons", "spy": "satellite_tech",
+                    "colonize": "antigravity", "expedition": "antigravity"}
 
 
 def _first_researchable_toward(content, target_key: str, have: set) -> str | None:

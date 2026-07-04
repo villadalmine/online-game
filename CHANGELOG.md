@@ -7,6 +7,23 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.188.0] - 2026-07-04
+
+### 2026-07-04 — SDD 81 v4: impacto + presupuesto del cerebro LLM + más gates de research
+Los follow-ups de IA que quedaban (todo menos Telegram):
+- **La calidad del cerebro PESA el impacto:** el crédito de un acierto ahora es proporcional a cuántas
+  acciones produjo la skill elegida (con tope), no un 1 fijo. `auto` prefiere la ruta cuyas decisiones
+  **rinden más**, no solo la que devuelve una key válida.
+- **Presupuesto diario del cerebro LLM por jugador** (control de costo): `ai_brain_llm_calls_per_day`
+  (200) por día/jugador; agotado, la IA cae a reglas ese turno. Contado en `ai_brain_stats` (sin
+  migración, reset diario). 0 = sin tope.
+- **`research` destraba más skills:** sumé `colonize`/`expedition` → `antigravity` a los gates
+  skill→tech (además de búnker/defensa/espía), así la IA investiga sola lo que necesita para colonizar
+  y expedicionar.
+- Tests unit de los tres. `docs/sdd-autopilot-llm-brain.md` (v4).
+- Nota: el recon confirmó que los otros "bloqueadores de publicación" (email/OTP, secretos en Secret,
+  backup de Postgres, hosting+TLS+dominio) **ya estaban implementados** en el repo; no requerían código.
+
 ## [1.187.0] - 2026-07-04
 
 ## [1.187.0] - 2026-07-04
