@@ -9,6 +9,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.186.0] - 2026-07-04
 
+## [1.186.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 81 v2: el cerebro `auto` se auto-optimiza + readout in-game
 - Pedido: *"quiero leer cómo va la IA si elijo gpu/cloud/determinista, y que ella sepa qué anda mejor
   si usa auto"*.
