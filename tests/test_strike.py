@@ -108,6 +108,26 @@ async def test_nuclear_travels_24h_and_tribute_cancels(session):
     assert res["returned"] == {"nuclear_missile": 1}
 
 
+async def test_launch_frees_launcher_base_housing_with_garrison(session, monkeypatch):
+    # SDD 46/62 FIX: con guarnición, lanzar descuenta de la fila de la LANZADERA → libera plazas.
+    from app.core.config import get_settings
+    from app.models import UnitStock
+    from app.services.training import units_at_base
+    monkeypatch.setattr(get_settings(), "garrison_enabled", True)
+    atk, abase = await _p(session, "garr_nuker", "mars", "martian")
+    dfn, dbase = await _p(session, "garr_nuked", "mars", "martian")
+    dfn.protected_until = None
+    session.add(Building(base_id=abase.id, building_key="launcher", status="active"))
+    session.add(PlayerTech(player_id=atk.id, tech_key="rocketry"))
+    session.add(UnitStock(player_id=atk.id, unit_key="sonic_missile", quantity=3, base_id=abase.id))
+    await session.commit()
+    assert (await units_at_base(session, atk.id, abase.id)).get("sonic_missile", 0) == 3
+    await start_strike(session, atk, abase.id, dbase.id, {"sonic_missile": 2})
+    await session.commit()
+    # se descontó de la BASE (no del pool global) → plaza liberada en esa base
+    assert (await units_at_base(session, atk.id, abase.id)).get("sonic_missile", 0) == 1
+
+
 async def test_recall_strike_requires_diplomacy_then_returns_to_hangar(session):
     # SDD 67 v3: recall de misiles → vuelven al hangar; requiere government + diplomacy.
     from app.models import UnitStock

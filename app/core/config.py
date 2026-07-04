@@ -266,6 +266,10 @@ class Settings(BaseSettings):
     # impacta a esta fracción (intercepción PARCIAL). Nuclear (intercept_cost 100 = 10 torretas): 10
     # torretas lo bloquean; menos → impacta al 50%. 1.0 = sin parcial (todo o nada, histórico).
     strike_partial_impact_factor: float = 0.5
+    # SDD 80: el ATACANTE de un nuclear puede DARLE TIEMPO al defensor (posterga el impacto) para
+    # que desarrolle diplomacia y pague tributo. Cada vez suma N horas; acotado a M veces por misil.
+    nuclear_grant_time_hours: float = 12.0
+    nuclear_time_grants_max: int = 3
 
     # SDD 66: estado de edificios. OFF = los ataques DESTRUYEN el edificio (histórico). ON = daño
     # GRADUAL a `condition` (rinde a fracción; se destruye recién a 0) + reparar/demoler/mejorar.

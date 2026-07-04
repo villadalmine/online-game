@@ -210,14 +210,19 @@ async def launch_drones(
 
     from app.services.combat import _advance_economy
     await _advance_economy(session, owner, now)
-    from app.services.training import get_or_create_unit_stock, player_units
-    have = await player_units(session, owner.id)
+    from app.services.training import get_or_create_unit_stock, player_units, units_at_base
+    # SDD 46/62 FIX: con guarnición los drones viven en la fila de la FÁBRICA → descontar de ahí (no
+    # del global) para que el alojamiento de esa base SE LIBERE al lanzar.
+    settings = get_settings()
+    hold_base = factory_base_id if settings.garrison_enabled else None
+    have = (await units_at_base(session, owner.id, factory_base_id)) \
+        if settings.garrison_enabled else (await player_units(session, owner.id))
     for key, qty in force.items():
         if have.get(key, 0) < qty:
-            raise DroneError(f"No tenés suficientes {key} (tenés {have.get(key, 0)}).")
+            raise DroneError(f"No tenés {key} en la fábrica (tenés {have.get(key, 0)}).")
     # los drones salen del stock mientras orbitan (vuelven con recall si sobreviven)
     for key, qty in force.items():
-        (await get_or_create_unit_stock(session, owner.id, key)).quantity -= qty
+        (await get_or_create_unit_stock(session, owner.id, key, hold_base)).quantity -= qty
 
     squad = DroneSquadron(
         owner_id=owner.id, target_id=defender.id, factory_base_id=factory_base_id,
@@ -335,9 +340,11 @@ async def recall_drones(session: AsyncSession, player: Player, squad_id: int) ->
     except StrikeError as exc:
         raise DroneError(str(exc)) from exc
     from app.services.training import get_or_create_unit_stock
+    # SDD 46/62 FIX: los sobrevivientes vuelven a la FÁBRICA (no al global) con guarnición.
+    hold_base = squad.factory_base_id if get_settings().garrison_enabled else None
     survivors = json.loads(squad.force)
     for key, qty in survivors.items():
-        (await get_or_create_unit_stock(session, player.id, key)).quantity += qty
+        (await get_or_create_unit_stock(session, player.id, key, hold_base)).quantity += qty
     squad.status = "recalled"
     await session.flush()
     return squad

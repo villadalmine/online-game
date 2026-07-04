@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — FIX: las plazas se liberan al lanzar misiles/drones (con guarnición)
+- Bug: con guarnición ON, misiles/drones se entrenaban en la fila POR-BASE pero al lanzarlos se
+  descontaban del POOL GLOBAL → la fila de la base quedaba ocupada → el alojamiento NO se liberaba
+  ("nunca tengo espacio"). Ahora `start_strike`/`start_drones` descuentan de la fila de la LANZADERA/
+  FÁBRICA (como start_attack), y el retorno (tributo/recall) acredita ahí. Test con guarnición.
+
 ## [1.179.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 78 v7: la IA robot elige POSTURA con lo aprendido

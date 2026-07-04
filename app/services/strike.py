@@ -90,9 +90,11 @@ async def accept_tribute(session: AsyncSession, attacker: Player, mission_id: in
         attacker.energy_updated_at = now
     # SDD 67: el misil se cancela y VUELVE al hangar del atacante (no se detona → no se pierde).
     from app.services.training import get_or_create_unit_stock
+    # SDD 46/62 FIX: los misiles vuelven a la LANZADERA (no al global) con guarnición.
+    hold_base = mission.launcher_base_id if settings.garrison_enabled else None
     returned = json.loads(mission.force)
     for key, qty in returned.items():
-        (await get_or_create_unit_stock(session, attacker.id, key)).quantity += int(qty)
+        (await get_or_create_unit_stock(session, attacker.id, key, hold_base)).quantity += int(qty)
     mission.status = "cancelled"
     mission.details = json.dumps({"cancelled_by_tribute": offer, "returned": returned})
     await notify(session, defender.id, "tribute_accepted",
@@ -132,9 +134,10 @@ async def recall_strike(session: AsyncSession, attacker: Player, mission_id: int
         raise StrikeError("Salva no encontrada o ya resuelta.")
     await require_recall_diplomacy(session, attacker)
     from app.services.training import get_or_create_unit_stock
+    hold_base = mission.launcher_base_id if get_settings().garrison_enabled else None
     returned = json.loads(mission.force)
     for key, qty in returned.items():
-        (await get_or_create_unit_stock(session, attacker.id, key)).quantity += int(qty)
+        (await get_or_create_unit_stock(session, attacker.id, key, hold_base)).quantity += int(qty)
     mission.status = "recalled"
     mission.details = json.dumps({"recalled": returned})
     await notify(session, attacker.id, "strike_recalled",
@@ -281,11 +284,15 @@ async def start_strike(
     # economía al día + chequear stock de misiles
     from app.services.combat import _advance_economy
     await _advance_economy(session, attacker, now)
-    from app.services.training import get_or_create_unit_stock, player_units
-    have = await player_units(session, attacker.id)
+    from app.services.training import get_or_create_unit_stock, player_units, units_at_base
+    # SDD 46/62 FIX: con guarnición los misiles viven en la fila de la LANZADERA → descontar de ahí
+    # (no del pool global) para que el alojamiento de esa base SE LIBERE al lanzar.
+    hold_base = launcher_base_id if settings.garrison_enabled else None
+    have = (await units_at_base(session, attacker.id, launcher_base_id)) \
+        if settings.garrison_enabled else (await player_units(session, attacker.id))
     for key, qty in force.items():
         if have.get(key, 0) < qty:
-            raise StrikeError(f"No tenés suficientes {key} (tenés {have.get(key, 0)}).")
+            raise StrikeError(f"No tenés {key} en la lanzadera (tenés {have.get(key, 0)}).")
 
     launch_energy = content.buildings["launcher"].get("launch_energy", 0)
     if not spend_energy(
@@ -295,7 +302,7 @@ async def start_strike(
         raise StrikeError("Energía insuficiente para lanzar.")
 
     for key, qty in force.items():
-        (await get_or_create_unit_stock(session, attacker.id, key)).quantity -= qty
+        (await get_or_create_unit_stock(session, attacker.id, key, hold_base)).quantity -= qty
 
     # SDD 67: una salva con NUCLEAR tarda 24 h (ventana de negociación diplomática); no hay recall.
     travel = travel_seconds(launcher_base.planet_key, target.planet_key)
