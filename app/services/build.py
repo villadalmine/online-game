@@ -213,3 +213,31 @@ async def upgrade_building(
     await record(session, "building_upgraded", player.id, building=b.building_key,
                  kind=kind, level=b.level)
     return b
+
+
+async def fortify_undefended(session: AsyncSession, player: Player) -> dict:
+    """SDD 79: construir una torreta en CADA base sin defensa activa, en UNA acción. Devuelve las
+    fortificadas y las que no pudo (con el motivo: falta lab/tech/material)."""
+    content = get_content()
+    bases = (await session.execute(
+        select(Base_).where(Base_.player_id == player.id).order_by(Base_.id)
+    )).scalars().all()
+    if not bases:
+        return {"fortified": [], "skipped": []}
+    active = (await session.execute(
+        select(Building.base_id, Building.building_key).where(
+            Building.base_id.in_([b.id for b in bases]), Building.status == "active")
+    )).all()
+    defended = {bid for bid, bk in active
+                if content.buildings.get(bk, {}).get("defense_power", 0) > 0}
+    fortified: list[int] = []
+    skipped: list[dict] = []
+    for b in bases:
+        if b.id in defended:
+            continue
+        try:
+            await start_build(session, player, b, "turret")
+            fortified.append(b.id)
+        except BuildError as exc:
+            skipped.append({"base_id": b.id, "planet": b.planet_key, "reason": str(exc)})
+    return {"fortified": fortified, "skipped": skipped}

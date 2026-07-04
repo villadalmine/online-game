@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-04 — SDD 79: botón "Fortificar todas las bases sin defensa"
+- Nuevo botón 🔫 en el panel 🚨 Alertas: pone una torreta en TODAS tus bases sin defensa de una
+  (`POST /bases/fortify-all`). Te dice cuántas fortificó y cuáles no pudo con el motivo (falta lab/tech/
+  material). Para no perder colonias indefensas. Aclarado: las torretas defienden contra TODO (no solo
+  aéreo) pero solo su propia base. e2e + docs/sdd-defense-reinforcement.md.
+
 ## [1.176.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 78 v6: la IA elige composición con la meta aprendida (cierra la IA)

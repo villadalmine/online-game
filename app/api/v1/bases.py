@@ -15,6 +15,7 @@ from app.schemas import (
 from app.services.build import (
     BuildError,
     demolish_building,
+    fortify_undefended,
     repair_building,
     start_build,
     upgrade_building,
@@ -32,6 +33,18 @@ async def _load_owned_base(base_id: int, player: Player, session) -> Base_:
     if base is None or base.player_id != player.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Base no encontrada")
     return base
+
+
+@router.post("/fortify-all")
+async def fortify_all(
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """SDD 79: pone una torreta en TODAS tus bases sin defensa, de una. Devuelve cuáles fortificó y
+    cuáles no pudo (con el motivo)."""
+    result = await fortify_undefended(session, player)
+    await session.commit()
+    return result
 
 
 @router.post("/{base_id}/build", response_model=BuildingOut, status_code=status.HTTP_201_CREATED)

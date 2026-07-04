@@ -1001,6 +1001,34 @@ async def test_advisor_offers_teleport_action_e2e(client, monkeypatch):
     assert ex.status_code == 201, ex.text
 
 
+async def test_fortify_all_builds_turrets_on_undefended_bases_e2e(client):
+    # SDD 79: un botón pone una torreta en TODAS las bases sin defensa (pedido del usuario).
+    from app.content.registry import get_content
+    from app.models import Base_, Building, Player, PlayerTech
+    from app.services.economy import get_or_create_stock
+    h = await _register(client.http, "defender_all")
+    await _onboard(client.http, h)   # martian/mars
+    async with client.session_maker() as db:
+        p = (await db.execute(select(Player).where(Player.username == "defender_all"))).scalar_one()
+        db.add(PlayerTech(player_id=p.id, tech_key="weapons"))   # la torreta requiere weapons + lab
+        base = (await db.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
+        db.add(Building(base_id=base.id, building_key="research_lab", status="active"))
+        struct = get_content().resolve_role(p.race_key, "structural")
+        (await get_or_create_stock(db, p.id, struct, base.planet_key)).amount = 100000
+        p.energy = 999999.0
+        base_id = base.id
+        await db.commit()
+
+    r = await client.http.post("/api/v1/bases/fortify-all", headers=h)
+    assert r.status_code == 200, r.text
+    assert base_id in r.json()["fortified"]
+    async with client.session_maker() as db:
+        turr = (await db.execute(
+            select(Building).where(Building.base_id == base_id, Building.building_key == "turret")
+        )).scalars().all()
+        assert turr   # quedó una torreta en la base
+
+
 async def test_announcements_public_localized_and_filtered(client):
     # SDD 27: anuncios públicos (sin auth), bilingües y filtrables por category/status.
     r = await client.http.get("/api/v1/announcements")
