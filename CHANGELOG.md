@@ -9,6 +9,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.185.0] - 2026-07-04
 
+## [1.185.0] - 2026-07-04
+
 ### 2026-07-04 — Observabilidad de la IA + claridad de las dos IAs + borrar chat
 - **Dashboard nuevo "Vida artificial (IA del jugador)"** (`ai-autopilot.json`): grafica 3 métricas que
   ya existían pero **no estaban en ningún panel** — `game_ai_autopilot_total{action}` (qué hace el
