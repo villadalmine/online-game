@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.183.0] - 2026-07-04
+
+### 2026-07-04 — SDD 78 v8: la IA cuida su búnker y su alojamiento
+- Pedido: *"la IA debería focalizarse también en el búnker, y darse cuenta si no tiene suficiente
+  espacio para unidades o si le faltan tecnologías"*. Dos skills nuevos en el grafo de vida artificial,
+  ambos desbloqueados **temprano** (nivel 2), porque son la base para todo lo demás:
+  - **🕳 Búnker (`bunker`)**: si tiene `bunker_engineering`, la IA cava el búnker si falta y construye
+    salas de investigación (electrónica) — así se **autoabastece de la moneda** que la hace evolucionar.
+  - **🏠 Alojamiento (`housing`)**: detecta un dominio **sin plazas** (unidades sin alojar) y construye
+    el edificio que las aloja. Cierra el hueco de "entreno unidades y no tienen dónde ir".
+- La IA robot pasa a cubrir **14 skills**. Detección de techs faltantes: la cubre el skill `research`;
+  `bunker` agrega su prerequisito específico como puerta. Tests de servicio + e2e (el catálogo publica
+  ambos skills y aparecen en el `autonomy_scope` del nivel 2). `docs/sdd-ai-skill-graph.md` (v8).
+
 ## [1.182.0] - 2026-07-04
 
 ### 2026-07-04 — SDD 80: negociación nuclear más rica (elegir planeta + dar tiempo + métricas)

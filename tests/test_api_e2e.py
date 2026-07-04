@@ -952,7 +952,8 @@ async def test_quantum_teleport_e2e(client, monkeypatch):
         await db.commit()
 
     r = await client.http.post("/api/v1/bunker/teleport", headers=h,
-                               json={"from_base_id": base_id, "to_base_id": base2_id, "amount": 400})
+                               json={"from_base_id": base_id, "to_base_id": base2_id,
+                                     "amount": 400})
     assert r.status_code == 201, r.text
     body = r.json()
     assert body["received"] == 360.0 and round(body["from_electronics"]) == 600   # merma 10%
@@ -964,13 +965,13 @@ async def test_quantum_teleport_e2e(client, monkeypatch):
 
 
 async def test_advisor_offers_teleport_action_e2e(client, monkeypatch):
-    # SDD 77 v2: pedirle a la IA mandar electrónica → devuelve una acción teleport lista y ejecutable.
+    # SDD 77 v2: pedirle a la IA mandar electrónica: devuelve una acción teleport ejecutable.
     from app.core.config import get_settings
     from app.models import Base_, Bunker, BunkerRoom, Player
     s = get_settings()
     monkeypatch.setattr(s, "bunkers_enabled", True)
     monkeypatch.setattr(s, "quantum_teleport_enabled", True)
-    monkeypatch.setattr(s, "advisor_llm_calls_per_day", 0)   # sin LLM: respuesta determinista, rápida
+    monkeypatch.setattr(s, "advisor_llm_calls_per_day", 0)   # sin LLM: respuesta determinista
     h = await _register(client.http, "tpadvisor")
     await _onboard(client.http, h)
     async with client.session_maker() as db:
@@ -1010,7 +1011,7 @@ async def test_fortify_all_builds_turrets_on_undefended_bases_e2e(client):
     await _onboard(client.http, h)   # martian/mars
     async with client.session_maker() as db:
         p = (await db.execute(select(Player).where(Player.username == "defender_all"))).scalar_one()
-        db.add(PlayerTech(player_id=p.id, tech_key="weapons"))   # tech global; el LAB lo arma el fortify
+        db.add(PlayerTech(player_id=p.id, tech_key="weapons"))   # tech global; el LAB lo arma solo
         base = (await db.execute(select(Base_).where(Base_.player_id == p.id))).scalars().first()
         for role in ("structural", "energetic", "advanced"):     # material p/ lab + torreta
             mk = get_content().resolve_role(p.race_key, role)
@@ -1031,11 +1032,11 @@ async def test_fortify_all_builds_turrets_on_undefended_bases_e2e(client):
 async def test_fortify_all_soldiers_fallback_without_weapons_e2e(client, monkeypatch):
     # SDD 79 v3: sin la tech weapons, fortificar garrisonea SOLDADOS (defensa universal) y arranca
     # a investigar weapons.
-    from app.core.config import get_settings
     from app.content.registry import get_content
+    from app.core.config import get_settings
     from app.models import Base_, Player, TrainingOrder
     from app.services.economy import get_or_create_stock
-    monkeypatch.setattr(get_settings(), "housing_enforced", False)   # sin tope de plazas para el test
+    monkeypatch.setattr(get_settings(), "housing_enforced", False)   # sin tope de plazas en el test
     h = await _register(client.http, "defender_soldier")
     await _onboard(client.http, h)   # martian/mars, SIN weapons
     async with client.session_maker() as db:
@@ -3268,6 +3269,13 @@ async def test_ai_life_evolve_e2e(client, monkeypatch):
     h = await _register(client.http, "ailife_e2e")
     st = await _onboard(client.http, h, planet="mars", race="martian")
     base = st["bases"][0]["id"]
+    # el catálogo publica el grafo de habilidades, incluídas búnker y alojamiento (SDD 78 v8)
+    cat = (await client.http.get("/api/v1/catalog")).json()
+    skill_keys = {sk["key"] for sk in cat["ai_skills"]}
+    assert {"bunker", "housing"} <= skill_keys
+    # y ambas están en el scope del nivel 2 (se desbloquean temprano)
+    lvl2 = next(lv for lv in cat["ai_levels"] if lv["level"] == 2)
+    assert "bunker" in lvl2["autonomy_scope"] and "housing" in lvl2["autonomy_scope"]
     # el snapshot expone el estado de IA (nivel 0)
     me = (await client.http.get("/api/v1/players/me", headers=h)).json()
     assert me["ai"]["level"] == 0 and me["ai"]["next"]["level"] == 1

@@ -127,6 +127,46 @@ async def test_auto_colonize_with_colony_ship(session, monkeypatch):
     assert len(planets) >= 2   # colonizó al menos un planeta nuevo
 
 
+async def test_auto_bunker_digs_then_builds_room(session, monkeypatch):
+    # SDD 78 v8: la IA cava el búnker y después construye una sala (electrónica).
+    from app.content.registry import get_content
+    from app.models import Bunker, BunkerRoom, PlayerTech
+    from app.services.ai_life import _auto_bunker
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    p, base = await _player(session, name="ai_digger")
+    session.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+    for role in ("structural", "energetic", "advanced"):
+        mk = get_content().resolve_role(p.race_key, role)
+        (await get_or_create_stock(session, p.id, mk, base.planet_key)).amount = 100000
+    await session.commit()
+    assert await _auto_bunker(session, p) == 1     # cava
+    await session.commit()
+    assert (await session.execute(
+        select(Bunker).where(Bunker.base_id == base.id))).scalar_one_or_none() is not None
+    assert await _auto_bunker(session, p) == 1     # construye una sala
+    await session.commit()
+    assert (await session.execute(select(BunkerRoom))).scalars().all()
+
+
+async def test_auto_housing_builds_when_slots_short(session, monkeypatch):
+    # SDD 78 v8: si a un dominio le faltan plazas, construye el edificio que aloja.
+    from app.content.registry import get_content
+    from app.models import Building, UnitStock
+    from app.services.ai_life import _auto_housing
+    s = get_settings()
+    monkeypatch.setattr(s, "base_housing_per_domain", 0)   # sin gracia → falta plaza ya
+    p, base = await _player(session, name="ai_houser")
+    session.add(UnitStock(player_id=p.id, unit_key="soldier", quantity=20))
+    struct = get_content().resolve_role(p.race_key, "structural")
+    (await get_or_create_stock(session, p.id, struct, base.planet_key)).amount = 100000
+    await session.commit()
+    assert await _auto_housing(session, p) == 1
+    await session.commit()
+    blds = {b.building_key for b in (await session.execute(
+        select(Building).where(Building.base_id == base.id))).scalars()}
+    assert "barracks" in blds   # construyó el cuartel (aloja infantería)
+
+
 async def test_auto_defend_builds_turret_on_undefended_base(session, monkeypatch):
     # SDD 78: nivel 5 (guardiana, skill defend) → torreta en la base sin defensa.
     from app.content.registry import get_content
@@ -349,7 +389,7 @@ async def test_npc_effective_epsilon_scales_with_ceiling(monkeypatch):
     assert abs(npc_effective_epsilon() - 0.36) < 1e-9
     monkeypatch.setattr(s, "artificial_life_npc_ceiling", 100)
     assert npc_effective_epsilon() == 0.6   # topeado
-    # SDD 78: el mayor ai_level de los JUGADORES también sube el techo (entrenás vos → suben las NPC)
+    # SDD 78: el mayor ai_level de los JUGADORES también sube el techo (entrenás vos, suben las NPC)
     monkeypatch.setattr(s, "artificial_life_npc_ceiling", 0)
     set_player_ai_ceiling(3)
     assert abs(npc_effective_epsilon() - (0.2 + 0.08 * 3)) < 1e-9

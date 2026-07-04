@@ -86,7 +86,7 @@ async def test_terraformer_room_enlarges_bunker(session, monkeypatch):
 
 
 async def test_quantum_teleport_moves_electronics(session, monkeypatch):
-    # SDD 76: con Puerta cuántica activa en el origen, teletransporta electrónica a otro búnker (−merma).
+    # SDD 76: con Puerta cuántica activa en el origen, teletransporta electrónica a otro búnker.
     from app.services.bunkers import quantum_teleport
     s = get_settings()
     monkeypatch.setattr(s, "bunkers_enabled", True)

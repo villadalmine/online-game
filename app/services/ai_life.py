@@ -141,8 +141,8 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
     q = float((await ai_learning(session, player)).get("quality_eff", 0.5))
     # SDD 81: la IA "desarrollada" puede PENSAR con el LLM (gpu/cloud/auto) qué priorizar.
     priority = await _resolve_brain(session, player, scope)
-    order = ["workers", "mines", "trade", "colonize", "defend", "research", "diplomacy", "spy",
-             "expedition", "repopulate", "attack"]
+    order = ["workers", "mines", "housing", "bunker", "trade", "colonize", "defend", "research",
+             "diplomacy", "spy", "expedition", "repopulate", "attack"]
     if priority in order:                       # el LLM eligió → esa skill corre PRIMERO
         order = [priority] + [k for k in order if k != priority]
     total = 0
@@ -153,6 +153,10 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
             total += await _auto_workers(session, player, settings, q)
         elif key == "mines":
             total += await _auto_mines(session, player)
+        elif key == "housing":
+            total += await _auto_housing(session, player)
+        elif key == "bunker":
+            total += await _auto_bunker(session, player)
         elif key == "trade":
             total += await _auto_trade(session, player, settings)
         elif key == "colonize":
@@ -295,6 +299,64 @@ async def _auto_mines(session: AsyncSession, player: Player) -> int:
             await record(session, "ai_autopilot", player.id, action="build_mine", mineral=mineral)
             return 1
         return 0
+    except Exception:
+        return 0
+
+
+async def _auto_housing(session: AsyncSession, player: Player) -> int:
+    """SDD 78 v8: se da cuenta si a un dominio le faltan plazas (unidades sin lugar) y construye el
+    edificio que aloja ese dominio en la base natal."""
+    try:
+        from app.services.build import start_build
+        from app.services.economy import _player_buildings
+        from app.services.housing import houses_for_domain, housing_report
+        from app.services.training import player_units
+        home = await _home_base(session, player)
+        if home is None:
+            return 0
+        akeys = [b.building_key for b in await _player_buildings(session, player.id)
+                 if b.status == "active"]
+        rep = housing_report(akeys, await player_units(session, player.id), {})
+        for d, c in rep.items():
+            if c.get("free", 0) <= 0 and c.get("occupancy", 0) > 0:   # dominio lleno con unidades
+                for bk in houses_for_domain(d):
+                    try:
+                        await start_build(session, player, home, bk)
+                        from app.services.journal import record
+                        metrics.AI_AUTOPILOT.inc(action="housing")
+                        await record(session, "ai_autopilot", player.id, action="housing",
+                                     building=bk, domain=d)
+                        return 1
+                    except Exception:
+                        continue
+        return 0
+    except Exception:
+        return 0
+
+
+async def _auto_bunker(session: AsyncSession, player: Player) -> int:
+    """SDD 78 v8: desarrolla el búnker — lo cava si falta y construye una sala de investigación
+    (electrónica, la moneda que sostiene y evoluciona la IA). Requiere `bunker_engineering`."""
+    try:
+        if not get_settings().bunkers_enabled:
+            return 0
+        from app.services.research import researched_techs
+        if "bunker_engineering" not in await researched_techs(session, player.id):
+            return 0
+        from app.services.bunkers import _bunker_for_base, build_room, dig
+        from app.services.journal import record
+        home = await _home_base(session, player)
+        if home is None:
+            return 0
+        if await _bunker_for_base(session, home.id) is None:
+            await dig(session, player, home.id)
+            metrics.AI_AUTOPILOT.inc(action="bunker")
+            await record(session, "ai_autopilot", player.id, action="bunker", op="dig")
+            return 1
+        await build_room(session, player, home.id, "research_room")   # celda auto; falla si lleno
+        metrics.AI_AUTOPILOT.inc(action="bunker")
+        await record(session, "ai_autopilot", player.id, action="bunker", op="room")
+        return 1
     except Exception:
         return 0
 

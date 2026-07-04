@@ -86,6 +86,22 @@ Todo data-driven (catálogo `ai_skills`/`ai_levels`), front sin lógica hardcode
   defensiva ×1.5): confiada pelea más ajustado comprometiendo tropa; cauta solo golea y guarda en casa.
   Se registra en el journal del ataque y se **muestra en el panel 🤖** (postura + calidad + experiencia).
 
+## v8 (HECHO) — la IA cuida su búnker y su alojamiento
+- Pedido del usuario: *"la IA debería focalizarse también en el búnker, y darse cuenta si no tiene
+  suficiente espacio para unidades o si le faltan tecnologías"*.
+- **Skill `bunker`** (L2+): `_auto_bunker` — si tiene `bunker_engineering` y `bunkers_enabled`, cava el
+  búnker si falta (`dig`) y si ya existe construye una **sala de investigación** (electrónica, la moneda
+  que sostiene y evoluciona la IA). Así la IA se autoabastece de electrónica para subir de nivel.
+- **Skill `housing`** (L2+): `_auto_housing` — lee `housing_report` por dominio; si un dominio quedó
+  **sin plazas** (unidades sin alojar) construye el edificio que lo aloja (`houses_for_domain`) en la
+  natal. Cierra el bug de "entreno unidades y no tienen dónde ir".
+- La IA robot cubre ahora **14 skills** y ambas se desbloquean **temprano** (nivel 2), porque búnker y
+  alojamiento son la base para todo lo demás. Tests de servicio + e2e (catálogo publica ambos skills y
+  su presencia en el `autonomy_scope` del nivel 2).
+- La detección de tecnologías faltantes ya la cubre el skill `research` (investiga la próxima tech
+  asequible); `bunker` agrega el prerequisito específico `bunker_engineering` como puerta.
+
 ## Follow-ups
 - `quality_eff` en más decisiones (umbral de comercio, selección de objetivo).
 - Explore epsilon-greedy real en la postura (hoy es exploit puro del win-rate).
+- Que `research` priorice las techs que un skill bloqueado necesita (p.ej. `bunker_engineering`).

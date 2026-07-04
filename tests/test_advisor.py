@@ -45,7 +45,7 @@ async def test_proactive_writes_on_incoming_attack_with_cooldown(session, monkey
 
 
 async def test_teleport_suggestion_when_intent_and_capability(session, monkeypatch):
-    # SDD 77 v2: pedir "teletransportá electrónica" + tener Puerta cuántica → sugerencia lista de un clic.
+    # SDD 77 v2: pedir "teletransportá electrónica" + tener Puerta cuántica: sugerencia de un clic.
     from app.core.config import get_settings
     from app.models import Base_, Bunker, BunkerRoom
     s = get_settings()
@@ -75,7 +75,7 @@ async def test_teleport_suggestion_when_intent_and_capability(session, monkeypat
     assert sug2.params["amount"] == 300.0
     sug3 = await adv._teleport_suggestion(session, p, "teletransportá 5000 electrónica")  # topea
     assert sug3.params["amount"] == 1000.0
-    assert await adv._teleport_suggestion(session, p, "qué construyo primero") is None  # sin intención
+    assert await adv._teleport_suggestion(session, p, "qué construyo primero") is None  # sin intent
 
 
 def test_intent_helpers():
