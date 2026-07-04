@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.179.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 78 v7: la IA robot elige POSTURA con lo aprendido
 - La IA elige postura según el win-rate de sus últimos ataques: **agresiva** (viene ganando → pelea más
   ajustado y compromete más tropa), **defensiva** (perdiendo → solo golea y guarda tropa en casa),
