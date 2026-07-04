@@ -141,7 +141,7 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
     # SDD 78: el APRENDIZAJE modula qué tan "afilada" juega la IA (calidad efectiva x experiencia).
     q = float((await ai_learning(session, player)).get("quality_eff", 0.5))
     # SDD 81: la IA "desarrollada" puede PENSAR con el LLM (gpu/cloud/auto) qué priorizar.
-    priority = await _resolve_brain(session, player, scope)
+    priority, prio_route = await _resolve_brain(session, player, scope)
     order = ["workers", "mines", "housing", "bunker", "trade", "colonize", "defend", "research",
              "diplomacy", "spy", "expedition", "repopulate", "attack"]
     if priority in order:                       # el LLM eligió → esa skill corre PRIMERO
@@ -150,6 +150,7 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
     for key in order:
         if key not in scope:
             continue
+        before = total
         if key == "workers":
             total += await _auto_workers(session, player, settings, q)
         elif key == "mines":
@@ -165,7 +166,7 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
         elif key == "defend":
             total += await _auto_defend(session, player)
         elif key == "research":
-            total += await _auto_research(session, player)
+            total += await _auto_research(session, player, scope)
         elif key == "diplomacy":
             total += await _auto_diplomacy(session, player)
         elif key == "spy":
@@ -176,6 +177,9 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
             total += await _auto_repopulate(session, player)
         elif key == "attack":
             total += await _auto_attack(session, player, settings, q, use_meta="learn" in scope)
+        # SDD 81 v2: CALIDAD del cerebro = si la skill elegida produjo algo (no solo si respondió)
+        if key == priority and prio_route:
+            _record_brain(player, prio_route, "llm" if total > before else "fallback")
     return total
 
 
@@ -221,7 +225,8 @@ def _brain_ratio(stats: dict, route: str) -> float:
 
 
 def brain_stats_report(player: Player) -> dict:
-    """Rendimiento del cerebro por ruta para el snapshot/UI: aplicadas, fallback, tasa, muestras."""
+    """Rendimiento del cerebro por ruta para el snapshot/UI: aplicadas, fallback, tasa, muestras.
+    Los conteos pueden ser fraccionarios (llevan decaimiento, ver `_record_brain`); se redondean."""
     import json
     try:
         stats = json.loads(getattr(player, "ai_brain_stats", "") or "{}")
@@ -230,37 +235,47 @@ def brain_stats_report(player: Player) -> dict:
     out = {}
     for route in ("gpu", "cloud"):
         s = stats.get(route) or {}
-        llm, fb = int(s.get("llm", 0)), int(s.get("fallback", 0))
+        llm, fb = float(s.get("llm", 0)), float(s.get("fallback", 0))
         n = llm + fb
-        if n:
-            out[route] = {"applied": llm, "fallback": fb, "n": n, "ratio": round(llm / n, 2)}
+        if n > 0.01:
+            out[route] = {"applied": round(llm), "fallback": round(fb),
+                          "n": round(n), "ratio": round(llm / n, 2)}
     return out
 
 
 def _record_brain(player: Player, route: str, outcome: str) -> None:
-    """Suma una muestra al rendimiento per-jugador (readout + auto-switch) + la métrica global."""
+    """SDD 81 v2: registra el resultado de una decisión del cerebro (readout + auto-switch) + la
+    métrica global. `outcome=llm` = la ruta eligió una skill que PRODUJO algo (calidad, no solo
+    "respondió"); `fallback` = no eligió o eligió algo inútil. Aplica DECAIMIENTO (media móvil) para
+    adaptarse a lo reciente en vez de arrastrar todo el historial."""
     import json
     metrics.AI_AUTOPILOT_BRAIN.inc(outcome=outcome, route=route)
+    decay = get_settings().ai_brain_decay
     try:
         stats = json.loads(getattr(player, "ai_brain_stats", "") or "{}")
     except Exception:
         stats = {}
     s = stats.setdefault(route, {"llm": 0, "fallback": 0})
-    s[outcome] = int(s.get(outcome, 0)) + 1
+    s["llm"] = round(float(s.get("llm", 0)) * decay, 4)
+    s["fallback"] = round(float(s.get("fallback", 0)) * decay, 4)
+    s[outcome] = round(float(s.get(outcome, 0)) + 1.0, 4)
     player.ai_brain_stats = json.dumps(stats)   # reasignar → SQLAlchemy detecta el cambio (Text)
 
 
-async def _resolve_brain(session: AsyncSession, player: Player, scope: list) -> str | None:
+async def _resolve_brain(
+    session: AsyncSession, player: Player, scope: list
+) -> tuple[str | None, str | None]:
     """SDD 81: según `Player.ai_brain_mode` (rules|gpu|cloud|auto) la IA piensa con el LLM o reglas.
-    v2: 'auto' es un BANDIT — prefiere la ruta con mejor tasa de aplicadas (por jugador), con
-    exploración `ai_brain_explore` para seguir midiendo la otra. Registra llm/fallback por ruta
-    (global + per-jugador, para el readout in-game). Solo desde `ai_brain_min_level` con el flag."""
+    v2: 'auto' es un BANDIT — prefiere la ruta con mejor tasa (por jugador), con exploración
+    `ai_brain_explore`. Devuelve (skill_priorizada, ruta): la ruta que eligió se registra DESPUÉS,
+    según si la skill produjo algo (calidad); las rutas que no eligen se marcan fallback acá. Solo
+    desde `ai_brain_min_level` con el flag; ante todo fallo → (None, None) = reglas."""
     import random
     settings = get_settings()
     mode = (getattr(player, "ai_brain_mode", "rules") or "rules").lower()
     if (not settings.ai_autopilot_brain_enabled or mode == "rules"
             or (player.ai_level or 0) < settings.ai_brain_min_level):
-        return None
+        return None, None
     if mode == "auto":
         stats = {}
         try:
@@ -277,10 +292,10 @@ async def _resolve_brain(session: AsyncSession, player: Player, scope: list) -> 
         routes = [mode]
     for route in routes:
         pick = await _llm_pick_skill(session, player, scope, route)
-        _record_brain(player, route, "llm" if pick else "fallback")
         if pick:
-            return pick
-    return None
+            return pick, route          # el caller registra según la PRODUCTIVIDAD de la skill
+        _record_brain(player, route, "fallback")   # esta ruta no supo elegir → miss inmediato
+    return None, None
 
 
 async def _home_base(session: AsyncSession, player: Player) -> Base_ | None:
@@ -618,18 +633,49 @@ async def ai_posture(session: AsyncSession, player: Player) -> str:
     return "balanced"
 
 
-async def _auto_research(session: AsyncSession, player: Player) -> int:
-    """SDD 78: investigar la próxima tecnología asequible de economía/defensa (la más barata)."""
+# SDD 81 v3: skills del autopiloto que quedan BLOQUEADAS sin una tech → research las prioriza.
+_SKILL_GATE_TECH = {"bunker": "bunker_engineering", "defend": "weapons", "spy": "satellite_tech"}
+
+
+def _first_researchable_toward(content, target_key: str, have: set) -> str | None:
+    """La primera tech researchable YA (prereq cumplido) en la cadena de prereqs hacia `target_key`.
+    Camina `requires_tech` hacia atrás hasta una con el prereq cumplido. None si ya la tenés."""
+    key, seen = target_key, set()
+    while key and key not in have and key not in seen:
+        seen.add(key)
+        t = content.technologies.get(key)
+        if not t:
+            return None
+        req = t.get("requires_tech")
+        if not req or req in have:
+            return key                          # researchable ahora (sin prereq o ya cumplido)
+        key = req
+    return None
+
+
+async def _auto_research(session: AsyncSession, player: Player, scope: list | None = None) -> int:
+    """SDD 78: investigar la próxima tecnología asequible de economía/defensa (la más barata).
+    SDD 81 v3: si un skill del scope está BLOQUEADO por falta de tech, prioriza esa tech (o el
+    próximo paso researchable de su cadena de prereqs) antes que la simple 'más barata'."""
     try:
         from app.services.research import researched_techs, start_research
         content = get_content()
         have = await researched_techs(session, player.id)
+        # techs que DESBLOQUEAN un skill del scope (resolviendo la cadena de prereqs al paso viable)
+        wanted = set()
+        for skill in (scope or []):
+            gate = _SKILL_GATE_TECH.get(skill)
+            if gate and gate not in have:
+                step = _first_researchable_toward(content, gate, have)
+                if step:
+                    wanted.add(step)
         cats = ("economy", "military", "underground", "espionage", "colonization")
         cands = [t for k, t in content.technologies.items()
-                 if k not in have and t.get("category") in cats
+                 if k not in have and (t.get("category") in cats or k in wanted)
                  and (not t.get("requires_tech") or t["requires_tech"] in have)]
-        cands.sort(key=lambda t: sum((t.get("cost") or {}).values()))
-        for t in cands[:4]:                     # probá las más baratas; start_research valida
+        # primero las que desbloquean un skill (wanted), después por costo
+        cands.sort(key=lambda t: (t["key"] not in wanted, sum((t.get("cost") or {}).values())))
+        for t in cands[:5]:                # probá las prioritarias/baratas; start_research valida
             try:
                 await start_research(session, player, t["key"])
                 from app.services.journal import record

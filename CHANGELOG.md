@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.187.0] - 2026-07-04
+
+### 2026-07-04 — SDD 81 v2.1/v3: la IA aprende mejor su cerebro + research se destraba sola
+Los tres follow-ups menores de IA que quedaban:
+- **La tasa del cerebro mide CALIDAD, no solo "respondió":** el registro se hace tras ejecutar la skill
+  priorizada — si **produjo algo** cuenta como acierto, si no hizo nada cuenta como fallo. Así `auto`
+  prefiere la ruta cuyas decisiones realmente mueven la aguja (no la que solo devuelve una key válida).
+- **Decaimiento (media móvil):** el rendimiento por ruta decae (`ai_brain_decay`=0.97) → la IA se adapta
+  a lo reciente en vez de arrastrar todo el historial (ventana efectiva ~33 jugadas).
+- **`research` desbloquea skills bloqueados:** si un skill del scope está gateado por una tech faltante
+  (búnker→`bunker_engineering`, defensa→`weapons`, espía→`satellite_tech`), la investigación prioriza el
+  próximo paso researchable de esa cadena de prereqs en vez de la simple "más barata". La IA se destraba.
+- Tests unit de los tres caminos. `docs/sdd-autopilot-llm-brain.md` (v2.1/v3).
+
 ## [1.186.0] - 2026-07-04
 
 ## [1.186.0] - 2026-07-04

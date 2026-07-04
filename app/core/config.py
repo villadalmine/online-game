@@ -251,6 +251,7 @@ class Settings(BaseSettings):
     ai_autopilot_brain_enabled: bool = False
     ai_brain_min_level: int = 3            # ai_level mínimo para que el cerebro LLM piense
     ai_brain_explore: float = 0.15        # SDD 81 v2: prob. de que 'auto' explore la otra ruta
+    ai_brain_decay: float = 0.97          # SDD 81 v2: decaimiento del rendimiento (media móvil)
     # Sub-fase 2 (autopiloto economía): comercio conservador (vende EXCEDENTE sobre el umbral) +
     # tope de venta por tick. mines/colonize construyen/colonizan 1 por tick (acotado).
     ai_trade_surplus_threshold: float = 10000.0

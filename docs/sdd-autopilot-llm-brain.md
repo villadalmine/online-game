@@ -49,7 +49,24 @@ mejor, y para que ella sepa qué va mejor si usa auto"*.
 - Tests: `test_brain_auto_prefers_better_route` (bandit prueba primero la mejor ruta + registra) y
   `test_brain_rules_mode_never_calls_llm`; e2e verifica `brain_stats` en el snapshot.
 
+## v2.1 (HECHO) — la tasa pesa CALIDAD + decaimiento + research desbloquea skills
+Los tres follow-ups menores que quedaban:
+- **La tasa mide CALIDAD, no solo "respondió":** `_resolve_brain` devuelve `(skill, ruta)` y el registro
+  se hace DESPUÉS, en `run_ai_autopilot`, según si la skill priorizada **produjo algo** (`total`
+  subió) → `llm`, o no hizo nada → `fallback`. Así el bandit prefiere la ruta cuyas decisiones
+  realmente mueven la aguja, no la que solo devuelve una key válida. (Las rutas que ni eligen se marcan
+  `fallback` al toque.)
+- **Decaimiento (media móvil):** `_record_brain` multiplica los conteos por `ai_brain_decay` (0.97)
+  antes de sumar → la ventana efectiva es ~1/(1−0.97)≈33 muestras; la IA se adapta a lo reciente en vez
+  de arrastrar todo el historial. Los conteos quedan fraccionarios (se redondean en el readout).
+- **`research` desbloquea skills bloqueados (SDD 81 v3):** `_auto_research(scope)` mira si un skill del
+  scope está gateado por una tech faltante (`_SKILL_GATE_TECH`: bunker→bunker_engineering,
+  defend→weapons, spy→satellite_tech) y, con `_first_researchable_toward`, prioriza el próximo paso
+  **researchable** de esa cadena de prereqs por sobre la simple "más barata". Así la IA se destraba sola.
+- Tests: `test_brain_quality_records_productivity`, `test_brain_records_fallback_when_route_fails`,
+  `test_auto_research_prioritizes_blocked_skill_tech`.
+
 ## Follow-ups
-- Que la tasa pese CALIDAD del resultado (win-rate/crecimiento), no solo "la jugada se aplicó".
+- Que la calidad además pese el RESULTADO de juego (win-rate/crecimiento), no solo "la skill hizo algo".
 - Presupuesto diario del cerebro LLM por jugador (hoy sin tope explícito; el mín-nivel + opt-in lo acota).
-- Decaimiento temporal de `ai_brain_stats` (hoy acumula desde siempre; una media móvil se adaptaría más rápido).
+- Más gates skill→tech en `_SKILL_GATE_TECH` a medida que se agreguen habilidades con prerequisito.

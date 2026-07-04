@@ -149,15 +149,73 @@ async def test_brain_auto_prefers_better_route(session, monkeypatch):
         tried.append(route)
         return "workers" if route == "cloud" else None
     monkeypatch.setattr(ai_life, "_llm_pick_skill", fake_pick)
-    pick = await ai_life._resolve_brain(session, p, ["workers"])
-    assert pick == "workers"
-    assert tried[0] == "cloud"        # probó primero la ruta de mejor tasa (no gpu)
-    rep = ai_life.brain_stats_report(p)
-    assert rep["cloud"]["applied"] == 11 and rep["cloud"]["ratio"] == 1.0   # registró la muestra
+    pick, route = await ai_life._resolve_brain(session, p, ["workers"])
+    assert pick == "workers" and route == "cloud"   # eligió y devolvió la ruta de mejor tasa
+    assert tried[0] == "cloud"                       # probó primero la mejor (no gpu)
+
+
+async def test_brain_records_fallback_when_route_fails(session, monkeypatch):
+    # SDD 81 v2: una ruta que no logra elegir se marca fallback al toque (y decae lo viejo).
+    from app.services import ai_life
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_autopilot_brain_enabled", True)
+    monkeypatch.setattr(s, "ai_brain_min_level", 1)
+    p, _ = await _player(session, name="ai_misser")
+    p.ai_level = 3
+    p.ai_brain_mode = "gpu"
+    await session.commit()
+
+    async def no_pick(session, player, scope, route):
+        return None
+    monkeypatch.setattr(ai_life, "_llm_pick_skill", no_pick)
+    pick, route = await ai_life._resolve_brain(session, p, ["workers"])
+    assert pick is None and route is None            # sin pick → reglas
+    assert ai_life.brain_stats_report(p)["gpu"]["fallback"] >= 1
+
+
+async def test_brain_quality_records_productivity(session, monkeypatch):
+    # SDD 81 v2: la calidad del cerebro = si la skill elegida PRODUJO algo (no solo si respondió).
+    from app.services import ai_life
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_autopilot_brain_enabled", True)
+    monkeypatch.setattr(s, "bunker_autonomy_enabled", True)
+    p, _ = await _player(session, name="ai_prod")
+    p.ai_level = 1              # scope = [workers]
+    await session.commit()
+
+    async def pick_workers(session, player, scope):
+        return "workers", "gpu"
+    monkeypatch.setattr(ai_life, "_resolve_brain", pick_workers)
+
+    async def workers_did_2(session, player, settings, q=0.5):
+        return 2               # la skill priorizada produjo algo
+    monkeypatch.setattr(ai_life, "_auto_workers", workers_did_2)
+    await ai_life.run_ai_autopilot(session, p)
+    assert ai_life.brain_stats_report(p)["gpu"]["applied"] >= 1   # productiva → llm
+
+
+async def test_auto_research_prioritizes_blocked_skill_tech(session, monkeypatch):
+    # SDD 81 v3: si un skill del scope está bloqueado por una tech, research va por esa (o prereq).
+    from app.services import ai_life
+    p, _ = await _player(session, name="ai_researcher")
+    p.energy = 1_000_000
+    await session.commit()
+    picked = []
+
+    async def fake_start(session, player, tech_key):
+        picked.append(tech_key)                      # registrá qué eligió investigar
+    monkeypatch.setattr("app.services.research.start_research", fake_start)
+    # scope con 'bunker' bloqueado (sin bunker_engineering ni su cadena de prereqs)
+    from app.content.registry import get_content
+    expected = ai_life._first_researchable_toward(get_content(), "bunker_engineering", set())
+    assert expected is not None                      # hay un paso researchable hacia el gate
+    n = await ai_life._auto_research(session, p, ["research", "bunker"])
+    # priorizó ese paso (no una tech barata cualquiera)
+    assert n == 1 and picked and picked[0] == expected
 
 
 async def test_brain_rules_mode_never_calls_llm(session, monkeypatch):
-    # cerebro determinista (default): no piensa con el LLM, devuelve None (juega por reglas).
+    # cerebro determinista (default): no piensa con el LLM, devuelve (None, None) = reglas.
     from app.services import ai_life
     s = get_settings()
     monkeypatch.setattr(s, "ai_autopilot_brain_enabled", True)
@@ -169,7 +227,7 @@ async def test_brain_rules_mode_never_calls_llm(session, monkeypatch):
     async def boom(*a, **k):
         raise AssertionError("no debería llamar al LLM en modo rules")
     monkeypatch.setattr(ai_life, "_llm_pick_skill", boom)
-    assert await ai_life._resolve_brain(session, p, ["workers"]) is None
+    assert await ai_life._resolve_brain(session, p, ["workers"]) == (None, None)
 
 
 async def test_auto_bunker_digs_then_builds_room(session, monkeypatch):
@@ -326,12 +384,12 @@ async def test_ai_brain_llm_mode_picks_skill(session, monkeypatch):
     p.ai_brain_mode = "gpu"
     await session.commit()
     scope = ["workers", "mines", "trade"]
-    assert await _resolve_brain(session, p, scope) == "mines"     # el LLM eligió
+    assert await _resolve_brain(session, p, scope) == ("mines", "gpu")   # el LLM eligió
     p.ai_brain_mode = "rules"
-    assert await _resolve_brain(session, p, scope) is None        # determinista
+    assert await _resolve_brain(session, p, scope) == (None, None)       # determinista
     p.ai_brain_mode = "gpu"
     monkeypatch.setattr(s, "ai_autopilot_brain_enabled", False)
-    assert await _resolve_brain(session, p, scope) is None        # flag off → determinista
+    assert await _resolve_brain(session, p, scope) == (None, None)       # flag off → determinista
 
 
 async def test_ai_posture_from_winrate(session):
