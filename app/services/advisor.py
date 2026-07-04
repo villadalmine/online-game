@@ -209,6 +209,33 @@ async def _fortify_suggestion(session, player: Player, message: str) -> Suggesti
                       params={"building": "turret", "base_id": b.id})
 
 
+def _spy_intent(message: str) -> bool:
+    """SDD 77 v3: ¿el jugador pide espiar/escanear a un rival? (stems, ojo con las tildes)"""
+    m = message.lower()
+    return any(w in m for w in ("espi", "spy", "escane", "scout", "reconoc", "intel"))
+
+
+async def _spy_suggestion(session, player: Player, message: str) -> Suggestion | None:
+    """SDD 77 v3: si pedís espiar a un rival NOMBRADO y tenés un satélite espía, la IA propone
+    lanzarlo a esa base (conocer su defensa antes de atacar). Requiere satélites habilitados."""
+    if not get_settings().satellites_enabled or not _spy_intent(message):
+        return None
+    from app.services.training import player_units
+    if (await player_units(session, player.id)).get("spy_satellite", 0) <= 0:
+        return None
+    m = message.lower()
+    candidates = (await session.execute(
+        select(Player).where(Player.id != player.id, Player.race_key.is_not(None))
+    )).scalars().all()
+    for c in candidates:                                   # el primer rival cuyo nombre aparezca
+        if c.username and c.username.lower() in m:
+            if not c.is_npc and c.galaxy_instance_id != player.galaxy_instance_id:
+                continue                                   # humano de otra galaxia: no lo ves
+            return Suggestion(action="spy", label=f"🛰🔍 Espiar a {c.username}",
+                              params={"unit_key": "spy_satellite", "target_id": c.id})
+    return None
+
+
 async def _teleport_suggestion(session, player: Player, message: str) -> Suggestion | None:
     """SDD 77 v2: si pedís mandar electrónica y tenés la capacidad (2+ búnkeres y una Puerta
     cuántica activa), la IA propone un teletransporte LISTO (defaults sensatos) para confirmar."""
@@ -468,6 +495,9 @@ async def ask(
     ft = await _fortify_suggestion(session, player, message)   # SDD 77 v3: torreta en base indef.
     if ft:
         suggestions = [ft, *suggestions]
+    sp = await _spy_suggestion(session, player, message)       # SDD 77 v3: espiar rival nombrado
+    if sp:
+        suggestions = [sp, *suggestions]
     left = hacks_left(player)
     # SDD 2: con hacks disponibles, el jugador puede CREAR GRATIS cualquier cosa que preguntó
     # (tenga o no materiales). Si nombró objetos, esos; si no, los de las sugerencias.

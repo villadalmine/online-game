@@ -1443,6 +1443,7 @@ async function doSuggestion(s){
     else if(s.action==="research"){ await api("/api/v1/research","POST",{tech_key:s.params.tech}); msg("Investigando "+gameName(s.params.tech)); }
     else if(s.action==="teleport"){ const r=await api("/api/v1/bunker/teleport","POST",s.params); msg("⚛ "+tr('bk_tp_ok')+" "+Math.round(r.received)); }   // SDD 77 v2
     else if(s.action==="assist_energy"){ await assistEnergy(); return; }   // SDD 77 v3 (maneja su msg/refresh)
+    else if(s.action==="spy"){ await api("/api/v1/satellites/launch","POST",s.params); msg("🛰🔍 "+tr('sat_launched')); }   // SDD 77 v3
     refresh();
   }catch(e){ msg(e.message,false); }
 }

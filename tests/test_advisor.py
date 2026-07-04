@@ -86,6 +86,22 @@ def test_intent_helpers():
     assert adv._first_amount("mandá electrónica") is None
 
 
+async def test_spy_suggestion_targets_named_rival(session, monkeypatch):
+    # SDD 77 v3: "espiá a X" + tener satélite espía → acción para lanzarlo a ese rival.
+    from app.core.config import get_settings
+    from app.models import UnitStock
+    monkeypatch.setattr(get_settings(), "satellites_enabled", True)
+    p = await _player(session)
+    foe = await _player(session, "rival_x", "earth", "terran")
+    foe.galaxy_instance_id = p.galaxy_instance_id            # misma galaxia
+    session.add(UnitStock(player_id=p.id, unit_key="spy_satellite", quantity=1))
+    await session.commit()
+    sug = await adv._spy_suggestion(session, p, "espiá a rival_x antes de atacar")
+    assert sug is not None and sug.action == "spy"
+    assert sug.params["target_id"] == foe.id and sug.params["unit_key"] == "spy_satellite"
+    assert await adv._spy_suggestion(session, p, "espiá a alguien") is None   # sin nombre conocido
+
+
 async def test_fortify_suggestion_targets_undefended_base(session, monkeypatch):
     # SDD 77 v3: "defendé mi base" → torreta en la base indefensa, con su base_id.
     from app.models import Base_
