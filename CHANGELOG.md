@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.172.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 78 v2: la IA robot juega como vos (aprende) y sube el techo de las NPC
 - El **aprendizaje modula las decisiones**: la calidad efectiva (por experiencia) afila el autopiloto
   — staffea más obreros por tick y ataca con margen más ajustado a medida que aprende (como un jugador
