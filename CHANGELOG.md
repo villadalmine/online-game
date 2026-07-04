@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.169.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 77 v3b: acción "fortificar" desde el chat (torreta en la base indefensa)
 - Nueva acción: pedile a la IA "defendé/fortificá mi base" y te propone construir una 🔫 torreta EN
   la base que NO tiene defensa (pasa el base_id → no la construye en la equivocada). Justo lo que resuelve
