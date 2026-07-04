@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.174.0] - 2026-07-04
+
 ### 2026-07-04 — SDD 78 v4: la IA robot manda expediciones a las lunas sola
 - Nueva skill **expediciones** (nivel 6+): la IA manda expediciones a las lunas de su galaxia por el
   bonus/recursos de los dioses (valida la nave requerida + energía). La IA robot ya cubre 11 habilidades
