@@ -9,6 +9,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [1.189.0] - 2026-07-04
 
+## [1.189.0] - 2026-07-04
+
 ### 2026-07-04 — Fix: los dashboards de la IA en Grafana estaban vacíos (contadores del tick)
 - **Síntoma:** el dashboard "Vida artificial" (y las métricas NPC del tick) salían vacíos, aunque el
   autopiloto SÍ funcionaba (el Pushgateway tenía `game_ai_autopilot_total{action="bunker"}=1`, etc.).
