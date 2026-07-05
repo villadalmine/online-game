@@ -7,6 +7,21 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.189.0] - 2026-07-04
+
+### 2026-07-04 — Fix: los dashboards de la IA en Grafana estaban vacíos (contadores del tick)
+- **Síntoma:** el dashboard "Vida artificial" (y las métricas NPC del tick) salían vacíos, aunque el
+  autopiloto SÍ funcionaba (el Pushgateway tenía `game_ai_autopilot_total{action="bunker"}=1`, etc.).
+- **Causa:** el tick corre en un CronJob EFÍMERO (`galaxy-tick`, no scrapeable) que empuja sus métricas
+  a la Pushgateway. Pero cada corrida es un proceso nuevo: sus contadores arrancan en 0, hacen 1-2
+  acciones y pushean `=1`; el PUT **reemplaza** el grupo, así que el contador nunca crece →
+  `rate()`/`increase()` en Grafana ve `1,1,1…` o series que aparecen/desaparecen → **vacío**.
+- **Fix:** el worker ahora **acumula los contadores en Redis** (`_cumulative_counter_render`) y
+  re-emite TODAS las series conocidas cada tick (aunque este tick no las tocó), así Prometheus ve un
+  contador **monótono y continuo**. Gauges/histogramas pasan igual. Sin Redis (dev) cae al render
+  normal. Cubre `game_ai_autopilot_total`, `game_ai_autopilot_brain_total`, `game_npc_*`. Tests con
+  fakeredis (`tests/test_worker_metrics.py`).
+
 ## [1.188.0] - 2026-07-04
 
 ## [1.188.0] - 2026-07-04

@@ -151,19 +151,58 @@ async def tick() -> dict:
     return result
 
 
+def _cumulative_counter_render(r) -> str:
+    """SDD 19 §7.quinquies: el tick es un proceso EFÍMERO; sus contadores arrancan en 0 cada vez.
+    Pusheados tal cual (PUT reemplaza), nunca crecen y `rate()`/`increase()` en Grafana da vacío (el
+    bug del dashboard de vida artificial). Acá ACUMULAMOS los contadores en Redis y re-emitimos las
+    series conocidas (aunque este tick no las haya tocado) para que Prometheus vea un contador
+    monótono y CONTINUO. Gauges/histogramas pasan igual (point-in-time). Sin Redis cae al render
+    normal (deltas)."""
+    from app.core.metrics import _fmt_labels, _metrics
+    if r is None:
+        return metrics.render()
+    lines: list[str] = []
+    for m in _metrics:
+        lines.append(f"# HELP {m.name} {m.help}")
+        lines.append(f"# TYPE {m.name} {m.kind}")
+        if m.kind != "counter":
+            lines.extend(m._lines())            # gauge/histograma: point-in-time, sin acumular
+            continue
+        idxkey = f"pgcum:idx:{m.name}"
+        for key, delta in list(m._vals.items()):   # sumá el delta de este tick + registrá la serie
+            labelstr = _fmt_labels(m.labelnames, key)
+            r.sadd(idxkey, labelstr)
+            if delta:
+                r.incrbyfloat(f"pgcum:v:{m.name}{labelstr}", float(delta))
+        raw = r.smembers(idxkey) or []
+        known = sorted(x.decode() if isinstance(x, bytes) else x for x in raw)
+        if not known:
+            lines.append(f"{m.name} 0")
+        for labelstr in known:                  # emití el acumulado de CADA serie (continuidad)
+            val = r.get(f"pgcum:v:{m.name}{labelstr}")
+            lines.append(f"{m.name}{labelstr} {float(val) if val is not None else 0.0}")
+    return "\n".join(lines) + "\n"
+
+
 def _push_metrics() -> None:
-    """Empuja las métricas del tick (NPC actions/decisions, tick) a la Pushgateway, para que
-    Prometheus las scrapee de ahí (el CronJob no es scrapeable directo). No-op si no hay URL."""
+    """Empuja las métricas del tick (NPC actions/decisions, autopiloto, tick) a la Pushgateway, para
+    que Prometheus las scrapee de ahí (el CronJob no es scrapeable directo). Los contadores se
+    acumulan en Redis (ver `_cumulative_counter_render`), si no no crecen. No-op si no hay URL."""
     from app.core.config import get_settings
-    url = get_settings().pushgateway_url
+    settings = get_settings()
+    url = settings.pushgateway_url
     if not url:
         return
     try:
+        r = None
+        if settings.redis_enabled:
+            import redis
+            r = redis.from_url(settings.redis_url)
         import urllib.request
-        body = metrics.render().encode()
+        body = _cumulative_counter_render(r).encode()
         req = urllib.request.Request(
             f"{url.rstrip('/')}/metrics/job/galaxy-tick",
-            data=body, method="PUT",  # PUT reemplaza el grupo del job (no acumula entre corridas)
+            data=body, method="PUT",  # PUT reemplaza el grupo; por eso acumulamos en Redis, no acá
             headers={"Content-Type": "text/plain"},
         )
         urllib.request.urlopen(req, timeout=10)
