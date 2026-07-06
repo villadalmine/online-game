@@ -19,6 +19,7 @@ from app.services.build import (
     repair_building,
     start_build,
     upgrade_building,
+    upgrade_buildings_bulk,
 )
 from app.services.training import TrainingError, start_training
 from app.services.troops import TroopError, start_move
@@ -127,6 +128,20 @@ async def upgrade(building_id: int, kind: str, player: Player = Depends(lock_cur
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()
     return {"id": b.id, "level": b.level}
+
+
+@router.post("/{base_id}/buildings/upgrade-bulk")
+async def upgrade_bulk(base_id: int, building_key: str, kind: str, count: int | None = None,
+                       player: Player = Depends(lock_current_player),
+                       session: AsyncSession = Depends(get_session)):
+    """SDD 82: mejora +1 nivel a TODOS los `building_key` de la base (o hasta `count`), sin ir de a
+    uno. Se frena cuando no alcanza el material; informa cuántos mejoró vs cuántos había."""
+    try:
+        r = await upgrade_buildings_bulk(session, player, base_id, building_key, kind, count)
+    except BuildError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return r
 
 
 @router.post(

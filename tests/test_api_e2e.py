@@ -3605,3 +3605,35 @@ async def test_building_repair_demolish_upgrade_e2e(client, monkeypatch):
         hqid = hq.id
     r4 = await client.http.post(f"/api/v1/bases/buildings/{hqid}/demolish", headers=h)
     assert r4.status_code == 400
+
+
+async def test_building_upgrade_bulk_e2e(client, monkeypatch):
+    """SDD 82: mejorar EN LOTE todas las torretas de una base (+1 nivel a cada una, no de a una)."""
+    from sqlalchemy import select
+
+    from app.models import Building, PlayerTech
+    from app.services.economy import get_or_create_stock
+    h = await _register(client.http, "bulk_up")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    base = st["bases"][0]["id"]
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "bulk_up"))).scalar_one()
+        s.add(PlayerTech(player_id=p.id, tech_key="weapons"))
+        for _ in range(3):
+            s.add(Building(base_id=base, building_key="turret", status="active", condition=100.0))
+        for m in ("iron", "sulfur", "magnesium"):
+            (await get_or_create_stock(s, p.id, m, p.planet_key)).amount = 100000
+        p.energy = 100000
+        await s.commit()
+    r = await client.http.post(
+        f"/api/v1/bases/{base}/buildings/upgrade-bulk?building_key=turret&kind=defense", headers=h)
+    assert r.status_code == 200, r.text
+    assert r.json()["upgraded"] == 3 and r.json()["total"] == 3
+    async with client.session_maker() as s:
+        lvls = sorted(b.level for b in (await s.execute(select(Building).where(
+            Building.base_id == base, Building.building_key == "turret"))).scalars())
+        assert lvls == [2, 2, 2]   # todas subieron un nivel
+    # error: un edificio que no admite esa mejora (mina no tiene 'defense')
+    bad = await client.http.post(
+        f"/api/v1/bases/{base}/buildings/upgrade-bulk?building_key=mine&kind=defense", headers=h)
+    assert bad.status_code == 400

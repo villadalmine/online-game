@@ -215,6 +215,37 @@ async def upgrade_building(
     return b
 
 
+async def upgrade_buildings_bulk(
+    session: AsyncSession, player: Player, base_id: int, building_key: str, kind: str,
+    count: int | None = None,
+) -> dict:
+    """SDD 82: mejora EN LOTE los `building_key` de una base (que admiten `kind`), +1 nivel a cada
+    uno, del de MENOR nivel primero (para emparejarlos). Se detiene cuando el material/
+    energía no alcanza o al llegar a `count`. Evita tener que mejorar 30 torretas de a una. Devuelve
+    cuántas mejoró vs cuántas había (así el front muestra 'mejoraste N de M con tus recursos')."""
+    base = await session.get(Base_, base_id)
+    if base is None or base.player_id != player.id:
+        raise BuildError("Base no encontrada.")
+    content = get_content()
+    ups = content.buildings.get(building_key, {}).get("upgrade") or {}
+    if kind not in ups:
+        raise BuildError(f"Ese edificio no admite la mejora '{kind}'.")
+    rows = (await session.execute(
+        select(Building).where(Building.base_id == base_id,
+                               Building.building_key == building_key,
+                               Building.status == "active"))).scalars().all()
+    rows.sort(key=lambda b: (b.level or 1))                # los más atrasados primero
+    limit = len(rows) if count is None else max(0, min(int(count), len(rows)))
+    done = 0
+    for b in rows[:limit]:
+        try:
+            await upgrade_building(session, player, b.id, kind)   # cobra por nivel; falla si no da
+            done += 1
+        except BuildError:
+            break                                          # se acabó el material → cortá acá
+    return {"upgraded": done, "total": len(rows), "building_key": building_key, "kind": kind}
+
+
 def _requires_chain(building_key: str) -> list[str]:
     """Cadena de EDIFICIOS requeridos (transitiva, raíz primero); ignora el HQ (siempre está)."""
     content = get_content()

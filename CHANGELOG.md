@@ -7,6 +7,20 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-06 — SDD 82: mejora de edificios EN LOTE + qué mejora cada nivel + cómo sumar plazas
+Pedidos del usuario jugando ("mis bases"):
+- **Mejorar EN LOTE (no de a una):** si tenés 30 torretas, un botón `⬆×N` en la cabecera del grupo las
+  mejora a TODAS +1 nivel de una (arranca por las de menor nivel, para emparejar). El server mejora
+  cuantas alcancen tus recursos y devuelve `mejoradas/total`. Nuevo `POST /bases/{id}/buildings/
+  upgrade-bulk?building_key=&kind=&count=` + `build.upgrade_buildings_bulk`. Sirve también para minas.
+- **Qué mejora cada nivel (antes no había info):** los botones de mejora ahora dicen el efecto REAL,
+  derivado del YAML `upgrade[kind]` (no se desincroniza): producción `+25% ⛏`, defensa `+25 🛡 +40 ❤`,
+  antimisil `+8 🎯` — con la aclaración de que **las torretas solo defienden, no atacan** (no suben ataque).
+- **Cómo tener más empleados/unidades (alojamiento):** el bloque 🏠 Alojamiento explica el concepto
+  (cada dominio tiene plazas; cada unidad ocupa una) y, cuando vas justo, lista los edificios que dan
+  plazas para ese dominio y cuántas (`houses` del catálogo) — antes no se entendía cómo agrandarlo.
+- Tests: e2e `test_building_upgrade_bulk_e2e` (mejora 3 torretas + caso de error). `docs/sdd-bulk-upgrade.md`.
+
 ## [1.190.0] - 2026-07-06
 
 ### 2026-07-06 — Fixes de la IA del búnker + cerebro + bug de la bóveda (reportados jugando)
