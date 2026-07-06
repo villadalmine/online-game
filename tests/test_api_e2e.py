@@ -3226,6 +3226,10 @@ async def test_bunker_vault_stash_withdraw_e2e(client, monkeypatch):
     w = await client.http.post("/api/v1/bunker/withdraw", headers=h,
                                json={"base_id": base, "mineral": "iron", "amount": 400})
     assert w.status_code == 201 and w.json()["withdrawn"] == 400
+    # v5-fix: mineral inválido (bug del front: mandaba el índice "0", no la key) → 400 claro.
+    bad = await client.http.post("/api/v1/bunker/stash", headers=h,
+                                 json={"base_id": base, "mineral": "0", "amount": 10})
+    assert bad.status_code == 400 and "desconocido" in bad.text.lower()
 
 
 async def test_bunker_evacuate_e2e(client, monkeypatch):

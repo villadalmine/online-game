@@ -77,6 +77,20 @@ Los tres follow-ups menores que quedaban:
   transbordador). Sumados a bunker/defend/spy.
 - Tests: `test_brain_quality_weighs_impact`, `test_brain_daily_budget_caps_llm` + gate de colonize.
 
+## v5 (HECHO) — el readout dejaba de leerse (siempre 0%) + LLM caído por serialización
+- **Readout "rinde" pegado en 0% (reportado jugando):** v2-v4 registraban `fallback` cuando la skill
+  elegida no tenía nada que hacer ESA jugada (no porque el cerebro fallara) → la tasa quedaba en 0% y
+  parecía roto. Ahora una **elección VÁLIDA del LLM cuenta como aplicada** (`llm`, `weight ≥ 1`); el
+  IMPACTO (acciones producidas, tope 3) solo PESA para que `auto` prefiera la ruta que más rinde. El
+  `fallback` se reserva a "el LLM no supo elegir" (inalcanzable/basura). Coincide con el tooltip
+  ("% que logró APLICAR, no cayó a reglas").
+- **`json.dumps(state, default=str)` en el cerebro NPC:** los logs del tick mostraban `Object of type
+  datetime is not JSON serializable` → TODAS las decisiones LLM de las NPC caían a reglas. El estado
+  del prompt puede traer datetimes; ahora no rompe. (`_llm_strategy` y `_llm_action`.)
+- Tests: `test_brain_valid_pick_counts_applied_even_if_idle`, `test_npc_llm_state_with_datetime_serializes`.
+
 ## Follow-ups
 - Que la calidad además pese el RESULTADO de juego (win-rate/crecimiento), no solo "cuántas acciones".
 - Más gates skill→tech en `_SKILL_GATE_TECH` a medida que se agreguen habilidades con prerequisito.
+- **Logística entre bases del autopiloto:** mover minerales de una colonia a la base que los necesita
+  (necesita naves de carga + misiones de transporte) → SDD propio.

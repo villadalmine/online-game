@@ -1139,7 +1139,7 @@ function renderBunker(){
     if((b.vault_cap||0)>0){
       const vused=Object.values(b.vault||{}).reduce((a,x)=>a+x,0);
       const vcont=Object.entries(b.vault||{}).map(([k,v])=>`${isPicto('bunker')?ico('mineral',k):esc(mineralName(k))} ${Math.round(v)}`).join(" · ")||'—';
-      const mopts=(Object.keys(catalog.minerals||{})).map(k=>`<option value="${k}">${esc(mineralName(k))}</option>`).join("");
+      const mopts=(catalog.minerals||[]).map(m=>`<option value="${m.key}">${esc(mineralName(m.key))}</option>`).join("");
       s+=`<div class="muted" style="font-size:11px;margin-top:6px">${esc(tr('bk_vault'))} <b>${Math.round(vused)}/${Math.round(b.vault_cap)}</b> · ${vcont}</div>`+
         `<div class="row" style="gap:4px"><select class="bk_vmin" data-b="${b.base_id}">${mopts}</select>`+
         `<input class="bk_vamt" data-b="${b.base_id}" type="number" min="0" value="100" style="width:70px">`+

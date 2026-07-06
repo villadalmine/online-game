@@ -989,7 +989,8 @@ async def _llm_strategy(state: dict) -> dict:
     content = await llm_chat(
         [
             {"role": "system", "content": system},
-            {"role": "user", "content": json.dumps(state)},
+            # default=str: el estado puede traer datetimes (ETAs, last_battle) → no romper el prompt
+            {"role": "user", "content": json.dumps(state, default=str)},
         ],
         max_tokens=settings.npc_strategy_max_tokens,
         json_mode=settings.llm_json_mode,
@@ -1185,7 +1186,8 @@ async def _llm_decide(state: dict) -> dict:
     content = await llm_chat(
         [
             {"role": "system", "content": system},
-            {"role": "user", "content": json.dumps(state)},
+            # default=str: el estado puede traer datetimes (ETAs, last_battle) → no romper el prompt
+            {"role": "user", "content": json.dumps(state, default=str)},
         ],
         max_tokens=120,
         json_mode=settings.llm_json_mode,

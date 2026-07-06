@@ -7,6 +7,28 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-06 — Fixes de la IA del búnker + cerebro + bug de la bóveda (reportados jugando)
+Varios problemas que el usuario detectó usando la vida artificial y el búnker:
+- **Bóveda del búnker decía "Mineral desconocido" y no guardaba nada:** el front armaba el `<select>`
+  de minerales con `Object.keys(catalog.minerals)` — pero `minerals` es una **lista**, así que mandaba
+  el índice `"0"`/`"1"` como key → el server (con razón) rechazaba. Ahora itera la lista y manda la key
+  real. E2e suma el caso de error (mineral inválido → 400 claro).
+- **El cerebro LLM mostraba SIEMPRE 0% en GPU/nube (readout confuso):** registraba `fallback` cada vez
+  que la skill elegida no tenía nada que hacer ESA jugada (no porque el cerebro fallara) → la tasa
+  quedaba pegada en 0% y parecía roto. Ahora una **elección VÁLIDA del LLM cuenta como aplicada**
+  (readout = "¿me anda este cerebro?"); el IMPACTO (acciones producidas) solo PESA para que `auto`
+  prefiera la ruta que más rinde. (SDD 81 v5.)
+- **La IA "no aprendía" / cerebro LLM caído en prod:** los logs del tick mostraban `Object of type
+  datetime is not JSON serializable` → **todas** las decisiones LLM de las NPC caían a reglas. El
+  estado del prompt puede traer datetimes (ETAs, última batalla); ahora `json.dumps(state, default=str)`
+  no rompe. (Afecta al cerebro estratégico y táctico de la NPC.)
+- **La IA no desarrollaba los búnkeres vacíos de las colonias:** `_auto_bunker` solo tocaba la base
+  natal. Ahora cava y construye salas de investigación en **TODAS** las bases (natal primero). Ídem
+  `_auto_mines`: levanta minas faltantes en todas las bases, no solo la natal.
+- Tests: unit (cerebro aplica-idle, búnker multi-base, serialización con datetime) + e2e (bóveda error).
+- Pendiente anotado: transporte de minerales entre bases del autopiloto (necesita naves de carga) →
+  merece SDD propio.
+
 ## [1.189.0] - 2026-07-04
 
 ## [1.189.0] - 2026-07-04

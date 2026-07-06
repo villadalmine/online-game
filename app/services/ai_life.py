@@ -177,14 +177,12 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
             total += await _auto_repopulate(session, player)
         elif key == "attack":
             total += await _auto_attack(session, player, settings, q, use_meta="learn" in scope)
-        # SDD 81 v2/v4: CALIDAD del cerebro = cuánto RINDIÓ la skill elegida (acciones producidas,
-        # con tope), no solo si respondió. Sin producción → fallback.
+        # SDD 81 v5: el cerebro "APLICÓ" si el LLM eligió una skill VÁLIDA (aunque el juego no tenga
+        # nada que hacer esa jugada) → readout no cae a 0%. El IMPACTO (acciones producidas) solo
+        # PESA para que 'auto' prefiera la ruta que más rinde.
         if key == priority and prio_route:
             produced = total - before
-            if produced > 0:
-                _record_brain(player, prio_route, "llm", weight=min(3.0, float(produced)))
-            else:
-                _record_brain(player, prio_route, "fallback")
+            _record_brain(player, prio_route, "llm", weight=min(3.0, max(1.0, float(produced))))
     return total
 
 
@@ -274,10 +272,11 @@ def _brain_budget_ok(player: Player, settings) -> bool:
 
 
 def _record_brain(player: Player, route: str, outcome: str, weight: float = 1.0) -> None:
-    """SDD 81 v2: registra el resultado de una decisión del cerebro (readout + auto-switch) + la
-    métrica global. `outcome=llm` = la ruta eligió una skill que PRODUJO algo (calidad, no solo
-    "respondió"); `fallback` = no eligió o eligió algo inútil. Aplica DECAIMIENTO (media móvil) para
-    adaptarse a lo reciente en vez de arrastrar todo el historial."""
+    """SDD 81 v2/v5: registra el resultado de una decisión del cerebro (readout + auto-switch) + la
+    métrica global. `outcome=llm` = la ruta ELIGIÓ una skill válida del scope (el cerebro aplicó);
+    `fallback` = no supo elegir (LLM inalcanzable/basura) → cayó a reglas. El `weight` de un acierto
+    PESA el impacto (acciones producidas, tope 3) para que 'auto' prefiera la ruta que más rinde.
+    Aplica DECAIMIENTO (media móvil) para adaptarse a lo reciente, no arrastrar el historial."""
     import json
     metrics.AI_AUTOPILOT_BRAIN.inc(outcome=outcome, route=route)
     decay = get_settings().ai_brain_decay
@@ -380,26 +379,36 @@ async def _auto_workers(
 
 
 async def _auto_mines(session: AsyncSession, player: Player) -> int:
-    """Levantar 1 mina por tick de un mineral que la raza usa y que AÚN no minás en el natal
-    (para que 'toda la exploración minera de todos los tipos esté al día')."""
+    """Levantar 1 mina por tick de un mineral que la raza usa y que AÚN no minás en ALGUNA base
+    (natal primero, después colonias) — para que 'toda la exploración minera de todos los tipos esté
+    al día' en TODAS las bases, no solo en la natal (antes se quedaba corto en las colonias)."""
     try:
         from app.services.build import start_build
         from app.services.economy import _player_buildings
         content = get_content()
         home = await _home_base(session, player)
-        if home is None:
-            return 0
-        mined = {b.production_mineral for b in await _player_buildings(session, player.id)
-                 if content.buildings.get(b.building_key, {}).get("category") == "mine"
-                 and b.base_id == home.id and b.production_mineral}
+        bases = (await session.execute(
+            select(Base_).where(Base_.player_id == player.id))).scalars().all()
+        bases = sorted(bases, key=lambda b: (home is None or b.id != home.id))   # natal primero
+        blds = await _player_buildings(session, player.id)
         roles = content.races.get(player.race_key, {}).get("resource_roles", {}) or {}
-        want = [m for m in dict.fromkeys(roles.values()) if m and m not in mined]
-        for mineral in want:
-            await start_build(session, player, home, "mine", mineral)   # falla si no alcanza
-            from app.services.journal import record
-            metrics.AI_AUTOPILOT.inc(action="build_mine")
-            await record(session, "ai_autopilot", player.id, action="build_mine", mineral=mineral)
-            return 1
+        want = [m for m in dict.fromkeys(roles.values()) if m]
+        for base in bases:
+            mined = {b.production_mineral for b in blds
+                     if content.buildings.get(b.building_key, {}).get("category") == "mine"
+                     and b.base_id == base.id and b.production_mineral}
+            for mineral in want:
+                if mineral in mined:
+                    continue
+                try:
+                    await start_build(session, player, base, "mine", mineral)   # falla si no da
+                    from app.services.journal import record
+                    metrics.AI_AUTOPILOT.inc(action="build_mine")
+                    await record(session, "ai_autopilot", player.id, action="build_mine",
+                                 mineral=mineral, base_id=base.id)
+                    return 1
+                except Exception:
+                    continue
         return 0
     except Exception:
         return 0
@@ -437,8 +446,10 @@ async def _auto_housing(session: AsyncSession, player: Player) -> int:
 
 
 async def _auto_bunker(session: AsyncSession, player: Player) -> int:
-    """SDD 78 v8: desarrolla el búnker — lo cava si falta y construye una sala de investigación
-    (electrónica, la moneda que sostiene y evoluciona la IA). Requiere `bunker_engineering`."""
+    """SDD 78 v8 / v5-fix: desarrolla el búnker de TODAS las bases (no solo la natal) — lo cava si
+    falta y construye una sala de investigación (electrónica, la moneda que sostiene y evoluciona la
+    IA). Antes solo tocaba la base natal → los búnkeres de las colonias quedaban vacíos. Requiere
+    `bunker_engineering`. 1 acción por tick (natal primero, después colonias)."""
     try:
         if not get_settings().bunkers_enabled:
             return 0
@@ -448,17 +459,28 @@ async def _auto_bunker(session: AsyncSession, player: Player) -> int:
         from app.services.bunkers import _bunker_for_base, build_room, dig
         from app.services.journal import record
         home = await _home_base(session, player)
-        if home is None:
-            return 0
-        if await _bunker_for_base(session, home.id) is None:
-            await dig(session, player, home.id)
-            metrics.AI_AUTOPILOT.inc(action="bunker")
-            await record(session, "ai_autopilot", player.id, action="bunker", op="dig")
-            return 1
-        await build_room(session, player, home.id, "research_room")   # celda auto; falla si lleno
-        metrics.AI_AUTOPILOT.inc(action="bunker")
-        await record(session, "ai_autopilot", player.id, action="bunker", op="room")
-        return 1
+        bases = (await session.execute(
+            select(Base_).where(Base_.player_id == player.id))).scalars().all()
+        bases = sorted(bases, key=lambda b: (home is None or b.id != home.id))   # natal primero
+        # 1) cavar el búnker en cualquier base que aún no tenga (empezando por la natal)
+        for b in bases:
+            if await _bunker_for_base(session, b.id) is None:
+                await dig(session, player, b.id)
+                metrics.AI_AUTOPILOT.inc(action="bunker")
+                await record(session, "ai_autopilot", player.id, action="bunker", op="dig",
+                             base_id=b.id)
+                return 1
+        # 2) construir una sala de investigación en el primer búnker con lugar (electrónica)
+        for b in bases:
+            try:
+                await build_room(session, player, b.id, "research_room")   # auto-celda
+                metrics.AI_AUTOPILOT.inc(action="bunker")
+                await record(session, "ai_autopilot", player.id, action="bunker", op="room",
+                             base_id=b.id)
+                return 1
+            except Exception:
+                continue
+        return 0
     except Exception:
         return 0
 

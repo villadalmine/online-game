@@ -275,6 +275,70 @@ async def test_auto_bunker_digs_then_builds_room(session, monkeypatch):
     assert (await session.execute(select(BunkerRoom))).scalars().all()
 
 
+async def test_brain_valid_pick_counts_applied_even_if_idle(session, monkeypatch):
+    # v5-fix: si el LLM elige una skill VÁLIDA pero el juego no tenía nada que hacer esa jugada, el
+    # cerebro igual "APLICÓ" (readout NO queda pegado en 0%). El impacto solo pesa para el bandit.
+    from app.services import ai_life
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_autopilot_brain_enabled", True)
+    monkeypatch.setattr(s, "bunker_autonomy_enabled", True)
+    p, _ = await _player(session, name="ai_idle")
+    p.ai_level = 1              # scope = [workers]
+    await session.commit()
+
+    async def pick_workers(session, player, scope):
+        return "workers", "gpu"
+    monkeypatch.setattr(ai_life, "_resolve_brain", pick_workers)
+
+    async def workers_idle(session, player, settings, q=0.5):
+        return 0               # la skill priorizada no produjo nada esta jugada
+    monkeypatch.setattr(ai_life, "_auto_workers", workers_idle)
+    await ai_life.run_ai_autopilot(session, p)
+    rep = ai_life.brain_stats_report(p)["gpu"]
+    assert rep["applied"] >= 1 and rep["fallback"] == 0   # contó aplicada (no 0%/fallback)
+
+
+async def test_auto_bunker_develops_colony_bunkers(session, monkeypatch):
+    # v5-fix: el autopiloto desarrolla el búnker de TODAS las bases (antes solo la natal → colonias
+    # con búnkeres vacíos). Con natal ya cavada, la siguiente jugada cava el de la colonia.
+    from app.content.registry import get_content
+    from app.models import Bunker
+    from app.services.ai_life import _auto_bunker
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    p, home = await _player(session, name="ai_multi")
+    session.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+    colony = Base_(player_id=p.id, planet_key="venus", name="col")
+    session.add(colony)
+    for role in ("structural", "energetic", "advanced"):
+        mk = get_content().resolve_role(p.race_key, role)
+        for pk in ("mars", "venus"):
+            (await get_or_create_stock(session, p.id, mk, pk)).amount = 100000
+    await session.commit()
+    assert await _auto_bunker(session, p) == 1   # cava la natal primero
+    await session.commit()
+    assert await _auto_bunker(session, p) == 1   # ahora cava la colonia (antes no hacía nada)
+    await session.commit()
+    dug = {b.base_id for b in (await session.execute(select(Bunker))).scalars()}
+    assert home.id in dug and colony.id in dug   # las DOS bases tienen búnker
+
+
+async def test_npc_llm_state_with_datetime_serializes(session, monkeypatch):
+    # Fix prod: el estado NPC puede traer datetimes (ETAs, last_battle); json.dumps(default=str)
+    # evita el "datetime is not JSON serializable" que tumbaba TODO el cerebro LLM.
+    from datetime import UTC, datetime
+
+    from app.services import npc
+    seen = {}
+
+    async def fake_chat(messages, **kw):
+        seen["user"] = messages[-1]["content"]        # que haya serializado sin romper
+        return '{"posture":"expand","target":null,"why":"ok"}'
+    monkeypatch.setattr(npc, "llm_chat", fake_chat)
+    state = {"personality": "x", "eta": datetime.now(UTC), "__user": "npc:t", "__model": None}
+    out = await npc._llm_strategy(state)
+    assert out.get("posture") == "expand" and "eta" in seen["user"]
+
+
 async def test_auto_housing_builds_when_slots_short(session, monkeypatch):
     # SDD 78 v8: si a un dominio le faltan plazas, construye el edificio que aloja.
     from app.content.registry import get_content
