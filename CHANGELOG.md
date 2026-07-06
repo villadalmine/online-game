@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.190.0] - 2026-07-06
+
 ### 2026-07-06 — Fixes de la IA del búnker + cerebro + bug de la bóveda (reportados jugando)
 Varios problemas que el usuario detectó usando la vida artificial y el búnker:
 - **Bóveda del búnker decía "Mineral desconocido" y no guardaba nada:** el front armaba el `<select>`
