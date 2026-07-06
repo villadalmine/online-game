@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.191.0] - 2026-07-06
+
 ### 2026-07-06 — SDD 82: mejora de edificios EN LOTE + qué mejora cada nivel + cómo sumar plazas
 Pedidos del usuario jugando ("mis bases"):
 - **Mejorar EN LOTE (no de a una):** si tenés 30 torretas, un botón `⬆×N` en la cabecera del grupo las
