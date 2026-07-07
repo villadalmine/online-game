@@ -7,6 +7,25 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-07 — SDD 83: autopiloto AGENTE (el LLM ejecuta acciones) + fix regresión mejora en lote
+El usuario preguntó si "la IA ya sabe hacer las cosas o mapeamos acciones a mano" y eligió que el LLM
+**ejecute** acciones él mismo. Además reportó que la mejora en lote (1.191.0) se colgaba/tardaba.
+- **Autopiloto AGENTE (`ai_brain_mode="agent"`):** en vez de solo ELEGIR una de las 14 skills
+  pre-programadas (SDD 81), el LLM ahora **decide y EJECUTA** acciones vía un loop de acción-JSON
+  (tool-calling portable, sirve en cualquier modelo OpenAI-compatible). Primera rebanada de acciones:
+  **transport** (la LOGÍSTICA de minerales entre bases que faltaba), build, train, research — todas
+  pasan por los servicios del juego (mismas reglas, no hace trampa) en un savepoint. Gateado por
+  `AI_AGENT_ENABLED` + opt-in por jugador + presupuesto diario de LLM + `ai_agent_max_steps` + botón
+  STOP; ante cualquier fallo cae al autopiloto determinista. Métrica `game_ai_agent_actions_total`.
+  Selector 🤖 en el panel. Tests `tests/test_ai_agent.py`. `docs/sdd-llm-agent-autopilot.md`.
+- **Fix regresión mejora EN LOTE (1.191.0):** el botón "se quedaba pensando"/tardaba y todo se
+  encolaba. Causa: `upgrade_buildings_bulk` llamaba a `upgrade_building` por edificio y **cada uno
+  adelantaba la economía** (`collect_mines` sobre todas las minas) **+ insertaba en el journal** → 30
+  torretas = 30× ese trabajo bajo el lock del jugador. Fix: adelanta la economía UNA vez, cobra en
+  memoria sobre los mismos stocks y registra UN evento. Mejora SOLO las que podés pagar (arranca por
+  las de menor nivel, para en la que no alcanza) — ahora el front lo dice claro + estado ⏳ mientras
+  procesa. Test `tests/test_build_bulk.py`.
+
 ## [1.191.0] - 2026-07-06
 
 ### 2026-07-06 — SDD 82: mejora de edificios EN LOTE + qué mejora cada nivel + cómo sumar plazas

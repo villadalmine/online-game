@@ -60,6 +60,7 @@ def build_catalog() -> dict:
             "bunker_autonomy": s.bunker_autonomy_enabled,     # SDD 69 Fase 4
             "space_jump": s.space_jump_enabled,               # SDD 63: salto instantáneo de tropas
             "ai_brain": s.ai_autopilot_brain_enabled,         # SDD 81: cerebro LLM del autopiloto
+            "ai_agent": s.ai_agent_enabled,                   # SDD 83: el LLM EJECUTA acciones
         },
     }
 

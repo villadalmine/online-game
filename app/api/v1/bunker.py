@@ -153,10 +153,12 @@ async def do_ai_brain(
     player: Player = Depends(lock_current_player),
     session: AsyncSession = Depends(get_session),
 ):
-    """SDD 81: elegir el CEREBRO del autopiloto: rules (determinista) | gpu | cloud | auto."""
+    """SDD 81/83: CEREBRO del autopiloto: rules (determinista) | gpu | cloud | auto | agent (el LLM
+    ejecuta acciones él mismo)."""
     mode = str(body.get("mode", "rules")).lower()
-    if mode not in ("rules", "gpu", "cloud", "auto"):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Modo inválido (rules|gpu|cloud|auto).")
+    if mode not in ("rules", "gpu", "cloud", "auto", "agent"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            "Modo inválido (rules|gpu|cloud|auto|agent).")
     player.ai_brain_mode = mode
     await session.commit()
     return {"ai_brain_mode": player.ai_brain_mode}

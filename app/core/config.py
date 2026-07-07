@@ -253,6 +253,13 @@ class Settings(BaseSettings):
     ai_brain_explore: float = 0.15        # SDD 81 v2: prob. de que 'auto' explore la otra ruta
     ai_brain_decay: float = 0.97          # SDD 81 v2: decaimiento del rendimiento (media móvil)
     ai_brain_llm_calls_per_day: int = 200  # SDD 81 v4: tope LLM del cerebro por día/jugador
+    # SDD 83: autopiloto AGENTE — con ai_brain_mode="agent" el LLM EJECUTA acciones (loop de acción
+    # JSON: transportar minerales entre bases, construir, entrenar, investigar), no solo elige una
+    # skill. Gateado por este flag + presupuesto diario + botón STOP + ai_brain_min_level; ante
+    # cualquier fallo cae al autopiloto determinista. max_steps = tope de acciones LLM por tick.
+    ai_agent_enabled: bool = False
+    ai_agent_max_steps: int = 4
+    ai_agent_route: str = "gpu"            # backend del agente (gpu local por default: barato)
     # Sub-fase 2 (autopiloto economía): comercio conservador (vende EXCEDENTE sobre el umbral) +
     # tope de venta por tick. mines/colonize construyen/colonizan 1 por tick (acotado).
     ai_trade_surplus_threshold: float = 10000.0

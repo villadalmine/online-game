@@ -215,3 +215,8 @@ DIPLOMACY_ACTIONS = Counter("game_diplomacy_actions_total",
 # "¿anda mejor la GPU o la nube?". Si llm sube y fallback baja, tu IA razona de verdad.
 AI_AUTOPILOT_BRAIN = Counter("game_ai_autopilot_brain_total",
                              "Decisiones del autopiloto: LLM vs fallback", ("outcome", "route"))
+# SDD 83: autopiloto AGENTE — el LLM EJECUTA acciones (no solo prioriza una skill).
+# action=transport|build|train|research; outcome=ok|error. >0 en 'ok' = la IA jugó sola vía tools.
+AI_AGENT_ACTIONS = Counter("game_ai_agent_actions_total",
+                           "Acciones ejecutadas por el autopiloto agente (LLM)",
+                           ("action", "outcome"))

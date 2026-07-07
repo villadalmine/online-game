@@ -137,6 +137,18 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
         return 0
     if not getattr(player, "ai_autopilot_on", True):
         return 0   # el jugador lo paró (botón de emergencia)
+    # SDD 83: modo AGENTE — el LLM ejecuta acciones él mismo (tool-calling). Si hizo algo, este tick
+    # lo maneja el agente; si no hizo nada o falló, cae al autopiloto determinista de abajo.
+    mode = (getattr(player, "ai_brain_mode", "rules") or "rules").lower()
+    if (mode == "agent" and settings.ai_agent_enabled
+            and (player.ai_level or 0) >= settings.ai_brain_min_level):
+        try:
+            from app.services.ai_agent import run_agent_autopilot
+            n = await run_agent_autopilot(session, player, settings)
+            if n > 0:
+                return n
+        except Exception:
+            pass
     scope = (_level_spec(player.ai_level) or {}).get("autonomy_scope", [])
     # SDD 78: el APRENDIZAJE modula qué tan "afilada" juega la IA (calidad efectiva x experiencia).
     q = float((await ai_learning(session, player)).get("quality_eff", 0.5))
@@ -304,7 +316,9 @@ async def _resolve_brain(
     import random
     settings = get_settings()
     mode = (getattr(player, "ai_brain_mode", "rules") or "rules").lower()
-    if (not settings.ai_autopilot_brain_enabled or mode == "rules"
+    # 'agent' (SDD 83) tiene su propio camino en run_ai_autopilot; acá se comporta como reglas (el
+    # despacho determinista es el fallback cuando el agente no hizo nada).
+    if (not settings.ai_autopilot_brain_enabled or mode in ("rules", "agent")
             or (player.ai_level or 0) < settings.ai_brain_min_level):
         return None, None
     if mode == "auto":

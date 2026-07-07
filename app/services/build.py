@@ -219,10 +219,14 @@ async def upgrade_buildings_bulk(
     session: AsyncSession, player: Player, base_id: int, building_key: str, kind: str,
     count: int | None = None,
 ) -> dict:
-    """SDD 82: mejora EN LOTE los `building_key` de una base (que admiten `kind`), +1 nivel a cada
-    uno, del de MENOR nivel primero (para emparejarlos). Se detiene cuando el material/
-    energía no alcanza o al llegar a `count`. Evita tener que mejorar 30 torretas de a una. Devuelve
-    cuántas mejoró vs cuántas había (así el front muestra 'mejoraste N de M con tus recursos')."""
+    """SDD 82/83b: mejora EN LOTE los `building_key` de una base (que admiten `kind`), +1 nivel a
+    cada uno, del de MENOR nivel primero (para emparejarlos). Se detiene cuando el material/energía
+    no alcanza (mejora SOLO las que podés pagar) o al llegar a `count`. Devuelve mejoradas/total.
+
+    PERF (fix regresión 1.191.0): NO llama a `upgrade_building` por edificio (cada uno adelantaba la
+    economía con `collect_mines` + insertaba en el journal → 30 torretas = lentísimo y trababa el
+    lock del jugador, todo se encolaba). Acá adelantamos la economía UNA vez, cobramos en memoria
+    sobre los mismos stocks y registramos UN solo evento."""
     base = await session.get(Base_, base_id)
     if base is None or base.player_id != player.id:
         raise BuildError("Base no encontrada.")
@@ -236,13 +240,36 @@ async def upgrade_buildings_bulk(
                                Building.status == "active"))).scalars().all()
     rows.sort(key=lambda b: (b.level or 1))                # los más atrasados primero
     limit = len(rows) if count is None else max(0, min(int(count), len(rows)))
+    if limit <= 0:
+        return {"upgraded": 0, "total": len(rows), "building_key": building_key, "kind": kind}
+    from app.services.economy import get_or_create_stock
+    settings = get_settings()
+    now = datetime.now(UTC)
+    await collect_mines(session, player, now)              # adelantá la economía UNA sola vez
+    base_cost = content.building_cost_in_minerals(player.race_key, building_key)
+    energy_base = content.buildings.get(building_key, {}).get("energy_cost", 0)
+    regen = effective_energy_regen(player, settings)
+    emax = effective_energy_max(player, settings)
+    # objetos Stock del planeta para los minerales del costo (1 lookup por mineral, reusados)
+    stock = {m: await get_or_create_stock(session, player.id, m, base.planet_key)
+             for m in base_cost}
     done = 0
     for b in rows[:limit]:
-        try:
-            await upgrade_building(session, player, b.id, kind)   # cobra por nivel; falla si no da
-            done += 1
-        except BuildError:
-            break                                          # se acabó el material → cortá acá
+        mult = settings.building_upgrade_cost_mult * (b.level or 1)
+        cost = {m: a * mult for m, a in base_cost.items()}
+        if any(stock[m].amount < a for m, a in cost.items()):
+            break                                          # no alcanza el material → cortá
+        if not spend_energy(player, energy_base * mult, now, regen, emax):
+            break                                          # no alcanza la energía → cortá
+        for m, a in cost.items():
+            stock[m].amount -= a
+        b.level = (b.level or 1) + 1
+        done += 1
+    if done:
+        await session.flush()
+        from app.services.journal import record
+        await record(session, "building_upgraded", player.id, building=building_key,
+                     kind=kind, count=done)               # UN evento con el total
     return {"upgraded": done, "total": len(rows), "building_key": building_key, "kind": kind}
 
 
