@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.192.0] - 2026-07-07
+
 ### 2026-07-07 — SDD 83: autopiloto AGENTE (el LLM ejecuta acciones) + fix regresión mejora en lote
 El usuario preguntó si "la IA ya sabe hacer las cosas o mapeamos acciones a mano" y eligió que el LLM
 **ejecute** acciones él mismo. Además reportó que la mejora en lote (1.191.0) se colgaba/tardaba.
