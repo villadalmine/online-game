@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-08 — SDD 88: novedades en la pantalla de entrada (pre-login)
+- La pantalla de login ahora muestra un bloque **🆕 Novedades** con los últimos anuncios (del endpoint
+  público SDD 27, que ya auto-publica los releases del CHANGELOG) — así el que entra ve las mejoras
+  antes de loguearse. Se auto-actualiza con cada release.
+- Los títulos de release se limpian: se saca el prefijo técnico `SDD NN[ vX]:` para una novedad
+  legible al jugador (`changelog._title`). Test `test_release_title_strips_sdd_prefix`.
+
 ## [1.199.0] - 2026-07-08
 
 ### 2026-07-08 — SDD 87 v2: bomba cuántica — anti-farmeo + autopiloto defensivo + reporte del drenaje

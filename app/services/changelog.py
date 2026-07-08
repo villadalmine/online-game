@@ -20,6 +20,13 @@ def _clean(text: str) -> str:
     return text.strip()
 
 
+def _title(head: str) -> str:
+    """SDD 27: saca el prefijo técnico 'SDD NN[ vX]:' para una novedad legible al jugador."""
+    t = re.sub(r"^SDD\s+\d+(\s*v[\d.]+)?\s*[:—-]\s*", "", head, flags=re.IGNORECASE).strip()
+    t = t or head
+    return t[:1].upper() + t[1:]
+
+
 @lru_cache(maxsize=1)
 def recent_releases(limit: int = 8) -> list[dict]:
     """Últimas `limit` versiones del CHANGELOG como anuncios `release` (más nueva primero)."""
@@ -49,7 +56,7 @@ def recent_releases(limit: int = 8) -> list[dict]:
         versions.append(cur)
     out = []
     for v in versions[:limit]:
-        head = v["title"] or "novedades"
+        head = _title(v["title"] or "novedades")
         out.append({
             "key": f"release-{v['version']}",
             "category": "release",

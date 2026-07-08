@@ -1061,6 +1061,14 @@ async def test_fortify_all_soldiers_fallback_without_weapons_e2e(client, monkeyp
         assert orders   # hay soldados en entrenamiento
 
 
+def test_release_title_strips_sdd_prefix():
+    # SDD 27/88: novedades públicas con título legible (sin el prefijo técnico "SDD NN:").
+    from app.services.changelog import _title
+    assert _title("SDD 87 v2: bomba cuántica — anti-farmeo") == "Bomba cuántica — anti-farmeo"
+    assert _title("SDD 84 — NPC ve el grafo") == "NPC ve el grafo"
+    assert _title("Fix del tick muerto") == "Fix del tick muerto"   # sin prefijo → intacto
+
+
 async def test_announcements_public_localized_and_filtered(client):
     # SDD 27: anuncios públicos (sin auth), bilingües y filtrables por category/status.
     r = await client.http.get("/api/v1/announcements")
