@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.196.0] - 2026-07-08
+
 ### 2026-07-08 — SDD 85: el autopiloto agranda el búnker solo + guarda materiales
 El usuario reportó que su IA (nivel 7) "hace siempre lo mismo, en el búnker no excava cuando se queda
 sin espacio y no guarda materiales".
