@@ -870,6 +870,11 @@ async def _auto_attack(
         elif posture == "defensive":
             margin += 0.5                                   # cauta: solo goleadas…
             reserve = min(0.9, reserve * 1.5)              # …y guarda tropa en casa
+        # SDD 86: en un evento de ATAQUE (fervor bélico) tu poder sube → aprovechá la ventana
+        # peleando más ajustado (bajás el margen exigido).
+        from app.services.events import event_multiplier
+        if (await event_multiplier(session, "attack")) > 1.0:
+            margin *= 0.75
         margin = max(1.05, margin)
         # SDD 78 v6: con la skill `learn`, prioriza la composición que GANA según la meta aprendida.
         best_unit = await _meta_best_unit(session) if use_meta else None

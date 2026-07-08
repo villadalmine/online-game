@@ -53,6 +53,16 @@ async def test_agent_executes_transport(session, monkeypatch):
     assert here.get("iron", 0) == 4500              # el iron salió del origen
 
 
+async def test_agent_state_includes_active_events(session):
+    """SDD 86: el agente ve los eventos del mundo activos (para aprovecharlos)."""
+    from app.services.events import start_event
+    p, _ = await _player(session, name="agent_ev")
+    await start_event(session, "happy_hour_build")   # rebaja de construcción activa
+    await session.commit()
+    st = await ai_agent._agent_state(session, p)
+    assert any(e["effect"] == "build_cost" for e in st["active_events"])
+
+
 async def test_agent_disabled_is_noop(session, monkeypatch):
     s = get_settings()
     monkeypatch.setattr(s, "ai_agent_enabled", False)

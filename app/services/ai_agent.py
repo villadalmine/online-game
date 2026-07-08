@@ -33,8 +33,10 @@ _SYS = (
     '- {"action":"research","tech":"<key>"}: research a technology.\n'
     '- {"action":"done"}: nothing useful left to do this turn.\n'
     "Priorities: move SURPLUS minerals to a base/planet that lacks what it needs, keep the economy "
-    "growing, research what unlocks needed things. Use EXACT keys from the state. If an action "
-    "fails, read the error and try a different one or answer done."
+    "growing, research what unlocks needed things. EXPLOIT `active_events` (build during "
+    "`build_cost`/`solar_storm`, expand during `production`/`energy_regen`, train during "
+    "`free_units`). Use EXACT keys from the state. If an action fails, read the error and try "
+    "another or answer done."
 )
 
 
@@ -52,6 +54,11 @@ async def _agent_state(session: AsyncSession, player: Player) -> dict:
         st = await planet_stocks(session, player.id, pk)
         stocks[pk] = {k: round(v) for k, v in st.items() if v}
     units = {k: v for k, v in (await player_units(session, player.id)).items() if v}
+    # SDD 86: eventos del mundo activos (SDD 36) → el agente los aprovecha (construir en hora feliz,
+    # atacar en fervor bélico, etc.).
+    from app.services.events import active_events_out
+    events = [{"effect": e["effect"], "magnitude": e["magnitude"], "name": e["name"]}
+              for e in await active_events_out(session)]
     have = await researched_techs(session, player.id)
     researchable = [k for k, t in content.technologies.items()
                     if k not in have and (not t.get("requires_tech") or t["requires_tech"] in have)]
@@ -60,6 +67,8 @@ async def _agent_state(session: AsyncSession, player: Player) -> dict:
         "bases": [{"id": b.id, "planet": b.planet_key} for b in bases],
         "stocks_by_planet": stocks,
         "units": units,
+        "active_events": events,   # SDD 86: eventos del mundo para aprovechar
+
         "catalog": {
             "buildings": list(content.buildings.keys()),
             "units": list(content.units.keys()),

@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-08 — SDD 86: la NPC y tu autopiloto MIRAN los eventos del mundo y los aprovechan
+Pedido del usuario: que ambas IAs vean los eventos (SDD 36) para aprovecharlos.
+- **NPC + agente:** el estado del LLM ahora incluye `active_events` (efecto/magnitud/nombre) y el
+  prompt les dice cómo explotarlos: `attack` (fervor bélico) → atacar ya; `build_cost`/`solar_storm`
+  → construir; `production`/`energy_regen` → expandir; `free_units` → entrenar.
+- **Autopiloto determinista:** `_auto_attack` baja el margen (×0.75) durante un evento `attack` →
+  ataca más agresivo mientras dura la ventana. (El resto de efectos ya se aplican solos a la
+  economía/combate; esto es la explotación ACTIVA del timing.)
+- Tests: `test_npc_state_includes_active_events`, `test_agent_state_includes_active_events`.
+  `docs/sdd-ai-event-awareness.md`.
+
 ## [1.196.0] - 2026-07-08
 
 ### 2026-07-08 — SDD 85: el autopiloto agranda el búnker solo + guarda materiales

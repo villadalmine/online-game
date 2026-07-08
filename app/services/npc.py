@@ -793,6 +793,11 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
     reachable_moons = [
         k for k in content.moons if content.moon_galaxy(k) == player.galaxy_key
     ]
+    # SDD 86: eventos del mundo ACTIVOS (SDD 36) — el LLM los aprovecha (atacar en fervor bélico,
+    # construir en hora feliz, etc.). Compacto: efecto + magnitud + nombre.
+    from app.services.events import active_events_out
+    active_events = [{"effect": e["effect"], "magnitude": e["magnitude"], "name": e["name"]}
+                     for e in await active_events_out(session)]
 
     return {
         "race": player.race_key,
@@ -815,6 +820,7 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
         "locked_units": locked_units,           # SDD 84: unidades avanzadas + qué falta
         "colonizable": colonizable,             # SDD 84: planetas colonizables (con colony_ship)
         "market_planets": market_planets,       # SDD 84: dónde podés comerciar (vender excedente)
+        "active_events": active_events,         # SDD 86: eventos del mundo para aprovechar
         "intel": intel,                          # SDD 35: lo que saben tus espías (con confianza)
         "enemy_maps": enemy_maps,                # SDD 61: mapeo satelital por rival (% descubierto)
         "my_garrison": my_garrison,              # SDD 62: tus tropas por base
@@ -1218,6 +1224,9 @@ async def _llm_decide(state: dict) -> dict:
         "`can_attack` is true. Check `recent_actions` and do NOT repeat a move that just failed. "
         "READ THE BOARD: `intel` (spies) and `enemy_maps` (satellites) tell you what enemies have; "
         "if you know little about a rival and own a spy, spying is a cheap smart move. "
+        "EXPLOIT `active_events`: effect `attack` (war fervor) -> attack NOW; `build_cost` (happy "
+        "hour) or `solar_storm` -> build now; `production`/`energy_regen` -> expand economy; "
+        "`free_units` -> train the free troops. Seize the window while it lasts. "
         "`colonizable` lists planets you can colonize now; `market_planets` are "
         "where you can sell surplus minerals for energy. "
         "`my_garrison` shows where YOUR troops are stationed (attacks depart from your home base). "

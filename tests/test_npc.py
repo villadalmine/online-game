@@ -718,6 +718,17 @@ async def test_npc_state_shows_full_graph_vision(session):
     assert all(v.startswith(("tech:", "building:")) for v in vals)   # y QUÉ falta para cada una
 
 
+async def test_npc_state_includes_active_events(session):
+    """SDD 86: el estado del LLM incluye los eventos del mundo activos (para aprovecharlos)."""
+    from app.services.events import start_event
+    await ensure_npcs(session)
+    npc = await _npc(session)
+    await start_event(session, "war_fervor")   # evento de ATAQUE activo
+    await session.commit()
+    st = await _npc_state(session, npc)
+    assert any(e["effect"] == "attack" for e in st["active_events"])
+
+
 async def test_llm_dispatch_colonize(session):
     """SDD 84: la NPC puede COLONIZAR (no solo build/train/attack) — usa el grafo completo."""
     from app.content.registry import get_content
