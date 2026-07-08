@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.200.0] - 2026-07-08
+
 ### 2026-07-08 — SDD 88: novedades en la pantalla de entrada (pre-login)
 - La pantalla de login ahora muestra un bloque **🆕 Novedades** con los últimos anuncios (del endpoint
   público SDD 27, que ya auto-publica los releases del CHANGELOG) — así el que entra ve las mejoras
