@@ -645,6 +645,18 @@ async def dispatch_action(session: AsyncSession, player: Player, action: dict) -
         target = int(action["target_base_id"])
         await start_spy(session, player, target, {"spy": 1})
         return f"llm spy base {target}"
+    # SDD 84: acciones que amplían el grafo de la NPC más allá de lo básico (reusan los servicios).
+    if kind == "colonize":
+        from app.services.colonization import found_colony
+        pk = str(action["planet"])
+        await found_colony(session, player, pk, mode="surface", vehicle="colony_ship")
+        return f"llm colonize {pk}"
+    if kind == "trade":
+        from app.services.market import sell
+        pk, mineral = str(action["planet"]), str(action["mineral"])
+        qty = int(action.get("quantity", 0))
+        await sell(session, player, pk, mineral, qty)
+        return f"llm trade sell {qty} {mineral} @ {pk}"
     return None  # "none" / unknown -> no-op
 
 
@@ -687,14 +699,51 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
     }
     # SDD 65 Fase 2 (grafo SDD 1): frontera de investigación — techs INVESTIGABLES YA (prereqs
     # cumplidos, no hechas, pagables). El LLM puede elegir {"action":"research","tech":...}.
+    # SDD 84: cada tech de la frontera dice QUÉ desbloquea (edificios/unidades/techs) → el LLM sabe
+    # POR QUÉ investigar y arma un plan hacia lo avanzado (no se queda en lo básico).
+    def _unlocks(tech):
+        out = [k for k, s in content.buildings.items() if s.get("requires_tech") == tech]
+        out += [k for k, s in content.units.items() if s.get("requires_tech") == tech]
+        out += [k for k, t in content.technologies.items() if t.get("requires_tech") == tech]
+        return out[:6]
     research_options = [
-        k for k, t in content.technologies.items()
+        {"tech": k, "unlocks": _unlocks(k)}
+        for k, t in content.technologies.items()
         if k not in done_techs
         and (not t.get("requires_tech") or t["requires_tech"] in done_techs)
         and all(r in done_techs for r in t.get("requires_techs", []))
         and _afford(content.tech_cost_in_minerals(player.race_key, k),
                     t.get("energy_cost", 0), t.get("requires"))
-    ][:6]
+    ][:8]
+    # SDD 84: VISIÓN DEL GRAFO COMPLETO — edificios/unidades que EXISTEN pero están BLOQUEADOS, con
+    # qué falta para desbloquearlos (tech o edificio). Antes el LLM solo veía lo pagable-ya → jugaba
+    # básico. Ahora ve TODO lo disponible y puede planificar (investigar/construir hacia eso).
+    def _locked_by(spec):
+        rt, req = spec.get("requires_tech"), spec.get("requires")
+        if rt and rt not in done_techs:
+            return f"tech:{rt}"
+        if req and req != "headquarters" and req not in active_bld:
+            return f"building:{req}"
+        return None
+    locked_buildings = {k: _locked_by(s) for k, s in content.buildings.items()
+                        if k not in build_options and k != "headquarters" and _locked_by(s)}
+    locked_units = {k: _locked_by(s) for k, s in content.units.items()
+                    if k not in train_options and _locked_by(s)}
+    # SDD 84: expansión — planetas colonizables YA (con colony_ship + habitables para tu raza).
+    colonizable = []
+    if units.get("colony_ship", 0) >= 1:
+        from app.services.colonization import compat
+        mine_planets = {b.planet_key for b in await _bases(session, player)}
+        for pk in content.planets:
+            if pk in mine_planets:
+                continue
+            if player.galaxy_key and content.planet_galaxy.get(pk) != player.galaxy_key:
+                continue
+            if compat(player.race_key, pk, done_techs).get("can_colonize"):
+                colonizable.append(pk)
+    # SDD 84: comercio — planetas donde tenés Mercado (podés vender excedente por energía).
+    from app.services.market import player_market_planets
+    market_planets = await player_market_planets(session, player)
     enemies = []
     for b in await _enemy_bases(session, player):
         owner = await session.get(Player, b.player_id)
@@ -761,7 +810,11 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
         ],
         "build_options": build_options,
         "train_options": train_options,
-        "research_options": research_options,   # SDD 65: frontera del árbol (ya investigables)
+        "research_options": research_options,   # SDD 65/84: frontera + qué desbloquea cada tech
+        "locked_buildings": locked_buildings,   # SDD 84: edificios avanzados + qué falta
+        "locked_units": locked_units,           # SDD 84: unidades avanzadas + qué falta
+        "colonizable": colonizable,             # SDD 84: planetas colonizables (con colony_ship)
+        "market_planets": market_planets,       # SDD 84: dónde podés comerciar (vender excedente)
         "intel": intel,                          # SDD 35: lo que saben tus espías (con confianza)
         "enemy_maps": enemy_maps,                # SDD 61: mapeo satelital por rival (% descubierto)
         "my_garrison": my_garrison,              # SDD 62: tus tropas por base
@@ -1155,20 +1208,28 @@ async def _llm_decide(state: dict) -> dict:
         "Honor your `posture`: 'aggressive'/'raid' -> prioritize attacking a beatable enemy "
         "(prefer enemies[].is_target=true, then is_human=true); 'defensive' -> turret/recall; "
         "'expand' -> mines/buildings/expedition. "
-        "CRITICAL: `build_options`/`train_options`/`research_options` already list ONLY what you "
-        "can afford now; pick ONLY from those keys. If all are empty, do NOT pick those — "
-        "choose another action or {\"action\":\"none\"}. Only `attack` if `can_attack` is true. "
-        "Check `recent_actions` and do NOT repeat a move that just failed. "
+        "`build_options`/`train_options`/`research_options` list what you can afford NOW; use "
+        "those keys. THINK BIG (don't just spam basics): `locked_buildings`/`locked_units` show "
+        "advanced things you don't have yet and what unlocks each (tech:X or building:Y); "
+        "`research_options[].unlocks` shows what each tech opens. Build toward those — "
+        "research the tech / build the prerequisite that unlocks a stronger capability you lack "
+        "(better units, defenses, satellites, bunker, colony ships). If all `*_options` are empty, "
+        "pick research toward something useful or {\"action\":\"none\"}. Only `attack` if "
+        "`can_attack` is true. Check `recent_actions` and do NOT repeat a move that just failed. "
         "READ THE BOARD: `intel` (spies) and `enemy_maps` (satellites) tell you what enemies have; "
         "if you know little about a rival and own a spy, spying is a cheap smart move. "
+        "`colonizable` lists planets you can colonize now; `market_planets` are "
+        "where you can sell surplus minerals for energy. "
         "`my_garrison` shows where YOUR troops are stationed (attacks depart from your home base). "
-        "Given your state, choose exactly ONE affordable action consistent with your personality. "
+        "Given your state, choose exactly ONE feasible action consistent with your personality. "
         'Respond with ONLY JSON, one of: '
         '{"action":"build","building":"<key>","mineral":"<key|null>"} (mineral only for a mine), '
         '{"action":"train","unit":"<key>","quantity":<int>}, '
         '{"action":"attack","target_base_id":<int>,"force":{"soldier":<int>,"tank":<int>}}, '
         '{"action":"research","tech":"<key>"}, '
         '{"action":"spy","target_base_id":<int>}, '
+        '{"action":"colonize","planet":"<key from colonizable>"}, '
+        '{"action":"trade","planet":"<key>","mineral":"<key>","quantity":<int>}, '
         '{"action":"recall","mission_id":<int>}, '
         '{"action":"expedition","moon_key":"<key>"}, '
         'or {"action":"none"}. '

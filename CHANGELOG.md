@@ -7,6 +7,25 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-08 — SDD 84: la NPC ve el grafo COMPLETO + más acciones; y fix del tick muerto
+El usuario reportó que la NPC "decayó / juega mal / solo cosas básicas, no usa todo el grafo".
+- **FIX CRÍTICO — el tick estaba MUERTO ~2.5h:** un job del tick quedó Pending (pineado al nodo
+  `srv-super6c-01-nvme` eliminado en el mantenimiento) y con `concurrencyPolicy: Forbid` bloqueaba
+  TODOS los ticks → las NPC no recibían turnos (0 decisiones/tokens). Se borró el job zombie y se
+  agregó RESILIENCIA al CronJob (`activeDeadlineSeconds: 240` + `backoffLimit: 1` +
+  `startingDeadlineSeconds: 120`) para que un tick trabado se auto-falle antes del próximo y el mundo
+  nunca se frene por un job colgado. Tick verificado OK.
+- **Análisis del "juega mal" (métricas):** el LLM responde (0 errores) pero ~41% cae a reglas por
+  `infeasible`; 2/3 NPCs corrían en el modelo local débil `qwen2.5:7b` (18-50% aplicadas) vs la nube
+  `gemma-4-31b` (80-100%). Con la GPU apagada ahora TODAS heredan el modelo fuerte de nube.
+- **Visión del grafo COMPLETO (`_npc_state`):** antes el LLM solo veía lo pagable-ya → jugaba básico.
+  Ahora ve `locked_buildings`/`locked_units` (avanzado + qué falta: `tech:`/`building:`),
+  `research_options[].unlocks` (qué abre cada tech), `colonizable` y `market_planets`. El prompt le
+  pide planificar hacia lo avanzado, no spamear lo básico.
+- **Más acciones:** `colonize` y `trade` (vender excedente) sumadas al vocabulario del LLM
+  (antes solo build/train/attack/research/spy/recall/expedition). Tests `tests/test_npc.py`.
+- `docs/sdd-npc-full-graph-vision.md`. Follow-up (v2): satélites/drones/búnker/diplomacia/mercado/tropas.
+
 ## [1.194.0] - 2026-07-08
 
 ### Ops — 2026-07-08 — Fix deploy roto por el mantenimiento (nodo pineado eliminado) + pin LLM cloud

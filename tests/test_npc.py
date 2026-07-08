@@ -705,6 +705,41 @@ async def test_npc_state_reads_the_whole_board(session, monkeypatch):
     assert isinstance(st["research_options"], list)
 
 
+async def test_npc_state_shows_full_graph_vision(session):
+    """SDD 84: el estado muestra el grafo COMPLETO — bloqueados + qué los desbloquea + expansión."""
+    await ensure_npcs(session)
+    npc = await _npc(session)
+    st = await _npc_state(session, npc)
+    for key in ("locked_buildings", "locked_units", "colonizable", "market_planets"):
+        assert key in st, key
+    assert all("tech" in o and "unlocks" in o for o in st["research_options"])
+    assert st["locked_buildings"] or st["locked_units"]   # ve cosas avanzadas que aún no tiene
+    vals = list(st["locked_buildings"].values()) + list(st["locked_units"].values())
+    assert all(v.startswith(("tech:", "building:")) for v in vals)   # y QUÉ falta para cada una
+
+
+async def test_llm_dispatch_colonize(session):
+    """SDD 84: la NPC puede COLONIZAR (no solo build/train/attack) — usa el grafo completo."""
+    from app.content.registry import get_content
+    from app.models import PlayerTech, UnitStock
+    from app.services.economy import get_or_create_stock
+    from app.services.npc import dispatch_action
+    await ensure_npcs(session)
+    npc = await _npc(session, "npc_terran")   # terran (earth) → coloniza mars con las techs
+    for t in ("antigravity", "thermal_shielding"):
+        session.add(PlayerTech(player_id=npc.id, tech_key=t))
+    session.add(UnitStock(player_id=npc.id, unit_key="colony_ship", quantity=1))
+    for m in get_content().minerals:
+        (await get_or_create_stock(session, npc.id, m, npc.planet_key)).amount = 100000
+    npc.energy = 100000
+    await session.commit()
+    st = await _npc_state(session, npc)
+    assert st["colonizable"]                  # el LLM ve planetas colonizables
+    r = await dispatch_action(session, npc, {"action": "colonize", "planet": st["colonizable"][0]})
+    await session.commit()
+    assert "colonize" in r
+
+
 async def test_llm_dispatch_research_and_spy(session):
     """SDD 65 Fase 2: el LLM puede investigar (frontera del grafo) y espiar (leer el tablero)."""
     from app.content.registry import get_content
@@ -721,7 +756,8 @@ async def test_llm_dispatch_research_and_spy(session):
     await session.commit()
 
     async def research_decide(state):
-        assert "mining_efficiency" in state["research_options"]   # frontera visible
+        # SDD 84: research_options ahora son dicts {tech, unlocks} (el LLM ve qué desbloquea).
+        assert "mining_efficiency" in [o["tech"] for o in state["research_options"]]
         return {"action": "research", "tech": "mining_efficiency"}
 
     desc = await LlmBrain(decide=research_decide).act(session, npc)

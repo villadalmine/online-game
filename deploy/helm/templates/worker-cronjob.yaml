@@ -5,8 +5,16 @@ metadata:
 spec:
   schedule: {{ .Values.worker.schedule | quote }}
   concurrencyPolicy: Forbid
+  # RESILIENCIA (incidente 2026-07-08): con Forbid, un job que queda colgado (p.ej. pod Pending por un
+  # nodeSelector a un nodo inexistente) bloquea TODOS los ticks siguientes para siempre. Estos límites
+  # hacen que un tick trabado se AUTO-FALLE antes del próximo schedule (*/5), así el mundo nunca deja de
+  # avanzar por un job zombie. startingDeadlineSeconds: no arrastrar backlog de ticks perdidos.
+  startingDeadlineSeconds: 120
   jobTemplate:
     spec:
+      # el tick sano tarda ~15-60s; si a los 4 min no terminó (o no agendó), matalo (< intervalo 5m).
+      activeDeadlineSeconds: {{ .Values.worker.activeDeadlineSeconds | default 240 }}
+      backoffLimit: 1
       template:
         spec:
 {{ include "online-game.imagePullSecrets" . | indent 10 }}
