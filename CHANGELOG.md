@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.195.0] - 2026-07-08
+
 ### 2026-07-08 — SDD 84: la NPC ve el grafo COMPLETO + más acciones; y fix del tick muerto
 El usuario reportó que la NPC "decayó / juega mal / solo cosas básicas, no usa todo el grafo".
 - **FIX CRÍTICO — el tick estaba MUERTO ~2.5h:** un job del tick quedó Pending (pineado al nodo
