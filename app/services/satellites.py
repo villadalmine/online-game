@@ -75,7 +75,7 @@ async def launch(
     if spec is None:
         raise SatelliteError(f"Satélite desconocido: {unit_key}")
     kind = spec.get("kind", "spy")
-    if kind == "survey":
+    if kind in ("survey", "inhibitor"):   # SDD 87: el inhibidor orbita TU planeta (corta la fuga)
         target_id = None
         target_planet = player.planet_key or ""
     else:
@@ -204,4 +204,16 @@ async def satellites_state(session: AsyncSession, player: Player) -> tuple[list[
                 cell["units"] = await units_at_base(session, tid, b.id)
             bases.append(cell)
         maps[str(tid)] = {"pct": pct, "bases": bases}
+    # SDD 87: bases que le FILTRAN info a este jugador (bomba cuántica desactivada con tech y sin
+    # satélite inhibidor del defensor) → mapa 100% permanente de esas bases, sin gastar satélites.
+    from app.services.quantum import leaked_base_ids
+    for bid in await leaked_base_ids(session, player.id):
+        b = await session.get(Base_, bid)
+        if b is None:
+            continue
+        entry = maps.setdefault(str(b.player_id), {"pct": 100.0, "bases": []})
+        entry["pct"] = 100.0
+        if not any(c["base_id"] == bid for c in entry["bases"]):
+            entry["bases"].append({"base_id": bid, "planet": b.planet_key, "leaked": True,
+                                   "units": await units_at_base(session, b.player_id, bid)})
     return out, maps

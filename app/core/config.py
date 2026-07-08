@@ -260,6 +260,15 @@ class Settings(BaseSettings):
     ai_agent_enabled: bool = False
     ai_agent_max_steps: int = 4
     ai_agent_route: str = "gpu"            # backend del agente (gpu local por default: barato)
+    # SDD 87: BOMBA CUÁNTICA — gusano de IA que infecta una base rival, drena y baja la capacidad
+    # progresiva (1%→80% en `quantum_decay_days`). Se desactiva con tropas, rescate, o tech cuántica
+    # (deja fuga de info hasta poner un satélite inhibidor). Flag global; reversible.
+    quantum_bomb_enabled: bool = False
+    quantum_drain_fraction: float = 0.5    # % de minerales del planeta robados al impactar
+    quantum_decay_days: float = 7.0        # días para llegar al tope de penalización
+    quantum_max_penalty: float = 0.80      # tope de reducción de producción (80%)
+    quantum_disarm_soldiers: int = 20      # soldados para purgar el gusano (opción tropas)
+    quantum_ransom_fraction: float = 0.3   # % del stock del defensor que exige el rescate
     # Sub-fase 2 (autopiloto economía): comercio conservador (vende EXCEDENTE sobre el umbral) +
     # tope de venta por tick. mines/colonize construyen/colonizan 1 por tick (acotado).
     ai_trade_surplus_threshold: float = 10000.0

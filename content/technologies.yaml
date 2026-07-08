@@ -386,6 +386,21 @@ technologies:
     research_seconds: 3000
     cost: { structural: 500, energetic: 700, advanced: 800 }
     magnitude: 1.0
+  # SDD 87: guerra cuántica — habilita la BOMBA CUÁNTICA (gusano de IA que infecta y drena una base
+  # rival) y, del lado defensivo, DESACTIVAR una infección propia + el satélite inhibidor que corta la
+  # fuga de información. Requiere Salto cuántico (dominás el entrelazamiento).
+  - key: quantum_warfare
+    name: "Guerra cuántica"
+    category: underground
+    name_en: "Quantum warfare"
+    description: "Gusano de IA cuántica: bomba que infecta y drena la base rival; y cómo desactivar una infección y cortar la fuga con un satélite inhibidor."
+    description_en: "Quantum AI worm: a bomb that infects and drains an enemy base; plus how to disarm an infection and cut the intel leak with an inhibitor satellite."
+    requires: research_lab
+    requires_tech: quantum_jump
+    energy_cost: 200
+    research_seconds: 4000
+    cost: { structural: 800, energetic: 1000, advanced: 1200 }
+    magnitude: 1.0
   # SDD 63: salto espacial — capstone del árbol endgame (requiere TODO). Habilita la nave "jumper".
   - key: space_jump
     name: "Salto espacial"

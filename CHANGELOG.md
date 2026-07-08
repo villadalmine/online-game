@@ -7,6 +7,22 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-08 — SDD 87: BOMBA CUÁNTICA (gusano de IA que infecta, drena y extorsiona)
+Arma nueva pedida por el usuario (lanzamiento intra-planeta · release completo · las NPC también).
+- **`quantum_bomb`** (munición, gate tech `quantum_warfare`): se lanza como un misil (arsenal SDD 49,
+  interceptable). No destruye edificios: **INFECTA** la base con un gusano de IA que al impactar DRENA
+  (roba 50% de los minerales del planeta al atacante + energía) y luego **penaliza la producción**
+  del jugador progresivamente **1%→80% en ~7 días** (player-wide, vía `effects.multiplier`).
+- **Desactivar (3 formas):** tropas (purga), rescate (pagás recursos al atacante = el chantaje), o
+  **tecnología cuántica** (gratis, pero deja una **FUGA de info**: tu base se transmite al atacante
+  hasta que orbite un **satélite inhibidor** — que se degrada y hay que reponer).
+- **Piezas:** modelo `QuantumInfection` (migración), `app/services/quantum.py`, hooks en strike/
+  effects/satellites, snapshot `quantum_infection`, `POST /quantum/disarm/{troops|ransom|quantum}`,
+  unidades `quantum_bomb`+`inhibitor_satellite`, tech `quantum_warfare`, panel + botones en el front.
+- **NPC:** ven `my_infection`/`can_quantum_bomb` y pueden lanzarla (`quantum`) y desactivarla
+  (`quantum_disarm`). Flag `QUANTUM_BOMB_ENABLED` (prod ON). Tests `tests/test_quantum.py` + e2e.
+  `docs/sdd-quantum-bomb.md`.
+
 ## [1.197.0] - 2026-07-08
 
 ### 2026-07-08 — SDD 86: la NPC y tu autopiloto MIRAN los eventos del mundo y los aprovechan

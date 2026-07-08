@@ -292,6 +292,29 @@ class StrikeMission(Base):
     arrives_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class QuantumInfection(Base):
+    """SDD 87: un gusano de IA cuántica infectando una base. Mientras `active` DRENA (penaliza la
+    producción, progresivo 1%→80% en ~7 días, derivado de `created_at`). Se desactiva mandando
+    tropas, pagando rescate, o con tech cuántica (`disarm=quantum`) — en ese último caso queda
+    `leaking=True`: filtra la info de la base al atacante hasta que orbite un inhibidor."""
+
+    __tablename__ = "quantum_infections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    defender_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    attacker_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), index=True
+    )
+    base_id: Mapped[int] = mapped_column(Integer, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="active")   # active|disarmed
+    disarm: Mapped[str | None] = mapped_column(String(20), nullable=True)  # troops|ransom|quantum
+    leaking: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    disarmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class DroneSquadron(Base):
     """Un escuadrón de drones orbitando una base enemiga del mismo planeta (SDD 50). Lazy por
     timestamp: al leer, `advance_drones` aplica los ticks transcurridos (derribos por torretas,

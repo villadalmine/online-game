@@ -22,6 +22,7 @@ from app.api.v1 import (
     notifications,
     players,
     public,
+    quantum,
     research,
     satellites,
     seasons,
@@ -56,5 +57,6 @@ api_router.include_router(announcements.router, prefix="/announcements", tags=["
 api_router.include_router(universes.router, prefix="/universes", tags=["universes"])
 api_router.include_router(colonize.router, prefix="/colonize", tags=["colonize"])
 api_router.include_router(market.router, prefix="/market", tags=["market"])
+api_router.include_router(quantum.router, prefix="/quantum", tags=["quantum"])
 api_router.include_router(advisor.router, prefix="/players/me/advisor", tags=["advisor"])
 api_router.include_router(tts.router, tags=["tts"])

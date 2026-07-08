@@ -3189,6 +3189,32 @@ async def test_bunker_dig_deeper_e2e(client, monkeypatch):
     assert me2["bunkers"][0]["grid_level"] == 1
 
 
+async def test_quantum_infection_disarm_e2e(client, monkeypatch):
+    """SDD 87: la infección cuántica aparece en /players/me y se desactiva con tropas por la API."""
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import QuantumInfection, UnitStock
+    monkeypatch.setattr(get_settings(), "quantum_bomb_enabled", True)
+    monkeypatch.setattr(get_settings(), "quantum_disarm_soldiers", 3)
+    h = await _register(client.http, "quantum_e2e")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    base = st["bases"][0]["id"]
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "quantum_e2e"))).scalar_one()
+        s.add(QuantumInfection(defender_id=p.id, attacker_id=p.id, base_id=base, status="active"))
+        s.add(UnitStock(player_id=p.id, unit_key="soldier", quantity=10, base_id=base))
+        await s.commit()
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["quantum_infection"] and me["quantum_infection"]["base_id"] == base
+    r = await client.http.post("/api/v1/quantum/disarm/troops", headers=h, json={"base_id": base})
+    assert r.status_code == 200 and r.json()["disarmed"] == "troops", r.text
+    me2 = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me2["quantum_infection"] is None            # ya desactivada
+    bad = await client.http.post("/api/v1/quantum/disarm/troops", headers=h, json={"base_id": base})
+    assert bad.status_code == 400                       # ya no hay infección → error claro
+
+
 async def test_bunker_vault_stash_withdraw_e2e(client, monkeypatch):
     """SDD 69 Fase 1: guardar mineral en la bóveda (a salvo del saqueo) y sacarlo, por la API."""
     from sqlalchemy import select

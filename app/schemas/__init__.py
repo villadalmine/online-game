@@ -683,6 +683,8 @@ class PlayerStateOut(BaseModel):
     solar_storm: bool = False
     # SDD 69 Fase 4: vida artificial (nivel + autonomía de robots + próximo nivel).
     ai: dict = {}
+    # SDD 87: infección de bomba cuántica activa (penalización + cómo desactivar), o None.
+    quantum_infection: dict | None = None
 
 
 # ---- SDD 1: dependency graph -------------------------------------------------

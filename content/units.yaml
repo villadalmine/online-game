@@ -272,7 +272,28 @@ ordnance:
     energy_cost: 30
     train_seconds: 180
     cost: { structural: 400, energetic: 250, advanced: 300 }
-
+  # SDD 87: bomba cuántica — no destruye edificios: INFECTA la base con un gusano de IA que se
+  # reproduce y drena energía/recursos y baja la capacidad progresivamente (1%→80% en ~7 días). Se
+  # lanza como munición intra-planeta (interceptable como un misil). power=0 (no hace daño directo).
+  - key: quantum_bomb
+    icon: "🧬"
+    name: "Bomba cuántica"
+    name_en: "Quantum bomb"
+    real: "Arma cibernética cuántica: inyecta un gusano de IA autorreplicante que drena y extorsiona."
+    real_en: "Quantum cyber-weapon: injects a self-replicating AI worm that drains and extorts."
+    sources: ["Wikipedia: Computer worm", "Wikipedia: Quantum computing"]
+    requires: launcher
+    requires_tech: quantum_warfare
+    domain: ordnance
+    housing_size: 3
+    range: intra_planet
+    power: 0               # no daña edificios: su efecto es la INFECCIÓN (ver services/quantum.py)
+    intercept_cost: 40     # difícil de frenar: ~4 torretas para bloquearla del todo
+    infects: true          # marca la munición como infecciosa (el resolver la desvía a quantum)
+    propulsion: rocket
+    energy_cost: 40
+    train_seconds: 240
+    cost: { structural: 500, energetic: 600, advanced: 900 }
 # Drones (SDD 50): intra-planeta. domain `drone` (se alojan en la fábrica de drones). Orbitan un
 # objetivo: drenan TU energía (energy_per_tick) y caen ante las torretas (hp vs antiair). Los espía
 # dan intel en vivo (intel_quality); los de ataque castigan la base (attack) por tick.
@@ -388,3 +409,23 @@ satellite:
     train_seconds: 300
     energy_cost: 28
     cost: { structural: 140, energetic: 280, advanced: 220 }
+  # SDD 87: satélite INHIBIDOR — corta la fuga de información que deja una infección cuántica
+  # desactivada con tech. Orbita un tiempo y se degrada (hay que reponerlo, sino el rival te ve de
+  # nuevo). Requiere Guerra cuántica.
+  - key: inhibitor_satellite
+    icon: 🛰
+    name: "Satélite inhibidor"
+    name_en: "Inhibitor satellite"
+    real: "Satélite de guerra electrónica: bloquea la telemetría cuántica que filtra tu base."
+    real_en: "Electronic-warfare satellite: jams the quantum telemetry leaking from your base."
+    sources: ["Wikipedia: Electronic warfare"]
+    requires: cosmodrome
+    requires_tech: quantum_warfare
+    domain: satellite
+    housing_size: 1
+    kind: inhibitor
+    sat_energy: 112
+    orbit_minutes: 90
+    train_seconds: 300
+    energy_cost: 30
+    cost: { structural: 200, energetic: 300, advanced: 300 }

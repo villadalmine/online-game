@@ -421,6 +421,12 @@ async def _resolve_strike(session: AsyncSession, mission: StrikeMission, now: da
         else:
             break
 
+    # SDD 87: si una BOMBA CUÁNTICA impactó (no interceptada) infecta la base — un gusano de IA que
+    # drena y baja la capacidad (no destruye edificios; su power es 0).
+    if result.impacted.get("quantum_bomb", 0):
+        from app.services.quantum import on_bomb_impact
+        await on_bomb_impact(session, attacker, defender, mission.target_base_id, now)
+
     # Fallout (SDD 49): un nuclear que impacta deja −producción temporal al defensor.
     if result.area and result.impacted:
         from app.models import ActiveBoon

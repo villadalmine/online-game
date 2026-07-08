@@ -26,4 +26,8 @@ async def multiplier(
     # Eventos dinámicos globales (SDD 36): apilan como un multiplicador más.
     from app.services.events import event_multiplier
     m *= await event_multiplier(session, effect, now)
+    # SDD 87: una BOMBA CUÁNTICA activa DRENA la producción (penalización progresiva 1%→80%).
+    if effect == "production":
+        from app.services.quantum import infection_penalty
+        m *= await infection_penalty(session, player_id, now)
     return m

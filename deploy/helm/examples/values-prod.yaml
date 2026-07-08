@@ -80,6 +80,10 @@ env:
   # minerales entre bases, construir, entrenar, investigar) vía loop de acción-JSON. Opt-in por
   # jugador, con presupuesto diario + botón STOP + fallback al determinista. Reversible.
   AI_AGENT_ENABLED: "true"
+  # SDD 87: bomba cuántica — gusano de IA que infecta/drena una base rival (arsenal intra-planeta,
+  # gate tech quantum_warfare); se desactiva con tropas/rescate/tech (esta última deja fuga de info
+  # hasta poner un satélite inhibidor). Reversible.
+  QUANTUM_BOMB_ENABLED: "true"
   # SDD 75: terraformación — la sala Terraformador (tech terraforming) agranda el búnker +3 de lado.
   TERRAFORMING_ENABLED: "true"
   # SDD 76: salto cuántico — la Puerta cuántica (tech quantum_jump) teletransporta electrónica de un

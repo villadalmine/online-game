@@ -462,7 +462,14 @@ async def snapshot(session: AsyncSession, player: Player) -> PlayerStateOut:
         bunkers=bunkers_out,
         solar_storm=await _solar_storm(session),   # SDD 72
         ai=await _ai_out(session, player),         # SDD 78: vida artificial + aprendizaje
+        quantum_infection=await _quantum_infection(session, player),   # SDD 87
     )
+
+
+async def _quantum_infection(session, player):
+    """SDD 87: infección cuántica activa (para que el jugador la vea y la desactive), o None."""
+    from app.services.quantum import infection_state
+    return await infection_state(session, player)
 
 
 async def _solar_storm(session) -> bool:

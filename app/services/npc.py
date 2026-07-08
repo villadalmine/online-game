@@ -657,6 +657,39 @@ async def dispatch_action(session: AsyncSession, player: Player, action: dict) -
         qty = int(action.get("quantity", 0))
         await sell(session, player, pk, mineral, qty)
         return f"llm trade sell {qty} {mineral} @ {pk}"
+    # SDD 87: lanzar la BOMBA CUÁNTICA a una base rival del mismo planeta que la lanzadera.
+    if kind == "quantum":
+        from app.services.strike import _has_active, start_strike
+        launcher = None
+        for b in await _bases(session, player):
+            if await _has_active(session, b.id, "launcher"):
+                launcher = b
+                break
+        if launcher is None:
+            raise ValueError("sin lanzadera activa para la bomba cuántica")
+        target = int(action["target_base_id"])
+        await start_strike(session, player, launcher.id, target, {"quantum_bomb": 1})
+        return f"llm quantum bomb -> base {target}"
+    # SDD 87: desactivar la infección propia (tech si la tiene, si no tropas, si no rescate).
+    if kind == "quantum_disarm":
+        from app.services.quantum import (
+            active_infection,
+            disarm_with_quantum,
+            disarm_with_ransom,
+            disarm_with_troops,
+        )
+        from app.services.research import researched_techs
+        inf = await active_infection(session, player.id)
+        if inf is None:
+            raise ValueError("no hay infección cuántica activa")
+        if "quantum_warfare" in await researched_techs(session, player.id):
+            await disarm_with_quantum(session, player, inf.base_id)
+        else:
+            try:
+                await disarm_with_troops(session, player, inf.base_id)
+            except Exception:
+                await disarm_with_ransom(session, player, inf.base_id)
+        return "llm quantum disarm"
     return None  # "none" / unknown -> no-op
 
 
@@ -798,6 +831,11 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
     from app.services.events import active_events_out
     active_events = [{"effect": e["effect"], "magnitude": e["magnitude"], "name": e["name"]}
                      for e in await active_events_out(session)]
+    # SDD 87: bomba cuántica — si estoy infectado (para desactivar) y si puedo lanzarla (tengo la
+    # munición + una lanzadera activa).
+    from app.services.quantum import infection_state
+    my_infection = await infection_state(session, player)
+    can_quantum_bomb = units.get("quantum_bomb", 0) > 0 and "launcher" in active_bld
 
     return {
         "race": player.race_key,
@@ -821,6 +859,8 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
         "colonizable": colonizable,             # SDD 84: planetas colonizables (con colony_ship)
         "market_planets": market_planets,       # SDD 84: dónde podés comerciar (vender excedente)
         "active_events": active_events,         # SDD 86: eventos del mundo para aprovechar
+        "my_infection": my_infection,           # SDD 87: infección cuántica propia (desactivar)
+        "can_quantum_bomb": can_quantum_bomb,   # SDD 87: puedo lanzar la bomba cuántica
         "intel": intel,                          # SDD 35: lo que saben tus espías (con confianza)
         "enemy_maps": enemy_maps,                # SDD 61: mapeo satelital por rival (% descubierto)
         "my_garrison": my_garrison,              # SDD 62: tus tropas por base
@@ -1224,6 +1264,9 @@ async def _llm_decide(state: dict) -> dict:
         "`can_attack` is true. Check `recent_actions` and do NOT repeat a move that just failed. "
         "READ THE BOARD: `intel` (spies) and `enemy_maps` (satellites) tell you what enemies have; "
         "if you know little about a rival and own a spy, spying is a cheap smart move. "
+        "QUANTUM BOMB (SDD 87): if `my_infection` is set, DISARM it now with "
+        '{"action":"quantum_disarm"} (a worm drains you). If `can_quantum_bomb` is true, you may '
+        'cripple a rival with {"action":"quantum","target_base_id":<int on your launcher planet>}. '
         "EXPLOIT `active_events`: effect `attack` (war fervor) -> attack NOW; `build_cost` (happy "
         "hour) or `solar_storm` -> build now; `production`/`energy_regen` -> expand economy; "
         "`free_units` -> train the free troops. Seize the window while it lasts. "
@@ -1239,6 +1282,8 @@ async def _llm_decide(state: dict) -> dict:
         '{"action":"spy","target_base_id":<int>}, '
         '{"action":"colonize","planet":"<key from colonizable>"}, '
         '{"action":"trade","planet":"<key>","mineral":"<key>","quantity":<int>}, '
+        '{"action":"quantum","target_base_id":<int>}, '
+        '{"action":"quantum_disarm"}, '
         '{"action":"recall","mission_id":<int>}, '
         '{"action":"expedition","moon_key":"<key>"}, '
         'or {"action":"none"}. '
