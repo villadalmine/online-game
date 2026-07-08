@@ -7,6 +7,24 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### Ops — 2026-07-08 — NPC brain a cloud (GPU t7910 apagada)
+- **Cambio**: `llm.model` en `deploy/helm/values-local.yaml` de `local-gpu` a
+  `gemma4-paid` (OpenRouter google/gemma-4-31b-it, cloud). Aplica a `galaxy-api`
+  y al cronjob `galaxy-tick`.
+- **Por qué**: se apagó `srv-t7910` (nodo GPU Tesla P4) por mantenimiento del
+  cluster homelab (se desacopló el stack vcluster+kubevirt de ArgoCD para
+  descargar los control-plane CM4; el juego dejó de ser el único acoplado a la
+  GPU). El fallback litellm `local-gpu→gemma4-paid` ya cubría la caída, pero se
+  fijó el modelo cloud directo para evitar el timeout de ~45s del primer tick.
+- **Impacto**: NPC brain responde en ~2-3s vía cloud; costo bajo (gemma-4 pago,
+  sin tope diario). Sin cambio de comportamiento del juego.
+- **Rollback** (cuando se re-prenda la GPU): ver la nota `⟳ ROLLBACK` en
+  `deploy/helm/values-local.yaml` — prender t7910, esperar ollama-a/b Running,
+  volver `model: local-gpu` + `helm upgrade`.
+- **Verificado**: tick manual con cloud OK; juego 3/3 api + postgres + redis
+  Running tras el apagado; DB (Longhorn) sin volúmenes faulted.
+
+
 ## [1.192.0] - 2026-07-07
 
 ### 2026-07-07 — SDD 83: autopiloto AGENTE (el LLM ejecuta acciones) + fix regresión mejora en lote
