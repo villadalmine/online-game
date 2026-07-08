@@ -60,6 +60,12 @@ skills:
     name_en: "Housing"
     description: "Se da cuenta si faltan plazas para las unidades y construye el edificio que aloja."
     description_en: "Notices when unit slots run short and builds the housing building."
+  - key: stash
+    icon: "🗄"
+    name: "Reserva en bóveda"
+    name_en: "Vault stash"
+    description: "Guarda el excedente de minerales en la bóveda del búnker (a salvo del saqueo)."
+    description_en: "Stashes surplus minerals in the bunker vault (safe from looting)."
   - key: spy
     icon: "🛰🔍"
     name: "Espionaje"
@@ -113,7 +119,7 @@ levels:
     electronics: 450
     cost: { advanced: 600, energetic: 400 }
     research_seconds: 1200
-    autonomy_scope: [workers, mines, housing, bunker]
+    autonomy_scope: [workers, mines, housing, bunker, stash]
     speed_efficiency: 1.15
     quality: 0.55
   - level: 3
@@ -124,7 +130,7 @@ levels:
     electronics: 800
     cost: { advanced: 1000, energetic: 700 }
     research_seconds: 2000
-    autonomy_scope: [workers, mines, housing, bunker, trade]
+    autonomy_scope: [workers, mines, housing, bunker, stash, trade]
     speed_efficiency: 1.25
     quality: 0.65
   - level: 4
@@ -135,7 +141,7 @@ levels:
     electronics: 1400
     cost: { advanced: 1600, energetic: 1200, structural: 800 }
     research_seconds: 3000
-    autonomy_scope: [workers, mines, housing, bunker, trade, colonize]
+    autonomy_scope: [workers, mines, housing, bunker, stash, trade, colonize]
     speed_efficiency: 1.4
     quality: 0.75
   - level: 5
@@ -146,7 +152,7 @@ levels:
     electronics: 2000
     cost: { advanced: 2200, energetic: 1600, structural: 1200 }
     research_seconds: 3600
-    autonomy_scope: [workers, mines, housing, bunker, trade, colonize, defend, research, repopulate]
+    autonomy_scope: [workers, mines, housing, bunker, stash, trade, colonize, defend, research, repopulate]
     speed_efficiency: 1.5
     quality: 0.85
   - level: 6
@@ -158,7 +164,7 @@ levels:
     cost: { advanced: 3000, energetic: 2400, structural: 1800 }
     research_seconds: 4200
     autonomy_scope:
-      [workers, mines, housing, bunker, trade, colonize, defend, research, repopulate, spy,
+      [workers, mines, housing, bunker, stash, trade, colonize, defend, research, repopulate, spy,
        expedition, attack]
     speed_efficiency: 1.6
     quality: 0.95
@@ -171,7 +177,7 @@ levels:
     cost: { advanced: 4200, energetic: 3400, structural: 2600 }
     research_seconds: 5400
     autonomy_scope:
-      [workers, mines, housing, bunker, trade, colonize, defend, research, repopulate, spy,
+      [workers, mines, housing, bunker, stash, trade, colonize, defend, research, repopulate, spy,
        expedition, attack, diplomacy, learn]
     speed_efficiency: 1.75
     quality: 1.15

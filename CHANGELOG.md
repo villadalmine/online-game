@@ -7,6 +7,17 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-08 — SDD 85: el autopiloto agranda el búnker solo + guarda materiales
+El usuario reportó que su IA (nivel 7) "hace siempre lo mismo, en el búnker no excava cuando se queda
+sin espacio y no guarda materiales".
+- **`_auto_bunker` EXCAVA cuando está lleno:** si no hay lugar para una sala nueva, llama a
+  `dig_deeper` (agranda el búnker; requiere `underground_construction`). Antes se quedaba trabado.
+- **Skill nuevo `stash` (🗄 Reserva en bóveda):** `_auto_stash` guarda el excedente de minerales en la
+  bóveda del búnker (a salvo del saqueo), sin vaciar la reserva. Antes la IA nunca guardaba → perdías
+  todo en un ataque. Desbloqueado en el nivel 2 (junto al búnker). La IA robot cubre ahora 15 skills.
+- Tests: `test_auto_stash_saves_surplus_to_vault` + e2e (catálogo publica `stash` en el scope L2).
+  `docs/sdd-ai-skill-graph.md` (v9). Follow-up: paridad de acciones del agente (SDD 83) + niveles 8+.
+
 ## [1.195.0] - 2026-07-08
 
 ### 2026-07-08 — SDD 84: la NPC ve el grafo COMPLETO + más acciones; y fix del tick muerto

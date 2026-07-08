@@ -339,6 +339,31 @@ async def test_npc_llm_state_with_datetime_serializes(session, monkeypatch):
     assert out.get("posture") == "expand" and "eta" in seen["user"]
 
 
+async def test_auto_stash_saves_surplus_to_vault(session, monkeypatch):
+    # SDD 85: la IA GUARDA el excedente en la bóveda del búnker (antes no guardaba nada).
+    from app.content.registry import get_content
+    from app.models import Bunker, BunkerRoom, BunkerStock, PlayerTech
+    from app.services.ai_life import _auto_stash
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "ai_trade_surplus_threshold", 1000)
+    p, base = await _player(session, name="ai_stasher")
+    session.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+    b = Bunker(player_id=p.id, base_id=base.id, food_health=100, water_health=100,
+               people_health=100, electronics=0)
+    session.add(b)
+    await session.flush()
+    session.add(BunkerRoom(bunker_id=b.id, room_key="vault", cell=0, status="active"))
+    struct = get_content().resolve_role("martian", "structural")
+    (await get_or_create_stock(session, p.id, struct, "mars")).amount = 50000   # excedente
+    await session.commit()
+    assert await _auto_stash(session, p) == 1
+    await session.commit()
+    vs = (await session.execute(
+        select(BunkerStock).where(BunkerStock.bunker_id == b.id))).scalars().all()
+    assert vs and vs[0].amount > 0   # guardó material en la bóveda (a salvo del saqueo)
+
+
 async def test_auto_housing_builds_when_slots_short(session, monkeypatch):
     # SDD 78 v8: si a un dominio le faltan plazas, construye el edificio que aloja.
     from app.content.registry import get_content

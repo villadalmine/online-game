@@ -3293,10 +3293,10 @@ async def test_ai_life_evolve_e2e(client, monkeypatch):
     # el catálogo publica el grafo de habilidades, incluídas búnker y alojamiento (SDD 78 v8)
     cat = (await client.http.get("/api/v1/catalog")).json()
     skill_keys = {sk["key"] for sk in cat["ai_skills"]}
-    assert {"bunker", "housing"} <= skill_keys
-    # y ambas están en el scope del nivel 2 (se desbloquean temprano)
+    assert {"bunker", "housing", "stash"} <= skill_keys   # SDD 85: 'stash' (reserva en bóveda)
+    # y están en el scope del nivel 2 (se desbloquean temprano)
     lvl2 = next(lv for lv in cat["ai_levels"] if lv["level"] == 2)
-    assert "bunker" in lvl2["autonomy_scope"] and "housing" in lvl2["autonomy_scope"]
+    assert {"bunker", "housing", "stash"} <= set(lvl2["autonomy_scope"])
     # el snapshot expone el estado de IA (nivel 0)
     me = (await client.http.get("/api/v1/players/me", headers=h)).json()
     assert me["ai"]["level"] == 0 and me["ai"]["next"]["level"] == 1

@@ -101,7 +101,20 @@ Todo data-driven (catálogo `ai_skills`/`ai_levels`), front sin lógica hardcode
 - La detección de tecnologías faltantes ya la cubre el skill `research` (investiga la próxima tech
   asequible); `bunker` agrega el prerequisito específico `bunker_engineering` como puerta.
 
+## v9 (SDD 85) — el búnker se agranda solo + guarda materiales (reportado jugando)
+El usuario notó que su autopiloto (nivel 7) "hace siempre lo mismo, en el búnker no excava cuando se
+queda sin espacio y no guarda materiales". Dos arreglos:
+- **`_auto_bunker` ahora EXCAVA cuando el búnker está lleno:** si `build_room` falla por falta de
+  espacio, llama a `dig_deeper` (agranda +1 de lado; requiere `underground_construction` +
+  `bunker_expansion_enabled`). Antes se quedaba sin lugar y no hacía nada.
+- **Skill nuevo `stash` (🗄 Reserva en bóveda):** `_auto_stash` guarda el mineral más abundante por
+  encima del umbral de excedente en la bóveda del búnker (a salvo del saqueo), topeado por la
+  capacidad libre. Antes la IA nunca guardaba → si te atacaban, perdías todo. Desbloqueado en el
+  **nivel 2** (junto a búnker; necesita la sala Bóveda activa). La IA robot cubre ahora **15 skills**.
+- Tests: `test_auto_stash_saves_surplus_to_vault` + e2e (catálogo publica `stash` en el scope L2).
+
 ## Follow-ups
 - `quality_eff` en más decisiones (umbral de comercio, selección de objetivo).
 - Explore epsilon-greedy real en la postura (hoy es exploit puro del win-rate).
-- Que `research` priorice las techs que un skill bloqueado necesita (p.ej. `bunker_engineering`).
+- Ampliar el set de acciones del AGENTE (SDD 83) para paridad con el determinista (búnker/stash/
+  colonize/etc.), y evaluar niveles 8+ con capacidades nuevas si hace falta más profundidad.

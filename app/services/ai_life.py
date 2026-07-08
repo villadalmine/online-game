@@ -154,8 +154,8 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
     q = float((await ai_learning(session, player)).get("quality_eff", 0.5))
     # SDD 81: la IA "desarrollada" puede PENSAR con el LLM (gpu/cloud/auto) qué priorizar.
     priority, prio_route = await _resolve_brain(session, player, scope)
-    order = ["workers", "mines", "housing", "bunker", "trade", "colonize", "defend", "research",
-             "diplomacy", "spy", "expedition", "repopulate", "attack"]
+    order = ["workers", "mines", "housing", "bunker", "stash", "trade", "colonize", "defend",
+             "research", "diplomacy", "spy", "expedition", "repopulate", "attack"]
     if priority in order:                       # el LLM eligió → esa skill corre PRIMERO
         order = [priority] + [k for k in order if k != priority]
     total = 0
@@ -171,6 +171,8 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
             total += await _auto_housing(session, player)
         elif key == "bunker":
             total += await _auto_bunker(session, player)
+        elif key == "stash":
+            total += await _auto_stash(session, player)
         elif key == "trade":
             total += await _auto_trade(session, player, settings)
         elif key == "colonize":
@@ -471,7 +473,7 @@ async def _auto_bunker(session: AsyncSession, player: Player) -> int:
         from app.services.research import researched_techs
         if "bunker_engineering" not in await researched_techs(session, player.id):
             return 0
-        from app.services.bunkers import _bunker_for_base, build_room, dig
+        from app.services.bunkers import _bunker_for_base, build_room, dig, dig_deeper
         from app.services.journal import record
         home = await _home_base(session, player)
         bases = (await session.execute(
@@ -485,7 +487,8 @@ async def _auto_bunker(session: AsyncSession, player: Player) -> int:
                 await record(session, "ai_autopilot", player.id, action="bunker", op="dig",
                              base_id=b.id)
                 return 1
-        # 2) construir una sala de investigación en el primer búnker con lugar (electrónica)
+        # 2) construir una sala de investigación; si el búnker está LLENO, EXCAVAR para agrandarlo
+        # (SDD 85: antes se quedaba sin espacio y no hacía nada → ahora `dig_deeper`).
         for b in bases:
             try:
                 await build_room(session, player, b.id, "research_room")   # auto-celda
@@ -494,7 +497,58 @@ async def _auto_bunker(session: AsyncSession, player: Player) -> int:
                              base_id=b.id)
                 return 1
             except Exception:
+                try:
+                    await dig_deeper(session, player, b.id)   # agranda si lleno + tiene la tech
+                    metrics.AI_AUTOPILOT.inc(action="bunker")
+                    await record(session, "ai_autopilot", player.id, action="bunker",
+                                 op="dig_deeper", base_id=b.id)
+                    return 1
+                except Exception:
+                    continue
+        return 0
+    except Exception:
+        return 0
+
+
+async def _auto_stash(session: AsyncSession, player: Player) -> int:
+    """SDD 85: GUARDA excedente de minerales en la bóveda del búnker (a salvo del saqueo). Antes la
+    IA nunca guardaba material → si te atacaban, lo perdías. Guarda el mineral más abundante que
+    esté por encima del umbral, topeado por la capacidad libre de la bóveda. 1 depósito por tick."""
+    try:
+        if not get_settings().bunkers_enabled:
+            return 0
+        from app.services.bunkers import (
+            _bunker_for_base,
+            _vault_capacity,
+            _vault_stocks,
+            stash,
+        )
+        from app.services.economy import planet_stocks
+        from app.services.journal import record
+        settings = get_settings()
+        bases = (await session.execute(
+            select(Base_).where(Base_.player_id == player.id))).scalars().all()
+        for base in bases:
+            bunker = await _bunker_for_base(session, base.id)
+            if bunker is None:
                 continue
+            cap = await _vault_capacity(session, bunker.id)
+            if cap <= 0:                                   # sin sala Bóveda activa
+                continue
+            used = sum(s.amount for s in await _vault_stocks(session, bunker.id))
+            free = cap - used
+            if free <= 1:
+                continue
+            stocks = await planet_stocks(session, player.id, base.planet_key)
+            top = max(stocks.items(), key=lambda kv: kv[1], default=(None, 0.0))
+            surplus = top[1] - settings.ai_trade_surplus_threshold
+            if top[0] and surplus > 0:
+                amt = min(free, surplus)                   # el excedente, sin vaciar la reserva
+                await stash(session, player, base.id, top[0], amt)
+                metrics.AI_AUTOPILOT.inc(action="stash")
+                await record(session, "ai_autopilot", player.id, action="stash",
+                             mineral=top[0], base_id=base.id)
+                return 1
         return 0
     except Exception:
         return 0
