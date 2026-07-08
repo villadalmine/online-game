@@ -339,6 +339,22 @@ async def test_npc_llm_state_with_datetime_serializes(session, monkeypatch):
     assert out.get("posture") == "expand" and "eta" in seen["user"]
 
 
+async def test_auto_quantum_disarm(session, monkeypatch):
+    # SDD 87 v2: si una bomba cuántica te infecta, el autopiloto la desactiva solo (con la tech).
+    from app.models import PlayerTech, QuantumInfection
+    from app.services.ai_life import _auto_quantum_disarm
+    from app.services.quantum import active_infection
+    monkeypatch.setattr(get_settings(), "quantum_bomb_enabled", True)
+    p, base = await _player(session, name="ai_qd")
+    session.add(PlayerTech(player_id=p.id, tech_key="quantum_warfare"))
+    session.add(QuantumInfection(defender_id=p.id, attacker_id=p.id, base_id=base.id,
+                                 status="active"))
+    await session.commit()
+    assert await _auto_quantum_disarm(session, p) == 1
+    await session.commit()
+    assert await active_infection(session, p.id) is None   # la IA se desinfectó sola
+
+
 async def test_auto_stash_saves_surplus_to_vault(session, monkeypatch):
     # SDD 85: la IA GUARDA el excedente en la bóveda del búnker (antes no guardaba nada).
     from app.content.registry import get_content

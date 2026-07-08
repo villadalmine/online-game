@@ -66,6 +66,12 @@ skills:
     name_en: "Vault stash"
     description: "Guarda el excedente de minerales en la bóveda del búnker (a salvo del saqueo)."
     description_en: "Stashes surplus minerals in the bunker vault (safe from looting)."
+  - key: quantum_defense
+    icon: "🧬"
+    name: "Defensa cuántica"
+    name_en: "Quantum defense"
+    description: "Si una bomba cuántica te infecta, la desactiva sola (tech cuántica o tropas)."
+    description_en: "If a quantum bomb infects you, disarms it on its own (quantum tech or troops)."
   - key: spy
     icon: "🛰🔍"
     name: "Espionaje"
@@ -152,7 +158,7 @@ levels:
     electronics: 2000
     cost: { advanced: 2200, energetic: 1600, structural: 1200 }
     research_seconds: 3600
-    autonomy_scope: [workers, mines, housing, bunker, stash, trade, colonize, defend, research, repopulate]
+    autonomy_scope: [workers, mines, housing, bunker, stash, trade, colonize, defend, research, repopulate, quantum_defense]
     speed_efficiency: 1.5
     quality: 0.85
   - level: 6
@@ -164,7 +170,7 @@ levels:
     cost: { advanced: 3000, energetic: 2400, structural: 1800 }
     research_seconds: 4200
     autonomy_scope:
-      [workers, mines, housing, bunker, stash, trade, colonize, defend, research, repopulate, spy,
+      [workers, mines, housing, bunker, stash, trade, colonize, defend, research, repopulate, quantum_defense, spy,
        expedition, attack]
     speed_efficiency: 1.6
     quality: 0.95
@@ -177,7 +183,7 @@ levels:
     cost: { advanced: 4200, energetic: 3400, structural: 2600 }
     research_seconds: 5400
     autonomy_scope:
-      [workers, mines, housing, bunker, stash, trade, colonize, defend, research, repopulate, spy,
+      [workers, mines, housing, bunker, stash, trade, colonize, defend, research, repopulate, quantum_defense, spy,
        expedition, attack, diplomacy, learn]
     speed_efficiency: 1.75
     quality: 1.15

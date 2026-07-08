@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-08 — SDD 87 v2: bomba cuántica — anti-farmeo + autopiloto defensivo + reporte del drenaje
+Los tres follow-ups de la bomba cuántica:
+- **Anti-farmeo:** no se puede re-infectar una base ya infectada, y hay cooldown de 1 bomba por par
+  (atacante→defensor) cada `quantum_cooldown_hours` (24). Chequeado en `start_strike`.
+- **Autopiloto defensivo:** skill nuevo `quantum_defense` (nivel 5) — si te infectan, tu IA la
+  desactiva sola (tech cuántica si la tenés, si no tropas; no paga rescate). 16 skills.
+- **Reporte del drenaje:** el CombatLog del strike guarda `details["quantum"]` (qué robó + energía
+  drenada) para un reporte más rico.
+- Tests: `test_antifarm_no_reinfect_and_cooldown`, `test_auto_quantum_disarm`. `docs/sdd-quantum-bomb.md` (v2).
+
 ## [1.198.0] - 2026-07-08
 
 ### 2026-07-08 — SDD 87: BOMBA CUÁNTICA (gusano de IA que infecta, drena y extorsiona)

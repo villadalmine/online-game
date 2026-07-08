@@ -40,7 +40,12 @@ Idea del usuario. Decisiones confirmadas: **lanzamiento intra-planeta** (arsenal
 - `tests/test_quantum.py`: impacto infecta+drena, penalización crece, disarm tropas/rescate/tech,
   fuga hasta inhibidor. e2e `test_quantum_infection_disarm_e2e` (snapshot + disarm por API).
 
-## Follow-ups
-- Anti-farmeo específico (cooldown por par, tope de infecciones/día) si se abusa.
-- La autopiloto del jugador (SDD 78) podría desactivar sola una infección propia (skill defensivo).
-- Que el drain sea visible en un reporte de combate/journal más rico.
+## v2 (HECHO) — anti-farmeo + autopiloto defensivo + reporte del drenaje
+- **Anti-farmeo:** `quantum.can_launch_bomb` (llamado desde `start_strike` cuando la salva trae
+  `quantum_bomb`): rechaza re-infectar una base ya infectada, y 1 bomba por par (atacante→defensor)
+  cada `quantum_cooldown_hours` (24). Test `test_antifarm_no_reinfect_and_cooldown`.
+- **Autopiloto defensivo:** skill `quantum_defense` (grafo SDD 78, nivel 5) → `_auto_quantum_disarm`:
+  si tu base está infectada, la desactiva sola con tech cuántica (si la tenés) o con tropas; NO paga
+  rescate (decisión cara, queda para el jugador). Test `test_auto_quantum_disarm`.
+- **Reporte del drenaje:** `_resolve_strike` guarda `details["quantum"]` (`{stolen, energy_drained}`)
+  en el CombatLog del strike → el reporte muestra qué robó la bomba.

@@ -81,6 +81,25 @@ async def test_disarm_with_ransom_pays_attacker(session, monkeypatch):
     assert await quantum.active_infection(session, dfn.id) is None
 
 
+async def test_antifarm_no_reinfect_and_cooldown(session, monkeypatch):
+    import pytest
+    s = get_settings()
+    monkeypatch.setattr(s, "quantum_bomb_enabled", True)
+    monkeypatch.setattr(s, "quantum_cooldown_hours", 24)
+    atk, _ = await _p(session, "q_af_a", "earth", "terran")
+    dfn, dbase = await _p(session, "q_af_d")
+    now = datetime.now(UTC)
+    await quantum.on_bomb_impact(session, atk, dfn, dbase.id, now)   # infección activa
+    await session.commit()
+    with pytest.raises(quantum.QuantumError):                        # ya infectada → no re-infectar
+        await quantum.can_launch_bomb(session, atk.id, dfn.id, dbase.id, now)
+    inf = await quantum.active_infection(session, dfn.id)
+    inf.status = "disarmed"                                          # aunque la desactiven…
+    await session.commit()
+    with pytest.raises(quantum.QuantumError):                        # …sigue en cooldown por par
+        await quantum.can_launch_bomb(session, atk.id, dfn.id, dbase.id, now)
+
+
 async def test_disarm_quantum_leaks_until_inhibitor(session, monkeypatch):
     s = get_settings()
     monkeypatch.setattr(s, "quantum_bomb_enabled", True)

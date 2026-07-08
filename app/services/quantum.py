@@ -59,6 +59,24 @@ async def infection_penalty(
     return round(1.0 - _penalty_at(inf.created_at, now), 4)
 
 
+async def can_launch_bomb(
+    session: AsyncSession, attacker_id: int, defender_id: int, base_id: int, now: datetime
+) -> None:
+    """SDD 87 v2 anti-farmeo: no re-infectar una base ya infectada, y 1 bomba por par
+    (atacante→defensor) cada `quantum_cooldown_hours`. Lanza QuantumError si no corresponde."""
+    from datetime import timedelta
+    if await active_infection(session, defender_id, base_id):
+        raise QuantumError("Esa base ya está infectada por un gusano cuántico.")
+    cutoff = now - timedelta(hours=get_settings().quantum_cooldown_hours)
+    recent = (await session.execute(select(QuantumInfection).where(
+        QuantumInfection.attacker_id == attacker_id,
+        QuantumInfection.defender_id == defender_id,
+        QuantumInfection.created_at >= cutoff))).scalars().first()
+    if recent is not None:
+        hrs = get_settings().quantum_cooldown_hours
+        raise QuantumError(f"Ya infectaste a este rival hace poco (cooldown {hrs}h).")
+
+
 async def on_bomb_impact(
     session: AsyncSession, attacker: Player, defender: Player, base_id: int, now: datetime
 ) -> dict:

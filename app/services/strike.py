@@ -321,6 +321,14 @@ async def start_strike(
             if rtech not in await researched_techs(session, attacker.id):
                 raise StrikeError(f"Requiere investigar: {rtech}")
 
+    # SDD 87 v2: anti-farmeo de la bomba cuántica (no re-infectar / cooldown por par).
+    if "quantum_bomb" in force:
+        from app.services.quantum import QuantumError, can_launch_bomb
+        try:
+            await can_launch_bomb(session, attacker.id, defender.id, target_base_id, now)
+        except QuantumError as exc:
+            raise StrikeError(str(exc)) from exc
+
     # economía al día + chequear stock de misiles
     from app.services.combat import _advance_economy
     await _advance_economy(session, attacker, now)
@@ -423,9 +431,10 @@ async def _resolve_strike(session: AsyncSession, mission: StrikeMission, now: da
 
     # SDD 87: si una BOMBA CUÁNTICA impactó (no interceptada) infecta la base — un gusano de IA que
     # drena y baja la capacidad (no destruye edificios; su power es 0).
+    quantum_out = None
     if result.impacted.get("quantum_bomb", 0):
         from app.services.quantum import on_bomb_impact
-        await on_bomb_impact(session, attacker, defender, mission.target_base_id, now)
+        quantum_out = await on_bomb_impact(session, attacker, defender, mission.target_base_id, now)
 
     # Fallout (SDD 49): un nuclear que impacta deja −producción temporal al defensor.
     if result.area and result.impacted:
@@ -439,6 +448,8 @@ async def _resolve_strike(session: AsyncSession, mission: StrikeMission, now: da
         "impacted": result.impacted, "intercepted": result.intercepted,
         "damage": result.damage, "destroyed": destroyed, "partial": result.partial,
     }
+    if quantum_out is not None:   # SDD 87 v2: reporte del drenaje/infección cuántica
+        details["quantum"] = quantum_out
     session.add(CombatLog(
         attacker_id=attacker.id, defender_id=defender.id,
         target_base_id=mission.target_base_id, outcome="strike",

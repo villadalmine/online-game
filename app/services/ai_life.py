@@ -154,8 +154,9 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
     q = float((await ai_learning(session, player)).get("quality_eff", 0.5))
     # SDD 81: la IA "desarrollada" puede PENSAR con el LLM (gpu/cloud/auto) qué priorizar.
     priority, prio_route = await _resolve_brain(session, player, scope)
-    order = ["workers", "mines", "housing", "bunker", "stash", "trade", "colonize", "defend",
-             "research", "diplomacy", "spy", "expedition", "repopulate", "attack"]
+    order = ["workers", "mines", "housing", "bunker", "stash", "quantum_defense", "trade",
+             "colonize", "defend", "research", "diplomacy", "spy", "expedition", "repopulate",
+             "attack"]
     if priority in order:                       # el LLM eligió → esa skill corre PRIMERO
         order = [priority] + [k for k in order if k != priority]
     total = 0
@@ -173,6 +174,8 @@ async def run_ai_autopilot(session: AsyncSession, player: Player) -> int:
             total += await _auto_bunker(session, player)
         elif key == "stash":
             total += await _auto_stash(session, player)
+        elif key == "quantum_defense":
+            total += await _auto_quantum_disarm(session, player)
         elif key == "trade":
             total += await _auto_trade(session, player, settings)
         elif key == "colonize":
@@ -550,6 +553,35 @@ async def _auto_stash(session: AsyncSession, player: Player) -> int:
                              mineral=top[0], base_id=base.id)
                 return 1
         return 0
+    except Exception:
+        return 0
+
+
+async def _auto_quantum_disarm(session: AsyncSession, player: Player) -> int:
+    """SDD 87 v2: si una bomba cuántica te infectó, DESACTIVALA sola — con tech cuántica (gratis) si
+    la investigaste, si no con tropas (si alcanzan). NO paga rescate (esa decisión cara la deja al
+    jugador). Evita que el gusano te siga drenando la producción."""
+    try:
+        if not get_settings().quantum_bomb_enabled:
+            return 0
+        from app.services.quantum import (
+            active_infection,
+            disarm_with_quantum,
+            disarm_with_troops,
+        )
+        inf = await active_infection(session, player.id)
+        if inf is None:
+            return 0
+        from app.services.journal import record
+        from app.services.research import researched_techs
+        if "quantum_warfare" in await researched_techs(session, player.id):
+            await disarm_with_quantum(session, player, inf.base_id)
+        else:
+            await disarm_with_troops(session, player, inf.base_id)   # falla si no hay soldados
+        metrics.AI_AUTOPILOT.inc(action="quantum_defense")
+        await record(session, "ai_autopilot", player.id, action="quantum_defense",
+                     base_id=inf.base_id)
+        return 1
     except Exception:
         return 0
 
