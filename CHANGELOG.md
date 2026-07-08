@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-08 — Fix: las Novedades no mostraban ningún release en prod (CHANGELOG faltaba en la imagen)
+- **Síntoma:** el endpoint público de anuncios (y las Novedades pre-login de 1.200.0) solo mostraba
+  los items curados (season/incoming), NUNCA los releases del CHANGELOG.
+- **Causa:** `changelog.recent_releases()` lee `CHANGELOG.md` en vivo desde `REPO_ROOT` (`/app`), pero
+  el Dockerfile lo copiaba SOLO en el stage `test`, no en el `runtime` → en prod el archivo no existía
+  y devolvía `[]` (OSError capturado).
+- **Fix:** `COPY CHANGELOG.md ./` en el stage `base` (runtime) del Dockerfile. Ahora las Novedades
+  (pre y post login) muestran de verdad los últimos releases (bomba cuántica, IAs, etc.).
+
 ## [1.200.0] - 2026-07-08
 
 ### 2026-07-08 — SDD 88: novedades en la pantalla de entrada (pre-login)

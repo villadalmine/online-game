@@ -21,6 +21,9 @@ COPY migrations ./migrations
 COPY web ./web
 COPY scripts ./scripts
 COPY alembic.ini ./alembic.ini
+# CHANGELOG en el RUNTIME: las Novedades (SDD 27/88) generan los anuncios `release` leyéndolo en
+# vivo (`changelog.recent_releases`). Sin esto el endpoint público no muestra ningún release.
+COPY CHANGELOG.md ./
 
 # --- GATE de tests (SDD 22, capa 1): corre la suite unit/e2e DURANTE el build (browser excluido
 # por addopts). Si algo falla, el RUN falla → la imagen NO se construye/publica. El runtime depende
@@ -29,7 +32,7 @@ FROM base AS test
 COPY tests ./tests
 # El test del generador de Pages (SDD 18) y otros leen docs/CHANGELOG/ROADMAP del repo.
 COPY docs ./docs
-COPY ROADMAP.md CHANGELOG.md ./
+COPY ROADMAP.md ./   # CHANGELOG.md ya está en `base` (lo usa el runtime para las Novedades)
 RUN pip install --no-cache-dir ".[dev]" && pytest -q && touch /tmp/tests-passed
 
 # --- Runtime final (lean: sin dev-deps ni tests). Depende del gate.
