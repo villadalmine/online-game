@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-08 — Fix build: comentario inline en el Dockerfile rompía el `COPY` (1.201.0 falló)
+- 1.201.0 falló en el build: puse un comentario `# …` en la MISMA línea de un `COPY` y Dockerfile no
+  soporta comentarios inline → Kaniko intentó copiar archivos llamados `#`/`CHANGELOG.md`/etc. y falló
+  (prod quedó a salvo en 1.200.0). Fix: el comentario en su propia línea. (El fix del CHANGELOG en el
+  runtime de 1.201.0 va incluido acá.)
+
 ## [1.201.0] - 2026-07-08
 
 ### 2026-07-08 — Fix: las Novedades no mostraban ningún release en prod (CHANGELOG faltaba en la imagen)
