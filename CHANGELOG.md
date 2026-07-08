@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.201.0] - 2026-07-08
+
 ### 2026-07-08 — Fix: las Novedades no mostraban ningún release en prod (CHANGELOG faltaba en la imagen)
 - **Síntoma:** el endpoint público de anuncios (y las Novedades pre-login de 1.200.0) solo mostraba
   los items curados (season/incoming), NUNCA los releases del CHANGELOG.
