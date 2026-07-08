@@ -209,6 +209,8 @@ async def upgrade_building(
     await _charge(session, player, base, cost, espec.get("energy_cost", 0) * mult)
     b.level = lvl + 1
     await session.flush()
+    from app.core import metrics
+    metrics.BUILDING_UPGRADES.inc(building=b.building_key, kind=kind)   # SDD 82: métrica de mejoras
     from app.services.journal import record
     await record(session, "building_upgraded", player.id, building=b.building_key,
                  kind=kind, level=b.level)
@@ -267,6 +269,8 @@ async def upgrade_buildings_bulk(
         done += 1
     if done:
         await session.flush()
+        from app.core import metrics
+        metrics.BUILDING_UPGRADES.inc(done, building=building_key, kind=kind)   # SDD 82: por la N
         from app.services.journal import record
         await record(session, "building_upgraded", player.id, building=building_key,
                      kind=kind, count=done)               # UN evento con el total

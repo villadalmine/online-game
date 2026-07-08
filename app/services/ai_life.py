@@ -224,7 +224,8 @@ async def _llm_pick_skill(
         um = f"Habilidades: {json.dumps(skills, ensure_ascii=False)}\nEstado: {json.dumps(brief)}"
         reply = await llm_chat(
             [{"role": "system", "content": sys}, {"role": "user", "content": um}],
-            max_tokens=12, route=route, kind="npc", user=f"autopilot:{player.username}")
+            max_tokens=12, route=route, kind="autopilot",   # SDD 81: su propio kind (no "npc")
+            user=f"autopilot:{player.username}")
         pick = (reply or "").strip().strip('".,\n ').split()[0].lower() if reply else ""
         return pick if pick in scope else None
     except Exception:

@@ -128,7 +128,7 @@ async def run_agent_autopilot(session: AsyncSession, player: Player, settings) -
         for _ in range(max(1, int(settings.ai_agent_max_steps))):
             if not _brain_budget_ok(player, settings):   # sin cupo diario → parar (costo)
                 break
-            reply = await llm_chat(messages, json_mode=True, route=route, kind="npc",
+            reply = await llm_chat(messages, json_mode=True, route=route, kind="agent",
                                    max_tokens=120, user=f"agent:{player.username}")
             try:
                 action = json.loads(reply or "{}")

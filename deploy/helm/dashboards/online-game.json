@@ -309,6 +309,17 @@
    "targets": [
     { "expr": "sum(http_requests_in_flight)", "refId": "A" }
    ]
+  },
+  {
+   "type": "timeseries",
+   "title": "Mejoras de edificios (subidas de nivel, rate 15m)",
+   "description": "game_building_upgrades_total{building,kind}: mejoras de nivel de edificios (defensa/antimisil/producción), incl. las mejoras EN LOTE. NO hay tope de nivel — el límite es económico: cada mejora cuesta base×1.5×nivel_actual, así que subir de nivel se pone caro. Efecto por nivel: producción +25%, defensa +25 y +40 HP, antimisil +8 (lineal, sin tope).",
+   "id": 15,
+   "gridPos": { "h": 8, "w": 24, "x": 0, "y": 40 },
+   "datasource": { "type": "prometheus", "uid": "${datasource}" },
+   "targets": [
+    { "expr": "sum by(building,kind) (rate(game_building_upgrades_total[15m]))", "legendFormat": "{{building}} · {{kind}}", "refId": "A" }
+   ]
   }
  ]
 }

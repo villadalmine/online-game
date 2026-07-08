@@ -130,6 +130,33 @@
         { "refId": "A", "legendFormat": "{{action}} · {{actor}}",
           "expr": "sum by(action,actor) (increase(game_diplomacy_actions_total[24h]))" }
       ]
+    },
+    {
+      "id": 103, "type": "text", "title": "Agente — el LLM EJECUTA acciones (SDD 83)",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 41 },
+      "options": { "mode": "markdown", "content": "Con `ai_brain_mode=\"agent\"` el LLM no solo ELIGE una skill: **ejecuta** acciones él mismo (transportar minerales entre bases, construir, entrenar, investigar). **`game_ai_agent_actions_total{action,outcome}`**: `outcome=ok` = la acción se aplicó · `error` = el juego la rechazó (y el LLM reintenta o para). Vacío = ningún jugador está en modo agente todavía. Si `ok` sube, la IA está jugando SOLA de verdad. Si `error` domina, el modelo arma mal el JSON → cae al autopiloto determinista." }
+    },
+    {
+      "id": 10, "type": "timeseries",
+      "title": "Agente: acciones ejecutadas ok vs error (rate 15m)",
+      "description": "game_ai_agent_actions_total. Querés ver 'ok' subir. action=transport|build|train|research.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{action}} · {{outcome}}",
+          "expr": "sum by(action,outcome) (rate(game_ai_agent_actions_total[15m]))" }
+      ]
+    },
+    {
+      "id": 11, "type": "piechart",
+      "title": "Agente: qué ejecutó (24h)",
+      "description": "Reparto de las acciones que el agente LLM aplicó con éxito el último día.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 },
+      "targets": [
+        { "refId": "A", "legendFormat": "{{action}}",
+          "expr": "sum by(action) (increase(game_ai_agent_actions_total{outcome=\"ok\"}[24h]))" }
+      ]
     }
   ]
 }

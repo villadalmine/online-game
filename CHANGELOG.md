@@ -24,6 +24,27 @@ Registro de todo lo que vamos logrando. Formato basado en
 - **Verificado**: tick manual con cloud OK; juego 3/3 api + postgres + redis
   Running tras el apagado; DB (Longhorn) sin volúmenes faulted.
 
+### 2026-07-07 — Auditoría de métricas: separar las 4 IAs + métrica de mejoras + doc completa
+El usuario pidió analizar TODOS los dashboards ("no me doy cuenta si la IA mejora, ni qué métricas son
+del asistente / NPC / la IA que juega por un player") y documentar todas las métricas.
+- **Las 4 IAs ahora se distinguen bien:** el autopilot (SDD 81) y el agente (SDD 83) etiquetaban sus
+  llamadas al LLM como `kind="npc"` → se confundían con los bots. Corregido: `kind="autopilot"` y
+  `kind="agent"`. Así `game_llm_calls_total{kind}` separa **asistente | autopilot | agente | npc**.
+- **Dashboards (llm-usage):** el panel "usuarios vs NPC" no mostraba al autopilot/agente (matcheaba
+  solo `player:`/`npc:`). Ahora hay desglose **por TIPO de IA** (asistente/autopilot/agente/NPC) y una
+  tabla **por TIPO×JUGADOR** (`autopilot:villadalmine` vs `player:villadalmine`) — el grado por-jugador
+  que faltaba. **Spend** aclarado: normalmente ≈0 (la IA del jugador corre en GPU local gratis; solo el
+  fallback a la nube paga) + stat de spend total histórico. (Nota: con la GPU apagada por mantenimiento
+  —ver Ops arriba— todo va a la nube y el spend SÍ crece hasta que se re-prenda.)
+- **Métrica de MEJORAS (respuesta a "¿hay métricas de las mejoras?"):**
+  `game_building_upgrades_total{building,kind}` (incluye las en lote) + panel en online-game. **Regla
+  de mejora:** NO hay tope de nivel — el límite es económico (cada mejora cuesta `base×1.5×nivel`);
+  efecto lineal por nivel (producción +25%, defensa +25/+40 HP, antimisil +8).
+- **Panel del agente** en ai-autopilot (`game_ai_agent_actions_total` ok/error).
+- **Doc completa `docs/metrics-and-dashboards.md`:** cada métrica (propias + LiteLLM/HAMI), sus labels,
+  de dónde sale (API scrape vs tick→Pushgateway), qué dashboard la muestra, y cómo responder "¿la IA
+  mejora?" y "¿qué IA usa cada jugador?".
+
 
 ## [1.192.0] - 2026-07-07
 

@@ -220,3 +220,8 @@ AI_AUTOPILOT_BRAIN = Counter("game_ai_autopilot_brain_total",
 AI_AGENT_ACTIONS = Counter("game_ai_agent_actions_total",
                            "Acciones ejecutadas por el autopiloto agente (LLM)",
                            ("action", "outcome"))
+# SDD 82: mejoras de edificios (nivel). building=turret|mine|…; kind=defense|antimissile|production.
+# NO hay tope de nivel: el límite es económico (cada mejora cuesta base×1.5×nivel_actual). Cuenta
+# también las mejoras en lote (incrementa por la cantidad hecha).
+BUILDING_UPGRADES = Counter("game_building_upgrades_total",
+                            "Mejoras de edificios (subidas de nivel)", ("building", "kind"))

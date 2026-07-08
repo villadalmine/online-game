@@ -63,10 +63,19 @@
       "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user) (increase(litellm_output_tokens_metric_total{end_user=~\"online-game:.*\"}[24h])))", "legendFormat": "{{end_user}}" } ]
     },
     {
-      "id": 8, "type": "table", "title": "Spend por usuario × backend (24h) — monetización",
+      "id": 8, "type": "table", "title": "Spend USD por usuario × backend (24h) — monetización",
+      "description": "litellm_spend_metric: costo real en USD por end_user y modelo. Está CASI EN CERO A PROPÓSITO: la IA del jugador (asistente + autopilot + agente) corre en la GPU LOCAL (qwen2.5) que cuesta $0; solo el fallback a la NUBE (google/gemma-4-31b-it) paga centavos, casi siempre por las NPC. O sea: 0 ≈ 'estás gastando casi nada', no 'está roto'. El total histórico se ve en el stat de al lado.",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "gridPos": { "h": 8, "w": 9, "x": 12, "y": 12 },
       "targets": [ { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user, model) (increase(litellm_spend_metric_total{end_user=~\"online-game:.*\"}[24h])))", "legendFormat": "{{end_user}} / {{model}}" } ]
+    },
+    {
+      "id": 30, "type": "stat", "title": "Spend USD total (histórico)",
+      "description": "sum(litellm_spend_metric): lo gastado en la nube desde siempre por online-game. Corre en GPU local → esto crece lentísimo (solo el fallback a la nube paga).",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 3, "x": 21, "y": 12 },
+      "targets": [ { "refId": "A", "expr": "sum(litellm_spend_metric_total{end_user=~\"online-game:.*\"})" } ]
     },
     {
       "id": 9, "type": "timeseries", "title": "GPU — VRAM asignada por placa (HAMI)",
@@ -107,22 +116,24 @@
       "targets": [ { "refId": "A", "expr": "hami_vgpu_memory_allocated_bytes{exported_pod=~\"ollama.*\"}", "legendFormat": "{{exported_pod}}" } ]
     },
     {
-      "id": 14, "type": "timeseries", "title": "Tokens de salida/s — usuarios vs NPC",
-      "description": "Separa por end_user: online-game:player:* (usuarios reales) vs online-game:npc:* (bots). Los NPC consultan al LLM cada tick; los usuarios solo cuando usan el asistente.",
+      "id": 14, "type": "timeseries", "title": "Tokens de salida/s por TIPO de IA (asistente/autopilot/agente/NPC)",
+      "description": "Separa por el prefijo del end_user. asistente = online-game:player:* (el chat que le habla el jugador) · autopilot = online-game:autopilot:* (el cerebro SDD 81 que elige skill) · agente = online-game:agent:* (SDD 83, ejecuta acciones) · NPC = online-game:npc:* (bots). Así ves QUÉ IA consume tokens, no solo 'usuarios vs bots'.",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 },
       "targets": [
-        { "refId": "A", "expr": "sum(rate(litellm_output_tokens_metric_total{end_user=~\"online-game:player:.*\"}[5m]))", "legendFormat": "usuarios" },
-        { "refId": "B", "expr": "sum(rate(litellm_output_tokens_metric_total{end_user=~\"online-game:npc:.*\"}[5m]))", "legendFormat": "NPC" }
+        { "refId": "A", "expr": "sum(rate(litellm_output_tokens_metric_total{end_user=~\"online-game:player:.*\"}[5m]))", "legendFormat": "asistente (chat)" },
+        { "refId": "B", "expr": "sum(rate(litellm_output_tokens_metric_total{end_user=~\"online-game:autopilot:.*\"}[5m]))", "legendFormat": "autopilot (elige skill)" },
+        { "refId": "C", "expr": "sum(rate(litellm_output_tokens_metric_total{end_user=~\"online-game:agent:.*\"}[5m]))", "legendFormat": "agente (ejecuta)" },
+        { "refId": "D", "expr": "sum(rate(litellm_output_tokens_metric_total{end_user=~\"online-game:npc:.*\"}[5m]))", "legendFormat": "NPC (bots)" }
       ]
     },
     {
-      "id": 15, "type": "table", "title": "Consultas (24h) — usuarios vs NPC",
-      "description": "Conteo de requests por tipo en 24h (usuarios reales vs bots).",
+      "id": 15, "type": "table", "title": "Consultas por TIPO de IA y JUGADOR (24h)",
+      "description": "Tokens de salida (24h) por end_user = tipo:jugador. Ves p.ej. autopilot:villadalmine (su IA jugando sola) vs player:villadalmine (su chat con el asistente) — el grado por-jugador que faltaba.",
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 },
       "targets": [
-        { "refId": "A", "format": "table", "instant": true, "expr": "sum by (kind) (label_replace(label_replace(increase(litellm_output_tokens_metric_total{end_user=~\"online-game:.*\"}[24h]), \"kind\", \"npc\", \"end_user\", \"online-game:npc:.*\"), \"kind\", \"usuario\", \"end_user\", \"online-game:player:.*\"))" }
+        { "refId": "A", "format": "table", "instant": true, "expr": "sort_desc(sum by (end_user) (increase(litellm_output_tokens_metric_total{end_user=~\"online-game:(player|autopilot|agent|npc):.*\"}[24h])))", "legendFormat": "{{end_user}}" }
       ]
     },
     {
