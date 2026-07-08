@@ -12,6 +12,10 @@ api:
 # deploy/build/online-game-cicd.yaml.) Incidente 2026-06-29.
 nodeSelector:
   kubernetes.io/arch: arm64
+  storage: rk1-longhorn            # como los pods que ya corren OK (srv-rk1-nvme-04)
+  # borra el pin heredado al nodo srv-super6c-01-nvme (eliminado en el mant.) que traía el
+  # `--reset-then-reuse-values` desde un helm upgrade manual con values-local → dejaba el pod Pending.
+  kubernetes.io/hostname: null
 
 # No tirar todas las réplicas juntas en drains/upgrades.
 podDisruptionBudget:
@@ -36,6 +40,14 @@ scaling:
 postgres:
   maxConnections: 200         # más conexiones para soportar más réplicas/queries (default era 100)
   sharedBuffers: "256MB"
+
+# LLM: la GPU local (srv-t7910 / ollama) está APAGADA por mantenimiento (2026-07-08). El CD promueve
+# con ESTE archivo, así que fijamos acá el modelo cloud para que un deploy NO revierta a local-gpu
+# (values-local ya lo tenía, pero el CD no lo lee). Mientras la GPU esté apagada, todo el LLM va a la
+# nube (gemma4-paid, OpenRouter google/gemma-4-31b-it) y el Spend crece. ⟳ ROLLBACK al re-prender la
+# GPU: volver a `local-gpu` (o borrar este bloque) y `make deploy`. Ver CHANGELOG Ops 2026-07-08.
+llm:
+  model: "gemma4-paid"
 
 # Flags de juego (SDD 62): guarnición — tropas/obreros por base, el combate usa solo la base atacada,
 # capacidad por planeta y mover tropas. El backfill (migración b8f1c2a4e6d0) ya movió las unidades

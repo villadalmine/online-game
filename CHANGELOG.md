@@ -7,6 +7,21 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### Ops — 2026-07-08 — Fix deploy roto por el mantenimiento (nodo pineado eliminado) + pin LLM cloud
+Dos cosas que rompían/ensuciaban el CD tras el mantenimiento del cluster:
+- **DEPLOY BLOQUEADO (nodo muerto):** `values-local.yaml` pineaba la API a
+  `nodeSelector.kubernetes.io/hostname=srv-super6c-01-nvme`, pero ese nodo fue ELIMINADO en el
+  mantenimiento (los super6c se renombraron a `super6c-node1..6`). Como el LLM-change de ops se hizo
+  con un `helm upgrade` manual `-f values-local`, ese pin quedó en los valores del release y el
+  `--reset-then-reuse-values` del CD lo arrastraba → el pod de 1.193.0 quedó **Pending 94 min** (helm
+  238 `failed`); 1.192.0 siguió sirviendo (sin downtime). **Fix:** `values-local` ya no pinea host
+  (`nodeSelector: {}`); `values-prod` fija `{arch: arm64, storage: rk1-longhorn}` y **borra** el pin
+  heredado con `kubernetes.io/hostname: null` (coalesce de helm elimina la key null).
+- **LLM en la nube (GPU apagada):** el cambio a `gemma4-paid` estaba solo en `values-local`, pero el
+  CD promueve con `values-prod` → revertía `LLM_MODEL` a `local-gpu`. **Fix:** `llm.model:
+  "gemma4-paid"` en `values-prod`. Rollback al re-prender la GPU: volver a `local-gpu` + `make deploy`
+  (el fallback litellm `local-gpu→gemma4-paid` igual cubre caídas).
+
 ## [1.193.0] - 2026-07-08
 
 ### Ops — 2026-07-08 — NPC brain a cloud (GPU t7910 apagada)
