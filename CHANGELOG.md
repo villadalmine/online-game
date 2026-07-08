@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.199.0] - 2026-07-08
+
 ### 2026-07-08 — SDD 87 v2: bomba cuántica — anti-farmeo + autopiloto defensivo + reporte del drenaje
 Los tres follow-ups de la bomba cuántica:
 - **Anti-farmeo:** no se puede re-infectar una base ya infectada, y hay cooldown de 1 bomba por par
