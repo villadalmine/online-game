@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.194.0] - 2026-07-08
+
 ### Ops — 2026-07-08 — Fix deploy roto por el mantenimiento (nodo pineado eliminado) + pin LLM cloud
 Dos cosas que rompían/ensuciaban el CD tras el mantenimiento del cluster:
 - **DEPLOY BLOQUEADO (nodo muerto):** `values-local.yaml` pineaba la API a
