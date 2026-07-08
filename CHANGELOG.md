@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.197.0] - 2026-07-08
+
 ### 2026-07-08 — SDD 86: la NPC y tu autopiloto MIRAN los eventos del mundo y los aprovechan
 Pedido del usuario: que ambas IAs vean los eventos (SDD 36) para aprovecharlos.
 - **NPC + agente:** el estado del LLM ahora incluye `active_events` (efecto/magnitud/nombre) y el
