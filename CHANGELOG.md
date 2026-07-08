@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.198.0] - 2026-07-08
+
 ### 2026-07-08 — SDD 87: BOMBA CUÁNTICA (gusano de IA que infecta, drena y extorsiona)
 Arma nueva pedida por el usuario (lanzamiento intra-planeta · release completo · las NPC también).
 - **`quantum_bomb`** (munición, gate tech `quantum_warfare`): se lanza como un misil (arsenal SDD 49,
