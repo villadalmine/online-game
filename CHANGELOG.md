@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.193.0] - 2026-07-08
+
 ### Ops — 2026-07-08 — NPC brain a cloud (GPU t7910 apagada)
 - **Cambio**: `llm.model` en `deploy/helm/values-local.yaml` de `local-gpu` a
   `gemma4-paid` (OpenRouter google/gemma-4-31b-it, cloud). Aplica a `galaxy-api`
