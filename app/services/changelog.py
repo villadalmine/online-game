@@ -27,6 +27,22 @@ def _title(head: str) -> str:
     return t[:1].upper() + t[1:]
 
 
+# SDD 88: releases de INFRA/deploy/ops/observabilidad → se ocultan de las Novedades (solo mostramos
+# FEATURES de juego). Se evalúa sobre la línea COMPLETA del `###` del CHANGELOG.
+_INFRA = re.compile(
+    r"^###\s+ops\b"                       # entradas "### Ops — ..."
+    r"|\bfix build\b"
+    r"|\b(dockerfile|kaniko|helm|pipeline|ci/?cd|deploy|runtime|migraci[oó]n|values-prod"
+    r"|nodeselector|pushgateway|grafana|dashboard|m[eé]tricas?|imagen)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_infra(raw: str | None) -> bool:
+    """True si la línea del release es infra/deploy/ops/observabilidad (no una feature de juego)."""
+    return bool(raw and _INFRA.search(raw))
+
+
 @lru_cache(maxsize=1)
 def recent_releases(limit: int = 8) -> list[dict]:
     """Últimas `limit` versiones del CHANGELOG como anuncios `release` (más nueva primero)."""
@@ -48,14 +64,18 @@ def recent_releases(limit: int = 8) -> list[dict]:
         mh = _HEAD.match(ln)
         if mh and cur["title"] is None:
             cur["title"] = mh.group(1)
+            cur["raw"] = ln          # línea completa del ### (para detectar infra/ops)
             continue
         mb = _BULLET.match(ln)
         if mb and cur["summary"] is None:
             cur["summary"] = _clean(mb.group(1))
     if cur:
         versions.append(cur)
+    # SDD 88: mostrar solo FEATURES en las Novedades — fuera los releases de infra/deploy/ops y los
+    # placeholders sin título (headers `##` duplicados que deja release.py).
+    features = [v for v in versions if v.get("title") and not _is_infra(v.get("raw"))]
     out = []
-    for v in versions[:limit]:
+    for v in features[:limit]:
         head = _title(v["title"] or "novedades")
         out.append({
             "key": f"release-{v['version']}",

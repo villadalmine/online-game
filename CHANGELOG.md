@@ -7,6 +7,12 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-09 — Novedades: mostrar solo FEATURES (ocultar releases de infra/deploy/ops)
+- Las Novedades (pre y post login) filtran los releases de infra/deploy/ops/observabilidad
+  (`changelog._is_infra`: entradas `### Ops —`, `fix build`, Dockerfile/kaniko/helm/pipeline/deploy/
+  migración/grafana/métricas/dashboard/etc.) y los placeholders sin título — se ven solo las mejoras
+  de juego. Test `test_novedades_hide_infra_releases`.
+
 ## [1.202.0] - 2026-07-08
 
 ### 2026-07-08 — Fix build: comentario inline en el Dockerfile rompía el `COPY` (1.201.0 falló)

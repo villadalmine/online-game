@@ -1069,6 +1069,15 @@ def test_release_title_strips_sdd_prefix():
     assert _title("Fix del tick muerto") == "Fix del tick muerto"   # sin prefijo → intacto
 
 
+def test_novedades_hide_infra_releases():
+    # SDD 88: las Novedades ocultan releases de infra/deploy/ops (mostrar solo features).
+    from app.services.changelog import _is_infra
+    assert _is_infra("### Ops — 2026-07-08 — NPC brain a cloud (GPU apagada)")
+    assert _is_infra("### 2026-07-08 — Fix build: comentario inline en el Dockerfile")
+    assert _is_infra("### 2026-07-08 — Auditoría de métricas: separar las 4 IAs")
+    assert not _is_infra("### 2026-07-08 — BOMBA CUÁNTICA (gusano de IA que infecta)")
+
+
 async def test_announcements_public_localized_and_filtered(client):
     # SDD 27: anuncios públicos (sin auth), bilingües y filtrables por category/status.
     r = await client.http.get("/api/v1/announcements")
