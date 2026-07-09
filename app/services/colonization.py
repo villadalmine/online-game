@@ -113,6 +113,18 @@ def compat(race_key: str, planet_key: str, techs=()) -> dict:
     }
 
 
+def galaxy_catalysts(galaxy_key: str | None) -> list[str]:
+    """SDD 89: catalizadores exóticos (minerales) de las lunas de esa galaxia — el SET que hay que
+    juntar (expedicionando a TODAS sus lunas) para habilitar el Domo de terraformación."""
+    c = get_content()
+    out = []
+    for m in c.moons.values():
+        cat = m.get("catalyst")
+        if cat and (galaxy_key is None or c.planet_galaxy.get(m.get("planet")) == galaxy_key):
+            out.append(cat)
+    return sorted(set(out))
+
+
 def options(race_key: str, galaxy_key: str | None, techs=()) -> list[dict]:
     """Grafo de opciones: para `race_key`, el veredicto de cada planeta (de su galaxia si se da),
     considerando las tecnologías de colonización investigadas (`techs`)."""
@@ -181,6 +193,24 @@ async def found_colony(
         if mode == "orbital":
             if "orbital_robotics" not in techs:
                 raise ColonizeError("Necesitás investigar Robótica orbital para una base orbital.")
+        elif mode == "dome":
+            # SDD 89: Domo de terraformación — hace habitable un mundo LETAL. Requiere la tech
+            # `terraforming` + el SET COMPLETO de catalizadores de las lunas de tu galaxia. La
+            # habitabilidad se IGNORA (ese es el punto). Los catalizadores se consumen más abajo.
+            if not s.terraform_dome_enabled:
+                raise ColonizeError("El domo de terraformación está desactivado en este mundo.")
+            if "terraforming" not in techs:
+                raise ColonizeError("Necesitás investigar Terraformación para un domo.")
+            cats = galaxy_catalysts(player.galaxy_key)
+            if not cats:
+                raise ColonizeError("Tu galaxia no tiene lunas con catalizadores para un domo.")
+            from app.services.economy import player_stocks
+            have = await player_stocks(session, player.id)
+            missing = [k for k in cats if have.get(k, 0) < s.dome_catalyst_cost]
+            if missing:
+                raise ColonizeError(
+                    "Te faltan catalizadores de las lunas: " + ", ".join(missing) +
+                    ". Expedicioná a TODAS las lunas de tu galaxia para juntar el set.")
         else:
             verdict = compat(player.race_key, planet_key, techs)
             if not verdict["can_colonize"]:
@@ -222,8 +252,16 @@ async def found_colony(
     stock = await get_or_create_unit_stock(session, player.id, vehicle)
     stock.quantity -= 1   # la nave se consume en el viaje de colonización
 
+    if mode == "dome":   # SDD 89: consumir el SET de catalizadores (viven en el natal)
+        from app.services.economy import get_or_create_stock
+        for k in galaxy_catalysts(player.galaxy_key):
+            (await get_or_create_stock(session, player.id, k, player.planet_key)).amount \
+                -= s.dome_catalyst_cost
+
     if mode == "lunar":
         name = f"Base lunar {c.moons[planet_key].get('name', planet_key)}"
+    elif mode == "dome":
+        name = f"Domo {c.planets[planet_key].get('name', planet_key)}"
     else:
         pname = c.planets[planet_key].get("name", planet_key)
         name = f"Estación orbital {pname}" if mode == "orbital" else f"Colonia {pname}"

@@ -84,6 +84,10 @@ env:
   # gate tech quantum_warfare); se desactiva con tropas/rescate/tech (esta última deja fuga de info
   # hasta poner un satélite inhibidor). Reversible.
   QUANTUM_BOMB_ENABLED: "true"
+  # SDD 89: Domo de terraformación — juntar el SET de catalizadores exóticos de TODAS las lunas de tu
+  # galaxia (por expedición) habilita fundar un HQ-Domo en un mundo LETAL (colonizar lo imposible).
+  # Sink de endgame para los materiales raros. Reversible.
+  TERRAFORM_DOME_ENABLED: "true"
   # SDD 75: terraformación — la sala Terraformador (tech terraforming) agranda el búnker +3 de lado.
   TERRAFORMING_ENABLED: "true"
   # SDD 76: salto cuántico — la Puerta cuántica (tech quantum_jump) teletransporta electrónica de un

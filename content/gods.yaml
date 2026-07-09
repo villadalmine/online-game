@@ -3,6 +3,8 @@
 # boon: buff temporal que se aplica en los sistemas existentes
 #   (effect: production | attack | defense). magnitude multiplica; duration en segundos.
 # i18n: `name` es ES; `name_en` agrega inglés. `god` es nombre propio (no se traduce).
+# SDD 89: `catalyst` = el mineral EXÓTICO único de esta luna (se entrega en grants). Juntar el set
+# completo de tu galaxia habilita el Domo de terraformación (colonizar mundos letales).
 moons:
   - key: luna
     name: "Luna"
@@ -10,6 +12,7 @@ moons:
     name_en: "The Moon"
     planet: earth
     god: "Selene"
+    catalyst: selenite
     expedition:
       energy_cost: 30
       duration_seconds: 600
@@ -17,6 +20,7 @@ moons:
     grants:
       helium3: 100
       rare_earth: 50
+      selenite: 4
     boon:
       effect: production
       magnitude: 1.25
@@ -27,12 +31,14 @@ moons:
     name_en: "Phobos"
     planet: mars
     god: "Fobos"
+    catalyst: phobite
     expedition:
       energy_cost: 25
       duration_seconds: 480
       requires_unit: shuttle
     grants:
       water_ice: 120
+      phobite: 4
     boon:
       effect: defense
       magnitude: 1.20
@@ -43,12 +49,14 @@ moons:
     name_en: "Deimos"
     planet: mars
     god: "Deimos"
+    catalyst: deimite
     expedition:
       energy_cost: 25
       duration_seconds: 480
       requires_unit: shuttle
     grants:
       water_ice: 80
+      deimite: 4
     boon:
       effect: production
       magnitude: 1.15
@@ -59,6 +67,7 @@ moons:
     name_en: "Zoozve (quasi-moon 2002 VE68)"
     planet: venus
     god: "Zoozve"
+    catalyst: zoozvine
     expedition:
       energy_cost: 35
       duration_seconds: 720
@@ -66,6 +75,98 @@ moons:
     grants:
       titanium: 80
       helium3: 60
+      zoozvine: 4
+    boon:
+      effect: attack
+      magnitude: 1.25
+      duration_seconds: 1800
+  # --- SDD 89: lunas nuevas en las otras galaxias (para que cada galaxia tenga su set de domo) ---
+  - key: lyra
+    name: "Lyra"
+    icon: "✨"
+    name_en: "Lyra"
+    planet: vega_prime
+    god: "Lyra"
+    catalyst: lyrium
+    expedition:
+      energy_cost: 40
+      duration_seconds: 720
+      requires_unit: shuttle
+    grants:
+      rare_earth: 70
+      lyrium: 4
+    boon:
+      effect: production
+      magnitude: 1.25
+      duration_seconds: 3600
+  - key: erebus
+    name: "Erebo"
+    icon: "🖤"
+    name_en: "Erebus"
+    planet: nyx
+    god: "Erebo"
+    catalyst: nyxite
+    expedition:
+      energy_cost: 40
+      duration_seconds: 720
+      requires_unit: shuttle
+    grants:
+      helium3: 90
+      nyxite: 4
+    boon:
+      effect: defense
+      magnitude: 1.25
+      duration_seconds: 3600
+  - key: centauri_moon
+    name: "Céntima"
+    icon: "🔴"
+    name_en: "Centima"
+    planet: proxima_b
+    god: "Céntima"
+    catalyst: proximite
+    expedition:
+      energy_cost: 45
+      duration_seconds: 780
+      requires_unit: shuttle
+    grants:
+      titanium: 90
+      proximite: 4
+    boon:
+      effect: production
+      magnitude: 1.25
+      duration_seconds: 3600
+  - key: trappist_moon
+    name: "Luna de TRAPPIST"
+    icon: "🟠"
+    name_en: "TRAPPIST moon"
+    planet: trappist_1e
+    god: "Trappist"
+    catalyst: trappist_ore
+    expedition:
+      energy_cost: 45
+      duration_seconds: 780
+      requires_unit: shuttle
+    grants:
+      water_ice: 100
+      trappist_ore: 4
+    boon:
+      effect: production
+      magnitude: 1.2
+      duration_seconds: 3600
+  - key: nova_luna
+    name: "Nova Luna"
+    icon: "⭐"
+    name_en: "Nova Moon"
+    planet: nova_terra
+    god: "Nova"
+    catalyst: novite
+    expedition:
+      energy_cost: 45
+      duration_seconds: 780
+      requires_unit: shuttle
+    grants:
+      rare_earth: 80
+      novite: 4
     boon:
       effect: attack
       magnitude: 1.25

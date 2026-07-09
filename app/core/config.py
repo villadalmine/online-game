@@ -270,6 +270,11 @@ class Settings(BaseSettings):
     quantum_disarm_soldiers: int = 20      # soldados para purgar el gusano (opción tropas)
     quantum_ransom_fraction: float = 0.3   # % del stock del defensor que exige el rescate
     quantum_cooldown_hours: int = 24       # SDD 87 v2 anti-farmeo: 1 bomba por par cada X horas
+    # SDD 89: Domo de terraformación — con la tech `terraforming` + el SET COMPLETO de catalizadores
+    # exóticos de las lunas de tu galaxia, fundás un HQ-Domo en un planeta LETAL (ignora la
+    # habitabilidad) → colonizás mundos imposibles. Consume 1 de cada catalizador. Flag reversible.
+    terraform_dome_enabled: bool = False
+    dome_catalyst_cost: int = 1            # cuántos de cada catalizador consume fundar el domo
     # Sub-fase 2 (autopiloto economía): comercio conservador (vende EXCEDENTE sobre el umbral) +
     # tope de venta por tick. mines/colonize construyen/colonizan 1 por tick (acotado).
     ai_trade_surplus_threshold: float = 10000.0

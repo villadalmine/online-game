@@ -286,6 +286,7 @@ class ColonizeOptionOut(BaseModel):
     energy_surface: float = 0.0
     energy_orbital: float = 0.0
     shuttle_cost: int = 1
+    dome: bool = False   # SDD 89: podés fundar un Domo acá (tech + set de catalizadores)
 
 
 class ActiveEventOut(BaseModel):

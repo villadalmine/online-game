@@ -51,9 +51,19 @@ async def colonize_options(
     colonies = max(0, n_bases - 1)
     e_surface = s.colonize_energy_cost * (1 + colonies)
     e_orbital = e_surface * s.orbital_cost_mult
+    # SDD 89: ¿Domo listo? (tech terraforming + set COMPLETO de catalizadores de tu galaxia)
+    dome_ready = False
+    if s.terraform_dome_enabled and "terraforming" in techs:
+        from app.services.colonization import galaxy_catalysts
+        cats = galaxy_catalysts(player.galaxy_key)
+        if cats:
+            from app.services.economy import player_stocks
+            have = await player_stocks(session, player.id)
+            dome_ready = all(have.get(k, 0) >= s.dome_catalyst_cost for k in cats)
     return [
         ColonizeOptionOut(
-            **o, energy_surface=round(e_surface, 1), energy_orbital=round(e_orbital, 1)
+            **o, energy_surface=round(e_surface, 1), energy_orbital=round(e_orbital, 1),
+            dome=dome_ready and o.get("planet") != player.planet_key,
         )
         for o in options(player.race_key, player.galaxy_key, techs)
     ]

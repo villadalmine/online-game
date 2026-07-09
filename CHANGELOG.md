@@ -7,6 +7,18 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-09 — SDD 89: DOMO DE TERRAFORMACIÓN (sink de raros + colonizar lo imposible)
+Idea del usuario: dar uso a los materiales más raros forzando interactuar con TODAS las lunas.
+- **Cada luna, un catalizador exótico ÚNICO** (solo por expedición): selenite/phobite/deimite/zoozvine
+  (Vía Láctea) + lyrium/nyxite/proximite/trappist_ore/novite (lunas NUEVAS en las otras galaxias).
+  Te obliga a expedicionar a TODAS las lunas de tu galaxia para juntar el set.
+- **Domo de terraformación** (`found_colony(mode="dome")`): con la tech `terraforming` + el SET
+  COMPLETO de catalizadores de tu galaxia, fundás un **HQ-Domo en un mundo LETAL** (Mercurio,
+  exoplanetas hostiles) — ignora la habitabilidad y consume el set. Es una base completa: desde ahí
+  construís TODO → revive los mundos imposibles (contenido muerto).
+- Botón 🏛 Domo en el modal de colonización (aparece con la tech + el set). Flag `TERRAFORM_DOME_ENABLED`
+  (prod ON). Tests `tests/test_terraform_dome.py`. `docs/sdd-terraform-dome.md`.
+
 ## [1.204.0] - 2026-07-09
 
 ### 2026-07-09 — Fix: agrandar el búnker se iba al primer búnker (select que se reseteaba)

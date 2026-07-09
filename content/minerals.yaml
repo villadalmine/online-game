@@ -92,3 +92,96 @@ minerals:
     real_en: "Carbonaceous chondrite"
     description: "Soporte vital y colonizacion (lunas de Marte)."
     description_en: "Life support and colonization (moons of Mars)."
+  # SDD 89: CATALIZADORES exoticos — cada LUNA es la unica fuente de UNO. Solo se consiguen por
+  # expedicion. Juntar el set COMPLETO de tu galaxia habilita el Domo de terraformacion (colonizar
+  # mundos letales). Son el sink de endgame de los materiales raros.
+  - key: selenite
+    icon: "🌕"
+    symbol: "Sel"
+    name: "Selenita"
+    name_en: "Selenite"
+    real: "Regolito profundo de la Luna (Selene)"
+    real_en: "Deep lunar regolith (Selene)"
+    description: "Catalizador de terraformacion (Luna). Solo por expedicion."
+    description_en: "Terraforming catalyst (the Moon). Expedition-only."
+    catalyst: true
+  - key: phobite
+    icon: "🌑"
+    symbol: "Pho"
+    name: "Fobita"
+    name_en: "Phobite"
+    real: "Nucleo carbonaceo de Fobos"
+    real_en: "Carbonaceous core of Phobos"
+    description: "Catalizador de terraformacion (Fobos). Solo por expedicion."
+    description_en: "Terraforming catalyst (Phobos). Expedition-only."
+    catalyst: true
+  - key: deimite
+    icon: "🌘"
+    symbol: "Dei"
+    name: "Deimita"
+    name_en: "Deimite"
+    real: "Cristal helado de Deimos"
+    real_en: "Icy crystal of Deimos"
+    description: "Catalizador de terraformacion (Deimos). Solo por expedicion."
+    description_en: "Terraforming catalyst (Deimos). Expedition-only."
+    catalyst: true
+  - key: zoozvine
+    icon: "🌙"
+    symbol: "Zoo"
+    name: "Zoozvina"
+    name_en: "Zoozvine"
+    real: "Vapor condensado de la cuasi-luna Zoozve"
+    real_en: "Condensed vapor of the quasi-moon Zoozve"
+    description: "Catalizador de terraformacion (Zoozve). Solo por expedicion."
+    description_en: "Terraforming catalyst (Zoozve). Expedition-only."
+    catalyst: true
+  - key: lyrium
+    icon: "✨"
+    symbol: "Lyr"
+    name: "Lirio (Lyrium)"
+    name_en: "Lyrium"
+    real: "Exotico de la luna de Vega Prime"
+    real_en: "Exotic from Vega Prime's moon"
+    description: "Catalizador de terraformacion (Andromeda). Solo por expedicion."
+    description_en: "Terraforming catalyst (Andromeda). Expedition-only."
+    catalyst: true
+  - key: nyxite
+    icon: "🖤"
+    symbol: "Nyx"
+    name: "Nixita"
+    name_en: "Nyxite"
+    real: "Roca oscura de la luna de Nyx"
+    real_en: "Dark rock from Nyx's moon"
+    description: "Catalizador de terraformacion (Andromeda). Solo por expedicion."
+    description_en: "Terraforming catalyst (Andromeda). Expedition-only."
+    catalyst: true
+  - key: proximite
+    icon: "🔴"
+    symbol: "Prx"
+    name: "Proximita"
+    name_en: "Proximite"
+    real: "Mineral de la luna de Proxima b"
+    real_en: "Ore from Proxima b's moon"
+    description: "Catalizador de terraformacion (Vecindario solar). Solo por expedicion."
+    description_en: "Terraforming catalyst (Solar neighborhood). Expedition-only."
+    catalyst: true
+  - key: trappist_ore
+    icon: "🟠"
+    symbol: "Trp"
+    name: "Mena de TRAPPIST"
+    name_en: "TRAPPIST ore"
+    real: "Mineral de la luna de TRAPPIST-1e"
+    real_en: "Ore from TRAPPIST-1e's moon"
+    description: "Catalizador de terraformacion (Vecindario solar). Solo por expedicion."
+    description_en: "Terraforming catalyst (Solar neighborhood). Expedition-only."
+    catalyst: true
+  - key: novite
+    icon: "⭐"
+    symbol: "Nov"
+    name: "Novita"
+    name_en: "Novite"
+    real: "Cristal de la luna de Nova Terra"
+    real_en: "Crystal from Nova Terra's moon"
+    description: "Catalizador de terraformacion (Vecindario solar). Solo por expedicion."
+    description_en: "Terraforming catalyst (Solar neighborhood). Expedition-only."
+    catalyst: true
