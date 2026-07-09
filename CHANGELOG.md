@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.204.0] - 2026-07-09
+
 ### 2026-07-09 — Fix: agrandar el búnker se iba al primer búnker (select que se reseteaba)
 - **Síntoma:** elegías el planeta/base en el panel Búnker para construir una sala ("agrandar"), pero al
   darle Construir iba al PRIMER búnker → "esa celda ya está ocupada".
