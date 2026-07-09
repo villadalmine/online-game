@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.205.0] - 2026-07-09
+
 ### 2026-07-09 — SDD 89: DOMO DE TERRAFORMACIÓN (sink de raros + colonizar lo imposible)
 Idea del usuario: dar uso a los materiales más raros forzando interactuar con TODAS las lunas.
 - **Cada luna, un catalizador exótico ÚNICO** (solo por expedición): selenite/phobite/deimite/zoozvine
