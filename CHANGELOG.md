@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.206.0] - 2026-07-09
+
 ### 2026-07-09 — SDD 89 v2: las IAs usan el Domo de terraformación
 - **Autopiloto del jugador:** `_auto_colonize` ahora, si no hay superficie por colonizar y tenés el
   kit (tech `terraforming` + el set de catalizadores de tu galaxia), **terraforma** un mundo imposible
