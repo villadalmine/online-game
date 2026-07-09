@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.203.0] - 2026-07-09
+
 ### 2026-07-09 — Novedades: mostrar solo FEATURES (ocultar releases de infra/deploy/ops)
 - Las Novedades (pre y post login) filtran los releases de infra/deploy/ops/observabilidad
   (`changelog._is_infra`: entradas `### Ops —`, `fix build`, Dockerfile/kaniko/helm/pipeline/deploy/
