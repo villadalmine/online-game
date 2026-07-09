@@ -7,6 +7,15 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-09 — Fix: agrandar el búnker se iba al primer búnker (select que se reseteaba)
+- **Síntoma:** elegías el planeta/base en el panel Búnker para construir una sala ("agrandar"), pero al
+  darle Construir iba al PRIMER búnker → "esa celda ya está ocupada".
+- **Causa:** los selects `#bk_base`/`#bk_room` se reconstruían cuando cambiaba la firma del panel (al
+  cavar/construir) y se reseteaban al primer option → `bunkerBuild()` mandaba `bk_base` = la primera
+  base.
+- **Fix:** value-preserving — se guarda y restaura la selección a través del rebuild (como el fix de
+  Repoblación) y se ordena la firma para que no cambie por reordenamiento de la lista de búnkeres.
+
 ## [1.203.0] - 2026-07-09
 
 ### 2026-07-09 — Novedades: mostrar solo FEATURES (ocultar releases de infra/deploy/ops)

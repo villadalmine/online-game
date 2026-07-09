@@ -1065,9 +1065,12 @@ function renderBunker(){
   const digable=(state.bases||[]).filter(b=>!withB.has(b.id));
   if(!$("bk_ctrl")||!$("bk_stat")) el.innerHTML=`<div id="bk_ctrl"></div><div id="bk_stat"></div>`;
   // CONTROLES (rebuild solo si cambian las opciones → no pisa tus selects)
-  const sig=JSON.stringify([hasTech,digable.map(b=>b.id),bks.map(b=>b.base_id),(catalog.rooms||[]).length]);
+  const sig=JSON.stringify([hasTech,digable.map(b=>b.id).sort(),bks.map(b=>b.base_id).sort(),(catalog.rooms||[]).length]);
   const ctrl=$("bk_ctrl");
   if(ctrl.dataset.sig!==sig){
+    // preservar la selección del jugador a través del rebuild (si no, el select de base/sala se va
+    // al PRIMER búnker → "agrandar" apuntaba a otra base → "celda ocupada"). Value-preserving.
+    const _pBase=($("bk_base")||{}).value, _pRoom=($("bk_room")||{}).value, _pDig=($("bk_digbase")||{}).value;
     ctrl.dataset.sig=sig; let h="";
     if(!hasTech){ h+=`<p class="muted">${esc(tr('bk_need_tech'))}</p>`; }
     else {
@@ -1089,6 +1092,10 @@ function renderBunker(){
       }
     }
     ctrl.innerHTML=h;
+    // restaurar los selects a lo que el jugador había elegido (si la opción sigue existiendo)
+    const _rs=(id,v)=>{ const s=$(id); if(s&&v&&[...s.options].some(o=>o.value===v)) s.value=v; };
+    _rs("bk_base",_pBase); _rs("bk_room",_pRoom); _rs("bk_digbase",_pDig);
+    _bkCost();
   }
   // ESTADO: medidores + grilla + sabotaje (sin inputs → refresca siempre)
   const N=(catalog.costs||{}).bunker_grid||4; let s="";
