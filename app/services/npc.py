@@ -651,6 +651,12 @@ async def dispatch_action(session: AsyncSession, player: Player, action: dict) -
         pk = str(action["planet"])
         await found_colony(session, player, pk, mode="surface", vehicle="colony_ship")
         return f"llm colonize {pk}"
+    # SDD 89: fundar un DOMO en un mundo LETAL (requiere terraforming + el set de catalizadores).
+    if kind == "dome":
+        from app.services.colonization import found_colony
+        pk = str(action["planet"])
+        await found_colony(session, player, pk, mode="dome", vehicle="colony_ship")
+        return f"llm dome {pk}"
     if kind == "trade":
         from app.services.market import sell
         pk, mineral = str(action["planet"]), str(action["mineral"])
@@ -777,6 +783,13 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
     # SDD 84: comercio — planetas donde tenés Mercado (podés vender excedente por energía).
     from app.services.market import player_market_planets
     market_planets = await player_market_planets(session, player)
+    # SDD 89: ¿podés fundar un DOMO? (terraforming + set COMPLETO de catalizadores de tu galaxia)
+    can_dome = False
+    if _settings.terraform_dome_enabled and "terraforming" in done_techs:
+        from app.services.colonization import galaxy_catalysts
+        cats = galaxy_catalysts(player.galaxy_key)
+        need = _settings.dome_catalyst_cost
+        can_dome = bool(cats) and all(stocks.get(k, 0) >= need for k in cats)
     enemies = []
     for b in await _enemy_bases(session, player):
         owner = await session.get(Player, b.player_id)
@@ -861,6 +874,7 @@ async def _npc_state(session: AsyncSession, player: Player) -> dict:
         "active_events": active_events,         # SDD 86: eventos del mundo para aprovechar
         "my_infection": my_infection,           # SDD 87: infección cuántica propia (desactivar)
         "can_quantum_bomb": can_quantum_bomb,   # SDD 87: puedo lanzar la bomba cuántica
+        "can_dome": can_dome,                   # SDD 89: puedo terraformar un mundo letal (domo)
         "intel": intel,                          # SDD 35: lo que saben tus espías (con confianza)
         "enemy_maps": enemy_maps,                # SDD 61: mapeo satelital por rival (% descubierto)
         "my_garrison": my_garrison,              # SDD 62: tus tropas por base
@@ -1281,6 +1295,8 @@ async def _llm_decide(state: dict) -> dict:
         '{"action":"research","tech":"<key>"}, '
         '{"action":"spy","target_base_id":<int>}, '
         '{"action":"colonize","planet":"<key from colonizable>"}, '
+        '{"action":"dome","planet":"<any planet you don\'t own>"} (only if can_dome=true; '
+        "terraforms even a LETHAL world into a full base), "
         '{"action":"trade","planet":"<key>","mineral":"<key>","quantity":<int>}, '
         '{"action":"quantum","target_base_id":<int>}, '
         '{"action":"quantum_disarm"}, '

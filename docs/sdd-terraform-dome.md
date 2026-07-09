@@ -27,7 +27,13 @@ exóticos únicos por luna · más lunas en más planetas · modo de colonizaci�
 - `tests/test_terraform_dome.py`: el set de la galaxia, Mercurio letal sin domo, el domo funda en un
   mundo letal y CONSUME el set, y falla sin el set completo o sin la tech.
 
+## v2 (HECHO) — las IAs usan el Domo
+- **Autopiloto del jugador** (`_auto_colonize`): si no hay superficie por colonizar y tenés el kit
+  (tech + set), **terraforma** un mundo imposible (`found_colony(mode="dome")`). Ya junta los
+  catalizadores solo vía la skill `expedition`.
+- **NPC**: el estado expone `can_dome` (tech + set) y hay acción `{"action":"dome","planet":...}` en
+  el dispatch/prompt → la NPC funda domos de endgame. Tests `test_auto_colonize_terraforms_dome_when_ready`.
+
 ## Follow-ups
-- Que la habitabilidad de verdad penalice el rinde (hoy es solo gating) → el domo tendría un rinde
-  propio. Cross-galaxy: expediciones a otras galaxias (hyperspace) para un set universal.
-- Que el autopiloto/NPC busquen el domo como objetivo de endgame.
+- Que la habitabilidad de verdad penalice el rinde (hoy es solo gating) → el domo tendría rinde propio.
+- Cross-galaxy: expediciones a otras galaxias (hyperspace) para un set universal.

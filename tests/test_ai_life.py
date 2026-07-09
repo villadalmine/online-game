@@ -339,6 +339,28 @@ async def test_npc_llm_state_with_datetime_serializes(session, monkeypatch):
     assert out.get("posture") == "expand" and "eta" in seen["user"]
 
 
+async def test_auto_colonize_terraforms_dome_when_ready(session, monkeypatch):
+    # SDD 89: sin superficie por colonizar pero con el kit del domo, el autopiloto TERRAFORMA.
+    from app.models import PlayerTech, UnitStock
+    from app.services.ai_life import _auto_colonize
+    from app.services.colonization import galaxy_catalysts
+    s = get_settings()
+    monkeypatch.setattr(s, "terraform_dome_enabled", True)
+    # forzar que NADA sea colonizable en superficie → se activa el camino del domo
+    monkeypatch.setattr("app.services.colonization.compat", lambda *a, **k: {"can_colonize": False})
+    p, base = await _player(session, name="ai_domer")
+    session.add(PlayerTech(player_id=p.id, tech_key="terraforming"))
+    session.add(UnitStock(player_id=p.id, unit_key="colony_ship", quantity=1))
+    for k in galaxy_catalysts("milky_way"):
+        (await get_or_create_stock(session, p.id, k, p.planet_key)).amount = 5
+    await session.commit()
+    assert await _auto_colonize(session, p) == 1
+    await session.commit()
+    domes = (await session.execute(
+        select(Base_).where(Base_.player_id == p.id, Base_.base_type == "dome"))).scalars().all()
+    assert domes   # el autopiloto fundó un domo en un mundo letal
+
+
 async def test_auto_quantum_disarm(session, monkeypatch):
     # SDD 87 v2: si una bomba cuántica te infecta, el autopiloto la desactiva solo (con la tech).
     from app.models import PlayerTech, QuantumInfection

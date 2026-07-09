@@ -7,6 +7,13 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-09 — SDD 89 v2: las IAs usan el Domo de terraformación
+- **Autopiloto del jugador:** `_auto_colonize` ahora, si no hay superficie por colonizar y tenés el
+  kit (tech `terraforming` + el set de catalizadores de tu galaxia), **terraforma** un mundo imposible
+  (funda un domo). Ya junta los catalizadores solo por la skill `expedition`.
+- **NPC:** su estado expone `can_dome` y hay acción `{"action":"dome","planet":...}` → las NPC fundan
+  domos de endgame. Tests `test_auto_colonize_terraforms_dome_when_ready`. `docs/sdd-terraform-dome.md` (v2).
+
 ## [1.205.0] - 2026-07-09
 
 ### 2026-07-09 — SDD 89: DOMO DE TERRAFORMACIÓN (sink de raros + colonizar lo imposible)

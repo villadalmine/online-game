@@ -967,6 +967,32 @@ async def _auto_colonize(session: AsyncSession, player: Player) -> int:
             metrics.AI_AUTOPILOT.inc(action="colonize")
             await record(session, "ai_autopilot", player.id, action="colonize", planet=pk)
             return 1
+        # SDD 89: si no hay superficie por colonizar pero tenés el kit del domo (tech terraforming +
+        # el SET de catalizadores de tu galaxia), TERRAFORMÁ un mundo imposible (Mercurio, etc.).
+        settings = get_settings()
+        if settings.terraform_dome_enabled and "terraforming" in techs:
+            from app.services.colonization import galaxy_catalysts
+            from app.services.economy import player_stocks
+            cats = galaxy_catalysts(player.galaxy_key)
+            if cats:
+                have = await player_stocks(session, player.id)
+                if all(have.get(k, 0) >= settings.dome_catalyst_cost for k in cats):
+                    for pk in content.planets:
+                        if pk in mine or (player.galaxy_key
+                                          and content.planet_galaxy.get(pk) != player.galaxy_key):
+                            continue
+                        if compat(player.race_key, pk, techs).get("can_colonize"):
+                            continue   # esa ya la coloniza en superficie el loop de arriba
+                        try:
+                            await found_colony(session, player, pk, mode="dome",
+                                               vehicle="colony_ship")
+                            from app.services.journal import record
+                            metrics.AI_AUTOPILOT.inc(action="colonize")
+                            await record(session, "ai_autopilot", player.id, action="dome",
+                                         planet=pk)
+                            return 1
+                        except Exception:
+                            continue
         return 0
     except Exception:
         return 0
