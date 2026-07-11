@@ -7,6 +7,24 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-10 — Búnker: salida del tope de excavaciones + demoler salas + claridad de bóveda
+Bug reportado por el usuario: "excavar" en el búnker de Mercurio decía *"ya está en su tamaño
+máximo"* mientras otros búnkeres se veían más grandes (11×11 por Terraformador), y con el búnker
+lleno los mensajes se apuntaban entre sí sin salida ("construí→excavá" / "excavá→ya está al máximo").
+- **Mensaje útil en el tope**: `dig_deeper` ahora explica que el tope es de EXCAVACIONES
+  (`grid_max`) y que un **Terraformador activo** agranda la grilla (+3 de lado, tech Terraformación).
+- **Demoler salas** (`POST /bunker/demolish-room` {base_id, cell}): libera la celda, sin reembolso —
+  la única salida cuando el búnker quedó lleno en el tope (no entraba ni el Terraformador). Guardas:
+  no deja salas huérfanas fuera del mapa (demoler un terraformador achica la grilla) ni material
+  perdido (bóveda con contenido que ya no cabría → retirá primero). En el front: **click en la sala**
+  del corte lateral (con confirmación).
+- **Front consciente del tope**: en el tope de excavaciones el botón ⛏ se reemplaza por "máx" con
+  tooltip que explica el camino (Terraformador / demoler). Nuevo `bunker_grid_max` en `/catalog`.
+- **Bóveda legible**: el panel muestra el desglose `(N 🗄 × 5000)` — la capacidad es la suma de las
+  salas Bóveda ACTIVAS de ese búnker (data-driven `vault_storage`).
+- Tests: `test_dig_deeper_cap_message_suggests_terraformer`,
+  `test_demolish_room_frees_cell_and_guards` (servicio) + `test_bunker_demolish_room_e2e` (e2e).
+
 ## [1.206.0] - 2026-07-09
 
 ### 2026-07-09 — SDD 89 v2: las IAs usan el Domo de terraformación

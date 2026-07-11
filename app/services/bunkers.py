@@ -81,8 +81,14 @@ async def dig_deeper(session: AsyncSession, player: Player, base_id: int) -> Bun
     if bunker is None or bunker.player_id != player.id:
         raise BunkerError("Primero cavá el búnker en esta base.")
     bonus = await grid_bonus(session, bunker.id, settings)   # SDD 75: terraformación sube el tope
-    if grid_side(bunker, settings, bonus) >= settings.bunker_grid_max + bonus:
-        raise BunkerError("El búnker ya está en su tamaño máximo.")
+    side = grid_side(bunker, settings, bonus)
+    if side >= settings.bunker_grid_max + bonus:
+        # el tope de EXCAVACIONES no es el tope absoluto: un Terraformador activo agranda la grilla
+        # (grid_bonus). Decirlo acá — antes el mensaje era un callejón sin salida (pedido usuario).
+        gb = int(get_content().rooms.get("terraformer", {}).get("grid_bonus", 0))
+        hint = (f" Un Terraformador activo la agranda (+{gb} de lado, tech Terraformación)."
+                if settings.terraforming_enabled and gb else "")
+        raise BunkerError(f"Tope de excavaciones alcanzado ({side}×{side}).{hint}")
     base = await session.get(Base_, base_id)
     now = datetime.now(UTC)
     if not spend_energy(player, settings.bunker_dig_energy_cost, now,
@@ -157,6 +163,49 @@ async def build_room(
     session.add(room)
     await session.flush()
     return room
+
+
+async def demolish_room(session: AsyncSession, player: Player, base_id: int, cell: int) -> dict:
+    """Demoler una sala del búnker (libera la celda; sin reembolso). Es la salida cuando el búnker
+    quedó LLENO en el tope de excavaciones (sin celda libre no entraba ni el Terraformador).
+    Protecciones: no dejar salas fuera del mapa (demoler un terraformador achica la grilla) ni
+    material perdido (bóveda cuyo contenido ya no cabría — retirá primero)."""
+    settings = get_settings()
+    if not settings.bunkers_enabled:
+        raise BunkerError("Los búnkeres están desactivados.")
+    bunker = await _bunker_for_base(session, base_id)
+    if bunker is None or bunker.player_id != player.id:
+        raise BunkerError("Primero cavá el búnker en esta base.")
+    rooms = (await session.execute(
+        select(BunkerRoom).where(BunkerRoom.bunker_id == bunker.id)
+    )).scalars().all()
+    room = next((r for r in rooms if r.cell == cell), None)
+    if room is None:
+        raise BunkerError("No hay ninguna sala en esa celda.")
+    content = get_content()
+    spec = content.rooms.get(room.room_key, {})
+    others = [r for r in rooms if r.id != room.id]
+    if spec.get("grid_bonus") and room.status == "active":
+        bonus_after = (int(sum(content.rooms.get(r.room_key, {}).get("grid_bonus", 0)
+                               for r in others if r.status == "active"))
+                       if settings.terraforming_enabled else 0)
+        side_after = grid_side(bunker, settings, bonus_after)
+        if any(r.cell >= side_after * side_after for r in others):
+            raise BunkerError(
+                f"Sin esta sala la grilla queda en {side_after}×{side_after} y hay salas en las "
+                "celdas que desaparecerían — demolé esas primero.")
+    if spec.get("vault_storage") and room.status == "active":
+        cap_after = await _vault_capacity(session, bunker.id) - float(spec["vault_storage"])
+        used = sum(s.amount for s in await _vault_stocks(session, bunker.id))
+        if used > cap_after:
+            raise BunkerError(f"Vaciá la bóveda primero ({used:.0f} guardado no entra en "
+                              f"{cap_after:.0f} de capacidad sin esta sala).")
+    await session.delete(room)
+    from app.services.journal import record
+    await record(session, "bunker_demolish_room", player.id, base_id=base_id,
+                 room_key=room.room_key, cell=cell)
+    await session.flush()
+    return {"room_key": room.room_key, "cell": cell}
 
 
 def _clamp(v: float) -> float:

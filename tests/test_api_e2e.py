@@ -3206,6 +3206,43 @@ async def test_bunker_dig_deeper_e2e(client, monkeypatch):
     assert me2["bunkers"][0]["grid_level"] == 1
 
 
+async def test_bunker_demolish_room_e2e(client, monkeypatch):
+    """Demoler una sala del búnker libera la celda por la API (+ error en celda vacía). Es la
+    salida del búnker LLENO en el tope de excavaciones (no entraba ni el Terraformador)."""
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import PlayerTech
+    monkeypatch.setattr(get_settings(), "bunkers_enabled", True)
+    h = await _register(client.http, "bkdemo_e2e")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    base = st["bases"][0]["id"]
+    async with client.session_maker() as s:
+        p = (await s.execute(select(Player).where(Player.username == "bkdemo_e2e"))).scalar_one()
+        s.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+        await s.commit()
+    assert (await client.http.post("/api/v1/bunker/dig", headers=h,
+                                   json={"base_id": base})).status_code == 201
+    assert (await client.http.post("/api/v1/bunker/build-room", headers=h,
+                                   json={"base_id": base, "room_key": "farm",
+                                         "cell": 0})).status_code == 201
+    # celda vacía → 400
+    r0 = await client.http.post("/api/v1/bunker/demolish-room", headers=h,
+                                json={"base_id": base, "cell": 7})
+    assert r0.status_code == 400
+    # demoler la granja libera la celda
+    r = await client.http.post("/api/v1/bunker/demolish-room", headers=h,
+                               json={"base_id": base, "cell": 0})
+    assert r.status_code == 200, r.text
+    assert r.json() == {"room_key": "farm", "cell": 0}
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["bunkers"][0]["rooms"] == []
+    # y se puede volver a construir en esa celda
+    assert (await client.http.post("/api/v1/bunker/build-room", headers=h,
+                                   json={"base_id": base, "room_key": "canteen",
+                                         "cell": 0})).status_code == 201
+
+
 async def test_quantum_infection_disarm_e2e(client, monkeypatch):
     """SDD 87: la infección cuántica aparece en /players/me y se desactiva con tropas por la API."""
     from sqlalchemy import select

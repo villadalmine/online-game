@@ -48,6 +48,7 @@ def build_catalog() -> dict:
             "energy_regen_per_hour": s.energy_regen_per_hour,
             # SDD 64: para el panel del búnker (tamaño del mapa + gate de intel del sabotaje).
             "bunker_grid": s.bunker_grid,
+            "bunker_grid_max": s.bunker_grid_max,   # tope de excavaciones (el front apaga ⛏)
             "bunker_raid_min_map_pct": s.bunker_raid_min_map_pct,
         },
         # Flags de features (SDD 49/50/61/62): el cliente muestra/oculta paneles según el flag.

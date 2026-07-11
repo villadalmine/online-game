@@ -201,6 +201,11 @@ class BunkerBuildRequest(BaseModel):
     cell: int | None = None   # None = auto-acomodar en la primera celda libre
 
 
+class BunkerDemolishRequest(BaseModel):   # demoler una sala (libera la celda; sin reembolso)
+    base_id: int
+    cell: int
+
+
 class BunkerRaidRequest(BaseModel):
     target_id: int
     action: str   # gas | rats | water

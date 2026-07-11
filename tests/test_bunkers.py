@@ -238,6 +238,85 @@ async def test_dig_deeper_needs_tech_and_flag(session, monkeypatch):
         pass
 
 
+async def test_dig_deeper_cap_message_suggests_terraformer(session, monkeypatch):
+    # En el tope de excavaciones el error EXPLICA el camino (Terraformador), no un callejón sin
+    # salida ("ya está en su tamaño máximo" cuando el jugador ve otros búnkeres más grandes).
+    from app.content.registry import get_content
+    from app.services.bunkers import dig_deeper
+    from app.services.economy import get_or_create_stock
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "bunker_expansion_enabled", True)
+    monkeypatch.setattr(s, "terraforming_enabled", True)
+    p, base = await _player(session)
+    session.add(PlayerTech(player_id=p.id, tech_key="underground_construction"))
+    await dig(session, p, base.id)
+    struct = get_content().resolve_role(p.race_key, "structural")
+    (await get_or_create_stock(session, p.id, struct, base.planet_key)).amount = 10**9
+    await session.commit()
+    for _ in range(s.bunker_grid_max - s.bunker_grid):   # excavar hasta el tope
+        await dig_deeper(session, p, base.id)
+    try:
+        await dig_deeper(session, p, base.id)
+        raise AssertionError("en el tope no se excava")
+    except BunkerError as exc:
+        assert "Terraformador" in str(exc) and "Tope de excavaciones" in str(exc)
+
+
+async def test_demolish_room_frees_cell_and_guards(session, monkeypatch):
+    # Demoler libera la celda (salida del búnker lleno en el tope); protege salas huérfanas
+    # (terraformador que achica la grilla) y material de la bóveda que ya no cabría.
+    from app.models import BunkerStock
+    from app.services.bunkers import demolish_room
+    s = get_settings()
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "terraforming_enabled", True)
+    p, base = await _player(session)
+    b = await dig(session, p, base.id)
+    room = await build_room(session, p, base.id, "farm", 0)
+    room.status = "active"
+    await session.commit()
+    # celda vacía → error
+    try:
+        await demolish_room(session, p, base.id, 5)
+        raise AssertionError("celda vacía")
+    except BunkerError:
+        pass
+    # happy: demoler libera la celda y se puede volver a construir ahí
+    r = await demolish_room(session, p, base.id, 0)
+    await session.commit()
+    assert r == {"room_key": "farm", "cell": 0}
+    room2 = await build_room(session, p, base.id, "canteen", 0)
+    assert room2.cell == 0
+    # guard bóveda: con material guardado que no cabría sin la sala, no se demuele
+    vault = await build_room(session, p, base.id, "vault", 1)
+    vault.status = "active"
+    session.add(BunkerStock(bunker_id=b.id, mineral_key="iron", amount=1000.0))
+    await session.commit()
+    try:
+        await demolish_room(session, p, base.id, 1)
+        raise AssertionError("bóveda con contenido")
+    except BunkerError as exc:
+        assert "Vaciá la bóveda" in str(exc)
+    # guard terraformador: con una sala en las celdas extra, demolerlo dejaría huérfanas → error
+    session.add(BunkerRoom(bunker_id=b.id, room_key="terraformer", cell=2, status="active",
+                           created_at=datetime.now(UTC)))
+    outside = s.bunker_grid * s.bunker_grid   # primera celda que SOLO existe con el bonus
+    session.add(BunkerRoom(bunker_id=b.id, room_key="quarters", cell=outside, status="active",
+                           created_at=datetime.now(UTC)))
+    await session.commit()
+    try:
+        await demolish_room(session, p, base.id, 2)
+        raise AssertionError("terraformador con salas afuera")
+    except BunkerError as exc:
+        assert "desaparecerían" in str(exc)
+    # demoliendo primero la de afuera, el terraformador sí se puede demoler
+    await demolish_room(session, p, base.id, outside)
+    await session.commit()
+    r2 = await demolish_room(session, p, base.id, 2)
+    assert r2["room_key"] == "terraformer"
+
+
 async def test_meters_decay_without_rooms(session, monkeypatch):
     # SDD 64: sin salas que produzcan, los medidores decaen con el tiempo (base del sabotaje).
     monkeypatch.setattr(get_settings(), "bunkers_enabled", True)

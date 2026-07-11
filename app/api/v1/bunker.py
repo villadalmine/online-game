@@ -7,6 +7,7 @@ from app.core.db import get_session
 from app.models import Player
 from app.schemas import (
     BunkerBuildRequest,
+    BunkerDemolishRequest,
     BunkerDigRequest,
     BunkerEvacuateRequest,
     BunkerRaidRequest,
@@ -17,6 +18,7 @@ from app.schemas import (
 from app.services.bunkers import (
     BunkerError,
     build_room,
+    demolish_room,
     dig,
     dig_deeper,
     evacuate,
@@ -71,6 +73,22 @@ async def do_build_room(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     await session.commit()
     return {"id": r.id, "room_key": r.room_key, "cell": r.cell, "status": r.status}
+
+
+@router.post("/demolish-room")
+async def do_demolish_room(
+    body: BunkerDemolishRequest,
+    player: Player = Depends(lock_current_player),
+    session: AsyncSession = Depends(get_session),
+):
+    """Demoler una sala del búnker (libera la celda; sin reembolso). Salida del búnker lleno en el
+    tope de excavaciones."""
+    try:
+        result = await demolish_room(session, player, body.base_id, body.cell)
+    except BunkerError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    await session.commit()
+    return result
 
 
 @router.post("/stash", status_code=status.HTTP_201_CREATED)
