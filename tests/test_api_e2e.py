@@ -3717,3 +3717,45 @@ async def test_building_upgrade_bulk_e2e(client, monkeypatch):
     bad = await client.http.post(
         f"/api/v1/bases/{base}/buildings/upgrade-bulk?building_key=mine&kind=defense", headers=h)
     assert bad.status_code == 400
+
+
+async def test_ai_agent_action_set_e2e(client, monkeypatch):
+    """SDD 83 v2: en modo agente el LLM ejecuta las acciones nuevas vía el tick — acá `bunker/dig`
+    (+ error: modo de cerebro inválido en /bunker/ai-brain)."""
+    from sqlalchemy import select
+
+    from app.core.config import get_settings
+    from app.models import PlayerTech
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_agent_enabled", True)
+    monkeypatch.setattr(s, "bunker_autonomy_enabled", True)
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    monkeypatch.setattr(s, "ai_brain_min_level", 1)
+    h = await _register(client.http, "agent_e2e")
+    st = await _onboard(client.http, h, planet="mars", race="martian")
+    base = st["bases"][0]["id"]
+    # error: modo inválido → 400
+    assert (await client.http.post("/api/v1/bunker/ai-brain", headers=h,
+                                   json={"mode": "matrix"})).status_code == 400
+    r = await client.http.post("/api/v1/bunker/ai-brain", headers=h, json={"mode": "agent"})
+    assert r.status_code == 200 and r.json()["ai_brain_mode"] == "agent"
+    async with client.session_maker() as s2:
+        p = (await s2.execute(select(Player).where(Player.username == "agent_e2e"))).scalar_one()
+        p.ai_level = 1
+        p.energy = 100000
+        s2.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+        await s2.commit()
+    # OJO: en el tick las NPC también llaman a llm_chat (estrategia) → responder SOLO al agente
+    # (su system prompt es único) o las NPC consumen las respuestas del fake.
+    sent = {"n": 0}
+
+    async def fake_chat(messages, **kw):
+        if messages and "autonomous brain" in str(messages[0].get("content", "")):
+            sent["n"] += 1
+            return (f'{{"action":"bunker","base_id":{base},"op":"dig"}}' if sent["n"] == 1
+                    else '{"action":"done"}')
+        return "{}"
+    monkeypatch.setattr("app.services.llm.llm_chat", fake_chat)
+    assert (await client.http.post("/api/v1/admin/tick", headers=h)).status_code == 200
+    me = (await client.http.get("/api/v1/players/me", headers=h)).json()
+    assert me["bunkers"] and me["bunkers"][0]["base_id"] == base   # el agente cavó el búnker

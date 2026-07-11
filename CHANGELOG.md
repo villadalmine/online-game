@@ -7,6 +7,27 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### 2026-07-11 — SDD 83 v2: el agente LLM juega COMPLETO (paridad con el determinista)
+El autopiloto AGENTE (modo 🤖, SDD 83) solo sabía 4 acciones (transport/build/train/research) —
+el resto del juego se lo perdía. Ahora ejecuta **13**, todas wrappers 1:1 sobre los servicios
+existentes (mismas reglas, savepoint por acción, mismas barreras: flag + opt-in + presupuesto
+diario + max_steps + STOP + fallback al determinista):
+- **Nuevas:** `fortify` (cadena lab+torreta en bases indefensas), `bunker` (cavar/excavar/sala),
+  `stash` (bóveda, a salvo del saqueo), `sell` (mercado), `colonize` (colony_ship; acepta domo),
+  `spy` (satélite espía), `tribute` (cancelar nuclear entrante), `move_troops` (guarnición) y
+  `attack` (solo con superioridad clara: el estado trae `defense_est` del estimador NPC).
+- El estado del prompt se enriquece solo con lo que aporta (compacto): guarnición por base,
+  búnkeres (lado + bóveda libre), nucleares entrantes, bases enemigas (tope 8), colonizables,
+  mercados, salas del catálogo.
+- Tests: 4 de servicio (`tests/test_ai_agent.py`) + e2e `test_ai_agent_action_set_e2e`
+  (modo agent → tick → el agente cava el búnker; error 400 modo inválido).
+
+### 2026-07-11 — Búnker: el tope de excavaciones ahora se explica con un TAP (mobile)
+Reporte del usuario: "no veo la opción excavar". Todos sus búnkeres estaban en el tope de
+excavaciones → el botón ⛏ (1.207.0) se reemplazaba por un texto gris cuyo tooltip no existe en
+mobile. Ahora el tope es un **botón informativo**: al tocarlo muestra el porqué y el camino
+(Terraformador activo / demoler salas) como toast. Solo front.
+
 ## [1.207.0] - 2026-07-11
 
 ### 2026-07-10 — Búnker: salida del tope de excavaciones + demoler salas + claridad de bóveda

@@ -42,6 +42,31 @@ la IA no lo sabía hacer: no existía la skill. El usuario eligió el camino amb
   gatea, un action inválido no rompe, y el fallback al determinista cuando el agente no hizo nada.
 
 ## Follow-ups
-- Más acciones (fortificar, atacar, colonizar, evacuar) al set de tools, con las mismas barreras.
+- ~~Más acciones (fortificar, atacar, colonizar, evacuar) al set de tools~~ → **v2 (abajo)**.
 - Tool-calling NATIVO cuando el modelo lo soporte (más robusto que el JSON-loop).
 - Que el agente vea el RESULTADO de sus jugadas (crecimiento) y aprenda qué acciones rinden.
+
+## v2 (2026-07-11) — paridad con el autopiloto determinista
+
+El agente pasa de 4 acciones a **13**: se suman `fortify` (build.fortify_undefended, cadena
+lab+torreta en toda base indefensa), `bunker` (`op: dig|dig_deeper|room` → bunkers.dig/
+dig_deeper/build_room con auto-celda), `stash` (bunkers.stash → bóveda a salvo del saqueo),
+`sell` (market.sell), `colonize` (found_colony con colony_ship; acepta `mode` p/domo SDD 89),
+`spy` (satellites.launch spy_satellite), `tribute` (strike.offer_tribute ante nuclear entrante),
+`move_troops` (troops.start_move, guarnición SDD 62) y `attack` (combat.start_attack). Todos
+**wrappers 1:1 sobre los servicios existentes** — cero reglas nuevas, mismas validaciones,
+mismo savepoint por acción.
+
+El estado del prompt (`_agent_state`) se enriquece SOLO con lo que esas acciones necesitan (y
+solo si aporta, para no inflar tokens): `bases[].units` (guarnición), `bunkers[]`
+(side + vault_free), `incoming_strikes` (¿nuclear?), `enemy_bases` (tope 8, con `defense_est`
+del mismo estimador que usa la NPC — el prompt exige atacar solo con superioridad clara),
+`colonizable` (tope 6), `market_planets`, `catalog.rooms`. `fortify` sin efecto devuelve error
+al LLM (no gasta el paso). Mismas barreras de v1 (flag, opt-in, presupuesto, max_steps, STOP,
+fallback total al determinista).
+
+Tests: `test_agent_stashes_in_vault`, `test_agent_spies_a_rival`,
+`test_agent_fortifies_undefended_bases`, `test_agent_unknown_bunker_op_is_error` (servicio) y
+`test_ai_agent_action_set_e2e` (HTTP: modo agent por `/bunker/ai-brain`, tick, el agente cava el
+búnker; error 400 de modo inválido). OJO en tests del tick: las NPC también llaman a `llm_chat`
+→ el fake debe responder SOLO al system prompt del agente.

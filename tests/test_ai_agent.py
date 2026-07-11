@@ -108,3 +108,80 @@ async def test_autopilot_agent_mode_falls_back_to_deterministic(session, monkeyp
     monkeypatch.setattr(ai_life, "_auto_workers", det_workers)
     n = await ai_life.run_ai_autopilot(session, p)
     assert n == 1 and called.get("det")             # cayó al autopiloto determinista
+
+
+async def test_agent_stashes_in_vault(session, monkeypatch):
+    """SDD 83 v2: la acción `stash` guarda minerales en la bóveda (a salvo del saqueo)."""
+    from app.models import BunkerRoom, PlayerTech
+    from app.services.bunkers import _vault_stocks, dig
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_agent_enabled", True)
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    p, base = await _player(session, name="agent_stash")
+    session.add(PlayerTech(player_id=p.id, tech_key="bunker_engineering"))
+    await session.flush()
+    bunker = await dig(session, p, base.id)
+    session.add(BunkerRoom(bunker_id=bunker.id, room_key="vault", cell=0, status="active"))
+    (await get_or_create_stock(session, p.id, "iron", "mars")).amount = 5000
+    await session.commit()
+    monkeypatch.setattr("app.services.llm.llm_chat", _replier(
+        f'{{"action":"stash","base_id":{base.id},"mineral":"iron","amount":800}}',
+        '{"action":"done"}'))
+    assert await ai_agent.run_agent_autopilot(session, p, s) == 1
+    await session.commit()
+    vault = await _vault_stocks(session, bunker.id)
+    assert vault and vault[0].mineral_key == "iron" and vault[0].amount == 800
+    assert (await planet_stocks(session, p.id, "mars")).get("iron") == 4200
+
+
+async def test_agent_spies_a_rival(session, monkeypatch):
+    """SDD 83 v2: la acción `spy` lanza un satélite espía (el estado expone enemy_bases)."""
+    from app.models import SatelliteMission
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_agent_enabled", True)
+    monkeypatch.setattr(s, "satellites_enabled", True)
+    p, _ = await _player(session, name="agent_spy")
+    foe, _ = await _player(session, name="agent_spy_foe")
+    foe.galaxy_instance_id = p.galaxy_instance_id
+    session.add(UnitStock(player_id=p.id, unit_key="spy_satellite", quantity=1))
+    await session.commit()
+    st = await ai_agent._agent_state(session, p)
+    assert any(e["owner"] == "agent_spy_foe" for e in st.get("enemy_bases", []))
+    monkeypatch.setattr("app.services.llm.llm_chat", _replier(
+        f'{{"action":"spy","target_player_id":{foe.id}}}', '{"action":"done"}'))
+    assert await ai_agent.run_agent_autopilot(session, p, s) == 1
+    m = (await session.execute(select(SatelliteMission).where(
+        SatelliteMission.owner_id == p.id))).scalars().all()
+    assert m and m[0].target_id == foe.id
+
+
+async def test_agent_fortifies_undefended_bases(session, monkeypatch):
+    """SDD 83 v2: la acción `fortify` arma la cadena de defensa (research_lab + torreta)."""
+    from app.content.registry import get_content
+    from app.models import Building
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_agent_enabled", True)
+    p, base = await _player(session, name="agent_fort")
+    from app.models import PlayerTech
+    session.add(PlayerTech(player_id=p.id, tech_key="weapons"))
+    for mk in get_content().minerals:
+        (await get_or_create_stock(session, p.id, mk, "mars")).amount = 100000
+    await session.commit()
+    monkeypatch.setattr("app.services.llm.llm_chat", _replier(
+        '{"action":"fortify"}', '{"action":"done"}'))
+    assert await ai_agent.run_agent_autopilot(session, p, s) == 1
+    await session.commit()
+    turrets = (await session.execute(select(Building).where(
+        Building.base_id == base.id, Building.building_key == "turret"))).scalars().all()
+    assert turrets
+
+
+async def test_agent_unknown_bunker_op_is_error(session, monkeypatch):
+    # op inválido de búnker → error devuelto al LLM, 0 aplicadas, sin romper (fallback determinista)
+    s = get_settings()
+    monkeypatch.setattr(s, "ai_agent_enabled", True)
+    monkeypatch.setattr(s, "bunkers_enabled", True)
+    p, base = await _player(session, name="agent_badop")
+    monkeypatch.setattr("app.services.llm.llm_chat", _replier(
+        f'{{"action":"bunker","base_id":{base.id},"op":"nuke"}}', '{"action":"done"}'))
+    assert await ai_agent.run_agent_autopilot(session, p, s) == 0
