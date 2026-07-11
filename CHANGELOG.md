@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.207.0] - 2026-07-11
+
 ### 2026-07-10 — Búnker: salida del tope de excavaciones + demoler salas + claridad de bóveda
 Bug reportado por el usuario: "excavar" en el búnker de Mercurio decía *"ya está en su tamaño
 máximo"* mientras otros búnkeres se veían más grandes (11×11 por Terraformador), y con el búnker
