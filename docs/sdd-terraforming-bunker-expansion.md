@@ -37,3 +37,24 @@ Ocupa 1 celda (neto muy positivo). Reversible por flag.
 ## Follow-ups
 - Salto cuántico / teletransportador entre búnkeres (SDD 76): mover electrónica de un búnker a otro.
 - IA conversacional que actúa (SDD 77).
+
+## Addendum (2026-07-11, v1.207.0) — tope de excavaciones y demolición
+
+Bug de UX reportado: en el tope de excavaciones (`grid_level=4` → 8×8) el juego se contradecía
+("excavá para agrandarlo" al construir vs "ya está en su tamaño máximo" al excavar), y con el búnker
+**lleno** en 8×8 era un deadlock real: sin celda libre no entraba ni el Terraformador. El bonus de
+terraformación NO habilita más excavaciones (sube lado y tope por igual): 11×11 se ve solo con la
+sala activa. El autopiloto (SDD 85) excava solo al fallar un build, así que llegar al tope "sin
+darse cuenta" es lo esperable. Arreglos (`fix(búnker)` 65aeb69):
+
+- Mensaje del tope explica la salida: `"Tope de excavaciones alcanzado (8×8). Un Terraformador
+  activo la agranda (+3 de lado, tech Terraformación)."` (data-driven: lee `grid_bonus` del YAML).
+- **`POST /api/v1/bunker/demolish-room`** (`bunkers.demolish_room`): libera la celda, sin reembolso.
+  Guardas: no dejar salas fuera del mapa (demoler un terraformador achica la grilla) ni material
+  perdido (bóveda cuyo contenido no cabría — vaciar primero). Demoler una sala "en obra" funciona
+  como cancelar construcción (sin reembolso). Journal: `bunker_demolish_room`.
+- Front: botón ⛏ se apaga en el tope (`bunker_grid_max` ahora sale en `/catalog` → costs; ojo cache
+  Redis 300s), click en una sala del corte lateral = demoler (con confirm), y la bóveda muestra el
+  desglose `usado/capacidad (N 🗄 × vault_storage)`.
+- Tests: `test_bunkers.py::test_dig_deeper_cap_message_suggests_terraformer`,
+  `::test_demolish_room_frees_cell_and_guards`, `test_api_e2e.py::test_bunker_demolish_room_e2e`.
