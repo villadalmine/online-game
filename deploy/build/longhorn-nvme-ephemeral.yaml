@@ -1,0 +1,17 @@
+# SDD 52 §4.1 — StorageClass para el SCRATCH del CD (workspace de los Workflows de Argo).
+# Igual a longhorn-nvme pero con UNA réplica: el workspace del build es descartable (se borra con
+# el workflow por ttl), no necesita HA → 3× menos disco de nodo en /var/lib/longhorn por corrida.
+# Aplicar una vez: kubectl --context default apply -f deploy/build/longhorn-nvme-ephemeral.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-nvme-ephemeral
+provisioner: driver.longhorn.io
+parameters:
+  diskSelector: nvme
+  fsType: ext4
+  numberOfReplicas: "1"
+  staleReplicaTimeout: "2880"
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true

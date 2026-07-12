@@ -52,11 +52,12 @@ spec:
     # PVC efímera del workflow (Longhorn-NVMe): Argo la crea al arrancar y la BORRA al terminar.
     # Aloja la fuente, el contexto y el TMPDIR de Kaniko (ver env TMPDIR abajo) → el grueso del scratch
     # va a NVMe-Longhorn, NO al SD/eMMC interno del nodo. Más grande para que entre el tmp de Kaniko.
+    # SDD 52 §4.1: clase efímera de 1 RÉPLICA (el scratch es descartable) → 3× menos disco de nodo.
     - metadata:
         name: workspace
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: longhorn-nvme
+        storageClassName: longhorn-nvme-ephemeral
         resources:
           requests:
             storage: 20Gi

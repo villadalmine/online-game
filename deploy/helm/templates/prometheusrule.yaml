@@ -39,4 +39,22 @@ spec:
           annotations:
             summary: "Tasa de errores 5xx alta (>5%)"
             description: "Online Galaxy War: >5% de respuestas 5xx en 5m."
+        # SDD 52 §4.6 — salud del CD (ns kaniko, vía kube-state-metrics): enterarse ANTES de que un
+        # deploy quede trabado. Los pods Failed quedan para leer logs (podGC) → la alerta dura
+        # mientras existan; el ttl del workflow la auto-resuelve.
+        - alert: OnlineGameCdPodFailed
+          expr: sum(kube_pod_status_phase{namespace="kaniko", phase="Failed"}) > 0
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: "CD de Online Galaxy War: paso FALLIDO"
+            description: "Hay {{`{{ $value | printf \"%.0f\" }}`}} pod(s) Failed en kaniko — un paso del pipeline falló (leer logs antes del ttl)."
+        # el patrón del incidente 2026-06-28: pods Pending eternos (DiskPressure / nodeSelector roto)
+        - alert: OnlineGameCdPodStuckPending
+          expr: sum(kube_pod_status_phase{namespace="kaniko", phase="Pending"}) > 0
+          for: 15m
+          labels: {severity: warning}
+          annotations:
+            summary: "CD de Online Galaxy War: pod Pending >15m (¿trabado?)"
+            description: "Un pod del pipeline lleva >15m Pending en kaniko — revisar DiskPressure/nodeSelector (incidente 2026-06-28)."
 {{- end }}

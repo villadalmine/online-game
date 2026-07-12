@@ -40,11 +40,12 @@ spec:
       operator: Exists
       effect: NoExecute
   volumeClaimTemplates:
+    # SDD 52 §4.1: clase efímera de 1 RÉPLICA (el scratch es descartable) → 3× menos disco de nodo.
     - metadata:
         name: workspace
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: longhorn-nvme
+        storageClassName: longhorn-nvme-ephemeral
         resources:
           requests:
             storage: 5Gi

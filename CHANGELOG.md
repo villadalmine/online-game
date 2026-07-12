@@ -7,6 +7,16 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### Ops — 2026-07-11 — SDD 52 §4.1/§4.6: scratch del CD a 1 réplica + alertas de CD
+- **StorageClass `longhorn-nvme-ephemeral`** (1 réplica, Delete): el workspace de los Workflows
+  del CD es descartable → 3× menos disco de nodo por corrida. Manifest en
+  `deploy/build/longhorn-nvme-ephemeral.yaml` (aplicar UNA vez al cluster ANTES del próximo
+  deploy); `online-game-cicd.yaml` y `online-game-kaniko.yaml` ya apuntan ahí.
+- **Alertas del CD** en el chart (`prometheusrule.yaml`): `OnlineGameCdPodFailed` (paso fallido,
+  >5m) y `OnlineGameCdPodStuckPending` (Pending >15m, el patrón del incidente 2026-06-28). Van
+  por kube-state-metrics (sin infra nueva). DiskPressure ya lo cubría kube-prometheus-stack
+  (`KubeNodePressure`), verificado en el cluster.
+
 ## [1.208.0] - 2026-07-11
 
 ### 2026-07-11 — SDD 83 v2: el agente LLM juega COMPLETO (paridad con el determinista)

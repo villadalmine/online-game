@@ -1,6 +1,6 @@
 # SDD 52 — Resiliencia de almacenamiento/disco del CD (no llenar el nodo, no pinear)
 
-> **Estado:** **parcial implementado** (lo urgente) + **diseño** (lo que falta iterar) · **Fecha:** 2026-06-28
+> **Estado:** **implementado** (§3 + §4.1/§4.6 el 2026-07-11) + diseño §4.2-4.5 · **Fecha:** 2026-06-28
 > **Relacionado:** SDD 15-17 (Kaniko/Argo), SDD 44/45 (gate de tests), SDD 32 (Longhorn), incidente
 > 2026-06-28. Archivos: `deploy/build/online-game-cicd.yaml`, StorageClasses del cluster.
 
@@ -40,9 +40,12 @@ La pregunta "¿que el pod entero use una PVC en vez de disco interno?" — **no 
 - **Operación**: NO reusar tags (bumpear versión en cada deploy). Limpiar workflows fallidos viejos.
 
 ## 4. A iterar (diseño)
-1. **StorageClass efímera de 1 réplica** para el workspace del CD: `longhorn-nvme-ephemeral` con
-   `numberOfReplicas: "1"` + `reclaimPolicy: Delete` → **3× menos disco de nodo** (el scratch del
-   build es descartable, no necesita replicación/HA). Apuntar el `volumeClaimTemplate` ahí.
+1. **HECHO (2026-07-11)** — **StorageClass efímera de 1 réplica** para el workspace del CD:
+   `longhorn-nvme-ephemeral` (`numberOfReplicas: "1"`, `reclaimPolicy: Delete`, mismo
+   `diskSelector: nvme`) → **3× menos disco de nodo** (el scratch del build es descartable, no
+   necesita replicación/HA). Manifest en `deploy/build/longhorn-nvme-ephemeral.yaml` (aplicar UNA
+   vez al cluster ANTES del próximo deploy); los `volumeClaimTemplates` de
+   `online-game-cicd.yaml` y `online-game-kaniko.yaml` ya apuntan ahí.
 2. **PVC más chica** (20Gi → ~10Gi) si el build entra.
 3. **¿emptyDir en vez de PVC?** Trade-off: emptyDir auto-limpia con el pod y no replica, pero usa el
    *ephemeral storage* del nodo (cuenta para eviction). En nodos rk1-**nvme** podría alcanzar y ser más
@@ -52,8 +55,15 @@ La pregunta "¿que el pod entero use una PVC en vez de disco interno?" — **no 
    test viejas; o usar tags por commit + limpieza periódica del registry/nodos.
 5. **Artifact repository de Argo (MinIO)**: archivar logs de los pasos → poder volver a `podGC:
    OnWorkflowCompletion` (aún más limpio) sin perder los logs de fallos. (SDD 17 follow-up.)
-6. **Alertas** (SDD pendiente): ServiceMonitor + PrometheusRule sobre DiskPressure de los nodos del
-   pool y sobre Workflows fallidos → enterarse antes de que trabe el CD.
+6. **HECHO (2026-07-11)** — **Alertas**: DiskPressure/filesystem YA los cubre kube-prometheus-stack
+   (`KubeNodePressure`, `NodeFilesystemAlmostOutOfSpace`, verificado en el cluster). Lo que faltaba
+   era el CD: 2 reglas nuevas en el chart (`deploy/helm/templates/prometheusrule.yaml`, opt-in
+   `metrics.prometheusRule.enabled`): **OnlineGameCdPodFailed** (pod Failed en ns kaniko >5m — un
+   paso del pipeline falló) y **OnlineGameCdPodStuckPending** (pod Pending >15m — el patrón del
+   incidente: DiskPressure/nodeSelector roto). Van por kube-state-metrics (sin infra nueva) y se
+   rutean por el Alertmanager existente. Nota: el controller de Argo TAMBIÉN expone
+   `argo_workflows_gauge{phase}` (ServiceMonitor ya scrapeando) si algún día se quiere alertar por
+   estado de workflow en vez de pods.
 
 ## 5. Validación
 - Forzar DiskPressure en un nodo del pool → el CD agenda en otro (no Pending eterno).
