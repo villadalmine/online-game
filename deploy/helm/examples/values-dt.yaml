@@ -25,6 +25,8 @@ env:
   ENERGY_START: "100000000"
   ALLOWED_EMAILS: ""              # registro abierto: los tests crean usuarios
   SIGNUP_REQUIRES_APPROVAL: "false"
+  ASSISTANT_CLOUD_MODEL: "meta-llama/llama-3.1-8b-instruct"
+  SEASON_CAPACITY: "0"            # sin restriccion de capacidad para dt
 
 npc:
   brain: "rules"                  # sin LLM/OpenRouter: cero costo/acceso externo

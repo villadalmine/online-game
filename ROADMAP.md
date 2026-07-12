@@ -149,8 +149,8 @@ Dónde estamos y qué sigue. El detalle cronológico de cada cambio está en
   rps/pod (KEDA), PgBouncer + réplicas de lectura, tick shardeado por galaxia (SDD 8).
 - 🟢 **[SDD 8 — Límites de galaxia](docs/sdd-galaxy-limits.md)**: **v1 hecho** — `GalaxyInstance`
   con `capacity` (overflow a nueva instancia); aislamiento humano↔humano (no atacás otra galaxia,
-  scoreboard filtrado), NPCs ambientales, `GET /galaxies`. Follow-up: NPCs/ranking/temporada por
-  instancia y tick por shard.
+  scoreboard filtrado), NPCs ambientales, `GET /galaxies`. **v2 hecho**: Límite global por 
+  temporada (`season_capacity`). Follow-up: NPCs/ranking/temporada por instancia y tick por shard.
 - 🟢 **[SDD 9 — LLM local en GPU](docs/sdd-local-gpu-llm.md)**: **v1+v2 hechos** — v1: timeout LLM
   configurable + rate-limit del asistente. **v2**: arquitectura final — LiteLLM compartido →
   **tier Ollama dual** (1 por placa, P4+M4000 vía HAMI) + **fallback OpenRouter free**; **Rockchip

@@ -36,6 +36,10 @@ make help             # lista todos los targets
 - **Extender, no romper**: cambios aditivos; API versionada.
 - **Regla del proyecto: toda feature entra con su test e2e** en `tests/test_api_e2e.py`
   (happy path + al menos un caso de error), además de tests de servicio.
+- **Regla estricta de documentación**: SIEMPRE que implementes un cambio o feature, DEBES documentarlo:
+  1. Registrá la novedad en `CHANGELOG.md` siguiendo el formato de release.
+  2. Actualizá el estado en el `ROADMAP.md` (o backlog) si corresponde.
+  3. Creá o modificá un **SDD** (Software Design Document) en `docs/` detallando el diseño técnico de la feature.
 
 ## Arquitectura (big picture)
 

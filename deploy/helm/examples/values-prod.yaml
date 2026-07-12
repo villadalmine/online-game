@@ -96,3 +96,8 @@ env:
   # SDD 77: la IA le escribe sola al jugador (mensaje proactivo) ante algo urgente (ataque entrante,
   # energía crítica), con cooldown. Determinista, no gasta LLM. Reversible.
   ADVISOR_PROACTIVE_ENABLED: "true"
+  # Lanzamiento abierto: cualquier usuario puede registrarse
+  ALLOWED_EMAILS: ""
+  SIGNUP_REQUIRES_APPROVAL: "false"
+  # Límite de capacidad (100 jugadores en prod)
+  SEASON_CAPACITY: "100"

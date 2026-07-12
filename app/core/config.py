@@ -167,6 +167,8 @@ class Settings(BaseSettings):
     season_days: int = 28                 # duración de cada temporada
     season_hall_of_fame_top: int = 10     # cuántos entran al Hall of Fame al cerrar
     newbie_protection_hours: int = 48     # protección al crear el imperio
+    # season_capacity: int = 500            # máximo de jugadores humanos en el servidor (0 = sin límite)
+    season_capacity: int = 100            # máximo de jugadores humanos en el servidor (0 = sin límite)
 
     # Galaxy instances / shards (SDD 8): máx humanos por instancia de galaxia.
     galaxy_capacity: int = 50

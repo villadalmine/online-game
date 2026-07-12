@@ -1,0 +1,98 @@
+# ARGO WORKFLOW: Pruebas de Carga en Entorno Efímero (DT)
+# Este workflow levanta un entorno de prueba en el namespace `online-game-dt`, 
+# inyecta la API Key de OpenRouter, corre el script de carga (k6) y al finalizar,
+# limpia y destruye el entorno para no ensuciar producción.
+#
+# Uso: 
+# argo submit deploy/build/online-game-loadtest.yaml -n kaniko \
+#   -p openrouter_key="sk-or-v1-..." \
+#   -p vus=100 -p duration=3m \
+#   --watch
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: cicd-loadtest-
+  namespace: kaniko
+  labels:
+    app: online-game-loadtest
+spec:
+  entrypoint: pipeline
+  onExit: helm-teardown   # Asegura que siempre se destruya el entorno, incluso si el test falla
+  serviceAccountName: og-deployer
+  arguments:
+    parameters:
+      - name: image_tag
+        value: "latest"
+      - name: openrouter_key
+        value: ""
+      - name: vus
+        value: "100"
+      - name: duration
+        value: "3m"
+  podGC:
+    strategy: OnWorkflowSuccess
+  
+  templates:
+    - name: pipeline
+      dag:
+        tasks:
+          - name: setup-dt
+            template: helm-setup
+          - name: run-k6
+            template: k6-test
+            dependencies: [setup-dt]
+
+    # ---- 1. Deploy de entorno DT con valores específicos ----
+    - name: helm-setup
+      inputs:
+        artifacts:
+          - name: source
+            path: /workspace/chart-src
+            git: { repo: "https://github.com/villadalmine/online-game.git", revision: main, depth: 1 }
+      container:
+        image: dtzar/helm-kubectl:3.16.2
+        command: ["sh", "-c"]
+        args:
+          - |
+            set -e
+            echo "Deploying galaxy-dt environment for load testing..."
+            helm upgrade --install galaxy-dt /workspace/chart-src/deploy/helm \
+              -n online-game-dt --create-namespace \
+              -f /workspace/chart-src/deploy/helm/examples/values-dt.yaml \
+              --set image.tag={{workflow.parameters.image_tag}} \
+              --set env.OPENROUTER_API_KEY={{workflow.parameters.openrouter_key}} \
+              --wait --timeout 5m
+            kubectl rollout status deploy/galaxy-dt-api -n online-game-dt --timeout=300s
+
+    # ---- 2. Ejecución de k6 ----
+    - name: k6-test
+      inputs:
+        artifacts:
+          - name: source
+            path: /workspace/source
+            git: { repo: "https://github.com/villadalmine/online-game.git", revision: main, depth: 1 }
+      container:
+        image: grafana/k6:latest
+        command: ["sh", "-c"]
+        args:
+          - |
+            echo "Running k6 load test..."
+            k6 run /workspace/source/tests/load/k6_ccu.js
+        env:
+          - name: BASE_URL
+            value: "http://galaxy-dt-api.online-game-dt.svc.cluster.local:80/api/v1"
+          - name: VUS
+            value: "{{workflow.parameters.vus}}"
+          - name: DURATION
+            value: "{{workflow.parameters.duration}}"
+
+    # ---- 3. Cleanup (siempre se ejecuta al final) ----
+    - name: helm-teardown
+      container:
+        image: dtzar/helm-kubectl:3.16.2
+        command: ["sh", "-c"]
+        args:
+          - |
+            echo "Cleaning up galaxy-dt environment..."
+            helm uninstall galaxy-dt -n online-game-dt || true
+            kubectl delete ns online-game-dt --wait=false || true

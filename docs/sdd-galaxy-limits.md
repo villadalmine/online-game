@@ -90,6 +90,13 @@ vez de un set por instancia → evita reescribir el sistema NPC. **Follow-ups**:
 ranking/temporada por instancia (hoy temporada/HoF y `/players/ranking` son globales); tick por
 shard (paralelizable, SDD 7).
 
+## 5.ter Límite global por Temporada (2026-07-12) — v2
+- Para proteger el servidor de sobrecargas imprevistas durante el lanzamiento, se introdujo `season_capacity`.
+- Este es un **límite estricto de usuarios humanos a nivel de servidor**.
+- El `onboard_player` cuenta cuántos humanos tienen un imperio ya inicializado (`race_key IS NOT NULL`).
+- Si el límite (configurable) se alcanza, el registro de nuevos imperios se bloquea devolviendo un `OnboardingError` ("El servidor ha alcanzado su capacidad máxima").
+- Este límite es un safety-net global y opera de manera independiente al cupo de las galaxias individuales.
+
 ## 6. Riesgos / decisiones
 - **Migración de datos**: meter a todos los jugadores actuales en una instancia "génesis" por
   template; aditivo, sin pérdida.

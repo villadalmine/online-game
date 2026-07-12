@@ -7,6 +7,23 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.210.0] - 2026-07-12
+
+### 2026-07-12 — Preparación para Lanzamiento Público (100 CCU)
+- **Registro Abierto:** `ALLOWED_EMAILS` vacío por defecto, permitiendo registro libre (protegido por OTP).
+- **Límite de Capacidad (Prod):** `SEASON_CAPACITY` fijado estrictamente a 100 en `values-prod.yaml` para asegurar el límite del servidor en el lanzamiento. En entornos `dt` (pruebas de carga) el límite es 0 (ilimitado) para testear capacidad.
+- **Pruebas de Carga (Argo):** Nuevo workflow `online-game-loadtest.yaml` para simular 100 usuarios usando k6 en un namespace efímero.
+- **Runbook Operativo:** Documentación para iniciar temporada (`docs/runbook-operations.md`).
+
+## [1.209.0] - 2026-07-12
+
+### 2026-07-12 — Límite de usuarios por temporada (protección del servidor)
+Implementación de un límite global de usuarios humanos para proteger los recursos del servidor en el lanzamiento.
+- **Configuración `season_capacity`:** Nuevo límite configurable (por defecto 500) en `app/core/config.py`.
+- **Restricción en Onboarding:** `onboard_player` verifica que la cantidad total de jugadores humanos (con imperio creado) no supere `season_capacity` antes de permitir un registro. Los NPCs están excluidos del conteo.
+- **Tests:** `test_season_capacity_blocks_onboarding` añadido a `tests/test_seasons.py`.
+- Actualizado el SDD 8 (`docs/sdd-galaxy-limits.md`) con el concepto de límite global.
+
 ### Ops — 2026-07-11 — SDD 52 §4.1/§4.6: scratch del CD a 1 réplica + alertas de CD
 - **StorageClass `longhorn-nvme-ephemeral`** (1 réplica, Delete): el workspace de los Workflows
   del CD es descartable → 3× menos disco de nodo por corrida. Manifest en

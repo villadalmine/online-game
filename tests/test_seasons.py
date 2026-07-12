@@ -127,3 +127,30 @@ async def test_attacking_npc_keeps_protection(session):
     await session.commit()
     attacker = await session.get(Player, attacker.id)
     assert attacker.protected_until is not None  # atacar NPC no saca la protección
+
+
+# ---- season capacity --------------------------------------------------------
+async def test_season_capacity_blocks_onboarding(session, monkeypatch):
+    from app.core.config import get_settings
+    from app.services.onboarding import OnboardingError
+    from app.models import Player
+    from sqlalchemy import select, func
+    
+    settings = get_settings()
+    current_count = (await session.execute(
+        select(func.count(Player.id))
+        .where(Player.is_npc.is_(False))
+        .where(Player.race_key.is_not(None))
+    )).scalar() or 0
+    monkeypatch.setattr(settings, "season_capacity", current_count + 2)
+    
+    # 2 players should be allowed
+    await _human(session, "cap1")
+    await _human(session, "cap2")
+    
+    # 3rd player should fail
+    try:
+        await _human(session, "cap3")
+        raise AssertionError("debería bloquear: capacidad máxima alcanzada")
+    except OnboardingError as e:
+        assert "capacidad máxima" in str(e).lower()

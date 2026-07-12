@@ -1,6 +1,7 @@
 """Player onboarding: choose galaxy/planet/race, create homebase + starting stock."""
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.content.registry import get_content
@@ -23,6 +24,18 @@ async def onboard_player(
 
     if player.race_key is not None:
         raise OnboardingError("El jugador ya fue inicializado.")
+
+    if settings.season_capacity > 0 and not player.is_npc:
+        count = (await session.execute(
+            select(func.count(Player.id))
+            .where(Player.is_npc.is_(False))
+            .where(Player.race_key.is_not(None))
+        )).scalar() or 0
+        if count >= settings.season_capacity:
+            raise OnboardingError(
+                f"El servidor ha alcanzado su capacidad máxima ({settings.season_capacity} jugadores). "
+                "Vuelve a intentarlo más adelante."
+            )
     if galaxy_key not in content.galaxies:
         raise OnboardingError(f"Galaxia desconocida: {galaxy_key}")
     if planet_key not in content.planets or content.planet_galaxy[planet_key] != galaxy_key:
