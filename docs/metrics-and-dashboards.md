@@ -108,3 +108,15 @@ Toda llamada al LLM lleva DOS etiquetas que separan quién la hizo:
   y sus robots en "📈 Tu historia".
 - **"¿Qué IA usa cada jugador?"** Tabla "Consultas por TIPO de IA y JUGADOR (24h)" en llm-usage:
   cada fila es `end_user` = `tipo:jugador` (p.ej. `autopilot:villadalmine` vs `player:villadalmine`).
+
+## Alertas (PrometheusRule del chart, opt-in `metrics.prometheusRule.enabled`)
+En `deploy/helm/templates/prometheusrule.yaml`; se rutean por el Alertmanager del cluster
+(critical|warning → openclaw). Las de infra base (DiskPressure `KubeNodePressure`,
+`NodeFilesystem*`, nodos caídos) YA las trae kube-prometheus-stack — no duplicarlas acá.
+- `OnlineGameSignup` (warning, "buena noticia"): se registró un jugador nuevo (10m).
+- `OnlineGameApiDown` (critical): scrape de la API falla >2m.
+- `OnlineGameHighErrorRate` (warning): >5% de respuestas 5xx en 5m.
+- `OnlineGameCdPodFailed` (warning, SDD 52): pod Failed en ns kaniko >5m — un paso del CD falló
+  (leer logs antes del ttl del workflow).
+- `OnlineGameCdPodStuckPending` (warning, SDD 52): pod Pending >15m en kaniko — patrón del
+  incidente 2026-06-28 (DiskPressure/nodeSelector roto); el CD quedaría trabado, no fallado.
