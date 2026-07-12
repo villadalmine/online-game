@@ -7,6 +7,8 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+## [1.208.0] - 2026-07-11
+
 ### 2026-07-11 — SDD 83 v2: el agente LLM juega COMPLETO (paridad con el determinista)
 El autopiloto AGENTE (modo 🤖, SDD 83) solo sabía 4 acciones (transport/build/train/research) —
 el resto del juego se lo perdía. Ahora ejecuta **13**, todas wrappers 1:1 sobre los servicios
