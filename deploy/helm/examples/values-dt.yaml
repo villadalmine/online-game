@@ -11,7 +11,6 @@ image:
 nodeSelector:
   kubernetes.io/arch: arm64
   storage: rk1-longhorn
-  kubernetes.io/hostname: null
 
 # Sin ingress público: el gate le pega por DNS interno (galaxy-dt-api.online-game-dt.svc).
 gateway:
