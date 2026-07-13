@@ -34,7 +34,7 @@ export default function () {
   // Registro+onboarding una sola vez por VU.
   if (!__ENV._done) {
     const u = `load_${__VU}_${Date.now()}`;
-    const reg = http.post(`${BASE}/auth/register`, JSON.stringify({ username: u, password: "x" }), {
+    const reg = http.post(`${BASE}/auth/register`, JSON.stringify({ username: u, password: "password123" }), {
       headers: { "Content-Type": "application/json" },
     });
     const token = reg.json("access_token");
