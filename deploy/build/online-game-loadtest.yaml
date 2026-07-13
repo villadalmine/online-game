@@ -57,7 +57,7 @@ spec:
             set -e
             echo "Deploying galaxy-dt environment for load testing..."
             helm upgrade --install galaxy-dt /workspace/chart-src/deploy/helm \
-              -n online-game-dt --create-namespace \
+              -n online-game-dt \
               -f /workspace/chart-src/deploy/helm/examples/values-dt.yaml \
               --set image.tag={{workflow.parameters.image_tag}} \
               --set env.OPENROUTER_API_KEY={{workflow.parameters.openrouter_key}} \
