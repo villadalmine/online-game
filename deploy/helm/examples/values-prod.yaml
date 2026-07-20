@@ -52,13 +52,15 @@ postgres:
 llm:
   model: "cheap"
 
-# AHORRO 2026-07-20 (2/2, dueño): tick cada 4 HORAS (era */5 min). Seguro porque el juego es
-# catch-up por timestamps (completes_at/last_collected_at): nada se pierde, y las acciones del
-# jugador activo finalizan sus builds on-demand (finalize_due_builds corre en research/training/
-# expedition). Lo que SÍ se enlentece: batallas/flotas/huelgas/temporadas y decisiones de NPCs
-# se resuelven 6 veces/día. LLM de galaxy ≈ $0. Revertir = "*/10 * * * *" (o borrar el bloque).
+# AHORRO 2026-07-20 (2/2, dueño): tick cada 12 HORAS (era */5 min; pasó por */10 y */4h el mismo
+# día — "total es NPC"). Seguro porque el juego es catch-up por timestamps (completes_at/
+# last_collected_at): nada se pierde, y las acciones del jugador activo finalizan sus builds
+# on-demand (finalize_due_builds corre en research/training/expedition). Lo que SÍ se enlentece:
+# batallas/flotas/huelgas/temporadas y decisiones de NPCs se resuelven 2 veces/día (9:00 y 21:00
+# hora BsAs = 12:00/0:00 UTC, horarios humanos a propósito). LLM de galaxy ≈ $0.
+# Revertir = "*/10 * * * *" (o borrar el bloque, default */5).
 worker:
-  schedule: "0 */4 * * *"
+  schedule: "0 0,12 * * *"
 
 # Flags de juego (SDD 62): guarnición — tropas/obreros por base, el combate usa solo la base atacada,
 # capacidad por planeta y mover tropas. El backfill (migración b8f1c2a4e6d0) ya movió las unidades
