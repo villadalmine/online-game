@@ -63,6 +63,12 @@ worker:
 # SDD 61: satélites — aditivo y de bajo riesgo (nadie tiene satélites hasta construirlos tras un árbol
 # de research carísimo). Reversible. Ver docs/sdd-satellites-recon.md.
 env:
+  # AHORRO 2026-07-20 (3/3): los fallbacks de nube de NPC/asistente tienen default gemma4-paid EN EL
+  # CÓDIGO (config.py npc_cloud_model/assistant_cloud_model) — con la GPU apagada, cada NPC "gpu" que
+  # falla reintenta con gemma pago. Pisados acá a `cheap` (deepseek-flash) para que TODO galaxy use
+  # el modelo barato. Revertir = borrar estas 2 líneas.
+  NPC_CLOUD_MODEL: "cheap"
+  ASSISTANT_CLOUD_MODEL: "cheap"
   GARRISON_ENABLED: "true"
   SATELLITES_ENABLED: "true"
   # SDD 64: búnkeres — aditivo, gateado por research (nuclear_fission → bunker_engineering) y el
