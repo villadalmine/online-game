@@ -52,10 +52,13 @@ postgres:
 llm:
   model: "cheap"
 
-# AHORRO 2026-07-20 (2/2): el tick pasa de cada 5 → cada 10 minutos (mitad de decisiones LLM/día).
-# Junto con el modelo barato: ~$0.35/día → ~$0.08/día. Revertir = borrar este bloque (default */5).
+# AHORRO 2026-07-20 (2/2, dueño): tick cada 4 HORAS (era */5 min). Seguro porque el juego es
+# catch-up por timestamps (completes_at/last_collected_at): nada se pierde, y las acciones del
+# jugador activo finalizan sus builds on-demand (finalize_due_builds corre en research/training/
+# expedition). Lo que SÍ se enlentece: batallas/flotas/huelgas/temporadas y decisiones de NPCs
+# se resuelven 6 veces/día. LLM de galaxy ≈ $0. Revertir = "*/10 * * * *" (o borrar el bloque).
 worker:
-  schedule: "*/10 * * * *"
+  schedule: "0 */4 * * *"
 
 # Flags de juego (SDD 62): guarnición — tropas/obreros por base, el combate usa solo la base atacada,
 # capacidad por planeta y mover tropas. El backfill (migración b8f1c2a4e6d0) ya movió las unidades
