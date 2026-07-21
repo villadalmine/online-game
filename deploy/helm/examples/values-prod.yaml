@@ -74,6 +74,10 @@ env:
   # el modelo barato. Revertir = borrar estas 2 líneas.
   NPC_CLOUD_MODEL: "cheap"
   ASSISTANT_CLOUD_MODEL: "cheap"
+  # OBSERVABILIDAD DEL TICK (2026-07-20): sin esta URL el push de métricas del tick es NO-OP
+  # silencioso (config.py pushgateway_url="") — la Pushgateway tenía datos de hace 8 días y la
+  # alerta OnlineGameTickViejo (prometheusrule.yaml) necesita game_tick_last_run_timestamp fresco.
+  PUSHGATEWAY_URL: "http://pushgateway.monitoring:9091"
   GARRISON_ENABLED: "true"
   SATELLITES_ENABLED: "true"
   # SDD 64: búnkeres — aditivo, gateado por research (nuclear_fission → bunker_engineering) y el

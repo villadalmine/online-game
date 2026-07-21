@@ -39,6 +39,18 @@ spec:
           annotations:
             summary: "Tasa de errores 5xx alta (>5%)"
             description: "Online Galaxy War: >5% de respuestas 5xx en 5m."
+        # EL TICK (2026-07-20, tras pasarlo a 2 veces/día): si el último tick OK tiene >13h
+        # (cadencia 12h + 1h de gracia), el mundo dejó de latir — cronjob roto, job fallando,
+        # o el push a la Pushgateway caído (PUSHGATEWAY_URL en values-prod). Cubre TODAS esas
+        # causas porque mira la ÚLTIMA CORRIDA EXITOSA, no el estado del job. Los fallos duros
+        # del job además disparan el KubeJobFailed default del stack.
+        - alert: OnlineGameTickViejo
+          expr: (time() - max(game_tick_last_run_timestamp)) > 46800
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: "⏰ El TICK de Online Galaxy War no corre hace {{`{{ $value | humanizeDuration }}`}}"
+            description: "El mundo no late (builds/batallas/NPCs congelados). Ver: kubectl -n online-game get cronjob,jobs · y el push a la Pushgateway (PUSHGATEWAY_URL en values-prod). Cadencia esperada: 2/día (0:00 y 12:00 UTC)."
         # SDD 52 §4.6 — salud del CD (ns kaniko, vía kube-state-metrics): enterarse ANTES de que un
         # deploy quede trabado. Los pods Failed quedan para leer logs (podGC) → la alerta dura
         # mientras existan; el ttl del workflow la auto-resuelve.
