@@ -45,12 +45,22 @@ postgres:
 # con ESTE archivo, así que fijamos acá el modelo cloud para que un deploy NO revierta a local-gpu
 # (values-local ya lo tenía, pero el CD no lo lee). ⟳ ROLLBACK al re-prender la GPU: volver a
 # `local-gpu` (o borrar este bloque) y `make deploy`. Ver CHANGELOG Ops 2026-07-08.
-# AHORRO 2026-07-20 (dueño, meta €20/mes): gemma4-paid → `cheap` (deepseek-v4-flash vía LiteLLM,
-# $0.098/M in vs $0.22/M — el workload del tick es ~95% input ⇒ -55%). Benchmark del mismo día
-# (repo shooter): 3/3 chat-pattern, respeta max_tokens. Aplicado también en runtime por kubectl
-# (sin `make deploy`: el pipeline completo re-crearía galaxy-dt, borrado ese mismo día).
+# AHORRO + ATRIBUCIÓN 2026-07-21 (dueño): galaxy va DIRECTO a OpenRouter con SU PROPIA key
+# (galaxy-secrets/OPENROUTER_API_KEY, etiqueta "galaxy-online-game", tope $10). Antes iba por LiteLLM
+# en passthrough → su gasto se facturaba a la key principal "hermes"/tormenta-litellm y se mezclaba con
+# el del juego. Al ir directo, factura APARTE (queda clarísimo quién gasta). El código de galaxy hace
+# `llm_key = llm_api_key or openrouter_api_key`, así que dejando llm.apiKey/baseUrl vacíos cae al
+# OPENROUTER_API_KEY propio. Modelo deepseek-v4-flash (liviano; galaxy solo redacta sobre el grafo
+# determinista, no necesita más — bench 07-21: 200 en 1.8s). ⟳ ROLLBACK a LiteLLM: llm.baseUrl=
+# http://litellm-proxy.ai.svc.cluster.local:4000/v1 + llm.apiKey=<master> + llm.model=cheap.
 llm:
-  model: "cheap"
+  baseUrl: ""                          # vacío → usa openrouter.baseUrl (OpenRouter directo)
+  apiKey: ""                           # vacío → no set LLM_API_KEY → usa OPENROUTER_API_KEY (key propia)
+  model: "deepseek/deepseek-v4-flash"  # id de OpenRouter (sin prefijo openrouter/, no pasa por LiteLLM)
+openrouter:
+  baseUrl: "https://openrouter.ai/api/v1"
+  model: "deepseek/deepseek-v4-flash"
+  # apiKey: la key propia de galaxy va en values-local (secreto), ya presente en galaxy-secrets.
 
 # AHORRO 2026-07-20 (2/2, dueño): tick cada 12 HORAS (era */5 min; pasó por */10 y */4h el mismo
 # día — "total es NPC"). Seguro porque el juego es catch-up por timestamps (completes_at/
@@ -68,12 +78,12 @@ worker:
 # SDD 61: satélites — aditivo y de bajo riesgo (nadie tiene satélites hasta construirlos tras un árbol
 # de research carísimo). Reversible. Ver docs/sdd-satellites-recon.md.
 env:
-  # AHORRO 2026-07-20 (3/3): los fallbacks de nube de NPC/asistente tienen default gemma4-paid EN EL
+  # AHORRO 2026-07-20/21 (3/3): los fallbacks de nube de NPC/asistente tienen default gemma4-paid EN EL
   # CÓDIGO (config.py npc_cloud_model/assistant_cloud_model) — con la GPU apagada, cada NPC "gpu" que
-  # falla reintenta con gemma pago. Pisados acá a `cheap` (deepseek-flash) para que TODO galaxy use
-  # el modelo barato. Revertir = borrar estas 2 líneas.
-  NPC_CLOUD_MODEL: "cheap"
-  ASSISTANT_CLOUD_MODEL: "cheap"
+  # falla reintenta con gemma pago. Pisados acá al id de OpenRouter directo (galaxy ya no usa aliases
+  # de LiteLLM). Revertir = borrar estas 2 líneas.
+  NPC_CLOUD_MODEL: "deepseek/deepseek-v4-flash"
+  ASSISTANT_CLOUD_MODEL: "deepseek/deepseek-v4-flash"
   # OBSERVABILIDAD DEL TICK (2026-07-20): sin esta URL el push de métricas del tick es NO-OP
   # silencioso (config.py pushgateway_url="") — la Pushgateway tenía datos de hace 8 días y la
   # alerta OnlineGameTickViejo (prometheusrule.yaml) necesita game_tick_last_run_timestamp fresco.
