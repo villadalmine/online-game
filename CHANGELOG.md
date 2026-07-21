@@ -7,6 +7,35 @@ Registro de todo lo que vamos logrando. Formato basado en
 
 ## [Unreleased]
 
+### Ops — 2026-07-20 — 💸 Ahorro de LLM (meta del dueño: cuenta OpenRouter ≤ €20/mes) + observabilidad del tick
+Auditoría de gasto (desde el repo `shooter`, que comparte la cuenta OpenRouter): la cuenta iba a
+~US$2/día y **galaxy era el mayor contribuyente** (ticks c/5min + fallbacks de NPC a la nube). Sin
+tocar el juego, se bajó el costo de galaxy a ~$0 con cambios reversibles de 1 línea:
+- **Modelo → `cheap`** (deepseek-v4-flash vía LiteLLM, $0.098/M in vs gemma $0.22/M). El runtime YA
+  corría flash (parche en caliente previo); `values-prod.yaml` decía `gemma4-paid` → **alineado**
+  para que el próximo CD no revierta. Bench (repo shooter, mismo día): 3/3 chat-pattern, respeta
+  `max_tokens`.
+- **Fallbacks de NPC/asistente → `cheap`:** con la GPU local apagada, cada NPC "gpu" que falla
+  reintenta con el default DEL CÓDIGO (`config.py` `npc_cloud_model`/`assistant_cloud_model` =
+  `gemma4-paid`). Pisados por env `NPC_CLOUD_MODEL`/`ASSISTANT_CLOUD_MODEL=cheap` (lo delató un
+  tick de verificación). El chart renderiza `.Values.env` genérico → cualquier setting de
+  `config.py` se puede pisar por env ahí.
+- **Frecuencia del tick `*/5 min` → `0 0,12 * * *` (2 veces/día, 9:00 y 21:00 BsAs):** seguro
+  porque el juego es catch-up por timestamps (`completes_at`/`last_collected_at`) y
+  `finalize_due_builds` corre on-demand en las acciones del jugador (research/training/expedition)
+  → nada se pierde; solo se resuelven 2×/día batallas/flotas/temporadas y decisiones de NPCs.
+  Elegido por el dueño ("total es NPC"). Revertir: `*/10 * * * *`.
+- **Fix + alerta de observabilidad del tick** (pregunta del dueño "¿hay métricas de cuánto falla?"):
+  la métrica `game_tick_last_run_timestamp` (worker → Pushgateway) existía pero el **push era NO-OP
+  silencioso hace 8 días** (faltaba `PUSHGATEWAY_URL` en prod; `config.py` default `""`). Cableada
+  en `values-prod.yaml` + **alerta nueva `OnlineGameTickViejo`** en `prometheusrule.yaml` (último
+  tick OK >13h = cadencia 12h + 1h de gracia → warning → Telegram; cubre cronjob roto, job fallando
+  y push caído). Los fallos duros del job ya los agarra el `KubeJobFailed` default del stack.
+  Verificado: tick de prueba OK, métrica fresca (0.2 min) en la Pushgateway.
+- **Borrado `galaxy-dt-tick`** (CronJob de la instancia dev `online-game-dt`, autorizado — "no
+  estamos probando nada"): duplicaba el gasto y tiraba ticks en Error.
+- Todo aplicado en runtime por `kubectl patch` (**sin `make deploy`**, que re-crearía galaxy-dt).
+
 ## [1.210.0] - 2026-07-12
 
 ### 2026-07-12 — Preparación para Lanzamiento Público (100 CCU)
